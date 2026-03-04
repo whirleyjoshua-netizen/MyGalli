@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { verifyAuth } from '@/lib/auth'
+import { getUser } from '@/lib/auth'
 
 interface Props {
   params: Promise<{ displayId: string }>
@@ -11,16 +11,9 @@ export async function GET(request: NextRequest, { params }: Props) {
     const { displayId } = await params
 
     // Verify authentication
-    const authHeader = request.headers.get('Authorization')
-    const token = authHeader?.replace('Bearer ', '')
-
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const user = await verifyAuth(token)
+    const user = await getUser(request)
     if (!user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Get display and verify ownership
@@ -92,16 +85,9 @@ export async function DELETE(request: NextRequest, { params }: Props) {
     }
 
     // Verify authentication
-    const authHeader = request.headers.get('Authorization')
-    const token = authHeader?.replace('Bearer ', '')
-
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const user = await verifyAuth(token)
+    const user = await getUser(request)
     if (!user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Get display and verify ownership

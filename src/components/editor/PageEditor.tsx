@@ -33,7 +33,7 @@ interface PageEditorProps {
 
 export function PageEditor({ pageId }: PageEditorProps) {
   const router = useRouter()
-  const { user, token } = useAuthStore()
+  const { user } = useAuthStore()
 
   // Page state
   const [id, setId] = useState<string | null>(pageId || null)
@@ -75,23 +75,14 @@ export function PageEditor({ pageId }: PageEditorProps) {
   const [editingColumnSection, setEditingColumnSection] = useState<string | null>(null)
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
 
-  // Auth check
-  useEffect(() => {
-    if (!token) {
-      router.push('/login')
-    }
-  }, [token, router])
-
   // Load or create page
   useEffect(() => {
-    if (!token) return
-
     if (pageId) {
       loadPage(pageId)
     } else {
       createNewPage()
     }
-  }, [pageId, token])
+  }, [pageId])
 
   // Active sections abstraction — routes to tabs when enabled
   const getActiveSections = useCallback((): Section[] => {
@@ -192,9 +183,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
 
   const loadPage = async (pid: string) => {
     try {
-      const res = await fetch(`/api/displays/${pid}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await fetch(`/api/displays/${pid}`)
 
       if (res.ok) {
         const data = await res.json()
@@ -258,10 +247,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
     try {
       const res = await fetch('/api/displays', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'Untitled Page' }),
       })
 
@@ -304,10 +290,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
 
       await fetch(`/api/displays/${id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
           sections: sectionsToSave,
@@ -322,7 +305,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
     } finally {
       setSaving(false)
     }
-  }, [id, title, sections, background, headerCard, tabsConfig, token, saving])
+  }, [id, title, sections, background, headerCard, tabsConfig, saving])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -739,10 +722,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
 
     await fetch(`/api/displays/${id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ published: newPublished }),
     })
   }
@@ -983,12 +963,11 @@ export function PageEditor({ pageId }: PageEditorProps) {
       />
 
       {/* Share Dialog */}
-      {showShareDialog && id && token && (
+      {showShareDialog && id && (
         <ShareDialog
           displayId={id}
           pageTitle={title}
           published={published}
-          token={token}
           onClose={() => setShowShareDialog(false)}
         />
       )}

@@ -2,7 +2,6 @@
 
 import { useState, useRef } from 'react'
 import { X, Image, Upload, Link, Loader2 } from 'lucide-react'
-import { useAuthStore } from '@/lib/store'
 
 interface ImageElementProps {
   url: string
@@ -23,7 +22,6 @@ export function ImageElement({
   isSelected,
   onSelect,
 }: ImageElementProps) {
-  const { token } = useAuthStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showUrlInput, setShowUrlInput] = useState(false)
   const [urlInput, setUrlInput] = useState(url)
@@ -46,11 +44,6 @@ export function ImageElement({
   }
 
   const handleFileUpload = async (file: File) => {
-    if (!token) {
-      setUploadError('Please log in to upload images')
-      return
-    }
-
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
     if (!allowedTypes.includes(file.type)) {
@@ -73,9 +66,6 @@ export function ImageElement({
 
       const response = await fetch('/api/upload', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         body: formData,
       })
 

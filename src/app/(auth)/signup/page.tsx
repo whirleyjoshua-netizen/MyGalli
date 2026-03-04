@@ -35,7 +35,7 @@ export default function SignupPage() {
         return
       }
 
-      setAuth(data.user, data.token)
+      setAuth(data.user)
       router.push('/dashboard')
     } catch {
       setError('Something went wrong')

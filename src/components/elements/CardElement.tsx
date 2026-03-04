@@ -4,12 +4,10 @@ import { useState } from 'react'
 import { Trash2, Settings } from 'lucide-react'
 import { CARD_PROVIDERS } from '@/lib/cards/registry'
 import type { CardField } from '@/lib/cards/registry'
-import { LinkedInCard } from './cards/LinkedInCard'
 import { VouchCard } from './cards/VouchCard'
 import { IframeCardRenderer } from './cards/IframeCardRenderer'
 
 const CARD_RENDERERS: Record<string, React.ComponentType<{ data: Record<string, any>; style?: 'default' | 'compact' | 'detailed' }>> = {
-  linkedin: LinkedInCard,
   vouch: VouchCard,
 }
 

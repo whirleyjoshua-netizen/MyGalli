@@ -23,33 +23,6 @@ export interface CardProviderConfig {
 }
 
 export const CARD_PROVIDERS: Record<string, CardProviderConfig> = {
-  linkedin: {
-    id: 'linkedin',
-    name: 'LinkedIn',
-    description: 'Professional profile card',
-    icon: 'Linkedin',
-    type: 'builtin',
-    defaultData: {
-      name: '',
-      title: '',
-      company: '',
-      headline: '',
-      profileUrl: '',
-      avatarUrl: '',
-      connectionCount: '',
-      backgroundUrl: '',
-    },
-    fields: [
-      { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Josh Smith', required: true },
-      { key: 'title', label: 'Job Title', type: 'text', placeholder: 'Senior Engineer' },
-      { key: 'company', label: 'Company', type: 'text', placeholder: 'Acme Inc.' },
-      { key: 'headline', label: 'Headline', type: 'textarea', placeholder: 'Building the future of...' },
-      { key: 'profileUrl', label: 'LinkedIn URL', type: 'url', placeholder: 'https://linkedin.com/in/...' },
-      { key: 'avatarUrl', label: 'Profile Photo URL', type: 'url', placeholder: 'https://...' },
-      { key: 'connectionCount', label: 'Connections', type: 'text', placeholder: '500+' },
-      { key: 'backgroundUrl', label: 'Banner Image URL', type: 'url', placeholder: 'https://...' },
-    ],
-  },
   vouch: {
     id: 'vouch',
     name: 'Vouch',

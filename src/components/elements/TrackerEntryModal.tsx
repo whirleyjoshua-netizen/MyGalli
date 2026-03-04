@@ -12,7 +12,6 @@ interface TrackerEntryModalProps {
   displayId: string
   trackerId: string
   category: string
-  token: string
   onEntryAdded: () => void
 }
 
@@ -24,7 +23,6 @@ export function TrackerEntryModal({
   displayId,
   trackerId,
   category,
-  token,
   onEntryAdded,
 }: TrackerEntryModalProps) {
   const [values, setValues] = useState<Record<string, any>>({})
@@ -51,7 +49,7 @@ export function TrackerEntryModal({
     try {
       const res = await fetch('/api/tracker-entries', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           displayId,
           trackerId,

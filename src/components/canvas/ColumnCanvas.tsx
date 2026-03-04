@@ -675,7 +675,7 @@ export function ColumnCanvas({
         return (
           <CardElement
             {...commonProps}
-            provider={element.cardProvider || 'linkedin'}
+            provider={element.cardProvider || 'vouch'}
             data={element.cardData || {}}
             style={element.cardStyle || 'default'}
             onChange={(updates) =>

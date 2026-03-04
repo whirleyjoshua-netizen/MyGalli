@@ -2,12 +2,10 @@
 
 import type { CanvasElement } from '@/lib/types/canvas'
 import { CARD_PROVIDERS } from '@/lib/cards/registry'
-import { LinkedInCard } from './cards/LinkedInCard'
 import { VouchCard } from './cards/VouchCard'
 import { IframeCardRenderer } from './cards/IframeCardRenderer'
 
 const CARD_RENDERERS: Record<string, React.ComponentType<{ data: Record<string, any>; style?: 'default' | 'compact' | 'detailed' }>> = {
-  linkedin: LinkedInCard,
   vouch: VouchCard,
 }
 
@@ -16,7 +14,7 @@ interface PublicCardElementProps {
 }
 
 export function PublicCardElement({ element }: PublicCardElementProps) {
-  const provider = element.cardProvider || 'linkedin'
+  const provider = element.cardProvider || 'vouch'
   const data = element.cardData || {}
   const style = element.cardStyle || 'default'
 

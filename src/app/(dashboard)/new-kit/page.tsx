@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Trophy, TrendingUp, BarChart3, Play, BookOpen, Sparkles, Users, Briefcase, Palette, FileText, UserCircle, Award, FolderOpen, Heart } from 'lucide-react'
-import { useAuthStore } from '@/lib/store'
 import { KIT_REGISTRY } from '@/lib/kits/registry'
 import '@/lib/kits/athlete-kit'
 import '@/lib/kits/resume-kit'
@@ -27,23 +26,19 @@ const ICON_MAP: Record<string, typeof Trophy> = {
 
 export default function NewKitPage() {
   const router = useRouter()
-  const { token } = useAuthStore()
   const [creating, setCreating] = useState<string | null>(null)
 
   const kits = Object.values(KIT_REGISTRY)
 
   const handleCreate = async (kitId: string) => {
-    if (!token || creating) return
+    if (creating) return
     setCreating(kitId)
 
     try {
       const kit = KIT_REGISTRY[kitId]
       const res = await fetch('/api/displays', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: `My ${kit.name}`,
           kitId,

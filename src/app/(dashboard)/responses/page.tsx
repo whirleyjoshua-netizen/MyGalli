@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, FileText, Trash2, Download, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useAuthStore } from '@/lib/store'
 
 interface FormResponseData {
   id: string
@@ -40,8 +39,6 @@ export default function ResponsesPage() {
 function ResponsesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { token } = useAuthStore()
-
   const [displays, setDisplays] = useState<DisplayOption[]>([])
   const [selectedDisplayId, setSelectedDisplayId] = useState<string | null>(
     searchParams.get('displayId')
@@ -52,16 +49,9 @@ function ResponsesContent() {
 
   // Fetch user's displays
   useEffect(() => {
-    if (!token) {
-      router.push('/login')
-      return
-    }
-
     async function fetchDisplays() {
       try {
-        const res = await fetch('/api/displays', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const res = await fetch('/api/displays')
         if (res.ok) {
           const data = await res.json()
           setDisplays(data)
@@ -77,18 +67,17 @@ function ResponsesContent() {
     }
 
     fetchDisplays()
-  }, [token, router, selectedDisplayId])
+  }, [router, selectedDisplayId])
 
   // Fetch responses
   useEffect(() => {
-    if (!token || !selectedDisplayId) return
+    if (!selectedDisplayId) return
 
     async function fetchResponses() {
       setLoading(true)
       try {
         const res = await fetch(
-          `/api/forms/${selectedDisplayId}?page=${page}&limit=20`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          `/api/forms/${selectedDisplayId}?page=${page}&limit=20`
         )
         if (res.ok) {
           const data = await res.json()
@@ -102,19 +91,16 @@ function ResponsesContent() {
     }
 
     fetchResponses()
-  }, [token, selectedDisplayId, page])
+  }, [selectedDisplayId, page])
 
   const deleteResponse = async (responseId: string) => {
-    if (!token || !selectedDisplayId) return
+    if (!selectedDisplayId) return
     if (!confirm('Are you sure you want to delete this response?')) return
 
     try {
       const res = await fetch(
         `/api/forms/${selectedDisplayId}?responseId=${responseId}`,
-        {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { method: 'DELETE' }
       )
       if (res.ok) {
         // Refresh data
@@ -177,8 +163,6 @@ function ResponsesContent() {
     a.click()
     URL.revokeObjectURL(url)
   }
-
-  if (!token) return null
 
   return (
     <div className="min-h-screen bg-background">

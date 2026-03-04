@@ -58,7 +58,7 @@ export type ElementType =
   | 'comment'   // Comment section for visitor feedback
   | 'poll'      // Poll with voting
   // Tier 5: Integration cards (on hold)
-  | 'card'      // App cards (LinkedIn, Vouch, custom)
+  | 'card'      // App cards (Vouch, custom)
   // Kit elements
   | 'tracker'      // Time-series tracker (speed, lifts, metrics, stats)
   | 'kit-profile'  // Structured profile card for kit pages
@@ -164,7 +164,7 @@ export interface CanvasElement {
   codeShowLineNumbers?: boolean
   codeFilename?: string
   // Card specific
-  cardProvider?: string    // 'linkedin' | 'vouch' | 'custom'
+  cardProvider?: string    // 'vouch' | 'custom'
   cardData?: Record<string, any>  // Provider-specific data (JSON)
   cardStyle?: 'default' | 'compact' | 'detailed'
   // Comment specific
@@ -482,7 +482,7 @@ export function createElement(type: ElementType): CanvasElement {
     case 'card':
       return {
         ...base,
-        cardProvider: 'linkedin',
+        cardProvider: 'vouch',
         cardData: {},
         cardStyle: 'default' as const,
       }

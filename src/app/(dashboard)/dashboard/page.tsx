@@ -210,7 +210,7 @@ function SortableDisplayCard({
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { user, token, logout } = useAuthStore()
+  const { user, logout } = useAuthStore()
   const [displays, setDisplays] = useState<Display[]>([])
   const [loading, setLoading] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -226,20 +226,13 @@ export default function DashboardPage() {
   )
 
   useEffect(() => {
-    if (!token) {
-      router.push('/login')
-      return
-    }
-
     fetchDisplays()
     fetchDashboardPrefs()
-  }, [token, router])
+  }, [router])
 
   const fetchDisplays = async () => {
     try {
-      const res = await fetch('/api/displays', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await fetch('/api/displays')
       if (res.ok) {
         const data = await res.json()
         setDisplays(data)
@@ -251,9 +244,7 @@ export default function DashboardPage() {
 
   const fetchDashboardPrefs = async () => {
     try {
-      const res = await fetch('/api/dashboard-prefs', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await fetch('/api/dashboard-prefs')
       if (res.ok) {
         const data = await res.json()
         setDashboardPrefs(data || {})
@@ -266,14 +257,11 @@ export default function DashboardPage() {
     try {
       await fetch('/api/dashboard-prefs', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(prefs),
       })
     } catch {}
-  }, [token])
+  }, [])
 
   const createDisplay = () => {
     router.push('/editor')

@@ -2,7 +2,6 @@
 
 import { useState, useRef } from 'react'
 import { Upload, Link, Loader2, X, Image as ImageIcon } from 'lucide-react'
-import { useAuthStore } from '@/lib/store'
 
 interface ImageUploadFieldProps {
   label: string
@@ -20,7 +19,6 @@ export function ImageUploadField({
   placeholder = 'https://example.com/image.jpg',
   previewAspect = 'wide',
 }: ImageUploadFieldProps) {
-  const { token } = useAuthStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -34,11 +32,6 @@ export function ImageUploadField({
     'aspect-video'
 
   const handleFileUpload = async (file: File) => {
-    if (!token) {
-      setUploadError('Please log in to upload images')
-      return
-    }
-
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
     if (!allowedTypes.includes(file.type)) {
       setUploadError('Invalid file type. Use JPEG, PNG, GIF, WebP, or SVG')
@@ -59,7 +52,6 @@ export function ImageUploadField({
 
       const response = await fetch('/api/upload', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       })
 

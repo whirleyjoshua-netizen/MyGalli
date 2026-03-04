@@ -36,15 +36,13 @@ export async function verifyAuth(token: string) {
   }
 }
 
-// Verify auth from NextRequest (extracts token from Authorization header)
+// Verify auth from NextRequest (extracts token from httpOnly cookie)
 export async function getUser(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
+  const token = request.cookies.get('gallio-auth')?.value
 
-  if (!authHeader?.startsWith('Bearer ')) {
+  if (!token) {
     return null
   }
-
-  const token = authHeader.substring(7)
 
   try {
     const decoded = verify(

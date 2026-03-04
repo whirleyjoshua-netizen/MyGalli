@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, TrendingUp, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
-import { useAuthStore } from '@/lib/store'
 import { TrackerChart } from '@/components/tracker/TrackerChart'
 import { TrackerSummaryCard } from '@/components/tracker/TrackerSummaryCard'
 import { TrackerTimeFilter } from '@/components/tracker/TrackerTimeFilter'
@@ -33,7 +32,6 @@ interface TrackerElementProps {
 }
 
 export function TrackerElement({ element, displayId, onChange, onDelete, isSelected, onSelect }: TrackerElementProps) {
-  const { token } = useAuthStore()
   const [entries, setEntries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -49,16 +47,14 @@ export function TrackerElement({ element, displayId, onChange, onDelete, isSelec
   const primaryField = trackerConfig?.fields.find(f => f.required && f.type === 'number')?.key || trackerConfig?.fields[0]?.key || 'value'
 
   const fetchEntries = useCallback(async () => {
-    if (!token || !displayId) return
+    if (!displayId) return
     setLoading(true)
     try {
       const from = getTimeRangeFilter(timeRange)
       const params = new URLSearchParams({ displayId, trackerId: element.id })
       if (from) params.set('from', from.toISOString())
 
-      const res = await fetch(`/api/tracker-entries?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await fetch(`/api/tracker-entries?${params}`)
       if (res.ok) {
         setEntries(await res.json())
       }
@@ -67,19 +63,15 @@ export function TrackerElement({ element, displayId, onChange, onDelete, isSelec
     } finally {
       setLoading(false)
     }
-  }, [token, displayId, element.id, timeRange])
+  }, [displayId, element.id, timeRange])
 
   useEffect(() => {
     fetchEntries()
   }, [fetchEntries])
 
   const handleDeleteEntry = async (entryId: string) => {
-    if (!token) return
     try {
-      await fetch(`/api/tracker-entries/${entryId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      await fetch(`/api/tracker-entries/${entryId}`, { method: 'DELETE' })
       setEntries(prev => prev.filter(e => e.id !== entryId))
     } catch (err) {
       console.error('Failed to delete entry:', err)
@@ -202,7 +194,7 @@ export function TrackerElement({ element, displayId, onChange, onDelete, isSelec
       )}
 
       {/* Entry modal */}
-      {showModal && trackerConfig && token && (
+      {showModal && trackerConfig && (
         <TrackerEntryModal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
@@ -211,7 +203,6 @@ export function TrackerElement({ element, displayId, onChange, onDelete, isSelec
           displayId={displayId}
           trackerId={element.id}
           category={trackerConfig.category}
-          token={token}
           onEntryAdded={fetchEntries}
         />
       )}

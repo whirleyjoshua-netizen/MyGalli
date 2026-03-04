@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { MessageSquare, Check, X } from 'lucide-react'
-import { useAuthStore } from '@/lib/store'
 
 interface CommentItem {
   id: string
@@ -26,7 +25,6 @@ interface CommentData {
 }
 
 export function CommentCard({ data, displayId }: { data: CommentData; displayId: string }) {
-  const { token } = useAuthStore()
   const [comments, setComments] = useState<CommentItem[]>(data.comments)
   const [updating, setUpdating] = useState<string | null>(null)
 
@@ -35,10 +33,7 @@ export function CommentCard({ data, displayId }: { data: CommentData; displayId:
     try {
       const res = await fetch(`/api/displays/${displayId}/comments`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ commentId, approved }),
       })
 

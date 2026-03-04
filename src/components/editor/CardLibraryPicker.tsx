@@ -5,13 +5,10 @@ import { X, Library, Layers } from 'lucide-react'
 import Link from 'next/link'
 import { CARD_PROVIDERS } from '@/lib/cards/registry'
 import type { CardProviderConfig } from '@/lib/cards/registry'
-import { LinkedInCard } from '@/components/elements/cards/LinkedInCard'
 import { VouchCard } from '@/components/elements/cards/VouchCard'
 import { IframeCardRenderer } from '@/components/elements/cards/IframeCardRenderer'
-import { useAuthStore } from '@/lib/store'
 
 const BUILTIN_RENDERERS: Record<string, React.ComponentType<{ data: Record<string, any>; style?: 'default' | 'compact' | 'detailed' }>> = {
-  linkedin: LinkedInCard,
   vouch: VouchCard,
 }
 
@@ -51,21 +48,18 @@ function MiniPreview({ provider, data, style }: { provider: CardProviderConfig; 
 }
 
 export function CardLibraryPicker({ isOpen, onClose, onSelect }: CardLibraryPickerProps) {
-  const { token } = useAuthStore()
   const [items, setItems] = useState<LibraryItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!isOpen || !token) return
+    if (!isOpen) return
     setLoading(true)
-    fetch('/api/card-library', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch('/api/card-library')
       .then(res => res.ok ? res.json() : [])
       .then(data => setItems(data))
       .catch(() => setItems([]))
       .finally(() => setLoading(false))
-  }, [isOpen, token])
+  }, [isOpen])
 
   if (!isOpen) return null
 

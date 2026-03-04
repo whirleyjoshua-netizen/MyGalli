@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, BarChart3, Eye, Users, Monitor, Smartphone, Tablet, Globe, Calendar, Inbox } from 'lucide-react'
-import { useAuthStore } from '@/lib/store'
 import { ElementsTab } from '@/components/analytics/ElementsTab'
 
 interface AnalyticsData {
@@ -61,8 +60,6 @@ export default function AnalyticsPage() {
 function AnalyticsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { token } = useAuthStore()
-
   const [displays, setDisplays] = useState<DisplayOption[]>([])
   const [selectedDisplayId, setSelectedDisplayId] = useState<string | null>(
     searchParams.get('displayId')
@@ -76,16 +73,9 @@ function AnalyticsContent() {
 
   // Fetch user's displays
   useEffect(() => {
-    if (!token) {
-      router.push('/login')
-      return
-    }
-
     async function fetchDisplays() {
       try {
-        const res = await fetch('/api/displays', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const res = await fetch('/api/displays')
         if (res.ok) {
           const data = await res.json()
           setDisplays(data)
@@ -102,18 +92,17 @@ function AnalyticsContent() {
     }
 
     fetchDisplays()
-  }, [token, router, selectedDisplayId])
+  }, [router, selectedDisplayId])
 
   // Fetch analytics for selected display
   useEffect(() => {
-    if (!token || !selectedDisplayId) return
+    if (!selectedDisplayId) return
 
     async function fetchAnalytics() {
       setLoading(true)
       try {
         const res = await fetch(
-          `/api/analytics/${selectedDisplayId}?days=${days}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          `/api/analytics/${selectedDisplayId}?days=${days}`
         )
         if (res.ok) {
           const data = await res.json()
@@ -127,7 +116,7 @@ function AnalyticsContent() {
     }
 
     fetchAnalytics()
-  }, [token, selectedDisplayId, days])
+  }, [selectedDisplayId, days])
 
   // Device icon
   const DeviceIcon = ({ type }: { type: string }) => {
@@ -139,10 +128,6 @@ function AnalyticsContent() {
       default:
         return <Monitor className="w-4 h-4" />
     }
-  }
-
-  if (!token) {
-    return null
   }
 
   return (

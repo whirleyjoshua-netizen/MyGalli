@@ -17,11 +17,10 @@ interface ShareDialogProps {
   displayId: string
   pageTitle: string
   published: boolean
-  token: string
   onClose: () => void
 }
 
-export function ShareDialog({ displayId, pageTitle, published, token, onClose }: ShareDialogProps) {
+export function ShareDialog({ displayId, pageTitle, published, onClose }: ShareDialogProps) {
   const [links, setLinks] = useState<ShareLink[]>([])
   const [loading, setLoading] = useState(true)
   const [newCode, setNewCode] = useState('')
@@ -44,7 +43,6 @@ export function ShareDialog({ displayId, pageTitle, published, token, onClose }:
   const fetchLinks = async () => {
     try {
       const res = await fetch(`/api/share-links?displayId=${displayId}`, {
-        headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
         setLinks(await res.json())
@@ -64,7 +62,6 @@ export function ShareDialog({ displayId, pageTitle, published, token, onClose }:
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ displayId, code: newCode.toLowerCase().trim() }),
       })
@@ -85,10 +82,7 @@ export function ShareDialog({ displayId, pageTitle, published, token, onClose }:
   const toggleActive = async (link: ShareLink) => {
     const res = await fetch(`/api/share-links/${link.id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isActive: !link.isActive }),
     })
 
@@ -102,7 +96,6 @@ export function ShareDialog({ displayId, pageTitle, published, token, onClose }:
   const deleteLink = async (link: ShareLink) => {
     const res = await fetch(`/api/share-links/${link.id}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
     })
 
     if (res.ok) {

@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { X, Trophy, TrendingUp, BarChart3, Play, BookOpen, Sparkles, FileText, UserCircle, Briefcase, Award, FolderOpen, Heart } from 'lucide-react'
-import { useAuthStore } from '@/lib/store'
 import { KIT_REGISTRY } from '@/lib/kits/registry'
 import '@/lib/kits/athlete-kit'
 import '@/lib/kits/resume-kit'
@@ -30,7 +29,6 @@ interface KitSelectorProps {
 
 export function KitSelector({ isOpen, onClose }: KitSelectorProps) {
   const router = useRouter()
-  const { token } = useAuthStore()
   const [creating, setCreating] = useState<string | null>(null)
 
   if (!isOpen) return null
@@ -38,17 +36,14 @@ export function KitSelector({ isOpen, onClose }: KitSelectorProps) {
   const kits = Object.values(KIT_REGISTRY)
 
   const handleCreate = async (kitId: string) => {
-    if (!token || creating) return
+    if (creating) return
     setCreating(kitId)
 
     try {
       const kit = KIT_REGISTRY[kitId]
       const res = await fetch('/api/displays', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: `My ${kit.name}`,
           kitId,

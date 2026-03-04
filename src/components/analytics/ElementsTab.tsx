@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuthStore } from '@/lib/store'
 import { Inbox } from 'lucide-react'
 import { MCQCard, RatingCard, ShortAnswerCard, PollCard, CommentCard, WeddingRsvpCard } from './element-cards'
 
@@ -15,22 +14,19 @@ interface ElementAnalyticsResponse {
 }
 
 export function ElementsTab({ displayId }: ElementsTabProps) {
-  const { token } = useAuthStore()
   const [data, setData] = useState<ElementAnalyticsResponse | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!token || !displayId) return
+    if (!displayId) return
 
     setLoading(true)
-    fetch(`/api/analytics/${displayId}/elements`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch(`/api/analytics/${displayId}/elements`)
       .then(r => r.json())
       .then(setData)
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [token, displayId])
+  }, [displayId])
 
   if (!displayId) {
     return (

@@ -6,13 +6,10 @@ import Image from 'next/image'
 import { ArrowLeft, ExternalLink, Code2, Layers, Search, Plus, Trash2, BookOpen, X, Library } from 'lucide-react'
 import { CARD_PROVIDERS } from '@/lib/cards/registry'
 import type { CardProviderConfig } from '@/lib/cards/registry'
-import { LinkedInCard } from '@/components/elements/cards/LinkedInCard'
 import { VouchCard } from '@/components/elements/cards/VouchCard'
 import { IframeCardRenderer } from '@/components/elements/cards/IframeCardRenderer'
-import { useAuthStore } from '@/lib/store'
 
 const BUILTIN_RENDERERS: Record<string, React.ComponentType<{ data: Record<string, any>; style?: 'default' | 'compact' | 'detailed' }>> = {
-  linkedin: LinkedInCard,
   vouch: VouchCard,
 }
 
@@ -53,7 +50,6 @@ function CardPreview({ provider, data, style }: { provider: CardProviderConfig; 
 }
 
 export default function CardStudioPage() {
-  const { token } = useAuthStore()
   const [activeTab, setActiveTab] = useState<'browse' | 'library'>('browse')
   const [search, setSearch] = useState('')
   const [selectedCard, setSelectedCard] = useState<string | null>(null)
@@ -86,12 +82,9 @@ export default function CardStudioPage() {
 
   // Fetch library
   const fetchLibrary = useCallback(async () => {
-    if (!token) return
     setLibraryLoading(true)
     try {
-      const res = await fetch('/api/card-library', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await fetch('/api/card-library')
       if (res.ok) {
         const data = await res.json()
         setLibraryItems(data)
@@ -99,7 +92,7 @@ export default function CardStudioPage() {
     } catch {} finally {
       setLibraryLoading(false)
     }
-  }, [token])
+  }, [])
 
   useEffect(() => {
     fetchLibrary()
@@ -107,16 +100,13 @@ export default function CardStudioPage() {
 
   // Add to library
   const handleAddToLibrary = async () => {
-    if (!addModalProvider || !addModalName.trim() || !token) return
+    if (!addModalProvider || !addModalName.trim()) return
     setAddingSaving(true)
     try {
       const provider = CARD_PROVIDERS[addModalProvider]
       const res = await fetch('/api/card-library', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider: addModalProvider,
           name: addModalName.trim(),
@@ -138,12 +128,8 @@ export default function CardStudioPage() {
 
   // Delete from library
   const handleDeleteLibraryItem = async (id: string) => {
-    if (!token) return
     try {
-      await fetch(`/api/card-library/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      await fetch(`/api/card-library/${id}`, { method: 'DELETE' })
       setLibraryItems(prev => prev.filter(item => item.id !== id))
     } catch {}
   }

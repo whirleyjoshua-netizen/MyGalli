@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { verifyAuth } from '@/lib/auth'
+import { getUser } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 
 // GET /api/displays/[id]/comments — public, no auth needed
@@ -100,15 +100,9 @@ export async function PATCH(
 ) {
   const { id } = await params
   try {
-    const authHeader = request.headers.get('Authorization')
-    const token = authHeader?.replace('Bearer ', '')
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const user = await verifyAuth(token)
+    const user = await getUser(request)
     if (!user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const display = await db.display.findUnique({
