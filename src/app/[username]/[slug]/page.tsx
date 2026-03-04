@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { db } from '@/lib/db'
 import type { Section } from '@/lib/types/canvas'
 import type { BackgroundConfig } from '@/lib/types/background'
@@ -13,6 +14,43 @@ import { FontLoader } from '@/components/FontLoader'
 
 interface Props {
   params: Promise<{ username: string; slug: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { username, slug } = await params
+
+  const user = await db.user.findUnique({
+    where: { username },
+    select: { id: true, name: true, username: true },
+  })
+
+  if (!user) return {}
+
+  const display = await db.display.findUnique({
+    where: { userId_slug: { userId: user.id, slug } },
+    select: { title: true, published: true },
+  })
+
+  if (!display || !display.published) return {}
+
+  const displayName = user.name || user.username
+  const title = display.title
+  const description = `${title} by ${displayName} on Gallio`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+    },
+  }
 }
 
 export default async function PublicDisplayPage({ params }: Props) {
