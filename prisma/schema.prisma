@@ -65,6 +65,9 @@ model Display {
   kitConfig       Json?
   trackerEntries  TrackerEntry[]
 
+  // Jersey signatures
+  jerseySignatures JerseySignature[]
+
   @@unique([userId, slug])
   @@index([userId])
   @@index([published])
@@ -188,6 +191,20 @@ model WaitlistEntry {
   createdAt    DateTime @default(now())
 
   @@index([email])
+}
+
+model JerseySignature {
+  id          String   @id @default(cuid())
+  displayId   String
+  display     Display  @relation(fields: [displayId], references: [id], onDelete: Cascade)
+  elementId   String
+  name        String
+  pathData    String
+  color       String   @default("#000000")
+  ipHash      String?
+  createdAt   DateTime @default(now())
+
+  @@index([displayId, elementId])
 }
 
 model CardLibraryItem {

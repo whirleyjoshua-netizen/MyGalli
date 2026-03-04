@@ -44,7 +44,13 @@
       "Bash(git push:*)",
       "Bash(pnpm prisma db push:*)",
       "Bash(pnpm exec next lint:*)",
-      "Bash(pnpm next build:*)"
+      "Bash(pnpm next build:*)",
+      "Bash(Start-Process \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\")",
+      "Bash(cmd.exe /c \"start \"\"\"\" \"\"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\"\"\")",
+      "Bash(npx tsx:*)",
+      "Bash(ls -la \"C:\\\\Users\\\\whirl\\\\pages-mvp\\\\src\\\\app\\\\\\(dashboard\\)\\\\new-kit\"\" 2>/dev/null || echo \"Directory check \")",
+      "Bash(tail:*)",
+      "Bash(pnpm dev:*)"
     ]
   }
 }

@@ -9,6 +9,7 @@ import { PageViewTracker } from '@/components/analytics/PageViewTracker'
 import { renderElement, getGridClass, getColumnStyles } from '@/lib/render-elements'
 import { PublicHeaderCard } from '@/components/header/PublicHeaderCard'
 import { PublicTabView } from '@/components/tabs/PublicTabView'
+import { FontLoader } from '@/components/FontLoader'
 
 interface Props {
   params: Promise<{ username: string; slug: string }>
@@ -84,6 +85,7 @@ export default async function PublicDisplayPage({ params }: Props) {
   return (
     <div className="min-h-screen" style={backgroundStyles}>
       <PageViewTracker displayId={display.id} />
+      <FontLoader sections={sections} />
 
       {/* Header Card */}
       {headerCard?.enabled && (

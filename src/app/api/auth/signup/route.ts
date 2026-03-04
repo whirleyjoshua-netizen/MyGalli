@@ -2,14 +2,44 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { hash } from 'bcryptjs'
 import { sign } from 'jsonwebtoken'
+import { getJwtSecret } from '@/lib/auth'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
+  // 3 signup attempts per minute per IP
+  const limited = rateLimit(request, { limit: 3, windowMs: 60_000, prefix: 'signup' })
+  if (limited) return limited
+
   try {
     const { email, username, password, name } = await request.json()
 
     if (!email || !username || !password) {
       return NextResponse.json(
         { error: 'Email, username, and password are required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return NextResponse.json(
+        { error: 'Password must be at least 8 characters' },
+        { status: 400 }
+      )
+    }
+
+    // Validate email format
+    if (!email.includes('@') || !email.includes('.')) {
+      return NextResponse.json(
+        { error: 'Please enter a valid email address' },
+        { status: 400 }
+      )
+    }
+
+    // Validate username format
+    if (!/^[a-z0-9_-]+$/i.test(username) || username.length < 3) {
+      return NextResponse.json(
+        { error: 'Username must be at least 3 characters and only contain letters, numbers, hyphens, and underscores' },
         { status: 400 }
       )
     }
@@ -52,7 +82,7 @@ export async function POST(request: NextRequest) {
     // Generate token
     const token = sign(
       { userId: user.id },
-      process.env.JWT_SECRET || 'fallback-secret',
+      getJwtSecret(),
       { expiresIn: '7d' }
     )
 

@@ -12,6 +12,7 @@ import { computeTrackerSummary, entriesToChartData, getTimeRangeFilter } from '@
 import type { TrackerConfig } from '@/lib/kits/registry'
 // Ensure athlete kit is registered
 import '@/lib/kits/athlete-kit'
+import '@/lib/kits/resume-kit'
 
 interface TrackerElementProps {
   element: {

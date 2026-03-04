@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { rateLimit } from '@/lib/rate-limit'
 
 // Parse user agent to extract device info
 function parseUserAgent(ua: string | null): {
@@ -54,6 +55,9 @@ function parseUtmParams(referrer: string | null): {
 }
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, { limit: 60, windowMs: 60_000, prefix: 'analytics' })
+  if (limited) return limited
+
   try {
     const body = await request.json()
     const { displayId, eventType = 'view', sessionId, metadata } = body

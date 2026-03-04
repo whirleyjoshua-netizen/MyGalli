@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, Trophy, TrendingUp, BarChart3, Play, BookOpen, Sparkles } from 'lucide-react'
+import { X, Trophy, TrendingUp, BarChart3, Play, BookOpen, Sparkles, FileText, UserCircle, Briefcase, Award, FolderOpen, Heart } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import { KIT_REGISTRY } from '@/lib/kits/registry'
 import '@/lib/kits/athlete-kit'
+import '@/lib/kits/resume-kit'
+import '@/lib/kits/wedding-kit'
 
 const ICON_MAP: Record<string, typeof Trophy> = {
   Trophy,
@@ -13,6 +15,12 @@ const ICON_MAP: Record<string, typeof Trophy> = {
   BarChart3,
   Play,
   BookOpen,
+  FileText,
+  UserCircle,
+  Briefcase,
+  Award,
+  FolderOpen,
+  Heart,
 }
 
 interface KitSelectorProps {

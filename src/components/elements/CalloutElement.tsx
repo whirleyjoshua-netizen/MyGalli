@@ -1,9 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { Trash2, Info, AlertTriangle, CheckCircle, XCircle, Settings } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Trash2, Info, AlertTriangle, CheckCircle, XCircle, Settings, Type } from 'lucide-react'
+import { TextStylePanel } from './TextStylePanel'
+import { getTextStyles } from '@/lib/types/canvas'
+import { loadGoogleFont } from '@/lib/fonts'
+import type { TextStyle } from '@/lib/types/canvas'
 
-interface CalloutElementProps {
+interface CalloutElementProps extends TextStyle {
   type: 'info' | 'warning' | 'success' | 'error'
   title: string
   content: string
@@ -14,7 +18,7 @@ interface CalloutElementProps {
     type?: 'info' | 'warning' | 'success' | 'error'
     title?: string
     content?: string
-  }) => void
+  } & Partial<TextStyle>) => void
 }
 
 const typeConfig = {
@@ -52,14 +56,31 @@ export function CalloutElement({
   type,
   title,
   content,
+  fontFamily,
+  fontSize,
+  fontWeight,
+  fontStyle,
+  textAlign,
+  textColor,
+  letterSpacing,
+  lineHeight,
+  textTransform,
   isSelected,
   onSelect,
   onDelete,
   onChange,
 }: CalloutElementProps) {
   const [showTypeSelector, setShowTypeSelector] = useState(false)
+  const [showTextStyle, setShowTextStyle] = useState(false)
   const config = typeConfig[type]
   const Icon = config.icon
+
+  useEffect(() => {
+    if (fontFamily) loadGoogleFont(fontFamily)
+  }, [fontFamily])
+
+  const styleProps = { fontFamily, fontSize, fontWeight, fontStyle, textAlign, textColor, letterSpacing, lineHeight, textTransform }
+  const textStyles = getTextStyles(styleProps)
 
   return (
     <div
@@ -92,6 +113,7 @@ export function CalloutElement({
               onChange={(e) => onChange({ title: e.target.value })}
               placeholder="Callout title (optional)"
               className="w-full bg-transparent border-none outline-none font-semibold text-foreground mb-1"
+              style={textStyles}
             />
             <textarea
               value={content}
@@ -99,6 +121,7 @@ export function CalloutElement({
               placeholder="Write your callout content here..."
               rows={2}
               className="w-full bg-transparent border-none outline-none text-foreground/80 resize-none text-sm leading-relaxed"
+              style={textStyles}
             />
           </div>
         </div>
@@ -140,10 +163,21 @@ export function CalloutElement({
             onClick={(e) => {
               e.stopPropagation()
               setShowTypeSelector(!showTypeSelector)
+              setShowTextStyle(false)
             }}
             className="p-1.5 bg-background border border-border rounded-md shadow-sm hover:bg-muted transition"
           >
             <Settings className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowTextStyle(!showTextStyle)
+              setShowTypeSelector(false)
+            }}
+            className="p-1.5 bg-background border border-border rounded-md shadow-sm hover:bg-muted transition"
+          >
+            <Type className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
           <button
             onClick={(e) => {
@@ -155,6 +189,15 @@ export function CalloutElement({
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
+      )}
+
+      {/* Text Style Panel */}
+      {showTextStyle && isSelected && (
+        <TextStylePanel
+          {...styleProps}
+          onChange={onChange}
+          onClose={() => setShowTextStyle(false)}
+        />
       )}
     </div>
   )

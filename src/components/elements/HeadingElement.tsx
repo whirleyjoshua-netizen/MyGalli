@@ -1,12 +1,16 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
-import { X } from 'lucide-react'
+import { useRef, useEffect, useState } from 'react'
+import { Trash2, Settings } from 'lucide-react'
+import { TextStylePanel } from './TextStylePanel'
+import { getTextStyles } from '@/lib/types/canvas'
+import { loadGoogleFont } from '@/lib/fonts'
+import type { TextStyle } from '@/lib/types/canvas'
 
-interface HeadingElementProps {
+interface HeadingElementProps extends TextStyle {
   content: string
   level: 1 | 2 | 3 | 4 | 5 | 6
-  onChange: (content: string) => void
+  onChange: (updates: { content?: string; level?: 1 | 2 | 3 | 4 | 5 | 6 } & Partial<TextStyle>) => void
   onDelete: () => void
   isSelected: boolean
   onSelect: () => void
@@ -24,12 +28,22 @@ const FONT_SIZES: Record<number, string> = {
 export function HeadingElement({
   content,
   level,
+  fontFamily,
+  fontSize,
+  fontWeight,
+  fontStyle,
+  textAlign,
+  textColor,
+  letterSpacing,
+  lineHeight,
+  textTransform,
   onChange,
   onDelete,
   isSelected,
   onSelect,
 }: HeadingElementProps) {
   const editorRef = useRef<HTMLDivElement>(null)
+  const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== content) {
@@ -37,9 +51,13 @@ export function HeadingElement({
     }
   }, [content])
 
+  useEffect(() => {
+    if (fontFamily) loadGoogleFont(fontFamily)
+  }, [fontFamily])
+
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML)
+      onChange({ content: editorRef.current.innerHTML })
     }
   }
 
@@ -50,11 +68,16 @@ export function HeadingElement({
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Prevent enter key from creating new lines in headings
     if (e.key === 'Enter') {
       e.preventDefault()
     }
   }
+
+  const styleProps = { fontFamily, fontSize, fontWeight, fontStyle, textAlign, textColor, letterSpacing, lineHeight, textTransform }
+  // If custom fontSize is set, skip the Tailwind size class
+  const sizeClass = fontSize ? '' : FONT_SIZES[level]
+  // If custom fontWeight is set, skip the default bold
+  const weightClass = fontWeight ? '' : 'font-bold'
 
   return (
     <div className="relative group" onClick={onSelect}>
@@ -65,34 +88,65 @@ export function HeadingElement({
         onPaste={handlePaste}
         onKeyDown={handleKeyDown}
         onFocus={onSelect}
-        className={`w-full font-bold ${FONT_SIZES[level]} bg-transparent focus:outline-none transition-all text-foreground py-1 ${
+        className={`w-full ${weightClass} ${sizeClass} bg-transparent focus:outline-none transition-all text-foreground py-1 ${
           isSelected ? 'ring-2 ring-primary rounded' : ''
         }`}
-        style={{ wordWrap: 'break-word', whiteSpace: 'pre-wrap' }}
+        style={{ wordWrap: 'break-word', whiteSpace: 'pre-wrap', ...getTextStyles(styleProps) }}
         suppressContentEditableWarning
       />
 
       {/* Placeholder */}
       {!content && (
         <div
-          className={`absolute top-1 left-0 text-muted-foreground pointer-events-none font-bold ${FONT_SIZES[level]}`}
+          className={`absolute top-1 left-0 text-muted-foreground pointer-events-none ${weightClass} ${sizeClass}`}
+          style={getTextStyles(styleProps)}
         >
           Heading {level}
         </div>
       )}
 
-      {/* Delete Button */}
+      {/* Controls */}
       {isSelected && (
-        <button
-          className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors z-10"
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete()
-          }}
-          type="button"
-        >
-          <X className="w-3 h-3" />
-        </button>
+        <div className="absolute -top-3 right-2 flex items-center gap-1 z-10">
+          {/* Level selector */}
+          <select
+            value={level}
+            onChange={(e) => onChange({ level: Number(e.target.value) as 1 | 2 | 3 | 4 | 5 | 6 })}
+            onClick={(e) => e.stopPropagation()}
+            className="px-1.5 py-1 text-xs bg-background border border-border rounded-md shadow-sm"
+          >
+            {[1, 2, 3, 4, 5, 6].map((l) => (
+              <option key={l} value={l}>H{l}</option>
+            ))}
+          </select>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowSettings(!showSettings)
+            }}
+            className="p-1.5 bg-background border border-border rounded-md shadow-sm hover:bg-muted transition"
+          >
+            <Settings className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete()
+            }}
+            className="p-1.5 bg-background border border-border rounded-md shadow-sm hover:bg-destructive hover:text-destructive-foreground transition"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Text Style Panel */}
+      {showSettings && isSelected && (
+        <TextStylePanel
+          {...styleProps}
+          onChange={onChange}
+          onClose={() => setShowSettings(false)}
+        />
       )}
     </div>
   )

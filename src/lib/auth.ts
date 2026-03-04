@@ -2,12 +2,20 @@ import { NextRequest } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { db } from './db'
 
+export function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret || secret === 'your-super-secret-jwt-key-change-this-in-production') {
+    throw new Error('JWT_SECRET environment variable must be set to a strong, unique value')
+  }
+  return secret
+}
+
 // Verify auth token directly (for use with manual token extraction)
 export async function verifyAuth(token: string) {
   try {
     const decoded = verify(
       token,
-      process.env.JWT_SECRET || 'fallback-secret'
+      getJwtSecret()
     ) as { userId: string }
 
     const user = await db.user.findUnique({
@@ -41,7 +49,7 @@ export async function getUser(request: NextRequest) {
   try {
     const decoded = verify(
       token,
-      process.env.JWT_SECRET || 'fallback-secret'
+      getJwtSecret()
     ) as { userId: string }
 
     const user = await db.user.findUnique({

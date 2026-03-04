@@ -22,6 +22,20 @@ import {
   ChevronDown as ChevronDownIcon,
   TrendingUp,
   UserCircle,
+  Calendar,
+  Dumbbell,
+  UtensilsCrossed,
+  Shirt,
+  Briefcase,
+  GraduationCap,
+  Award,
+  BarChart2,
+  Heart,
+  Users,
+  Mail,
+  Gift,
+  Hash,
+  Clock,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -70,6 +84,21 @@ const commands: Command[] = [
   // Kit
   { id: 'tracker', label: 'Tracker', icon: TrendingUp, description: 'Track metrics over time', category: 'Kit' },
   { id: 'kit-profile', label: 'Kit Profile', icon: UserCircle, description: 'Structured profile card', category: 'Kit' },
+  { id: 'game-schedule', label: 'Game Schedule', icon: Calendar, description: 'Upcoming games table', category: 'Kit' },
+  { id: 'workout-schedule', label: 'Workout Schedule', icon: Dumbbell, description: 'Weekly workout planner', category: 'Kit' },
+  { id: 'meal-prep', label: 'Meal Prep', icon: UtensilsCrossed, description: 'Weekly meal planner', category: 'Kit' },
+  { id: 'jersey', label: 'My Jersey', icon: Shirt, description: 'Interactive jersey card', category: 'Kit' },
+  { id: 'experience-entry', label: 'Experience Entry', icon: Briefcase, description: 'Job or role card', category: 'Kit' },
+  { id: 'education-entry', label: 'Education Entry', icon: GraduationCap, description: 'School or degree card', category: 'Kit' },
+  { id: 'skill-bar', label: 'Skill Bar', icon: BarChart2, description: 'Visual skill proficiency', category: 'Kit' },
+  { id: 'certification-badge', label: 'Certification', icon: Award, description: 'Certification badge card', category: 'Kit' },
+  // Wedding Kit
+  { id: 'wedding-timeline', label: 'Wedding Timeline', icon: Clock, description: 'Event timeline with icons', category: 'Kit' },
+  { id: 'wedding-party', label: 'Wedding Party', icon: Users, description: 'Bridal party roster', category: 'Kit' },
+  { id: 'wedding-rsvp', label: 'Wedding RSVP', icon: Mail, description: 'Interactive RSVP form', category: 'Kit' },
+  { id: 'wedding-stats', label: 'Wedding Stats', icon: Heart, description: 'Fun couple stat counters', category: 'Kit' },
+  { id: 'wedding-registry', label: 'Wedding Registry', icon: Gift, description: 'Gift registry links', category: 'Kit' },
+  { id: 'wedding-hashtags', label: 'Wedding Hashtags', icon: Hash, description: 'Social media hashtags', category: 'Kit' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Integrations', 'Kit']
@@ -78,9 +107,10 @@ interface SlashCommandMenuProps {
   position: { x: number; y: number }
   onSelect: (type: ElementType) => void
   onClose: () => void
+  isKitPage?: boolean
 }
 
-export function SlashCommandMenu({ position, onSelect, onClose }: SlashCommandMenuProps) {
+export function SlashCommandMenu({ position, onSelect, onClose, isKitPage }: SlashCommandMenuProps) {
   const [search, setSearch] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
@@ -89,12 +119,14 @@ export function SlashCommandMenu({ position, onSelect, onClose }: SlashCommandMe
 
   const isSearching = search.length > 0
 
-  // Filter commands based on search
+  // Filter commands based on search and kit visibility
   const filteredCommands = commands.filter(
-    (cmd) =>
-      cmd.label.toLowerCase().includes(search.toLowerCase()) ||
-      cmd.description.toLowerCase().includes(search.toLowerCase()) ||
-      cmd.category.toLowerCase().includes(search.toLowerCase())
+    (cmd) => {
+      if (cmd.category === 'Kit' && !isKitPage) return false
+      return cmd.label.toLowerCase().includes(search.toLowerCase()) ||
+        cmd.description.toLowerCase().includes(search.toLowerCase()) ||
+        cmd.category.toLowerCase().includes(search.toLowerCase())
+    }
   )
 
   // Group by category

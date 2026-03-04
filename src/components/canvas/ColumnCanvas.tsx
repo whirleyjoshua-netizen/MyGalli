@@ -50,11 +50,39 @@ import {
   PollElement,
   TrackerElement,
   KitProfileElement,
+  GameScheduleElement,
+  WorkoutScheduleElement,
+  MealPrepElement,
+  JerseyElement,
+  ExperienceEntryElement,
+  EducationEntryElement,
+  SkillBarElement,
+  CertificationBadgeElement,
+  WeddingTimelineElement,
+  WeddingPartyElement,
+  WeddingRsvpElement,
+  WeddingStatsElement,
+  WeddingRegistryElement,
+  WeddingHashtagsElement,
 } from '@/components/elements'
 import { PublicCommentSection } from '@/components/elements/PublicCommentSection'
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
 import { PublicTrackerElement } from '@/components/elements/PublicTrackerElement'
 import { PublicKitProfileElement } from '@/components/elements/PublicKitProfileElement'
+import { PublicGameScheduleElement } from '@/components/elements/PublicGameScheduleElement'
+import { PublicWorkoutScheduleElement } from '@/components/elements/PublicWorkoutScheduleElement'
+import { PublicMealPrepElement } from '@/components/elements/PublicMealPrepElement'
+import { PublicJerseyElement } from '@/components/elements/PublicJerseyElement'
+import { PublicExperienceEntryElement } from '@/components/elements/PublicExperienceEntryElement'
+import { PublicEducationEntryElement } from '@/components/elements/PublicEducationEntryElement'
+import { PublicSkillBarElement } from '@/components/elements/PublicSkillBarElement'
+import { PublicCertificationBadgeElement } from '@/components/elements/PublicCertificationBadgeElement'
+import { PublicWeddingTimelineElement } from '@/components/elements/PublicWeddingTimelineElement'
+import { PublicWeddingPartyElement } from '@/components/elements/PublicWeddingPartyElement'
+import { PublicWeddingRsvpElement } from '@/components/elements/PublicWeddingRsvpElement'
+import { PublicWeddingStatsElement } from '@/components/elements/PublicWeddingStatsElement'
+import { PublicWeddingRegistryElement } from '@/components/elements/PublicWeddingRegistryElement'
+import { PublicWeddingHashtagsElement } from '@/components/elements/PublicWeddingHashtagsElement'
 
 interface ColumnCanvasProps {
   sections: Section[]
@@ -305,8 +333,17 @@ export function ColumnCanvas({
           <TextElement
             {...commonProps}
             content={element.content || ''}
-            onChange={(content) =>
-              onUpdateElement(sectionId, columnId, element.id, { content })
+            fontFamily={element.fontFamily}
+            fontSize={element.fontSize}
+            fontWeight={element.fontWeight}
+            fontStyle={element.fontStyle}
+            textAlign={element.textAlign}
+            textColor={element.textColor}
+            letterSpacing={element.letterSpacing}
+            lineHeight={element.lineHeight}
+            textTransform={element.textTransform}
+            onChange={(updates) =>
+              onUpdateElement(sectionId, columnId, element.id, updates)
             }
           />
         )
@@ -317,8 +354,17 @@ export function ColumnCanvas({
             {...commonProps}
             content={element.content || ''}
             level={element.level || 2}
-            onChange={(content) =>
-              onUpdateElement(sectionId, columnId, element.id, { content })
+            fontFamily={element.fontFamily}
+            fontSize={element.fontSize}
+            fontWeight={element.fontWeight}
+            fontStyle={element.fontStyle}
+            textAlign={element.textAlign}
+            textColor={element.textColor}
+            letterSpacing={element.letterSpacing}
+            lineHeight={element.lineHeight}
+            textTransform={element.textTransform}
+            onChange={(updates) =>
+              onUpdateElement(sectionId, columnId, element.id, updates)
             }
           />
         )
@@ -380,11 +426,30 @@ export function ColumnCanvas({
             listType={element.listType || 'bulleted'}
             title={element.listTitle || ''}
             columns={element.listColumns || 1}
+            fontFamily={element.fontFamily}
+            fontSize={element.fontSize}
+            fontWeight={element.fontWeight}
+            fontStyle={element.fontStyle}
+            textAlign={element.textAlign}
+            textColor={element.textColor}
+            letterSpacing={element.letterSpacing}
+            lineHeight={element.lineHeight}
+            textTransform={element.textTransform}
             onChange={(updates) => {
               const mapped: Record<string, any> = {}
               if (updates.items !== undefined) mapped.items = updates.items
               if (updates.title !== undefined) mapped.listTitle = updates.title
               if (updates.columns !== undefined) mapped.listColumns = updates.columns
+              // Forward text style fields directly
+              if (updates.fontFamily !== undefined) mapped.fontFamily = updates.fontFamily
+              if (updates.fontSize !== undefined) mapped.fontSize = updates.fontSize
+              if (updates.fontWeight !== undefined) mapped.fontWeight = updates.fontWeight
+              if (updates.fontStyle !== undefined) mapped.fontStyle = updates.fontStyle
+              if (updates.textAlign !== undefined) mapped.textAlign = updates.textAlign
+              if (updates.textColor !== undefined) mapped.textColor = updates.textColor
+              if (updates.letterSpacing !== undefined) mapped.letterSpacing = updates.letterSpacing
+              if (updates.lineHeight !== undefined) mapped.lineHeight = updates.lineHeight
+              if (updates.textTransform !== undefined) mapped.textTransform = updates.textTransform
               onUpdateElement(sectionId, columnId, element.id, mapped)
             }}
           />
@@ -396,12 +461,31 @@ export function ColumnCanvas({
             {...commonProps}
             text={element.quoteText || ''}
             author={element.quoteAuthor || ''}
-            onChange={(updates) =>
-              onUpdateElement(sectionId, columnId, element.id, {
-                quoteText: updates.text,
-                quoteAuthor: updates.author,
-              })
-            }
+            fontFamily={element.fontFamily}
+            fontSize={element.fontSize}
+            fontWeight={element.fontWeight}
+            fontStyle={element.fontStyle}
+            textAlign={element.textAlign}
+            textColor={element.textColor}
+            letterSpacing={element.letterSpacing}
+            lineHeight={element.lineHeight}
+            textTransform={element.textTransform}
+            onChange={(updates) => {
+              const mapped: Record<string, any> = {}
+              if (updates.text !== undefined) mapped.quoteText = updates.text
+              if (updates.author !== undefined) mapped.quoteAuthor = updates.author
+              // Forward text style fields directly
+              if (updates.fontFamily !== undefined) mapped.fontFamily = updates.fontFamily
+              if (updates.fontSize !== undefined) mapped.fontSize = updates.fontSize
+              if (updates.fontWeight !== undefined) mapped.fontWeight = updates.fontWeight
+              if (updates.fontStyle !== undefined) mapped.fontStyle = updates.fontStyle
+              if (updates.textAlign !== undefined) mapped.textAlign = updates.textAlign
+              if (updates.textColor !== undefined) mapped.textColor = updates.textColor
+              if (updates.letterSpacing !== undefined) mapped.letterSpacing = updates.letterSpacing
+              if (updates.lineHeight !== undefined) mapped.lineHeight = updates.lineHeight
+              if (updates.textTransform !== undefined) mapped.textTransform = updates.textTransform
+              onUpdateElement(sectionId, columnId, element.id, mapped)
+            }}
           />
         )
 
@@ -452,13 +536,32 @@ export function ColumnCanvas({
             type={element.calloutType || 'info'}
             title={element.calloutTitle || ''}
             content={element.calloutContent || ''}
-            onChange={(updates) =>
-              onUpdateElement(sectionId, columnId, element.id, {
-                calloutType: updates.type,
-                calloutTitle: updates.title,
-                calloutContent: updates.content,
-              })
-            }
+            fontFamily={element.fontFamily}
+            fontSize={element.fontSize}
+            fontWeight={element.fontWeight}
+            fontStyle={element.fontStyle}
+            textAlign={element.textAlign}
+            textColor={element.textColor}
+            letterSpacing={element.letterSpacing}
+            lineHeight={element.lineHeight}
+            textTransform={element.textTransform}
+            onChange={(updates) => {
+              const mapped: Record<string, any> = {}
+              if (updates.type !== undefined) mapped.calloutType = updates.type
+              if (updates.title !== undefined) mapped.calloutTitle = updates.title
+              if (updates.content !== undefined) mapped.calloutContent = updates.content
+              // Forward text style fields directly
+              if (updates.fontFamily !== undefined) mapped.fontFamily = updates.fontFamily
+              if (updates.fontSize !== undefined) mapped.fontSize = updates.fontSize
+              if (updates.fontWeight !== undefined) mapped.fontWeight = updates.fontWeight
+              if (updates.fontStyle !== undefined) mapped.fontStyle = updates.fontStyle
+              if (updates.textAlign !== undefined) mapped.textAlign = updates.textAlign
+              if (updates.textColor !== undefined) mapped.textColor = updates.textColor
+              if (updates.letterSpacing !== undefined) mapped.letterSpacing = updates.letterSpacing
+              if (updates.lineHeight !== undefined) mapped.lineHeight = updates.lineHeight
+              if (updates.textTransform !== undefined) mapped.textTransform = updates.textTransform
+              onUpdateElement(sectionId, columnId, element.id, mapped)
+            }}
           />
         )
 
@@ -466,16 +569,16 @@ export function ColumnCanvas({
         return (
           <ToggleElement
             {...commonProps}
-            title={element.toggleTitle || 'Click to expand'}
-            content={element.toggleContent || ''}
-            isOpen={element.toggleOpen || false}
-            onChange={(updates) =>
-              onUpdateElement(sectionId, columnId, element.id, {
-                toggleTitle: updates.title,
-                toggleContent: updates.content,
-                toggleOpen: updates.isOpen,
-              })
-            }
+            title={element.toggleTitle ?? 'Click to expand'}
+            content={element.toggleContent ?? ''}
+            isOpen={element.toggleOpen ?? false}
+            onChange={(updates) => {
+              const patch: Record<string, unknown> = {}
+              if (updates.title !== undefined) patch.toggleTitle = updates.title
+              if (updates.content !== undefined) patch.toggleContent = updates.content
+              if (updates.isOpen !== undefined) patch.toggleOpen = updates.isOpen
+              onUpdateElement(sectionId, columnId, element.id, patch)
+            }}
           />
         )
 
@@ -483,18 +586,18 @@ export function ColumnCanvas({
         return (
           <MCQElement
             {...commonProps}
-            question={element.mcqQuestion || 'Your question here'}
-            options={element.mcqOptions || ['Option 1', 'Option 2', 'Option 3']}
-            allowMultiple={element.mcqAllowMultiple || false}
-            required={element.mcqRequired || false}
-            onChange={(updates) =>
-              onUpdateElement(sectionId, columnId, element.id, {
-                mcqQuestion: updates.question,
-                mcqOptions: updates.options,
-                mcqAllowMultiple: updates.allowMultiple,
-                mcqRequired: updates.required,
-              })
-            }
+            question={element.mcqQuestion ?? 'Your question here'}
+            options={element.mcqOptions ?? ['Option 1', 'Option 2', 'Option 3']}
+            allowMultiple={element.mcqAllowMultiple ?? false}
+            required={element.mcqRequired ?? false}
+            onChange={(updates) => {
+              const patch: Record<string, unknown> = {}
+              if (updates.question !== undefined) patch.mcqQuestion = updates.question
+              if (updates.options !== undefined) patch.mcqOptions = updates.options
+              if (updates.allowMultiple !== undefined) patch.mcqAllowMultiple = updates.allowMultiple
+              if (updates.required !== undefined) patch.mcqRequired = updates.required
+              onUpdateElement(sectionId, columnId, element.id, patch)
+            }}
           />
         )
 
@@ -502,18 +605,18 @@ export function ColumnCanvas({
         return (
           <RatingElement
             {...commonProps}
-            question={element.ratingQuestion || 'How would you rate this?'}
-            max={element.ratingMax || 5}
-            style={element.ratingStyle || 'stars'}
-            required={element.ratingRequired || false}
-            onChange={(updates) =>
-              onUpdateElement(sectionId, columnId, element.id, {
-                ratingQuestion: updates.question,
-                ratingMax: updates.max,
-                ratingStyle: updates.style,
-                ratingRequired: updates.required,
-              })
-            }
+            question={element.ratingQuestion ?? 'How would you rate this?'}
+            max={element.ratingMax ?? 5}
+            style={element.ratingStyle ?? 'stars'}
+            required={element.ratingRequired ?? false}
+            onChange={(updates) => {
+              const patch: Record<string, unknown> = {}
+              if (updates.question !== undefined) patch.ratingQuestion = updates.question
+              if (updates.max !== undefined) patch.ratingMax = updates.max
+              if (updates.style !== undefined) patch.ratingStyle = updates.style
+              if (updates.required !== undefined) patch.ratingRequired = updates.required
+              onUpdateElement(sectionId, columnId, element.id, patch)
+            }}
           />
         )
 
@@ -521,18 +624,18 @@ export function ColumnCanvas({
         return (
           <ShortAnswerElement
             {...commonProps}
-            question={element.shortAnswerQuestion || 'Your question here'}
-            placeholder={element.shortAnswerPlaceholder || 'Type your answer...'}
-            required={element.shortAnswerRequired || false}
-            maxLength={element.shortAnswerMaxLength || 500}
-            onChange={(updates) =>
-              onUpdateElement(sectionId, columnId, element.id, {
-                shortAnswerQuestion: updates.question,
-                shortAnswerPlaceholder: updates.placeholder,
-                shortAnswerRequired: updates.required,
-                shortAnswerMaxLength: updates.maxLength,
-              })
-            }
+            question={element.shortAnswerQuestion ?? 'Your question here'}
+            placeholder={element.shortAnswerPlaceholder ?? 'Type your answer...'}
+            required={element.shortAnswerRequired ?? false}
+            maxLength={element.shortAnswerMaxLength ?? 500}
+            onChange={(updates) => {
+              const patch: Record<string, unknown> = {}
+              if (updates.question !== undefined) patch.shortAnswerQuestion = updates.question
+              if (updates.placeholder !== undefined) patch.shortAnswerPlaceholder = updates.placeholder
+              if (updates.required !== undefined) patch.shortAnswerRequired = updates.required
+              if (updates.maxLength !== undefined) patch.shortAnswerMaxLength = updates.maxLength
+              onUpdateElement(sectionId, columnId, element.id, patch)
+            }}
           />
         )
 
@@ -630,6 +733,202 @@ export function ColumnCanvas({
         }
         return (
           <KitProfileElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'game-schedule':
+        if (isPreviewMode) {
+          return <PublicGameScheduleElement element={element} />
+        }
+        return (
+          <GameScheduleElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'workout-schedule':
+        if (isPreviewMode) {
+          return <PublicWorkoutScheduleElement element={element} />
+        }
+        return (
+          <WorkoutScheduleElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'meal-prep':
+        if (isPreviewMode) {
+          return <PublicMealPrepElement element={element} />
+        }
+        return (
+          <MealPrepElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'jersey':
+        if (isPreviewMode && displayId) {
+          return <PublicJerseyElement element={element} displayId={displayId} />
+        }
+        return (
+          <JerseyElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'experience-entry':
+        if (isPreviewMode) {
+          return <PublicExperienceEntryElement element={element} />
+        }
+        return (
+          <ExperienceEntryElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'education-entry':
+        if (isPreviewMode) {
+          return <PublicEducationEntryElement element={element} />
+        }
+        return (
+          <EducationEntryElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'skill-bar':
+        if (isPreviewMode) {
+          return <PublicSkillBarElement element={element} />
+        }
+        return (
+          <SkillBarElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'certification-badge':
+        if (isPreviewMode) {
+          return <PublicCertificationBadgeElement element={element} />
+        }
+        return (
+          <CertificationBadgeElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'wedding-timeline':
+        if (isPreviewMode) {
+          return <PublicWeddingTimelineElement element={element} />
+        }
+        return (
+          <WeddingTimelineElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'wedding-party':
+        if (isPreviewMode) {
+          return <PublicWeddingPartyElement element={element} />
+        }
+        return (
+          <WeddingPartyElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'wedding-rsvp':
+        if (isPreviewMode && displayId) {
+          return <PublicWeddingRsvpElement element={element} displayId={displayId} />
+        }
+        return (
+          <WeddingRsvpElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'wedding-stats':
+        if (isPreviewMode) {
+          return <PublicWeddingStatsElement element={element} />
+        }
+        return (
+          <WeddingStatsElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'wedding-registry':
+        if (isPreviewMode) {
+          return <PublicWeddingRegistryElement element={element} />
+        }
+        return (
+          <WeddingRegistryElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'wedding-hashtags':
+        if (isPreviewMode) {
+          return <PublicWeddingHashtagsElement element={element} />
+        }
+        return (
+          <WeddingHashtagsElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}

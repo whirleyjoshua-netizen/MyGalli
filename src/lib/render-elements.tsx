@@ -1,5 +1,6 @@
 import type { Column, CanvasElement, ColumnSettings } from '@/lib/types/canvas'
-import { DEFAULT_COLUMN_SETTINGS } from '@/lib/types/canvas'
+import { DEFAULT_COLUMN_SETTINGS, getTextStyles } from '@/lib/types/canvas'
+import { sanitizeHtml } from '@/lib/sanitize'
 import { TrendingUp, TrendingDown, Minus, Info, AlertTriangle, CheckCircle, XCircle, ChevronRight } from 'lucide-react'
 import { PublicChartElement } from '@/components/elements/PublicChartElement'
 import { PublicCardElement } from '@/components/elements/PublicCardElement'
@@ -11,6 +12,20 @@ import { PublicRatingElement } from '@/components/elements/PublicRatingElement'
 import { PublicShortAnswerElement } from '@/components/elements/PublicShortAnswerElement'
 import { PublicTrackerElement } from '@/components/elements/PublicTrackerElement'
 import { PublicKitProfileElement } from '@/components/elements/PublicKitProfileElement'
+import { PublicGameScheduleElement } from '@/components/elements/PublicGameScheduleElement'
+import { PublicWorkoutScheduleElement } from '@/components/elements/PublicWorkoutScheduleElement'
+import { PublicMealPrepElement } from '@/components/elements/PublicMealPrepElement'
+import { PublicJerseyElement } from '@/components/elements/PublicJerseyElement'
+import { PublicExperienceEntryElement } from '@/components/elements/PublicExperienceEntryElement'
+import { PublicEducationEntryElement } from '@/components/elements/PublicEducationEntryElement'
+import { PublicSkillBarElement } from '@/components/elements/PublicSkillBarElement'
+import { PublicCertificationBadgeElement } from '@/components/elements/PublicCertificationBadgeElement'
+import { PublicWeddingTimelineElement } from '@/components/elements/PublicWeddingTimelineElement'
+import { PublicWeddingPartyElement } from '@/components/elements/PublicWeddingPartyElement'
+import { PublicWeddingRsvpElement } from '@/components/elements/PublicWeddingRsvpElement'
+import { PublicWeddingStatsElement } from '@/components/elements/PublicWeddingStatsElement'
+import { PublicWeddingRegistryElement } from '@/components/elements/PublicWeddingRegistryElement'
+import { PublicWeddingHashtagsElement } from '@/components/elements/PublicWeddingHashtagsElement'
 
 export function getGridClass(layout: string): string {
   switch (layout) {
@@ -56,23 +71,27 @@ export function renderElement(element: CanvasElement, displayId?: string) {
       return (
         <div
           className="prose prose-lg max-w-none"
-          dangerouslySetInnerHTML={{ __html: element.content || '' }}
+          style={getTextStyles(element)}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(element.content || '') }}
         />
       )
 
     case 'heading': {
       const level = element.level || 2
-      const sizeClass =
+      const sizeClass = element.fontSize ? '' : (
         level === 1 ? 'text-4xl' :
         level === 2 ? 'text-3xl' :
         level === 3 ? 'text-2xl' :
         level === 4 ? 'text-xl' :
         level === 5 ? 'text-lg' :
         'text-base'
+      )
+      const weightClass = element.fontWeight ? '' : 'font-bold'
       return (
         <div
-          className={`${sizeClass} font-bold`}
-          dangerouslySetInnerHTML={{ __html: element.content || '' }}
+          className={`${sizeClass} ${weightClass}`}
+          style={getTextStyles(element)}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(element.content || '') }}
         />
       )
     }
@@ -208,12 +227,13 @@ export function renderElement(element: CanvasElement, displayId?: string) {
         cols === 3 ? 'columns-3 gap-x-6' :
         cols === 2 ? 'columns-2 gap-x-6' :
         ''
+      const listStyles = getTextStyles(element)
       return (
         <div>
           {element.listTitle && (
-            <div className="font-semibold text-lg mb-2">{element.listTitle}</div>
+            <div className="font-semibold text-lg mb-2" style={listStyles}>{element.listTitle}</div>
           )}
-          <ListTag className={`${listClass} ml-6 space-y-1 ${columnClass}`}>
+          <ListTag className={`${listClass} ml-6 space-y-1 ${columnClass}`} style={listStyles}>
             {(element.items || []).map((item, i) => (
               <li key={i} className="break-inside-avoid">{item}</li>
             ))}
@@ -222,17 +242,20 @@ export function renderElement(element: CanvasElement, displayId?: string) {
       )
     }
 
-    case 'quote':
+    case 'quote': {
+      const quoteStyles = getTextStyles(element)
+      if (!element.fontStyle) quoteStyles.fontStyle = 'italic'
       return (
         <blockquote className="border-l-4 border-primary/50 pl-4 py-2">
-          <p className="text-lg italic">{element.quoteText}</p>
+          <p className="text-lg" style={quoteStyles}>{element.quoteText}</p>
           {element.quoteAuthor && (
-            <footer className="mt-2 text-sm opacity-70">
+            <footer className="mt-2 text-sm opacity-70" style={element.fontFamily ? { fontFamily: `"${element.fontFamily}", sans-serif` } : undefined}>
               — {element.quoteAuthor}
             </footer>
           )}
         </blockquote>
       )
+    }
 
     case 'kpi': {
       const kpiGradients: Record<string, { gradient: string; text: string; dot: string; border: string }> = {
@@ -318,15 +341,16 @@ export function renderElement(element: CanvasElement, displayId?: string) {
       const calloutStyle = calloutStyles[calloutType] || calloutStyles.info
       const CalloutIcon = calloutStyle.icon
 
+      const calloutTextStyles = getTextStyles(element)
       return (
         <div className={`rounded-lg p-4 border ${calloutStyle.bg} ${calloutStyle.border}`}>
           <div className="flex items-start gap-3">
             <CalloutIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
             <div>
               {element.calloutTitle && (
-                <div className="font-medium mb-1">{element.calloutTitle}</div>
+                <div className="font-medium mb-1" style={calloutTextStyles}>{element.calloutTitle}</div>
               )}
-              <div className="text-sm opacity-80">{element.calloutContent}</div>
+              <div className="text-sm opacity-80" style={calloutTextStyles}>{element.calloutContent}</div>
             </div>
           </div>
         </div>
@@ -375,6 +399,48 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'kit-profile':
       return <PublicKitProfileElement element={element} />
+
+    case 'game-schedule':
+      return <PublicGameScheduleElement element={element} />
+
+    case 'workout-schedule':
+      return <PublicWorkoutScheduleElement element={element} />
+
+    case 'meal-prep':
+      return <PublicMealPrepElement element={element} />
+
+    case 'jersey':
+      return <PublicJerseyElement element={element} displayId={displayId || ''} />
+
+    case 'experience-entry':
+      return <PublicExperienceEntryElement element={element} />
+
+    case 'education-entry':
+      return <PublicEducationEntryElement element={element} />
+
+    case 'skill-bar':
+      return <PublicSkillBarElement element={element} />
+
+    case 'certification-badge':
+      return <PublicCertificationBadgeElement element={element} />
+
+    case 'wedding-timeline':
+      return <PublicWeddingTimelineElement element={element} />
+
+    case 'wedding-party':
+      return <PublicWeddingPartyElement element={element} />
+
+    case 'wedding-rsvp':
+      return <PublicWeddingRsvpElement element={element} displayId={displayId || ''} />
+
+    case 'wedding-stats':
+      return <PublicWeddingStatsElement element={element} />
+
+    case 'wedding-registry':
+      return <PublicWeddingRegistryElement element={element} />
+
+    case 'wedding-hashtags':
+      return <PublicWeddingHashtagsElement element={element} />
 
     default:
       return null

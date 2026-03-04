@@ -92,6 +92,21 @@ export const ATHLETE_KIT: KitConfig = {
         { key: 'stat3', label: 'Stat 3', type: 'text', placeholder: 'e.g. 5 ast' },
       ],
     },
+    {
+      id: 'camp-combine',
+      label: 'Camp & Combine',
+      category: 'camp-combine',
+      icon: 'MapPin',
+      color: '#E74C3C',
+      visualization: 'bar',
+      fields: [
+        { key: 'eventName', label: 'Event Name', type: 'text', required: true, placeholder: 'e.g. Nike Football Camp' },
+        { key: 'date', label: 'Date', type: 'date' },
+        { key: 'location', label: 'Location', type: 'text', placeholder: 'e.g. Orlando, FL' },
+        { key: 'eventType', label: 'Type', type: 'select', options: ['Camp', 'Combine', 'Showcase', 'Tryout'] },
+        { key: 'resultNotes', label: 'Result / Notes', type: 'text', placeholder: 'e.g. Received MVP award' },
+      ],
+    },
   ],
   modules: [
     { id: 'profile', label: 'Profile', description: 'Your athlete identity card', icon: 'UserCircle', tabLabel: 'Profile' },

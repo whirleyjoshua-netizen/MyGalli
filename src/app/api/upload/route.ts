@@ -4,9 +4,6 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { verifyAuth } from '@/lib/auth'
 
-// For development: local file storage
-// For production: configure S3_BUCKET, S3_REGION, etc. environment variables
-
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads')
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
@@ -50,35 +47,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if we should use S3 (production)
-    if (process.env.S3_BUCKET) {
-      // TODO: Implement S3/R2 upload
-      // For now, fall through to local storage
+    // Use Vercel Blob in production (when BLOB_READ_WRITE_TOKEN is set)
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const { put } = await import('@vercel/blob')
+      const ext = path.extname(file.name) || getExtensionFromMime(file.type)
+      const blobPath = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`
+
+      const blob = await put(blobPath, file, {
+        access: 'public',
+        contentType: file.type,
+      })
+
+      return NextResponse.json({ url: blob.url, filename: path.basename(blob.url) })
     }
 
     // Local file storage (development)
-    // Ensure upload directory exists
     if (!existsSync(UPLOAD_DIR)) {
       await mkdir(UPLOAD_DIR, { recursive: true })
     }
 
-    // Create user-specific subdirectory
     const userDir = path.join(UPLOAD_DIR, user.id)
     if (!existsSync(userDir)) {
       await mkdir(userDir, { recursive: true })
     }
 
-    // Generate unique filename
     const ext = path.extname(file.name) || getExtensionFromMime(file.type)
     const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`
     const filepath = path.join(userDir, filename)
 
-    // Write file
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
     await writeFile(filepath, buffer)
 
-    // Return the URL to access the file
     const url = `/api/upload/${user.id}/${filename}`
 
     return NextResponse.json({ url, filename })

@@ -3,6 +3,7 @@
 import { UserCircle, ExternalLink, Mail, Phone, MapPin, GraduationCap, Trophy, Target } from 'lucide-react'
 import { getKit } from '@/lib/kits/registry'
 import '@/lib/kits/athlete-kit'
+import '@/lib/kits/resume-kit'
 
 interface PublicKitProfileElementProps {
   element: {
@@ -22,6 +23,11 @@ export function PublicKitProfileElement({ element }: PublicKitProfileElementProp
   // For athlete kit, render a purpose-built card
   if (kit.id === 'athlete') {
     return <AthleteProfileCard data={data} />
+  }
+
+  // For resume kit, render a professional profile card
+  if (kit.id === 'resume') {
+    return <ResumeProfileCard data={data} />
   }
 
   // Generic fallback: render grouped fields
@@ -55,6 +61,105 @@ export function PublicKitProfileElement({ element }: PublicKitProfileElementProp
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function ResumeProfileCard({ data }: { data: Record<string, any> }) {
+  const hasContact = data.email || data.phone || data.website
+  const hasLinks = data.linkedinUrl || data.githubUrl || data.portfolioUrl || data.twitterUrl
+
+  return (
+    <div className="rounded-xl border border-border/50 overflow-hidden bg-white">
+      {/* Top bar - violet gradient */}
+      <div className="h-1.5 bg-gradient-to-r from-[#6C63FF] via-[#8B83FF] to-[#1FB6FF]" />
+
+      <div className="p-5 space-y-4">
+        {/* Headline & Location */}
+        {(data.headline || data.location) && (
+          <div>
+            {data.headline && (
+              <div className="text-lg font-semibold text-foreground">{data.headline}</div>
+            )}
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
+              {data.location && (
+                <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {data.location}
+                </span>
+              )}
+              {data.yearsExperience && (
+                <span className="px-2.5 py-0.5 bg-violet-100 text-violet-700 rounded-full text-xs font-medium">
+                  {data.yearsExperience} years experience
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Summary */}
+        {data.summary && (
+          <p className="text-sm text-muted-foreground leading-relaxed">{data.summary}</p>
+        )}
+
+        {/* Contact info */}
+        {hasContact && (
+          <div className="flex flex-wrap gap-3 text-sm">
+            {data.email && (
+              <a href={`mailto:${data.email}`} className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                <Mail className="w-3.5 h-3.5" />
+                {data.email}
+              </a>
+            )}
+            {data.phone && (
+              <a href={`tel:${data.phone}`} className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                <Phone className="w-3.5 h-3.5" />
+                {data.phone}
+              </a>
+            )}
+            {data.website && (
+              <a href={data.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                <ExternalLink className="w-3.5 h-3.5" />
+                Website
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Link buttons */}
+        {hasLinks && (
+          <div className="flex flex-wrap gap-2">
+            {data.linkedinUrl && (
+              <a href={data.linkedinUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-lg text-sm hover:bg-muted/80 transition">
+                <ExternalLink className="w-3.5 h-3.5" />
+                LinkedIn
+              </a>
+            )}
+            {data.githubUrl && (
+              <a href={data.githubUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-lg text-sm hover:bg-muted/80 transition">
+                <ExternalLink className="w-3.5 h-3.5" />
+                GitHub
+              </a>
+            )}
+            {data.portfolioUrl && (
+              <a href={data.portfolioUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-lg text-sm hover:bg-muted/80 transition">
+                <ExternalLink className="w-3.5 h-3.5" />
+                Portfolio
+              </a>
+            )}
+            {data.twitterUrl && (
+              <a href={data.twitterUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-lg text-sm hover:bg-muted/80 transition">
+                <ExternalLink className="w-3.5 h-3.5" />
+                Twitter
+              </a>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { compare } from 'bcryptjs'
 import { sign } from 'jsonwebtoken'
+import { getJwtSecret } from '@/lib/auth'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
+  // 5 login attempts per minute per IP
+  const limited = rateLimit(request, { limit: 5, windowMs: 60_000, prefix: 'login' })
+  if (limited) return limited
+
   try {
     const { email, password } = await request.json()
 
@@ -39,7 +45,7 @@ export async function POST(request: NextRequest) {
     // Generate token
     const token = sign(
       { userId: user.id },
-      process.env.JWT_SECRET || 'fallback-secret',
+      getJwtSecret(),
       { expiresIn: '7d' }
     )
 

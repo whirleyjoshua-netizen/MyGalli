@@ -4,41 +4,51 @@ import { db } from '@/lib/db'
 import { CARD_PROVIDERS } from '@/lib/cards/registry'
 
 export async function GET(request: NextRequest) {
-  const user = await getUser(request)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const user = await getUser(request)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const items = await db.cardLibraryItem.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: 'desc' },
-  })
+    const items = await db.cardLibraryItem.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+    })
 
-  return NextResponse.json(items)
+    return NextResponse.json(items)
+  } catch (error) {
+    console.error('GET /api/card-library error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getUser(request)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const user = await getUser(request)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json()
-  const { provider, name, data, style } = body
+    const body = await request.json()
+    const { provider, name, data, style } = body
 
-  if (!provider || !name) {
-    return NextResponse.json({ error: 'provider and name are required' }, { status: 400 })
+    if (!provider || !name) {
+      return NextResponse.json({ error: 'provider and name are required' }, { status: 400 })
+    }
+
+    if (!CARD_PROVIDERS[provider]) {
+      return NextResponse.json({ error: 'Unknown card provider' }, { status: 400 })
+    }
+
+    const item = await db.cardLibraryItem.create({
+      data: {
+        userId: user.id,
+        provider,
+        name,
+        data: data || CARD_PROVIDERS[provider].defaultData,
+        style: style || 'default',
+      },
+    })
+
+    return NextResponse.json(item, { status: 201 })
+  } catch (error) {
+    console.error('POST /api/card-library error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-
-  if (!CARD_PROVIDERS[provider]) {
-    return NextResponse.json({ error: 'Unknown card provider' }, { status: 400 })
-  }
-
-  const item = await db.cardLibraryItem.create({
-    data: {
-      userId: user.id,
-      provider,
-      name,
-      data: data || CARD_PROVIDERS[provider].defaultData,
-      style: style || 'default',
-    },
-  })
-
-  return NextResponse.json(item, { status: 201 })
 }

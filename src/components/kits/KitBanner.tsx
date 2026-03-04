@@ -1,8 +1,10 @@
 'use client'
 
-import { Trophy } from 'lucide-react'
+import { Trophy, FileText, Heart } from 'lucide-react'
 import { KIT_REGISTRY } from '@/lib/kits/registry'
 import '@/lib/kits/athlete-kit'
+import '@/lib/kits/resume-kit'
+import '@/lib/kits/wedding-kit'
 
 interface KitBannerProps {
   kitId: string
@@ -10,6 +12,8 @@ interface KitBannerProps {
 
 const ICON_MAP: Record<string, typeof Trophy> = {
   Trophy,
+  FileText,
+  Heart,
 }
 
 export function KitBanner({ kitId }: KitBannerProps) {

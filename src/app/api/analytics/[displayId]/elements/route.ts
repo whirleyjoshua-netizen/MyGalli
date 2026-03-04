@@ -4,7 +4,7 @@ import { verifyAuth } from '@/lib/auth'
 import type { Section } from '@/lib/types/canvas'
 import type { TabsConfig } from '@/lib/types/tabs'
 
-const INTERACTIVE_TYPES = ['mcq', 'rating', 'shortanswer', 'poll', 'comment'] as const
+const INTERACTIVE_TYPES = ['mcq', 'rating', 'shortanswer', 'poll', 'comment', 'wedding-rsvp'] as const
 
 interface InteractiveElement {
   id: string
@@ -109,6 +109,7 @@ export async function GET(request: NextRequest, { params }: Props) {
         case 'shortanswer': return aggregateShortAnswer(el, formResponses)
         case 'poll': return aggregatePoll(el, formResponses)
         case 'comment': return aggregateComments(el, allComments)
+        case 'wedding-rsvp': return aggregateWeddingRsvp(el, formResponses)
         default: return null
       }
     }).filter(Boolean)
@@ -283,6 +284,76 @@ function aggregateComments(el: InteractiveElement, comments: any[]) {
       approved: c.approved,
       createdAt: c.createdAt?.toISOString?.() || c.createdAt,
     })),
+    tabLabel: el.tabLabel,
+  }
+}
+
+function aggregateWeddingRsvp(el: InteractiveElement, responses: any[]) {
+  let responseCount = 0
+  let attending = 0
+  let declined = 0
+  let plusOnes = 0
+  const mealDistribution: Record<string, number> = {}
+  const dietaryNotes: string[] = []
+  const songRequests: string[] = []
+  const guests: { name: string; attending: boolean; meal?: string; plusOneName?: string; submittedAt: string }[] = []
+
+  for (const response of responses) {
+    const data = response.responses as Record<string, any>
+    const entry = data[el.id]
+    if (entry && entry.type === 'wedding-rsvp') {
+      responseCount++
+      const answer = entry.answer || {}
+
+      if (answer.attending) {
+        attending++
+      } else {
+        declined++
+      }
+
+      if (answer.plusOneName) {
+        plusOnes++
+      }
+
+      if (answer.meal) {
+        mealDistribution[answer.meal] = (mealDistribution[answer.meal] || 0) + 1
+      }
+
+      if (answer.dietary) {
+        dietaryNotes.push(answer.dietary)
+      }
+
+      if (answer.songRequest) {
+        songRequests.push(answer.songRequest)
+      }
+
+      guests.push({
+        name: answer.name || 'Anonymous',
+        attending: !!answer.attending,
+        meal: answer.meal,
+        plusOneName: answer.plusOneName,
+        submittedAt: response.submittedAt?.toISOString?.() || response.submittedAt,
+      })
+    }
+  }
+
+  return {
+    elementId: el.id,
+    type: 'wedding-rsvp',
+    title: el.config.weddingRsvpTitle || 'RSVP',
+    responseCount,
+    attending,
+    declined,
+    plusOnes,
+    totalHeadcount: attending + plusOnes,
+    mealDistribution: Object.entries(mealDistribution).map(([meal, count]) => ({
+      meal,
+      count,
+      percentage: attending > 0 ? Math.round((count / attending) * 100) : 0,
+    })),
+    dietaryNotes: dietaryNotes.slice(0, 50),
+    songRequests: songRequests.slice(0, 50),
+    guests,
     tabLabel: el.tabLabel,
   }
 }

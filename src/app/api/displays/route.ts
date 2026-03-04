@@ -5,6 +5,8 @@ import { slugify } from '@/lib/utils'
 import { KIT_REGISTRY } from '@/lib/kits/registry'
 import { generateKitDisplay } from '@/lib/kits/generate'
 import '@/lib/kits/athlete-kit'
+import '@/lib/kits/resume-kit'
+import '@/lib/kits/wedding-kit'
 
 // GET /api/displays - List user's displays
 export async function GET(request: NextRequest) {

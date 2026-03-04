@@ -1,16 +1,20 @@
 'use client'
 
-import { useRef, KeyboardEvent } from 'react'
-import { X, Plus, Columns2, Columns3, AlignJustify } from 'lucide-react'
+import { useRef, useEffect, useState, KeyboardEvent } from 'react'
+import { X, Plus, Columns2, Columns3, AlignJustify, Trash2, Settings } from 'lucide-react'
+import { TextStylePanel } from './TextStylePanel'
+import { getTextStyles } from '@/lib/types/canvas'
+import { loadGoogleFont } from '@/lib/fonts'
+import type { TextStyle } from '@/lib/types/canvas'
 
 type ListColumns = 1 | 2 | 3
 
-interface ListElementProps {
+interface ListElementProps extends TextStyle {
   items: string[]
   listType: 'bulleted' | 'numbered'
   title: string
   columns: ListColumns
-  onChange: (updates: { items?: string[]; title?: string; columns?: ListColumns }) => void
+  onChange: (updates: { items?: string[]; title?: string; columns?: ListColumns } & Partial<TextStyle>) => void
   onDelete: () => void
   isSelected: boolean
   onSelect: () => void
@@ -27,12 +31,26 @@ export function ListElement({
   listType,
   title,
   columns,
+  fontFamily,
+  fontSize,
+  fontWeight,
+  fontStyle,
+  textAlign,
+  textColor,
+  letterSpacing,
+  lineHeight,
+  textTransform,
   onChange,
   onDelete,
   isSelected,
   onSelect,
 }: ListElementProps) {
   const itemRefs = useRef<(HTMLInputElement | null)[]>([])
+  const [showSettings, setShowSettings] = useState(false)
+
+  useEffect(() => {
+    if (fontFamily) loadGoogleFont(fontFamily)
+  }, [fontFamily])
 
   const handleItemChange = (index: number, value: string) => {
     const newItems = [...items]
@@ -85,21 +103,25 @@ export function ListElement({
     columns === 2 ? 'columns-2 gap-x-6' :
     ''
 
+  const styleProps = { fontFamily, fontSize, fontWeight, fontStyle, textAlign, textColor, letterSpacing, lineHeight, textTransform }
+  const textStyles = getTextStyles(styleProps)
+
   return (
     <div
       className={`relative group transition-all ${isSelected ? 'ring-2 ring-primary rounded-lg p-2' : ''}`}
       onClick={onSelect}
     >
       {/* Title */}
-      {isSelected || title ? (
+      {(isSelected || title) && (
         <input
           type="text"
           value={title}
           onChange={(e) => onChange({ title: e.target.value })}
           placeholder="List title (optional)"
           className="w-full bg-transparent border-none focus:outline-none focus:ring-0 font-semibold text-lg text-foreground placeholder:text-muted-foreground/50 mb-2"
+          style={textStyles}
         />
-      ) : null}
+      )}
 
       {/* Column layout picker */}
       {isSelected && (
@@ -127,6 +149,7 @@ export function ListElement({
 
       <ListTag
         className={`space-y-1 ${listType === 'numbered' ? 'list-decimal' : 'list-disc'} ml-5 ${columnClass}`}
+        style={textStyles}
       >
         {items.map((item, index) => (
           <li key={index} className="group/item break-inside-avoid">
@@ -172,18 +195,37 @@ export function ListElement({
         </button>
       )}
 
-      {/* Delete Button */}
+      {/* Controls */}
       {isSelected && (
-        <button
-          className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors z-10"
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete()
-          }}
-          type="button"
-        >
-          <X className="w-3 h-3" />
-        </button>
+        <div className="absolute -top-3 right-2 flex items-center gap-1 z-10">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowSettings(!showSettings)
+            }}
+            className="p-1.5 bg-background border border-border rounded-md shadow-sm hover:bg-muted transition"
+          >
+            <Settings className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete()
+            }}
+            className="p-1.5 bg-background border border-border rounded-md shadow-sm hover:bg-destructive hover:text-destructive-foreground transition"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Text Style Panel */}
+      {showSettings && isSelected && (
+        <TextStylePanel
+          {...styleProps}
+          onChange={onChange}
+          onClose={() => setShowSettings(false)}
+        />
       )}
     </div>
   )

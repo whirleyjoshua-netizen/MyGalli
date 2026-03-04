@@ -24,7 +24,6 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useAuthStore } from '@/lib/store'
-import { KitSelector } from '@/components/kits/KitSelector'
 import { BackgroundSettings } from '@/components/canvas/BackgroundSettings'
 import { getBackgroundStyles, DEFAULT_BACKGROUND_CONFIG } from '@/lib/types/background'
 import type { BackgroundConfig } from '@/lib/types/background'
@@ -217,7 +216,6 @@ export default function DashboardPage() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [cardMenuOpen, setCardMenuOpen] = useState<string | null>(null)
   const [bgSettingsOpen, setBgSettingsOpen] = useState(false)
-  const [kitSelectorOpen, setKitSelectorOpen] = useState(false)
   const [dashboardPrefs, setDashboardPrefs] = useState<DashboardPrefs>({})
   const [activeCardId, setActiveCardId] = useState<string | null>(null)
 
@@ -437,13 +435,13 @@ export default function DashboardPage() {
                   <Layers className="w-4 h-4" />
                   Card Studio
                 </Link>
-                <button
-                  onClick={() => setKitSelectorOpen(true)}
+                <Link
+                  href="/new-kit"
                   className="flex items-center gap-2 px-5 py-3 bg-gallio/10 text-gallio-dark border border-gallio/20 rounded-full font-medium hover:bg-gallio/20 hover:shadow-lg hover:shadow-gallio/15 hover:scale-[1.02] transition-all"
                 >
                   <Trophy className="w-4 h-4 text-gallio" />
                   New Kit Page
-                </button>
+                </Link>
                 <button
                   onClick={createDisplay}
                   className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-gallio/25 hover:scale-[1.02] transition-all"
@@ -568,11 +566,6 @@ export default function DashboardPage() {
         onChange={handleBgChange}
       />
 
-      {/* Kit selector modal */}
-      <KitSelector
-        isOpen={kitSelectorOpen}
-        onClose={() => setKitSelectorOpen(false)}
-      />
     </div>
   )
 }

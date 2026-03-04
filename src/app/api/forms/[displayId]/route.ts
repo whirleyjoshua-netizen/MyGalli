@@ -39,8 +39,8 @@ export async function GET(request: NextRequest, { params }: Props) {
 
     // Get query params for pagination
     const url = new URL(request.url)
-    const page = parseInt(url.searchParams.get('page') || '1')
-    const limit = parseInt(url.searchParams.get('limit') || '50')
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1') || 1)
+    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50') || 50))
     const skip = (page - 1) * limit
 
     // Get total count

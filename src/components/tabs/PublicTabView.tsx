@@ -49,7 +49,7 @@ export function PublicTabView({
 
   // Resolve per-tab or fallback header/background
   const activeHeaderCard = activeTab?.headerCard ?? defaultHeaderCard
-  const activeBackground = activeTab?.background ?? defaultBackground
+  const activeBackground = activeTab?.background ?? DEFAULT_BACKGROUND_CONFIG
   const backgroundStyles = getBackgroundStyles(activeBackground)
 
   const alignmentClass =

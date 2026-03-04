@@ -8,6 +8,7 @@ import { TrackerTimeFilter } from '@/components/tracker/TrackerTimeFilter'
 import { getKit } from '@/lib/kits/registry'
 import { computeTrackerSummary, entriesToChartData, getTimeRangeFilter } from '@/lib/kits/tracker-utils'
 import '@/lib/kits/athlete-kit'
+import '@/lib/kits/resume-kit'
 
 interface PublicTrackerElementProps {
   element: {

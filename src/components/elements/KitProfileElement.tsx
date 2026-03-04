@@ -5,6 +5,7 @@ import { UserCircle, Trash2, ExternalLink, Mail, Phone } from 'lucide-react'
 import { getKit } from '@/lib/kits/registry'
 import type { KitProfileField } from '@/lib/kits/registry'
 import '@/lib/kits/athlete-kit'
+import '@/lib/kits/resume-kit'
 
 interface KitProfileElementProps {
   element: {

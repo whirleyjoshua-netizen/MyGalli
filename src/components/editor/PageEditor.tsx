@@ -25,6 +25,7 @@ import type { TabsConfig } from '@/lib/types/tabs'
 import { DEFAULT_TABS_CONFIG, createTab } from '@/lib/types/tabs'
 import type { KitPageConfig } from '@/lib/types/kit'
 import { KitBanner } from '@/components/kits/KitBanner'
+import { loadGoogleFont } from '@/lib/fonts'
 
 interface PageEditorProps {
   pageId?: string
@@ -140,7 +141,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
   const getActiveBackground = useCallback((): BackgroundConfig => {
     if (!tabsConfig.enabled || tabsConfig.tabs.length === 0) return background
     const tab = tabsConfig.tabs.find(t => t.id === activeTabId) || tabsConfig.tabs[0]
-    return tab?.background ?? background
+    return tab?.background ?? DEFAULT_BACKGROUND_CONFIG
   }, [tabsConfig, activeTabId, background])
 
   const setActiveBackground = useCallback((config: BackgroundConfig) => {
@@ -156,6 +157,27 @@ export function PageEditor({ pageId }: PageEditorProps) {
       ),
     }))
   }, [tabsConfig.enabled, tabsConfig.tabs, activeTabId])
+
+  // Load custom fonts used by elements
+  useEffect(() => {
+    const fonts = new Set<string>()
+    const scanSections = (sects: Section[]) => {
+      for (const section of sects) {
+        for (const column of section.columns) {
+          for (const element of column.elements) {
+            if (element.fontFamily) fonts.add(element.fontFamily)
+          }
+        }
+      }
+    }
+    scanSections(sections)
+    if (tabsConfig.enabled) {
+      for (const tab of tabsConfig.tabs) {
+        scanSections(tab.sections)
+      }
+    }
+    fonts.forEach((family) => loadGoogleFont(family))
+  }, [sections, tabsConfig])
 
   // Auto-save every 5 seconds
   useEffect(() => {
@@ -465,6 +487,116 @@ export function PageEditor({ pageId }: PageEditorProps) {
         newElement.kitProfileKitId = ''
         newElement.kitProfileData = {}
         newElement.kitProfileLayout = 'card'
+        break
+      case 'game-schedule':
+        newElement.gameScheduleTitle = 'Game Schedule'
+        newElement.gameScheduleGames = [
+          { date: '', opponent: '', location: '', homeAway: 'Home' as const, time: '' },
+        ]
+        newElement.gameScheduleShowPastGames = true
+        break
+      case 'workout-schedule':
+        newElement.workoutScheduleTitle = 'Weekly Workouts'
+        newElement.workoutScheduleDays = [
+          { day: 'Mon', workouts: [] },
+          { day: 'Tue', workouts: [] },
+          { day: 'Wed', workouts: [] },
+          { day: 'Thu', workouts: [] },
+          { day: 'Fri', workouts: [] },
+          { day: 'Sat', workouts: [] },
+          { day: 'Sun', workouts: [] },
+        ]
+        break
+      case 'meal-prep': {
+        const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        const MEALS = ['Breakfast', 'Lunch', 'Dinner', 'Snacks']
+        newElement.mealPrepTitle = 'Meal Prep'
+        newElement.mealPrepMeals = MEALS.map(mealType => ({
+          mealType,
+          days: DAYS.map(day => ({ day, name: '', notes: '', macros: '' })),
+        }))
+        newElement.mealPrepShowMacros = false
+        break
+      }
+      case 'jersey':
+        newElement.jerseyNumber = '1'
+        newElement.jerseyName = 'PLAYER'
+        newElement.jerseyPrimaryColor = '#39D98A'
+        newElement.jerseySecondaryColor = '#0F3D2E'
+        newElement.jerseyStyle = 'classic'
+        newElement.jerseySignaturesEnabled = true
+        break
+      case 'experience-entry':
+        newElement.expCompany = ''
+        newElement.expTitle = ''
+        newElement.expLocation = ''
+        newElement.expStartDate = ''
+        newElement.expEndDate = ''
+        newElement.expCurrent = false
+        newElement.expDescription = ''
+        break
+      case 'education-entry':
+        newElement.eduInstitution = ''
+        newElement.eduDegree = ''
+        newElement.eduField = ''
+        newElement.eduGpa = ''
+        newElement.eduStartDate = ''
+        newElement.eduEndDate = ''
+        newElement.eduHonors = ''
+        newElement.eduDescription = ''
+        break
+      case 'skill-bar':
+        newElement.skillName = ''
+        newElement.skillProficiency = 75
+        newElement.skillCategory = ''
+        break
+      case 'certification-badge':
+        newElement.certName = ''
+        newElement.certIssuer = ''
+        newElement.certDateObtained = ''
+        newElement.certExpirationDate = ''
+        newElement.certCredentialId = ''
+        newElement.certCredentialUrl = ''
+        break
+      case 'wedding-timeline':
+        newElement.weddingTimelineTitle = 'Our Wedding Day'
+        newElement.weddingTimelineEvents = [
+          { time: '4:00 PM', title: 'Ceremony', description: 'Exchange of vows', icon: 'Church' },
+          { time: '4:45 PM', title: 'Cocktail Hour', description: 'Drinks & appetizers', icon: 'Wine' },
+          { time: '6:00 PM', title: 'Reception', description: 'Dinner & toasts', icon: 'UtensilsCrossed' },
+          { time: '7:30 PM', title: 'First Dance', description: 'Hit the dance floor', icon: 'Music' },
+          { time: '10:00 PM', title: 'Send Off', description: 'Farewell celebration', icon: 'Sparkles' },
+        ]
+        break
+      case 'wedding-party':
+        newElement.weddingPartyTitle = 'Wedding Party'
+        newElement.weddingPartyMembers = []
+        break
+      case 'wedding-rsvp':
+        newElement.weddingRsvpTitle = 'RSVP'
+        newElement.weddingRsvpDeadline = ''
+        newElement.weddingRsvpFields = {
+          attending: true,
+          plusOne: true,
+          mealOptions: ['Chicken', 'Beef', 'Fish', 'Vegetarian'],
+          dietaryField: true,
+          songRequest: true,
+        }
+        break
+      case 'wedding-stats':
+        newElement.weddingStatsItems = [
+          { label: 'Days Together', value: '544', icon: 'Heart' },
+          { label: 'Cakes Tasted', value: '7', icon: 'Cake' },
+          { label: 'Venues Visited', value: '12', icon: 'MapPin' },
+          { label: 'Days Until "I Do"', value: '30', icon: 'Calendar' },
+        ]
+        break
+      case 'wedding-registry':
+        newElement.weddingRegistryTitle = 'Our Registry'
+        newElement.weddingRegistryItems = []
+        break
+      case 'wedding-hashtags':
+        newElement.weddingHashtags = ['#ForeverUs', '#OurBigDay']
         break
     }
 
@@ -838,6 +970,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
           position={slashMenuPosition}
           onSelect={handleCommandSelect}
           onClose={() => setShowSlashMenu(false)}
+          isKitPage={!!kitConfig}
         />
       )}
 

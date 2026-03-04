@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { verifyAuth } from '@/lib/auth'
+import { rateLimit } from '@/lib/rate-limit'
 
 // GET /api/displays/[id]/comments — public, no auth needed
 export async function GET(
@@ -30,6 +31,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const limited = rateLimit(request, { limit: 10, windowMs: 60_000, prefix: 'comment' })
+  if (limited) return limited
+
   const { id } = await params
   try {
     const body = await request.json()

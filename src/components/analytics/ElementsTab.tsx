@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/lib/store'
 import { Inbox } from 'lucide-react'
-import { MCQCard, RatingCard, ShortAnswerCard, PollCard, CommentCard } from './element-cards'
+import { MCQCard, RatingCard, ShortAnswerCard, PollCard, CommentCard, WeddingRsvpCard } from './element-cards'
 
 interface ElementsTabProps {
   displayId: string | null
@@ -58,7 +58,7 @@ export function ElementsTab({ displayId }: ElementsTabProps) {
         <Inbox className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
         <h2 className="text-lg font-medium mb-2">No interactive elements</h2>
         <p className="text-muted-foreground">
-          Add MCQ, Rating, Poll, Comment, or Short Answer elements to your page to see responses here.
+          Add MCQ, Rating, Poll, Comment, Short Answer, or Wedding RSVP elements to your page to see responses here.
         </p>
       </div>
     )
@@ -84,6 +84,8 @@ export function ElementsTab({ displayId }: ElementsTabProps) {
             return <PollCard key={element.elementId} data={element} />
           case 'comment':
             return <CommentCard key={element.elementId} data={element} displayId={displayId} />
+          case 'wedding-rsvp':
+            return <WeddingRsvpCard key={element.elementId} data={element} />
           default:
             return null
         }

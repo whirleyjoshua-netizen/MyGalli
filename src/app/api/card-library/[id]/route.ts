@@ -6,42 +6,52 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const user = await getUser(request)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const user = await getUser(request)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const item = await db.cardLibraryItem.findUnique({ where: { id: params.id } })
-  if (!item || item.userId !== user.id) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    const item = await db.cardLibraryItem.findUnique({ where: { id: params.id } })
+    if (!item || item.userId !== user.id) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+
+    const body = await request.json()
+    const { name, data, style } = body
+
+    const updated = await db.cardLibraryItem.update({
+      where: { id: params.id },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(data !== undefined && { data }),
+        ...(style !== undefined && { style }),
+      },
+    })
+
+    return NextResponse.json(updated)
+  } catch (error) {
+    console.error('PATCH /api/card-library/[id] error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-
-  const body = await request.json()
-  const { name, data, style } = body
-
-  const updated = await db.cardLibraryItem.update({
-    where: { id: params.id },
-    data: {
-      ...(name !== undefined && { name }),
-      ...(data !== undefined && { data }),
-      ...(style !== undefined && { style }),
-    },
-  })
-
-  return NextResponse.json(updated)
 }
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const user = await getUser(request)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const user = await getUser(request)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const item = await db.cardLibraryItem.findUnique({ where: { id: params.id } })
-  if (!item || item.userId !== user.id) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    const item = await db.cardLibraryItem.findUnique({ where: { id: params.id } })
+    if (!item || item.userId !== user.id) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+
+    await db.cardLibraryItem.delete({ where: { id: params.id } })
+
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('DELETE /api/card-library/[id] error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-
-  await db.cardLibraryItem.delete({ where: { id: params.id } })
-
-  return NextResponse.json({ ok: true })
 }

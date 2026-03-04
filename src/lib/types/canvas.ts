@@ -1,4 +1,33 @@
 // Canvas Types - Section/Column/Element Architecture
+import type { CSSProperties } from 'react'
+
+// Text styling (applicable to text, heading, quote, callout, list)
+export interface TextStyle {
+  fontFamily?: string
+  fontSize?: number
+  fontWeight?: number
+  fontStyle?: 'normal' | 'italic'
+  textAlign?: 'left' | 'center' | 'right' | 'justify'
+  textColor?: string
+  letterSpacing?: number
+  lineHeight?: number
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'
+}
+
+// Convert text style fields to React inline styles
+export function getTextStyles(element: Partial<TextStyle>): CSSProperties {
+  const styles: CSSProperties = {}
+  if (element.fontFamily) styles.fontFamily = `"${element.fontFamily}", sans-serif`
+  if (element.fontSize) styles.fontSize = `${element.fontSize}px`
+  if (element.fontWeight) styles.fontWeight = element.fontWeight
+  if (element.fontStyle) styles.fontStyle = element.fontStyle
+  if (element.textAlign) styles.textAlign = element.textAlign
+  if (element.textColor) styles.color = element.textColor
+  if (element.letterSpacing != null) styles.letterSpacing = `${element.letterSpacing}em`
+  if (element.lineHeight != null) styles.lineHeight = element.lineHeight
+  if (element.textTransform) styles.textTransform = element.textTransform
+  return styles
+}
 
 // Layout modes for sections
 export type LayoutMode = 'full-width' | 'two-column' | 'three-column'
@@ -33,6 +62,22 @@ export type ElementType =
   // Kit elements
   | 'tracker'      // Time-series tracker (speed, lifts, metrics, stats)
   | 'kit-profile'  // Structured profile card for kit pages
+  | 'game-schedule'  // Upcoming games table
+  | 'workout-schedule'  // Weekly workout planner grid
+  | 'meal-prep'    // Weekly meal planner grid
+  | 'jersey'       // Interactive jersey card with signatures
+  // Resume Kit elements
+  | 'experience-entry'      // Job/role card
+  | 'education-entry'       // School/degree card
+  | 'skill-bar'             // Skill proficiency bar
+  | 'certification-badge'   // Certification card
+  // Wedding Kit elements
+  | 'wedding-timeline'      // Visual event timeline
+  | 'wedding-party'         // Wedding party roster
+  | 'wedding-rsvp'          // Interactive RSVP form
+  | 'wedding-stats'         // Fun stat counters
+  | 'wedding-registry'      // Gift registry links
+  | 'wedding-hashtags'      // Social media hashtags
 
 // Base element interface
 export interface CanvasElement {
@@ -146,6 +191,118 @@ export interface CanvasElement {
   kitProfileKitId?: string
   kitProfileData?: Record<string, any>
   kitProfileLayout?: 'card' | 'full'
+  // Game Schedule specific
+  gameScheduleTitle?: string
+  gameScheduleGames?: {
+    date: string
+    opponent: string
+    location: string
+    homeAway: 'Home' | 'Away' | 'Neutral'
+    time: string
+    result?: string
+  }[]
+  gameScheduleShowPastGames?: boolean
+  // Workout Schedule specific
+  workoutScheduleTitle?: string
+  workoutScheduleDays?: {
+    day: string
+    workouts: { name: string; setsReps?: string; notes?: string }[]
+  }[]
+  // Meal Prep specific
+  mealPrepTitle?: string
+  mealPrepMeals?: {
+    mealType: string
+    days: { day: string; name: string; notes?: string; macros?: string }[]
+  }[]
+  mealPrepShowMacros?: boolean
+  // Jersey specific
+  jerseyNumber?: string
+  jerseyName?: string
+  jerseyPrimaryColor?: string
+  jerseySecondaryColor?: string
+  jerseyStyle?: 'classic' | 'modern' | 'retro'
+  jerseySignaturesEnabled?: boolean
+  // Experience Entry specific
+  expCompany?: string
+  expTitle?: string
+  expLocation?: string
+  expStartDate?: string
+  expEndDate?: string
+  expCurrent?: boolean
+  expDescription?: string
+  expCompanyLogo?: string
+  // Education Entry specific
+  eduInstitution?: string
+  eduDegree?: string
+  eduField?: string
+  eduGpa?: string
+  eduStartDate?: string
+  eduEndDate?: string
+  eduHonors?: string
+  eduDescription?: string
+  // Skill Bar specific
+  skillName?: string
+  skillProficiency?: number
+  skillCategory?: string
+  // Certification Badge specific
+  certName?: string
+  certIssuer?: string
+  certDateObtained?: string
+  certExpirationDate?: string
+  certCredentialId?: string
+  certCredentialUrl?: string
+  // Wedding Timeline specific
+  weddingTimelineTitle?: string
+  weddingTimelineEvents?: {
+    time: string
+    title: string
+    description?: string
+    icon?: string
+  }[]
+  // Wedding Party specific
+  weddingPartyTitle?: string
+  weddingPartyMembers?: {
+    name: string
+    role: string
+    group: 'bride' | 'groom' | 'shared'
+    photo?: string
+  }[]
+  // Wedding RSVP specific
+  weddingRsvpTitle?: string
+  weddingRsvpDeadline?: string
+  weddingRsvpFields?: {
+    attending: boolean
+    plusOne: boolean
+    mealOptions: string[]
+    dietaryField: boolean
+    songRequest: boolean
+  }
+  // Wedding Stats specific
+  weddingStatsItems?: {
+    label: string
+    value: string
+    icon?: string
+  }[]
+  // Wedding Registry specific
+  weddingRegistryTitle?: string
+  weddingRegistryItems?: {
+    name: string
+    url: string
+    type: 'amazon' | 'target' | 'honeymoon' | 'custom'
+    description?: string
+  }[]
+  // Wedding Hashtags specific
+  weddingHashtags?: string[]
+  // Text styling (text, heading, quote, callout, list)
+  fontFamily?: string
+  fontSize?: number
+  fontWeight?: number
+  fontStyle?: 'normal' | 'italic'
+  textAlign?: 'left' | 'center' | 'right' | 'justify'
+  textColor?: string
+  letterSpacing?: number
+  lineHeight?: number
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'
 }
 
 // Column settings for styling
@@ -364,6 +521,145 @@ export function createElement(type: ElementType): CanvasElement {
         kitProfileKitId: '',
         kitProfileData: {},
         kitProfileLayout: 'card',
+      }
+    case 'game-schedule':
+      return {
+        ...base,
+        gameScheduleTitle: 'Game Schedule',
+        gameScheduleGames: [
+          { date: '', opponent: '', location: '', homeAway: 'Home' as const, time: '' },
+        ],
+        gameScheduleShowPastGames: true,
+      }
+    case 'workout-schedule':
+      return {
+        ...base,
+        workoutScheduleTitle: 'Weekly Workouts',
+        workoutScheduleDays: [
+          { day: 'Mon', workouts: [] },
+          { day: 'Tue', workouts: [] },
+          { day: 'Wed', workouts: [] },
+          { day: 'Thu', workouts: [] },
+          { day: 'Fri', workouts: [] },
+          { day: 'Sat', workouts: [] },
+          { day: 'Sun', workouts: [] },
+        ],
+      }
+    case 'meal-prep': {
+      const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      const MEALS = ['Breakfast', 'Lunch', 'Dinner', 'Snacks']
+      return {
+        ...base,
+        mealPrepTitle: 'Meal Prep',
+        mealPrepMeals: MEALS.map(mealType => ({
+          mealType,
+          days: DAYS.map(day => ({ day, name: '', notes: '', macros: '' })),
+        })),
+        mealPrepShowMacros: false,
+      }
+    }
+    case 'jersey':
+      return {
+        ...base,
+        jerseyNumber: '1',
+        jerseyName: 'PLAYER',
+        jerseyPrimaryColor: '#39D98A',
+        jerseySecondaryColor: '#0F3D2E',
+        jerseyStyle: 'classic',
+        jerseySignaturesEnabled: true,
+      }
+    case 'experience-entry':
+      return {
+        ...base,
+        expCompany: '',
+        expTitle: '',
+        expLocation: '',
+        expStartDate: '',
+        expEndDate: '',
+        expCurrent: false,
+        expDescription: '',
+        expCompanyLogo: '',
+      }
+    case 'education-entry':
+      return {
+        ...base,
+        eduInstitution: '',
+        eduDegree: '',
+        eduField: '',
+        eduGpa: '',
+        eduStartDate: '',
+        eduEndDate: '',
+        eduHonors: '',
+        eduDescription: '',
+      }
+    case 'skill-bar':
+      return {
+        ...base,
+        skillName: '',
+        skillProficiency: 75,
+        skillCategory: '',
+      }
+    case 'certification-badge':
+      return {
+        ...base,
+        certName: '',
+        certIssuer: '',
+        certDateObtained: '',
+        certExpirationDate: '',
+        certCredentialId: '',
+        certCredentialUrl: '',
+      }
+    case 'wedding-timeline':
+      return {
+        ...base,
+        weddingTimelineTitle: 'Our Wedding Day',
+        weddingTimelineEvents: [
+          { time: '4:00 PM', title: 'Ceremony', description: 'Exchange of vows', icon: 'Church' },
+          { time: '4:45 PM', title: 'Cocktail Hour', description: 'Drinks & appetizers', icon: 'Wine' },
+          { time: '6:00 PM', title: 'Reception', description: 'Dinner & toasts', icon: 'UtensilsCrossed' },
+          { time: '7:30 PM', title: 'First Dance', description: 'Hit the dance floor', icon: 'Music' },
+          { time: '10:00 PM', title: 'Send Off', description: 'Farewell celebration', icon: 'Sparkles' },
+        ],
+      }
+    case 'wedding-party':
+      return {
+        ...base,
+        weddingPartyTitle: 'Wedding Party',
+        weddingPartyMembers: [],
+      }
+    case 'wedding-rsvp':
+      return {
+        ...base,
+        weddingRsvpTitle: 'RSVP',
+        weddingRsvpDeadline: '',
+        weddingRsvpFields: {
+          attending: true,
+          plusOne: true,
+          mealOptions: ['Chicken', 'Beef', 'Fish', 'Vegetarian'],
+          dietaryField: true,
+          songRequest: true,
+        },
+      }
+    case 'wedding-stats':
+      return {
+        ...base,
+        weddingStatsItems: [
+          { label: 'Days Together', value: '544', icon: 'Heart' },
+          { label: 'Cakes Tasted', value: '7', icon: 'Cake' },
+          { label: 'Venues Visited', value: '12', icon: 'MapPin' },
+          { label: 'Days Until "I Do"', value: '30', icon: 'Calendar' },
+        ],
+      }
+    case 'wedding-registry':
+      return {
+        ...base,
+        weddingRegistryTitle: 'Our Registry',
+        weddingRegistryItems: [],
+      }
+    case 'wedding-hashtags':
+      return {
+        ...base,
+        weddingHashtags: ['#ForeverUs', '#OurBigDay'],
       }
     default:
       return base
