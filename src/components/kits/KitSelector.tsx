@@ -2,11 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, Trophy, TrendingUp, BarChart3, Play, BookOpen, Sparkles, FileText, UserCircle, Briefcase, Award, FolderOpen, Heart } from 'lucide-react'
+import { X, Trophy, TrendingUp, BarChart3, Play, BookOpen, Sparkles, FileText, UserCircle, Briefcase, Award, FolderOpen, Heart, Music, Quote, Palette, Store, UtensilsCrossed, Star, Clock, Mail, Library, Users } from 'lucide-react'
 import { KIT_REGISTRY } from '@/lib/kits/registry'
 import '@/lib/kits/athlete-kit'
 import '@/lib/kits/resume-kit'
 import '@/lib/kits/wedding-kit'
+import '@/lib/kits/creative-kit'
+import '@/lib/kits/creator-kit'
+import '@/lib/kits/business-kit'
+import '@/lib/kits/academic-kit'
 
 const ICON_MAP: Record<string, typeof Trophy> = {
   Trophy,
@@ -20,6 +24,17 @@ const ICON_MAP: Record<string, typeof Trophy> = {
   Award,
   FolderOpen,
   Heart,
+  Music,
+  Quote,
+  Palette,
+  Sparkles,
+  Store,
+  UtensilsCrossed,
+  Star,
+  Clock,
+  Mail,
+  Library,
+  Users,
 }
 
 interface KitSelectorProps {

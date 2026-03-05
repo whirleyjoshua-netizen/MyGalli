@@ -49,7 +49,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const limited = rateLimit(request, { limit: 10, windowMs: 60_000, prefix: 'poll' })
+  const limited = await rateLimit(request, { limit: 10, windowMs: 60_000, prefix: 'poll' })
   if (limited) return limited
 
   const { id } = await params

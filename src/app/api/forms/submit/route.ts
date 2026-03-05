@@ -6,7 +6,7 @@ import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   // 30 form submissions per minute per IP
-  const limited = rateLimit(request, { limit: 30, windowMs: 60_000, prefix: 'form-submit' })
+  const limited = await rateLimit(request, { limit: 30, windowMs: 60_000, prefix: 'form-submit' })
   if (limited) return limited
 
   try {

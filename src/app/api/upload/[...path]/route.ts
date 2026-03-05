@@ -40,6 +40,12 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid path' }, { status: 403 })
     }
 
+    // Validate file extension is an allowed image type
+    const ext = path.extname(filepath).toLowerCase()
+    if (!MIME_TYPES[ext]) {
+      return NextResponse.json({ error: 'Invalid file type' }, { status: 403 })
+    }
+
     // Check if file exists
     if (!existsSync(filepath)) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
@@ -47,16 +53,15 @@ export async function GET(
 
     // Read file
     const buffer = await readFile(filepath)
-
-    // Determine content type
-    const ext = path.extname(filepath).toLowerCase()
     const contentType = MIME_TYPES[ext] || 'application/octet-stream'
 
-    // Return file with caching headers
+    // Return file with security headers
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'public, max-age=86400, must-revalidate',
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'none'; img-src 'self'; style-src 'none'; script-src 'none'",
       },
     })
   } catch (error) {

@@ -4,11 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Trophy, TrendingUp, BarChart3, Play, BookOpen, Sparkles, Users, Briefcase, Palette, FileText, UserCircle, Award, FolderOpen, Heart } from 'lucide-react'
+import { ArrowLeft, Trophy, TrendingUp, BarChart3, Play, BookOpen, Sparkles, Users, Briefcase, Palette, FileText, UserCircle, Award, FolderOpen, Heart, Music, Quote, Mail, Library } from 'lucide-react'
 import { KIT_REGISTRY } from '@/lib/kits/registry'
 import '@/lib/kits/athlete-kit'
 import '@/lib/kits/resume-kit'
 import '@/lib/kits/wedding-kit'
+import '@/lib/kits/creative-kit'
+import '@/lib/kits/creator-kit'
+import '@/lib/kits/academic-kit'
 
 const ICON_MAP: Record<string, typeof Trophy> = {
   Trophy,
@@ -22,6 +25,13 @@ const ICON_MAP: Record<string, typeof Trophy> = {
   Award,
   FolderOpen,
   Heart,
+  Music,
+  Quote,
+  Palette,
+  Sparkles,
+  Mail,
+  Library,
+  Users,
 }
 
 export default function NewKitPage() {
@@ -58,7 +68,6 @@ export default function NewKitPage() {
 
   // Upcoming kits (teaser cards)
   const upcomingKits = [
-    { name: 'Academic Portfolio', description: 'Showcase research, publications, and coursework', icon: BookOpen, color: '#1FB6FF' },
     { name: 'Creative Portfolio', description: 'Display your artwork, photography, and design work', icon: Palette, color: '#6C63FF' },
     { name: 'Startup Founder', description: 'Pitch deck, metrics dashboard, and team profiles', icon: Briefcase, color: '#f59e0b' },
   ]

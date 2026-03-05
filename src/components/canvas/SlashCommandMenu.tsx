@@ -18,7 +18,7 @@ import {
   MessageSquare,
   PieChart,
   Code2,
-  CreditCard,
+  GalleryHorizontal,
   ChevronDown as ChevronDownIcon,
   TrendingUp,
   UserCircle,
@@ -36,6 +36,14 @@ import {
   Gift,
   Hash,
   Clock,
+  Grid3X3,
+  Palette,
+  Music,
+  Quote as QuoteIcon,
+  BookOpen,
+  DollarSign,
+  Store,
+  Sparkles,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -68,6 +76,7 @@ const commands: Command[] = [
   { id: 'image', label: 'Image', icon: Image, description: 'Add an image', category: 'Media' },
   { id: 'embed', label: 'Embed', icon: Play, description: 'YouTube, Vimeo, or links', category: 'Media' },
   { id: 'button', label: 'Button', icon: MousePointer, description: 'Call-to-action button', category: 'Media' },
+  { id: 'slideshow', label: 'Slideshow', icon: GalleryHorizontal, description: 'Image carousel with text overlays', category: 'Media' },
 
   // Form Elements
   { id: 'mcq', label: 'Multiple Choice', icon: CircleDot, description: 'Question with options', category: 'Forms' },
@@ -77,9 +86,6 @@ const commands: Command[] = [
   // Social
   { id: 'comment', label: 'Comments', icon: MessageSquare, description: 'Visitor comment section', category: 'Social' },
   { id: 'poll', label: 'Poll', icon: BarChart3, description: 'Vote on options', category: 'Social' },
-
-  // Integrations
-  { id: 'card', label: 'App Card', icon: CreditCard, description: 'From your library', category: 'Integrations' },
 
   // Kit
   { id: 'tracker', label: 'Tracker', icon: TrendingUp, description: 'Track metrics over time', category: 'Kit' },
@@ -99,6 +105,28 @@ const commands: Command[] = [
   { id: 'wedding-stats', label: 'Wedding Stats', icon: Heart, description: 'Fun couple stat counters', category: 'Kit' },
   { id: 'wedding-registry', label: 'Wedding Registry', icon: Gift, description: 'Gift registry links', category: 'Kit' },
   { id: 'wedding-hashtags', label: 'Wedding Hashtags', icon: Hash, description: 'Social media hashtags', category: 'Kit' },
+  // Creative Kit
+  { id: 'mood-board', label: 'Mood Board', icon: Grid3X3, description: 'Image mood board grid', category: 'Kit' },
+  { id: 'color-palette', label: 'Color Palette', icon: Palette, description: 'Color swatch palette', category: 'Kit' },
+  { id: 'playlist', label: 'Playlist', icon: Music, description: 'Music playlist', category: 'Kit' },
+  { id: 'quote-wall', label: 'Quote Wall', icon: QuoteIcon, description: 'Collection of quotes', category: 'Kit' },
+  // Creator Kit
+  { id: 'social-stats', label: 'Social Stats', icon: Users, description: 'Social media presence', category: 'Kit' },
+  { id: 'collab-card', label: 'Collab Card', icon: Briefcase, description: 'Brand partnership card', category: 'Kit' },
+  { id: 'rate-card', label: 'Rate Card', icon: DollarSign, description: 'Package pricing cards', category: 'Kit' },
+  { id: 'media-kit-stats', label: 'Media Kit Stats', icon: BarChart2, description: 'Audience demographics', category: 'Kit' },
+  // Academic Kit
+  { id: 'course-list', label: 'Course List', icon: BookOpen, description: 'Academic course table', category: 'Kit' },
+  { id: 'gpa-card', label: 'GPA Card', icon: GraduationCap, description: 'GPA display card', category: 'Kit' },
+  { id: 'test-scores', label: 'Test Scores', icon: BarChart2, description: 'SAT, ACT & more', category: 'Kit' },
+  { id: 'awards-showcase', label: 'Awards Showcase', icon: Award, description: 'Awards & honors grid', category: 'Kit' },
+  // Business Kit
+  { id: 'business-menu', label: 'Menu / Catalog', icon: Store, description: 'Product or food menu', category: 'Kit' },
+  { id: 'business-hours', label: 'Hours & Location', icon: Clock, description: 'Business hours & contact', category: 'Kit' },
+  { id: 'business-review', label: 'Customer Reviews', icon: Star, description: 'Interactive review wall', category: 'Kit' },
+  { id: 'business-promo', label: 'Promos & Specials', icon: Sparkles, description: 'Deals & promotions', category: 'Kit' },
+  // General-purpose
+  { id: 'timeline', label: 'Timeline', icon: Clock, description: 'Interactive event timeline', category: 'Content' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Integrations', 'Kit']

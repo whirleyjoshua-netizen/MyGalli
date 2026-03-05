@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Plus, ExternalLink, Eye, MoreHorizontal, BarChart3, Compass, LogOut, Menu, Layout, Clock, Settings, Pin, PinOff, GripVertical, Layers, Trophy } from 'lucide-react'
+import { Plus, ExternalLink, Eye, MoreHorizontal, BarChart3, Compass, LogOut, Menu, Layout, Clock, Settings, Pin, PinOff, GripVertical, Trophy, Trash2, ImageIcon, X } from 'lucide-react'
 import {
   DndContext,
   DragOverlay,
@@ -36,6 +36,7 @@ interface Display {
   published: boolean
   views: number
   updatedAt: string
+  coverImage?: string | null
   _count: { elements: number }
 }
 
@@ -57,6 +58,8 @@ function SortableDisplayCard({
   onOpenMenu,
   isMenuOpen,
   onCloseMenu,
+  onDelete,
+  onCoverChange,
   user,
   timeAgo,
 }: {
@@ -67,6 +70,8 @@ function SortableDisplayCard({
   onOpenMenu: (id: string) => void
   isMenuOpen: boolean
   onCloseMenu: () => void
+  onDelete: (id: string) => void
+  onCoverChange: (id: string, file: File | null) => void
   user: { username?: string } | null
   timeAgo: (dateStr: string) => string
 }) {
@@ -108,8 +113,15 @@ function SortableDisplayCard({
         href={`/editor?id=${display.id}`}
         className="relative overflow-hidden border border-border rounded-xl hover:border-gallio/40 hover:shadow-lg hover:shadow-gallio/10 transition-all block bg-background"
       >
-        {/* Gradient preview area */}
-        <div className={`h-28 bg-gradient-to-br ${gradient} relative`}>
+        {/* Cover image or gradient preview area */}
+        <div className={`h-28 relative ${display.coverImage ? '' : `bg-gradient-to-br ${gradient}`}`}>
+          {display.coverImage && (
+            <img
+              src={display.coverImage}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
           {/* Status badge */}
           <div className="absolute top-3 right-3">
             <span
@@ -123,7 +135,7 @@ function SortableDisplayCard({
             </span>
           </div>
           {/* Element count overlay */}
-          <div className="absolute bottom-3 left-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className={`absolute bottom-3 left-4 flex items-center gap-1.5 text-xs ${display.coverImage ? 'text-white drop-shadow-md' : 'text-muted-foreground'}`}>
             <Layout className="w-3 h-3" />
             {display._count.elements} elements
           </div>
@@ -201,6 +213,38 @@ function SortableDisplayCard({
                 View live
               </button>
             )}
+            <label className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors cursor-pointer">
+              <ImageIcon className="w-4 h-4" />
+              {display.coverImage ? 'Change cover' : 'Add cover'}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) { onCoverChange(display.id, file); onCloseMenu() }
+                  e.target.value = ''
+                }}
+              />
+            </label>
+            {display.coverImage && (
+              <button
+                onClick={() => { onCoverChange(display.id, null); onCloseMenu() }}
+                className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Remove cover
+              </button>
+            )}
+            <div className="border-t border-border">
+              <button
+                onClick={() => { onDelete(display.id); onCloseMenu() }}
+                className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 w-full transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -329,6 +373,48 @@ export default function DashboardPage() {
     savePrefs({ ...dashboardPrefs, pinnedDisplayIds: Array.from(pinned) })
   }, [dashboardPrefs, savePrefs])
 
+  // Cover image upload/remove
+  const handleCoverChange = useCallback(async (displayId: string, file: File | null) => {
+    try {
+      let coverImage: string | null = null
+
+      if (file) {
+        // Upload the file
+        const formData = new FormData()
+        formData.append('file', file)
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData })
+        if (!uploadRes.ok) return
+        const { url } = await uploadRes.json()
+        coverImage = url
+      }
+
+      // Update the display
+      const res = await fetch(`/api/displays/${displayId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coverImage }),
+      })
+
+      if (res.ok) {
+        setDisplays(prev => prev.map(d => d.id === displayId ? { ...d, coverImage } : d))
+      }
+    } catch {}
+  }, [])
+
+  // Delete display
+  const deleteDisplay = useCallback(async (displayId: string) => {
+    const display = displays.find(d => d.id === displayId)
+    if (!display) return
+    if (!window.confirm(`Delete "${display.title}"? This cannot be undone.`)) return
+
+    try {
+      const res = await fetch(`/api/displays/${displayId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setDisplays(prev => prev.filter(d => d.id !== displayId))
+      }
+    } catch {}
+  }, [displays])
+
   // Background change
   const handleBgChange = useCallback((config: BackgroundConfig) => {
     savePrefs({ ...dashboardPrefs, background: config })
@@ -416,13 +502,6 @@ export default function DashboardPage() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <Link
-                  href="/card-studio"
-                  className="flex items-center gap-2 px-5 py-3 bg-gallio-violet/10 text-gallio-violet border border-gallio-violet/20 rounded-full font-medium hover:bg-gallio-violet/20 hover:shadow-lg hover:shadow-gallio-violet/15 hover:scale-[1.02] transition-all"
-                >
-                  <Layers className="w-4 h-4" />
-                  Card Studio
-                </Link>
                 <Link
                   href="/new-kit"
                   className="flex items-center gap-2 px-5 py-3 bg-gallio/10 text-gallio-dark border border-gallio/20 rounded-full font-medium hover:bg-gallio/20 hover:shadow-lg hover:shadow-gallio/15 hover:scale-[1.02] transition-all"
@@ -522,6 +601,8 @@ export default function DashboardPage() {
                     onOpenMenu={(id) => setCardMenuOpen(cardMenuOpen === id ? null : id)}
                     isMenuOpen={cardMenuOpen === display.id}
                     onCloseMenu={() => setCardMenuOpen(null)}
+                    onDelete={deleteDisplay}
+                    onCoverChange={handleCoverChange}
                     user={user}
                     timeAgo={timeAgo}
                   />

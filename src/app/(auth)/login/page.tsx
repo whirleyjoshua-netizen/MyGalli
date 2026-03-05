@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useAuthStore } from '@/lib/store'
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -52,6 +53,8 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-background border border-border rounded-2xl p-6 shadow-sm">
+          <GoogleSignInButton mode="login" />
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 rounded-xl">

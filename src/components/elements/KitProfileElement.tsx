@@ -6,6 +6,7 @@ import { getKit } from '@/lib/kits/registry'
 import type { KitProfileField } from '@/lib/kits/registry'
 import '@/lib/kits/athlete-kit'
 import '@/lib/kits/resume-kit'
+import '@/lib/kits/academic-kit'
 
 interface KitProfileElementProps {
   element: {

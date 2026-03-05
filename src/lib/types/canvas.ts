@@ -54,6 +54,7 @@ export type ElementType =
   | 'chart'     // Bar, line, pie charts with 3D effects
   // Tier 3: Premium elements
   | 'code'      // Code block with syntax highlighting
+  | 'slideshow' // Image carousel with text overlays
   // Tier 4: Social / Engagement
   | 'comment'   // Comment section for visitor feedback
   | 'poll'      // Poll with voting
@@ -78,6 +79,28 @@ export type ElementType =
   | 'wedding-stats'         // Fun stat counters
   | 'wedding-registry'      // Gift registry links
   | 'wedding-hashtags'      // Social media hashtags
+  // Creative Kit elements
+  | 'mood-board'            // Image mood board grid
+  | 'color-palette'         // Color palette display
+  | 'playlist'              // Music playlist
+  | 'quote-wall'            // Collection of quotes
+  // Creator Kit elements
+  | 'social-stats'          // Social media presence cards
+  | 'collab-card'           // Brand partnership showcase
+  | 'rate-card'             // Package pricing display
+  | 'media-kit-stats'       // Audience demographics
+  // Academic Kit elements
+  | 'course-list'           // Course list table
+  | 'gpa-card'              // GPA display card
+  | 'test-scores'           // Standardized test scores
+  | 'awards-showcase'       // Awards and honors grid
+  // Business Kit elements
+  | 'business-menu'         // Menu/product catalog
+  | 'business-hours'        // Hours & location
+  | 'business-review'       // Customer reviews (interactive)
+  | 'business-promo'        // Specials & promotions
+  // General-purpose elements
+  | 'timeline'              // Interactive event timeline
 
 // Base element interface
 export interface CanvasElement {
@@ -163,6 +186,10 @@ export interface CanvasElement {
   codeTheme?: 'dark' | 'light'
   codeShowLineNumbers?: boolean
   codeFilename?: string
+  // Slideshow specific
+  slideshowSlides?: { imageUrl: string; title: string; description: string; buttonText?: string; buttonUrl?: string }[]
+  slideshowHeight?: number
+  slideshowShowOverlay?: boolean
   // Card specific
   cardProvider?: string    // 'vouch' | 'custom'
   cardData?: Record<string, any>  // Provider-specific data (JSON)
@@ -293,6 +320,148 @@ export interface CanvasElement {
   }[]
   // Wedding Hashtags specific
   weddingHashtags?: string[]
+  // Mood Board specific
+  moodBoardTitle?: string
+  moodBoardItems?: { imageUrl: string; caption: string }[]
+  moodBoardColumns?: 2 | 3 | 4
+  // Color Palette specific
+  colorPaletteTitle?: string
+  colorPaletteColors?: { hex: string; name: string }[]
+  // Playlist specific
+  playlistTitle?: string
+  playlistItems?: { title: string; artist: string; coverUrl: string; link: string }[]
+  // Quote Wall specific
+  quoteWallTitle?: string
+  quoteWallQuotes?: { text: string; author: string; source: string }[]
+  // Social Stats specific
+  socialStatsTitle?: string
+  socialStatsPlatforms?: {
+    platform: string
+    handle: string
+    followers: string
+    url?: string
+  }[]
+  // Collab Card specific
+  collabTitle?: string
+  collabItems?: {
+    brand: string
+    role: string
+    dateRange?: string
+    description?: string
+    image?: string
+    link?: string
+  }[]
+  // Rate Card specific
+  rateCardTitle?: string
+  rateCardPackages?: {
+    name: string
+    description?: string
+    deliverables: string[]
+    price: string
+    highlight?: boolean
+  }[]
+  // Media Kit Stats specific
+  mediaKitTitle?: string
+  mediaKitStats?: {
+    label: string
+    items: { name: string; value: string }[]
+  }[]
+  // Course List specific
+  courseListTitle?: string
+  courseListCourses?: {
+    name: string
+    code: string
+    grade: string
+    credits: string
+    semester: string
+    category: string
+  }[]
+  courseListShowGPA?: boolean
+  // GPA Card specific
+  gpaValue?: string
+  gpaScale?: '4.0' | '5.0' | '100'
+  gpaWeighted?: boolean
+  gpaLabel?: string
+  gpaTrend?: string
+  gpaHonors?: string
+  // Test Scores specific
+  testScoresTitle?: string
+  testScoresEntries?: {
+    testName: string
+    totalScore: string
+    maxScore: string
+    sections: { name: string; score: string; maxScore: string }[]
+    date: string
+  }[]
+  // Awards Showcase specific
+  awardsShowcaseTitle?: string
+  awardsShowcaseItems?: {
+    title: string
+    issuer: string
+    date: string
+    description: string
+    icon: string
+  }[]
+  // Business Menu specific
+  bizMenuTitle?: string
+  bizMenuCurrency?: '$' | '€' | '£'
+  bizMenuCategories?: {
+    name: string
+    items: {
+      name: string
+      description: string
+      price: string
+      image?: string
+      tags: string[]  // vegan, gf, spicy, popular, new
+    }[]
+  }[]
+  // Business Hours specific
+  bizHoursTitle?: string
+  bizHoursSchedule?: {
+    day: string
+    open: string
+    close: string
+    closed: boolean
+  }[]
+  bizHoursAddress?: string
+  bizHoursPhone?: string
+  bizHoursEmail?: string
+  bizHoursWebsite?: string
+  bizHoursMapsUrl?: string
+  bizHoursSpecialNote?: string
+  // Business Review specific
+  bizReviewTitle?: string
+  bizReviewCurated?: {
+    author: string
+    rating: number
+    text: string
+    date: string
+    source: string
+  }[]
+  bizReviewAllowSubmissions?: boolean
+  // Business Promo specific
+  bizPromoTitle?: string
+  bizPromoItems?: {
+    title: string
+    description: string
+    badge: string
+    startDate?: string
+    endDate?: string
+    image?: string
+    ctaText?: string
+    ctaUrl?: string
+  }[]
+  // Timeline specific
+  timelineTitle?: string
+  timelineColor?: string  // hex accent color, default #39D98A
+  timelineEvents?: {
+    date: string
+    title: string
+    description?: string
+    icon?: string       // lucide icon name
+    image?: string      // optional image URL
+    isCurrent?: boolean // highlights as "current" event
+  }[]
   // Text styling (text, heading, quote, callout, list)
   fontFamily?: string
   fontSize?: number
@@ -479,6 +648,13 @@ export function createElement(type: ElementType): CanvasElement {
         codeShowLineNumbers: true,
         codeFilename: '',
       }
+    case 'slideshow':
+      return {
+        ...base,
+        slideshowSlides: [{ imageUrl: '', title: '', description: '' }],
+        slideshowHeight: 400,
+        slideshowShowOverlay: true,
+      }
     case 'card':
       return {
         ...base,
@@ -660,6 +836,193 @@ export function createElement(type: ElementType): CanvasElement {
       return {
         ...base,
         weddingHashtags: ['#ForeverUs', '#OurBigDay'],
+      }
+    case 'mood-board':
+      return {
+        ...base,
+        moodBoardTitle: 'Mood Board',
+        moodBoardItems: [],
+        moodBoardColumns: 3,
+      }
+    case 'color-palette':
+      return {
+        ...base,
+        colorPaletteTitle: 'My Palette',
+        colorPaletteColors: [
+          { hex: '#FF6B6B', name: 'Coral' },
+          { hex: '#4ECDC4', name: 'Teal' },
+          { hex: '#45B7D1', name: 'Sky' },
+          { hex: '#96CEB4', name: 'Sage' },
+          { hex: '#FFEAA7', name: 'Sunshine' },
+        ],
+      }
+    case 'playlist':
+      return {
+        ...base,
+        playlistTitle: 'My Playlist',
+        playlistItems: [],
+      }
+    case 'quote-wall':
+      return {
+        ...base,
+        quoteWallTitle: 'Words I Live By',
+        quoteWallQuotes: [
+          { text: 'Be yourself; everyone else is already taken.', author: 'Oscar Wilde', source: '' },
+        ],
+      }
+    case 'social-stats':
+      return {
+        ...base,
+        socialStatsTitle: 'Social Media',
+        socialStatsPlatforms: [
+          { platform: 'instagram', handle: '@yourhandle', followers: '0', url: '' },
+        ],
+      }
+    case 'collab-card':
+      return {
+        ...base,
+        collabTitle: 'Brand Collaborations',
+        collabItems: [
+          { brand: 'Brand Name', role: 'Sponsored Post', dateRange: '', description: '', image: '', link: '' },
+        ],
+      }
+    case 'rate-card':
+      return {
+        ...base,
+        rateCardTitle: 'Packages & Rates',
+        rateCardPackages: [
+          { name: 'Basic', description: 'Single post', deliverables: ['1 Feed Post', '2 Stories'], price: '$500', highlight: false },
+          { name: 'Standard', description: 'Multi-platform', deliverables: ['1 Feed Post', '1 Reel/TikTok', '3 Stories'], price: '$1,200', highlight: true },
+          { name: 'Premium', description: 'Full campaign', deliverables: ['2 Feed Posts', '2 Reels', '5 Stories', 'Blog Feature'], price: '$3,000', highlight: false },
+        ],
+      }
+    case 'media-kit-stats':
+      return {
+        ...base,
+        mediaKitTitle: 'Audience Demographics',
+        mediaKitStats: [
+          { label: 'Age Range', items: [{ name: '18–24', value: '35%' }, { name: '25–34', value: '45%' }, { name: '35+', value: '20%' }] },
+          { label: 'Gender', items: [{ name: 'Female', value: '65%' }, { name: 'Male', value: '30%' }, { name: 'Other', value: '5%' }] },
+        ],
+      }
+    case 'course-list':
+      return {
+        ...base,
+        courseListTitle: 'My Courses',
+        courseListCourses: [
+          { name: 'AP English Literature', code: 'ENG-401', grade: 'A', credits: '1.0', semester: 'Fall 2025', category: 'English' },
+          { name: 'AP Calculus BC', code: 'MATH-402', grade: 'A-', credits: '1.0', semester: 'Fall 2025', category: 'Math' },
+          { name: 'AP Biology', code: 'SCI-401', grade: 'A', credits: '1.0', semester: 'Fall 2025', category: 'Science' },
+        ],
+        courseListShowGPA: true,
+      }
+    case 'gpa-card':
+      return {
+        ...base,
+        gpaValue: '',
+        gpaScale: '4.0',
+        gpaWeighted: false,
+        gpaLabel: 'Cumulative GPA',
+        gpaTrend: '',
+        gpaHonors: '',
+      }
+    case 'test-scores':
+      return {
+        ...base,
+        testScoresTitle: 'Test Scores',
+        testScoresEntries: [
+          {
+            testName: 'SAT',
+            totalScore: '',
+            maxScore: '1600',
+            sections: [
+              { name: 'Evidence-Based Reading & Writing', score: '', maxScore: '800' },
+              { name: 'Math', score: '', maxScore: '800' },
+            ],
+            date: '',
+          },
+          {
+            testName: 'ACT',
+            totalScore: '',
+            maxScore: '36',
+            sections: [
+              { name: 'English', score: '', maxScore: '36' },
+              { name: 'Math', score: '', maxScore: '36' },
+              { name: 'Reading', score: '', maxScore: '36' },
+              { name: 'Science', score: '', maxScore: '36' },
+            ],
+            date: '',
+          },
+        ],
+      }
+    case 'awards-showcase':
+      return {
+        ...base,
+        awardsShowcaseTitle: 'Awards & Honors',
+        awardsShowcaseItems: [
+          { title: 'Honor Roll', issuer: 'School Name', date: '2025', description: 'Maintained GPA above 3.5', icon: 'Award' },
+          { title: 'National Merit Semifinalist', issuer: 'National Merit Scholarship Program', date: '2025', description: '', icon: 'Star' },
+        ],
+      }
+    case 'business-menu':
+      return {
+        ...base,
+        bizMenuTitle: 'Our Menu',
+        bizMenuCurrency: '$',
+        bizMenuCategories: [
+          {
+            name: 'Main Dishes',
+            items: [
+              { name: 'House Special', description: 'Our signature dish', price: '14.99', tags: ['popular'] },
+            ],
+          },
+        ],
+      }
+    case 'business-hours':
+      return {
+        ...base,
+        bizHoursTitle: 'Hours & Location',
+        bizHoursSchedule: [
+          { day: 'Monday', open: '9:00 AM', close: '5:00 PM', closed: false },
+          { day: 'Tuesday', open: '9:00 AM', close: '5:00 PM', closed: false },
+          { day: 'Wednesday', open: '9:00 AM', close: '5:00 PM', closed: false },
+          { day: 'Thursday', open: '9:00 AM', close: '5:00 PM', closed: false },
+          { day: 'Friday', open: '9:00 AM', close: '5:00 PM', closed: false },
+          { day: 'Saturday', open: '10:00 AM', close: '4:00 PM', closed: false },
+          { day: 'Sunday', open: '', close: '', closed: true },
+        ],
+        bizHoursAddress: '',
+        bizHoursPhone: '',
+        bizHoursEmail: '',
+        bizHoursWebsite: '',
+        bizHoursMapsUrl: '',
+        bizHoursSpecialNote: '',
+      }
+    case 'business-review':
+      return {
+        ...base,
+        bizReviewTitle: 'Customer Reviews',
+        bizReviewCurated: [],
+        bizReviewAllowSubmissions: true,
+      }
+    case 'business-promo':
+      return {
+        ...base,
+        bizPromoTitle: 'Specials & Promotions',
+        bizPromoItems: [
+          { title: 'Grand Opening Special', description: 'Come check us out!', badge: 'NEW', ctaText: '', ctaUrl: '' },
+        ],
+      }
+    case 'timeline':
+      return {
+        ...base,
+        timelineTitle: 'My Timeline',
+        timelineColor: '#39D98A',
+        timelineEvents: [
+          { date: 'Jan 2025', title: 'Started the Journey', description: 'The beginning of something new', icon: 'Flag', isCurrent: false },
+          { date: 'Jun 2025', title: 'Major Milestone', description: 'Reached a key goal', icon: 'Trophy', isCurrent: true },
+          { date: 'Dec 2025', title: 'What\'s Next', description: 'Looking ahead to the future', icon: 'Rocket', isCurrent: false },
+        ],
       }
     default:
       return base

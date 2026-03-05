@@ -64,6 +64,25 @@ import {
   WeddingStatsElement,
   WeddingRegistryElement,
   WeddingHashtagsElement,
+  SlideshowElement,
+  MoodBoardElement,
+  ColorPaletteElement,
+  PlaylistElement,
+  QuoteWallElement,
+  TimelineElement,
+  PublicTimelineElement,
+  CourseListElement,
+  GPACardElement,
+  TestScoresElement,
+  AwardsShowcaseElement,
+  SocialStatsElement,
+  CollabCardElement,
+  RateCardElement,
+  MediaKitStatsElement,
+  BusinessMenuElement,
+  BusinessHoursElement,
+  BusinessReviewElement,
+  BusinessPromoElement,
 } from '@/components/elements'
 import { PublicCommentSection } from '@/components/elements/PublicCommentSection'
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
@@ -83,6 +102,23 @@ import { PublicWeddingRsvpElement } from '@/components/elements/PublicWeddingRsv
 import { PublicWeddingStatsElement } from '@/components/elements/PublicWeddingStatsElement'
 import { PublicWeddingRegistryElement } from '@/components/elements/PublicWeddingRegistryElement'
 import { PublicWeddingHashtagsElement } from '@/components/elements/PublicWeddingHashtagsElement'
+import { PublicSlideshowElement } from '@/components/elements/PublicSlideshowElement'
+import { PublicMoodBoardElement } from '@/components/elements/PublicMoodBoardElement'
+import { PublicColorPaletteElement } from '@/components/elements/PublicColorPaletteElement'
+import { PublicPlaylistElement } from '@/components/elements/PublicPlaylistElement'
+import { PublicQuoteWallElement } from '@/components/elements/PublicQuoteWallElement'
+import { PublicCourseListElement } from '@/components/elements/PublicCourseListElement'
+import { PublicGPACardElement } from '@/components/elements/PublicGPACardElement'
+import { PublicTestScoresElement } from '@/components/elements/PublicTestScoresElement'
+import { PublicAwardsShowcaseElement } from '@/components/elements/PublicAwardsShowcaseElement'
+import { PublicSocialStatsElement } from '@/components/elements/PublicSocialStatsElement'
+import { PublicCollabCardElement } from '@/components/elements/PublicCollabCardElement'
+import { PublicRateCardElement } from '@/components/elements/PublicRateCardElement'
+import { PublicMediaKitStatsElement } from '@/components/elements/PublicMediaKitStatsElement'
+import { PublicBusinessMenuElement } from '@/components/elements/PublicBusinessMenuElement'
+import { PublicBusinessHoursElement } from '@/components/elements/PublicBusinessHoursElement'
+import { PublicBusinessReviewElement } from '@/components/elements/PublicBusinessReviewElement'
+import { PublicBusinessPromoElement } from '@/components/elements/PublicBusinessPromoElement'
 
 interface ColumnCanvasProps {
   sections: Section[]
@@ -929,6 +965,258 @@ export function ColumnCanvas({
         }
         return (
           <WeddingHashtagsElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'slideshow':
+        if (isPreviewMode) {
+          return <PublicSlideshowElement element={element} />
+        }
+        return (
+          <SlideshowElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'mood-board':
+        if (isPreviewMode) {
+          return <PublicMoodBoardElement element={element} />
+        }
+        return (
+          <MoodBoardElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'color-palette':
+        if (isPreviewMode) {
+          return <PublicColorPaletteElement element={element} />
+        }
+        return (
+          <ColorPaletteElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'playlist':
+        if (isPreviewMode) {
+          return <PublicPlaylistElement element={element} />
+        }
+        return (
+          <PlaylistElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'quote-wall':
+        if (isPreviewMode) {
+          return <PublicQuoteWallElement element={element} />
+        }
+        return (
+          <QuoteWallElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'timeline':
+        if (isPreviewMode) {
+          return <PublicTimelineElement element={element} />
+        }
+        return (
+          <TimelineElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'course-list':
+        if (isPreviewMode) {
+          return <PublicCourseListElement element={element} />
+        }
+        return (
+          <CourseListElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'gpa-card':
+        if (isPreviewMode) {
+          return <PublicGPACardElement element={element} />
+        }
+        return (
+          <GPACardElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'test-scores':
+        if (isPreviewMode) {
+          return <PublicTestScoresElement element={element} />
+        }
+        return (
+          <TestScoresElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'awards-showcase':
+        if (isPreviewMode) {
+          return <PublicAwardsShowcaseElement element={element} />
+        }
+        return (
+          <AwardsShowcaseElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'social-stats':
+        if (isPreviewMode) {
+          return <PublicSocialStatsElement element={element} />
+        }
+        return (
+          <SocialStatsElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'collab-card':
+        if (isPreviewMode) {
+          return <PublicCollabCardElement element={element} />
+        }
+        return (
+          <CollabCardElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'rate-card':
+        if (isPreviewMode) {
+          return <PublicRateCardElement element={element} />
+        }
+        return (
+          <RateCardElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'media-kit-stats':
+        if (isPreviewMode) {
+          return <PublicMediaKitStatsElement element={element} />
+        }
+        return (
+          <MediaKitStatsElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'business-menu':
+        if (isPreviewMode) {
+          return <PublicBusinessMenuElement element={element} />
+        }
+        return (
+          <BusinessMenuElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'business-hours':
+        if (isPreviewMode) {
+          return <PublicBusinessHoursElement element={element} />
+        }
+        return (
+          <BusinessHoursElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'business-review':
+        if (isPreviewMode) {
+          return <PublicBusinessReviewElement element={element} displayId={displayId || ''} />
+        }
+        return (
+          <BusinessReviewElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'business-promo':
+        if (isPreviewMode) {
+          return <PublicBusinessPromoElement element={element} />
+        }
+        return (
+          <BusinessPromoElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}

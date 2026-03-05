@@ -26,6 +26,24 @@ import { PublicWeddingRsvpElement } from '@/components/elements/PublicWeddingRsv
 import { PublicWeddingStatsElement } from '@/components/elements/PublicWeddingStatsElement'
 import { PublicWeddingRegistryElement } from '@/components/elements/PublicWeddingRegistryElement'
 import { PublicWeddingHashtagsElement } from '@/components/elements/PublicWeddingHashtagsElement'
+import { PublicSlideshowElement } from '@/components/elements/PublicSlideshowElement'
+import { PublicMoodBoardElement } from '@/components/elements/PublicMoodBoardElement'
+import { PublicColorPaletteElement } from '@/components/elements/PublicColorPaletteElement'
+import { PublicPlaylistElement } from '@/components/elements/PublicPlaylistElement'
+import { PublicQuoteWallElement } from '@/components/elements/PublicQuoteWallElement'
+import { PublicTimelineElement } from '@/components/elements/PublicTimelineElement'
+import { PublicCourseListElement } from '@/components/elements/PublicCourseListElement'
+import { PublicGPACardElement } from '@/components/elements/PublicGPACardElement'
+import { PublicTestScoresElement } from '@/components/elements/PublicTestScoresElement'
+import { PublicAwardsShowcaseElement } from '@/components/elements/PublicAwardsShowcaseElement'
+import { PublicSocialStatsElement } from '@/components/elements/PublicSocialStatsElement'
+import { PublicCollabCardElement } from '@/components/elements/PublicCollabCardElement'
+import { PublicRateCardElement } from '@/components/elements/PublicRateCardElement'
+import { PublicMediaKitStatsElement } from '@/components/elements/PublicMediaKitStatsElement'
+import { PublicBusinessMenuElement } from '@/components/elements/PublicBusinessMenuElement'
+import { PublicBusinessHoursElement } from '@/components/elements/PublicBusinessHoursElement'
+import { PublicBusinessReviewElement } from '@/components/elements/PublicBusinessReviewElement'
+import { PublicBusinessPromoElement } from '@/components/elements/PublicBusinessPromoElement'
 
 export function getGridClass(layout: string): string {
   switch (layout) {
@@ -441,6 +459,60 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'wedding-hashtags':
       return <PublicWeddingHashtagsElement element={element} />
+
+    case 'slideshow':
+      return <PublicSlideshowElement element={element} />
+
+    case 'mood-board':
+      return <PublicMoodBoardElement element={element} />
+
+    case 'color-palette':
+      return <PublicColorPaletteElement element={element} />
+
+    case 'playlist':
+      return <PublicPlaylistElement element={element} />
+
+    case 'quote-wall':
+      return <PublicQuoteWallElement element={element} />
+
+    case 'timeline':
+      return <PublicTimelineElement element={element} />
+
+    case 'course-list':
+      return <PublicCourseListElement element={element} />
+
+    case 'gpa-card':
+      return <PublicGPACardElement element={element} />
+
+    case 'test-scores':
+      return <PublicTestScoresElement element={element} />
+
+    case 'awards-showcase':
+      return <PublicAwardsShowcaseElement element={element} />
+
+    case 'social-stats':
+      return <PublicSocialStatsElement element={element} />
+
+    case 'collab-card':
+      return <PublicCollabCardElement element={element} />
+
+    case 'rate-card':
+      return <PublicRateCardElement element={element} />
+
+    case 'media-kit-stats':
+      return <PublicMediaKitStatsElement element={element} />
+
+    case 'business-menu':
+      return <PublicBusinessMenuElement element={element} />
+
+    case 'business-hours':
+      return <PublicBusinessHoursElement element={element} />
+
+    case 'business-review':
+      return <PublicBusinessReviewElement element={element} displayId={displayId || ''} />
+
+    case 'business-promo':
+      return <PublicBusinessPromoElement element={element} />
 
     default:
       return null

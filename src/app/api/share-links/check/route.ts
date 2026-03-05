@@ -5,7 +5,7 @@ import { rateLimit } from '@/lib/rate-limit'
 // GET /api/share-links/check?code=xxx - Check if a code is available
 export async function GET(request: NextRequest) {
   try {
-    const rateLimited = rateLimit(request, { limit: 30, windowMs: 60_000, prefix: 'share-check' })
+    const rateLimited = await rateLimit(request, { limit: 30, windowMs: 60_000, prefix: 'share-check' })
     if (rateLimited) return rateLimited
 
     const code = request.nextUrl.searchParams.get('code')?.toLowerCase().trim()

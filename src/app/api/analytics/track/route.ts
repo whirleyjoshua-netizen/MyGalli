@@ -55,7 +55,7 @@ function parseUtmParams(referrer: string | null): {
 }
 
 export async function POST(request: NextRequest) {
-  const limited = rateLimit(request, { limit: 60, windowMs: 60_000, prefix: 'analytics' })
+  const limited = await rateLimit(request, { limit: 60, windowMs: 60_000, prefix: 'analytics' })
   if (limited) return limited
 
   try {

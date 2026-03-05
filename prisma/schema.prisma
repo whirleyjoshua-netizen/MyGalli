@@ -12,7 +12,8 @@ model User {
   email     String    @unique
   username  String    @unique
   name      String?
-  password  String
+  password  String?
+  googleId  String?   @unique
   avatar    String?
   bio            String?
   dashboardPrefs Json?
@@ -31,6 +32,9 @@ model Display {
   views       Int      @default(0)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Cover image for dashboard card
+  coverImage  String?
 
   // Column-based layout structure stored as JSON
   // Structure: [{ id, layout, columns: [{ id, elements: [...] }] }]

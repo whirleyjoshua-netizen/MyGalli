@@ -437,6 +437,11 @@ export function PageEditor({ pageId }: PageEditorProps) {
         newElement.codeShowLineNumbers = true
         newElement.codeFilename = ''
         break
+      case 'slideshow':
+        newElement.slideshowSlides = [{ imageUrl: '', title: '', description: '' }]
+        newElement.slideshowHeight = 400
+        newElement.slideshowShowOverlay = true
+        break
       case 'card': {
         // Open the library picker instead of creating element immediately
         setShowSlashMenu(false)
@@ -580,6 +585,148 @@ export function PageEditor({ pageId }: PageEditorProps) {
         break
       case 'wedding-hashtags':
         newElement.weddingHashtags = ['#ForeverUs', '#OurBigDay']
+        break
+      case 'mood-board':
+        newElement.moodBoardTitle = 'Mood Board'
+        newElement.moodBoardItems = []
+        newElement.moodBoardColumns = 3
+        break
+      case 'color-palette':
+        newElement.colorPaletteTitle = 'My Palette'
+        newElement.colorPaletteColors = [
+          { hex: '#FF6B6B', name: 'Coral' },
+          { hex: '#4ECDC4', name: 'Teal' },
+          { hex: '#45B7D1', name: 'Sky' },
+          { hex: '#96CEB4', name: 'Sage' },
+          { hex: '#FFEAA7', name: 'Sunshine' },
+        ]
+        break
+      case 'playlist':
+        newElement.playlistTitle = 'My Playlist'
+        newElement.playlistItems = []
+        break
+      case 'quote-wall':
+        newElement.quoteWallTitle = 'Words I Live By'
+        newElement.quoteWallQuotes = [
+          { text: 'Be yourself; everyone else is already taken.', author: 'Oscar Wilde', source: '' },
+        ]
+        break
+      case 'timeline':
+        newElement.timelineTitle = 'My Timeline'
+        newElement.timelineColor = '#39D98A'
+        newElement.timelineEvents = [
+          { date: 'Jan 2025', title: 'Started the Journey', description: 'The beginning of something new', icon: 'Flag', isCurrent: false },
+          { date: 'Jun 2025', title: 'Major Milestone', description: 'Reached a key goal', icon: 'Trophy', isCurrent: true },
+          { date: 'Dec 2025', title: 'What\'s Next', description: 'Looking ahead to the future', icon: 'Rocket', isCurrent: false },
+        ]
+        break
+      case 'course-list':
+        newElement.courseListTitle = 'My Courses'
+        newElement.courseListCourses = [
+          { name: 'AP English Literature', code: 'ENG-401', grade: 'A', credits: '1.0', semester: 'Fall 2025', category: 'English' },
+          { name: 'AP Calculus BC', code: 'MATH-402', grade: 'A-', credits: '1.0', semester: 'Fall 2025', category: 'Math' },
+          { name: 'AP Biology', code: 'SCI-401', grade: 'A', credits: '1.0', semester: 'Fall 2025', category: 'Science' },
+        ]
+        newElement.courseListShowGPA = true
+        break
+      case 'gpa-card':
+        newElement.gpaValue = ''
+        newElement.gpaScale = '4.0'
+        newElement.gpaWeighted = false
+        newElement.gpaLabel = 'Cumulative GPA'
+        newElement.gpaTrend = ''
+        newElement.gpaHonors = ''
+        break
+      case 'test-scores':
+        newElement.testScoresTitle = 'Test Scores'
+        newElement.testScoresEntries = [
+          {
+            testName: 'SAT',
+            totalScore: '',
+            maxScore: '1600',
+            sections: [
+              { name: 'Evidence-Based Reading & Writing', score: '', maxScore: '800' },
+              { name: 'Math', score: '', maxScore: '800' },
+            ],
+            date: '',
+          },
+          {
+            testName: 'ACT',
+            totalScore: '',
+            maxScore: '36',
+            sections: [
+              { name: 'English', score: '', maxScore: '36' },
+              { name: 'Math', score: '', maxScore: '36' },
+              { name: 'Reading', score: '', maxScore: '36' },
+              { name: 'Science', score: '', maxScore: '36' },
+            ],
+            date: '',
+          },
+        ]
+        break
+      case 'awards-showcase':
+        newElement.awardsShowcaseTitle = 'Awards & Honors'
+        newElement.awardsShowcaseItems = [
+          { title: 'Honor Roll', issuer: 'School Name', date: '2025', description: 'Maintained GPA above 3.5', icon: 'Award' },
+          { title: 'National Merit Semifinalist', issuer: 'National Merit Scholarship Program', date: '2025', description: '', icon: 'Star' },
+        ]
+        break
+      case 'social-stats':
+        newElement.socialStatsTitle = 'Social Media'
+        newElement.socialStatsPlatforms = [
+          { platform: 'instagram', handle: '@yourhandle', followers: '0', url: '' },
+        ]
+        break
+      case 'collab-card':
+        newElement.collabTitle = 'Brand Collaborations'
+        newElement.collabItems = [
+          { brand: 'Brand Name', role: 'Sponsored Post', dateRange: '', description: '', image: '', link: '' },
+        ]
+        break
+      case 'rate-card':
+        newElement.rateCardTitle = 'Packages & Rates'
+        newElement.rateCardPackages = [
+          { name: 'Basic', description: 'Single post', deliverables: ['1 Feed Post', '2 Stories'], price: '$500', highlight: false },
+          { name: 'Standard', description: 'Multi-platform', deliverables: ['1 Feed Post', '1 Reel/TikTok', '3 Stories'], price: '$1,200', highlight: true },
+          { name: 'Premium', description: 'Full campaign', deliverables: ['2 Feed Posts', '2 Reels', '5 Stories', 'Blog Feature'], price: '$3,000', highlight: false },
+        ]
+        break
+      case 'media-kit-stats':
+        newElement.mediaKitTitle = 'Audience Demographics'
+        newElement.mediaKitStats = [
+          { label: 'Age Range', items: [{ name: '18–24', value: '35%' }, { name: '25–34', value: '45%' }, { name: '35+', value: '20%' }] },
+          { label: 'Gender', items: [{ name: 'Female', value: '65%' }, { name: 'Male', value: '30%' }, { name: 'Other', value: '5%' }] },
+        ]
+        break
+      case 'business-menu':
+        newElement.bizMenuTitle = 'Our Menu'
+        newElement.bizMenuCurrency = '$'
+        newElement.bizMenuCategories = [
+          { name: 'Main Dishes', items: [{ name: 'House Special', description: 'Our signature dish', price: '14.99', tags: ['popular'] }] },
+        ]
+        break
+      case 'business-hours':
+        newElement.bizHoursTitle = 'Hours & Location'
+        newElement.bizHoursSchedule = [
+          { day: 'Monday', open: '9:00 AM', close: '5:00 PM', closed: false },
+          { day: 'Tuesday', open: '9:00 AM', close: '5:00 PM', closed: false },
+          { day: 'Wednesday', open: '9:00 AM', close: '5:00 PM', closed: false },
+          { day: 'Thursday', open: '9:00 AM', close: '5:00 PM', closed: false },
+          { day: 'Friday', open: '9:00 AM', close: '5:00 PM', closed: false },
+          { day: 'Saturday', open: '10:00 AM', close: '4:00 PM', closed: false },
+          { day: 'Sunday', open: '', close: '', closed: true },
+        ]
+        break
+      case 'business-review':
+        newElement.bizReviewTitle = 'Customer Reviews'
+        newElement.bizReviewCurated = []
+        newElement.bizReviewAllowSubmissions = true
+        break
+      case 'business-promo':
+        newElement.bizPromoTitle = 'Specials & Promotions'
+        newElement.bizPromoItems = [
+          { title: 'Grand Opening Special', description: 'Come check us out!', badge: 'NEW', ctaText: '', ctaUrl: '' },
+        ]
         break
     }
 

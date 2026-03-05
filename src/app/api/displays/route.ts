@@ -7,6 +7,10 @@ import { generateKitDisplay } from '@/lib/kits/generate'
 import '@/lib/kits/athlete-kit'
 import '@/lib/kits/resume-kit'
 import '@/lib/kits/wedding-kit'
+import '@/lib/kits/creator-kit'
+import '@/lib/kits/creative-kit'
+import '@/lib/kits/academic-kit'
+import '@/lib/kits/business-kit'
 
 // GET /api/displays - List user's displays
 export async function GET(request: NextRequest) {

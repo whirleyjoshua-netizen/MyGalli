@@ -4,7 +4,7 @@ import { rateLimit } from '@/lib/rate-limit'
 
 // POST /api/waitlist — Submit a waitlist entry
 export async function POST(request: NextRequest) {
-  const limited = rateLimit(request, { limit: 5, windowMs: 60_000, prefix: 'waitlist' })
+  const limited = await rateLimit(request, { limit: 5, windowMs: 60_000, prefix: 'waitlist' })
   if (limited) return limited
 
   try {

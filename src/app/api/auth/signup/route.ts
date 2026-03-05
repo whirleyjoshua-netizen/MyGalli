@@ -7,7 +7,7 @@ import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   // 3 signup attempts per minute per IP
-  const limited = rateLimit(request, { limit: 3, windowMs: 60_000, prefix: 'signup' })
+  const limited = await rateLimit(request, { limit: 3, windowMs: 60_000, prefix: 'signup' })
   if (limited) return limited
 
   try {

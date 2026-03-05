@@ -33,7 +33,7 @@ function buildKitFilter(kit: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const limited = rateLimit(request, { limit: 120, windowMs: 60_000, prefix: 'explore' })
+  const limited = await rateLimit(request, { limit: 120, windowMs: 60_000, prefix: 'explore' })
   if (limited) return limited
 
   try {

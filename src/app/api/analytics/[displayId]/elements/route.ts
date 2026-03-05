@@ -4,7 +4,7 @@ import { getUser } from '@/lib/auth'
 import type { Section } from '@/lib/types/canvas'
 import type { TabsConfig } from '@/lib/types/tabs'
 
-const INTERACTIVE_TYPES = ['mcq', 'rating', 'shortanswer', 'poll', 'comment', 'wedding-rsvp'] as const
+const INTERACTIVE_TYPES = ['mcq', 'rating', 'shortanswer', 'poll', 'comment', 'wedding-rsvp', 'business-review'] as const
 
 interface InteractiveElement {
   id: string
@@ -104,6 +104,7 @@ export async function GET(request: NextRequest, { params }: Props) {
         case 'poll': return aggregatePoll(el, formResponses)
         case 'comment': return aggregateComments(el, allComments)
         case 'wedding-rsvp': return aggregateWeddingRsvp(el, formResponses)
+        case 'business-review': return aggregateBusinessReview(el, formResponses)
         default: return null
       }
     }).filter(Boolean)
@@ -348,6 +349,48 @@ function aggregateWeddingRsvp(el: InteractiveElement, responses: any[]) {
     dietaryNotes: dietaryNotes.slice(0, 50),
     songRequests: songRequests.slice(0, 50),
     guests,
+    tabLabel: el.tabLabel,
+  }
+}
+
+function aggregateBusinessReview(el: InteractiveElement, responses: any[]) {
+  const distribution: Record<number, number> = {}
+  for (let i = 1; i <= 5; i++) distribution[i] = 0
+
+  let responseCount = 0
+  let sum = 0
+  const reviews: { name: string; rating: number; text: string; submittedAt: string }[] = []
+
+  for (const response of responses) {
+    const data = response.responses as Record<string, any>
+    const entry = data[el.id]
+    if (entry && entry.type === 'business-review') {
+      const answer = entry.answer || {}
+      const rating = Number(answer.rating)
+      if (rating >= 1 && rating <= 5) {
+        responseCount++
+        sum += rating
+        distribution[rating]++
+        reviews.push({
+          name: answer.name || 'Anonymous',
+          rating,
+          text: answer.text || '',
+          submittedAt: response.submittedAt?.toISOString?.() || response.submittedAt,
+        })
+      }
+    }
+  }
+
+  return {
+    elementId: el.id,
+    type: 'business-review',
+    title: el.config.bizReviewTitle || 'Customer Reviews',
+    responseCount,
+    averageRating: responseCount > 0 ? Math.round((sum / responseCount) * 10) / 10 : 0,
+    ratingDistribution: Object.entries(distribution)
+      .map(([value, count]) => ({ value: Number(value), count }))
+      .sort((a, b) => b.value - a.value),
+    recentReviews: reviews.slice(0, 50),
     tabLabel: el.tabLabel,
   }
 }

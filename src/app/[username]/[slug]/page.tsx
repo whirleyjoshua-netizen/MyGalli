@@ -36,6 +36,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const displayName = user.name || user.username
   const title = display.title
   const description = `${title} by ${displayName} on Gallio`
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gallio.app'
+  const pageUrl = `${appUrl}/${username}/${slug}`
 
   return {
     title,
@@ -44,11 +46,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       type: 'article',
+      url: pageUrl,
     },
     twitter: {
       card: 'summary',
       title,
       description,
+    },
+    alternates: {
+      canonical: pageUrl,
     },
   }
 }

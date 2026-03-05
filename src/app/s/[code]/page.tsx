@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { db } from '@/lib/db'
 import type { Section } from '@/lib/types/canvas'
 import type { BackgroundConfig } from '@/lib/types/background'
@@ -13,6 +14,28 @@ import { FontLoader } from '@/components/FontLoader'
 
 interface Props {
   params: Promise<{ code: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { code } = await params
+  const shareLink = await db.shareLink.findUnique({
+    where: { code },
+    include: { display: { include: { user: { select: { name: true, username: true } } } } },
+  })
+
+  if (!shareLink || !shareLink.isActive || !shareLink.display.published) return {}
+
+  const displayName = shareLink.display.user.name || shareLink.display.user.username
+  const title = shareLink.display.title
+  const description = `${title} by ${displayName} on Gallio`
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gallio.app'
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: 'article', url: `${appUrl}/s/${code}` },
+    twitter: { card: 'summary', title, description },
+  }
 }
 
 export default async function ShareLinkPage({ params }: Props) {

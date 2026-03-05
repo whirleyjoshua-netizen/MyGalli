@@ -1,9 +1,10 @@
 'use client'
 
-import { UserCircle, ExternalLink, Mail, Phone, MapPin, GraduationCap, Trophy, Target } from 'lucide-react'
+import { UserCircle, ExternalLink, Mail, Phone, MapPin, GraduationCap, Trophy, Target, Library, BookOpen } from 'lucide-react'
 import { getKit } from '@/lib/kits/registry'
 import '@/lib/kits/athlete-kit'
 import '@/lib/kits/resume-kit'
+import '@/lib/kits/academic-kit'
 
 interface PublicKitProfileElementProps {
   element: {
@@ -28,6 +29,11 @@ export function PublicKitProfileElement({ element }: PublicKitProfileElementProp
   // For resume kit, render a professional profile card
   if (kit.id === 'resume') {
     return <ResumeProfileCard data={data} />
+  }
+
+  // For academic kit, render an academic profile card
+  if (kit.id === 'academic') {
+    return <AcademicProfileCard data={data} />
   }
 
   // Generic fallback: render grouped fields
@@ -305,6 +311,125 @@ function AthleteProfileCard({ data }: { data: Record<string, any> }) {
           <div className="text-sm text-muted-foreground">
             {data.socialHandles}
           </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AcademicProfileCard({ data }: { data: Record<string, any> }) {
+  const hasAcademic = data.gpa || data.weightedGpa || data.satScore || data.actScore || data.classRank
+  const hasContact = data.email || data.phone
+  const hasLinks = data.linkedIn || data.portfolio
+
+  return (
+    <div className="rounded-xl border border-border/50 overflow-hidden bg-white">
+      {/* Top bar - violet gradient */}
+      <div className="h-1.5 bg-gradient-to-r from-[#6C63FF] via-[#8B83FF] to-[#1FB6FF]" />
+
+      <div className="p-5 space-y-4">
+        {/* School & Grad Year */}
+        {(data.school || data.graduationYear || data.gradeLevel) && (
+          <div>
+            {data.school && (
+              <div className="flex items-center gap-2 text-lg font-semibold">
+                <GraduationCap className="w-5 h-5 text-[#6C63FF]" />
+                {data.school}
+              </div>
+            )}
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {data.graduationYear && (
+                <span className="px-2.5 py-0.5 bg-[#6C63FF]/10 text-[#6C63FF] rounded-full text-xs font-medium">
+                  Class of {data.graduationYear}
+                </span>
+              )}
+              {data.gradeLevel && (
+                <span className="px-2.5 py-0.5 bg-muted rounded-full text-xs font-medium">{data.gradeLevel}</span>
+              )}
+              {data.major && (
+                <span className="px-2.5 py-0.5 bg-muted rounded-full text-xs font-medium">{data.major}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Stats row */}
+        {hasAcademic && (
+          <div className="flex gap-4 flex-wrap">
+            {data.gpa && (
+              <div className="text-center">
+                <div className="text-2xl font-bold text-[#6C63FF]">{data.gpa}</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider">GPA</div>
+              </div>
+            )}
+            {data.weightedGpa && (
+              <div className="text-center">
+                <div className="text-2xl font-bold text-[#6C63FF]">{data.weightedGpa}</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider">W. GPA</div>
+              </div>
+            )}
+            {data.satScore && (
+              <div className="text-center">
+                <div className="text-2xl font-bold">{data.satScore}</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider">SAT</div>
+              </div>
+            )}
+            {data.actScore && (
+              <div className="text-center">
+                <div className="text-2xl font-bold">{data.actScore}</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider">ACT</div>
+              </div>
+            )}
+            {data.classRank && (
+              <div className="text-center">
+                <div className="text-2xl font-bold">{data.classRank}</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider">Rank</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Contact */}
+        {hasContact && (
+          <div className="flex flex-wrap gap-3 text-sm">
+            {data.email && (
+              <a href={`mailto:${data.email}`} className="inline-flex items-center gap-1.5 text-[#6C63FF] hover:underline">
+                <Mail className="w-3.5 h-3.5" />
+                {data.email}
+              </a>
+            )}
+            {data.phone && (
+              <a href={`tel:${data.phone}`} className="inline-flex items-center gap-1.5 text-[#6C63FF] hover:underline">
+                <Phone className="w-3.5 h-3.5" />
+                {data.phone}
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Links */}
+        {hasLinks && (
+          <div className="flex flex-wrap gap-2">
+            {data.linkedIn && (
+              <a href={data.linkedIn} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-lg text-sm hover:bg-muted/80 transition">
+                <ExternalLink className="w-3.5 h-3.5" />
+                LinkedIn
+              </a>
+            )}
+            {data.portfolio && (
+              <a href={data.portfolio} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-lg text-sm hover:bg-muted/80 transition">
+                <ExternalLink className="w-3.5 h-3.5" />
+                Portfolio
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Interests */}
+        {data.interests && (
+          <p className="text-sm text-muted-foreground leading-relaxed">{data.interests}</p>
         )}
       </div>
     </div>

@@ -7,7 +7,7 @@ import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   // 5 login attempts per minute per IP
-  const limited = rateLimit(request, { limit: 5, windowMs: 60_000, prefix: 'login' })
+  const limited = await rateLimit(request, { limit: 5, windowMs: 60_000, prefix: 'login' })
   if (limited) return limited
 
   try {
@@ -28,6 +28,14 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
+        { status: 401 }
+      )
+    }
+
+    // Google-only users have no password
+    if (!user.password) {
+      return NextResponse.json(
+        { error: 'This account uses Google sign-in. Please use the Google button to log in.' },
         { status: 401 }
       )
     }

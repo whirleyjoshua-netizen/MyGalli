@@ -64,7 +64,7 @@ export async function PATCH(
     }
 
     const updates = await request.json()
-    const { title, description, published, sections, background, headerCard, tabs } = updates
+    const { title, description, published, sections, background, headerCard, tabs, coverImage } = updates
 
     const updated = await db.display.update({
       where: { id },
@@ -76,6 +76,7 @@ export async function PATCH(
         ...(background !== undefined && { background }),
         ...(headerCard !== undefined && { headerCard }),
         ...(tabs !== undefined && { tabs }),
+        ...(coverImage !== undefined && { coverImage }),
       },
     })
 
