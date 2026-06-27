@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -148,11 +148,11 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
   return (
     <div className="min-h-screen bg-background">
       {/* Navbar */}
-      <nav className="sticky top-0 z-30 border-b border-border/50 bg-gradient-to-r from-gallio/10 via-gallio-aqua/5 to-gallio-violet/10 backdrop-blur-xl">
+      <nav className="sticky top-0 z-30 border-b border-border/50 bg-gradient-to-r from-galli/10 via-galli-aqua/5 to-galli-violet/10 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/gallio-frog.svg" alt="Gallio" width={28} height={28} />
-            <span className="font-bold text-lg bg-gradient-to-r from-gallio to-gallio-aqua bg-clip-text text-transparent">
+            <span className="font-bold text-lg bg-gradient-to-r from-gallio to-galli-aqua bg-clip-text text-transparent">
               Gallio
             </span>
           </Link>
@@ -160,7 +160,7 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
             {user ? (
               <Link
                 href="/dashboard"
-                className="px-4 py-1.5 rounded-full text-sm font-medium bg-gallio text-white hover:bg-gallio/90 transition"
+                className="px-4 py-1.5 rounded-full text-sm font-medium bg-gallio text-white hover:bg-galli/90 transition"
               >
                 Dashboard
               </Link>
@@ -174,7 +174,7 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
                 </Link>
                 <Link
                   href="/signup"
-                  className="px-4 py-1.5 rounded-full text-sm font-medium bg-gallio text-white hover:bg-gallio/90 transition"
+                  className="px-4 py-1.5 rounded-full text-sm font-medium bg-gallio text-white hover:bg-galli/90 transition"
                 >
                   Get Started
                 </Link>
@@ -185,11 +185,11 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
       </nav>
 
       {/* Hero */}
-      <div className="bg-gradient-to-br from-gallio/10 via-gallio-aqua/5 to-gallio-violet/10 border-b border-border/30">
+      <div className="bg-gradient-to-br from-galli/10 via-galli-aqua/5 to-galli-violet/10 border-b border-border/30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
           <div className="flex items-center gap-3 mb-3">
             <Compass className="w-8 h-8 text-gallio" />
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gallio via-gallio-aqua to-gallio-violet bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gallio via-galli-aqua to-galli-violet bg-clip-text text-transparent">
               Explore Gallio
             </h1>
           </div>
@@ -229,7 +229,7 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
                 <select
                   value={sort}
                   onChange={(e) => setSort(e.target.value as SortMode)}
-                  className="appearance-none bg-muted text-sm rounded-lg px-3 py-1.5 pr-8 border border-border/50 focus:outline-none focus:ring-2 focus:ring-gallio/30"
+                  className="appearance-none bg-muted text-sm rounded-lg px-3 py-1.5 pr-8 border border-border/50 focus:outline-none focus:ring-2 focus:ring-galli/30"
                 >
                   {SORT_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -246,7 +246,7 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search pages..."
-                  className="w-full sm:w-56 pl-9 pr-8 py-1.5 text-sm rounded-lg bg-muted border border-border/50 focus:outline-none focus:ring-2 focus:ring-gallio/30 placeholder:text-muted-foreground/50"
+                  className="w-full sm:w-56 pl-9 pr-8 py-1.5 text-sm rounded-lg bg-muted border border-border/50 focus:outline-none focus:ring-2 focus:ring-galli/30 placeholder:text-muted-foreground/50"
                 />
                 {search && (
                   <button
@@ -287,7 +287,7 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="px-4 py-2 rounded-full text-sm font-medium bg-gallio text-white hover:bg-gallio/90 transition"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-gallio text-white hover:bg-galli/90 transition"
               >
                 Clear filters
               </button>

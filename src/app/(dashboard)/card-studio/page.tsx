@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
@@ -155,7 +155,7 @@ export default function CardStudioPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
-      <nav className="sticky top-0 z-30 bg-gradient-to-r from-gallio/15 via-gallio-aqua/10 to-gallio-violet/15 backdrop-blur-xl border-b border-gallio/20 shadow-md shadow-gallio/10">
+      <nav className="sticky top-0 z-30 bg-gradient-to-r from-galli/15 via-galli-aqua/10 to-galli-violet/15 backdrop-blur-xl border-b border-galli/20 shadow-md shadow-galli/10">
         <div className="px-6 py-3.5 flex items-center">
           <Link
             href="/dashboard"
@@ -167,7 +167,7 @@ export default function CardStudioPage() {
           <div className="flex-1 flex justify-center">
             <Link href="/" className="flex items-center gap-3 text-2xl font-extrabold">
               <Image src="/gallio-frog.svg" alt="" width={38} height={38} className="drop-shadow-sm" />
-              <span className="text-gallio-gradient tracking-tight">Gallio</span>
+              <span className="text-galli-gradient tracking-tight">Gallio</span>
             </Link>
           </div>
           <div className="w-[140px]" />
@@ -176,10 +176,10 @@ export default function CardStudioPage() {
 
       {/* Header */}
       <header className="relative overflow-hidden">
-        <div className="bg-gradient-to-br from-gallio/10 via-gallio-aqua/5 to-gallio-violet/10">
+        <div className="bg-gradient-to-br from-galli/10 via-galli-aqua/5 to-galli-violet/10">
           <div className="max-w-6xl mx-auto px-6 py-12">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 bg-gallio/10 rounded-xl">
+              <div className="p-2.5 bg-galli/10 rounded-xl">
                 <Layers className="w-6 h-6 text-gallio" />
               </div>
               <h1 className="text-3xl font-bold">Card Studio</h1>
@@ -214,7 +214,7 @@ export default function CardStudioPage() {
                   <Library className="w-4 h-4" />
                   My Library
                   {libraryItems.length > 0 && (
-                    <span className="ml-1 px-1.5 py-0.5 text-[10px] font-semibold bg-gallio/15 text-gallio rounded-full">
+                    <span className="ml-1 px-1.5 py-0.5 text-[10px] font-semibold bg-galli/15 text-gallio rounded-full">
                       {libraryItems.length}
                     </span>
                   )}
@@ -229,7 +229,7 @@ export default function CardStudioPage() {
                   placeholder={activeTab === 'browse' ? 'Search cards...' : 'Search library...'}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-background/60 backdrop-blur-sm border border-border/50 rounded-full text-sm outline-none focus:ring-2 focus:ring-gallio/30 focus:border-gallio/30 transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-background/60 backdrop-blur-sm border border-border/50 rounded-full text-sm outline-none focus:ring-2 focus:ring-galli/30 focus:border-galli/30 transition-all"
                 />
               </div>
             </div>
@@ -241,7 +241,7 @@ export default function CardStudioPage() {
                 <span className="text-sm font-medium">{providers.length} available</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-background/60 backdrop-blur-sm rounded-full border border-border/50">
-                <Library className="w-4 h-4 text-gallio-violet" />
+                <Library className="w-4 h-4 text-galli-violet" />
                 <span className="text-sm font-medium">{libraryItems.length} in library</span>
               </div>
             </div>
@@ -295,8 +295,8 @@ export default function CardStudioPage() {
                   <h2 className="text-2xl font-bold">{selected.name}</h2>
                   <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
                     selected.type === 'builtin'
-                      ? 'bg-gallio/10 text-gallio border border-gallio/20'
-                      : 'bg-gallio-violet/10 text-gallio-violet border border-gallio-violet/20'
+                      ? 'bg-galli/10 text-gallio border border-galli/20'
+                      : 'bg-galli-violet/10 text-galli-violet border border-galli-violet/20'
                   }`}>
                     {selected.type === 'builtin' ? 'Built-in' : 'External'}
                   </span>
@@ -306,7 +306,7 @@ export default function CardStudioPage() {
                 {/* Add to Library button */}
                 <button
                   onClick={() => openAddModal(selected.id)}
-                  className="flex items-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-gallio/25 hover:scale-[1.02] transition-all mb-6"
+                  className="flex items-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 hover:scale-[1.02] transition-all mb-6"
                 >
                   <Plus className="w-4 h-4" />
                   Add to Library
@@ -340,9 +340,9 @@ export default function CardStudioPage() {
                 </div>
 
                 {selected.type === 'external' && (
-                  <div className="mt-4 bg-gallio-violet/5 border border-gallio-violet/20 rounded-xl p-5">
+                  <div className="mt-4 bg-galli-violet/5 border border-galli-violet/20 rounded-xl p-5">
                     <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                      <Code2 className="w-4 h-4 text-gallio-violet" />
+                      <Code2 className="w-4 h-4 text-galli-violet" />
                       Developer Info
                     </h3>
                     <p className="text-sm text-muted-foreground mb-2">
@@ -370,7 +370,7 @@ export default function CardStudioPage() {
                   <button
                     key={provider.id}
                     onClick={() => { setSelectedCard(provider.id); setPreviewStyle('default') }}
-                    className="group text-left border border-border rounded-xl overflow-hidden hover:border-gallio/40 hover:shadow-lg hover:shadow-gallio/10 transition-all bg-background"
+                    className="group text-left border border-border rounded-xl overflow-hidden hover:border-galli/40 hover:shadow-lg hover:shadow-galli/10 transition-all bg-background"
                   >
                     <div className="p-4 bg-muted/20 border-b border-border min-h-[160px] flex items-center justify-center">
                       <div className="w-full max-w-[280px] transform scale-[0.85] origin-center pointer-events-none">
@@ -384,8 +384,8 @@ export default function CardStudioPage() {
                         </h3>
                         <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
                           provider.type === 'builtin'
-                            ? 'bg-gallio/10 text-gallio'
-                            : 'bg-gallio-violet/10 text-gallio-violet'
+                            ? 'bg-galli/10 text-gallio'
+                            : 'bg-galli-violet/10 text-galli-violet'
                         }`}>
                           {provider.type === 'builtin' ? 'Built-in' : 'External'}
                         </span>
@@ -399,8 +399,8 @@ export default function CardStudioPage() {
                 ))}
 
                 {/* Build your own */}
-                <div className="border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center p-8 hover:border-gallio/40 hover:bg-gallio/[0.02] transition-all min-h-[300px]">
-                  <div className="w-14 h-14 rounded-full bg-gallio/10 flex items-center justify-center mb-4">
+                <div className="border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center p-8 hover:border-galli/40 hover:bg-galli/[0.02] transition-all min-h-[300px]">
+                  <div className="w-14 h-14 rounded-full bg-galli/10 flex items-center justify-center mb-4">
                     <Code2 className="w-7 h-7 text-gallio" />
                   </div>
                   <h3 className="font-semibold mb-1">Build Your Own</h3>
@@ -435,7 +435,7 @@ export default function CardStudioPage() {
                     </p>
                     <button
                       onClick={() => setActiveTab('browse')}
-                      className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-gallio/25 transition-all"
+                      className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 transition-all"
                     >
                       Browse Cards
                     </button>
@@ -450,7 +450,7 @@ export default function CardStudioPage() {
                   return (
                     <div
                       key={item.id}
-                      className="group border border-border rounded-xl overflow-hidden bg-background hover:border-gallio/40 hover:shadow-lg hover:shadow-gallio/10 transition-all"
+                      className="group border border-border rounded-xl overflow-hidden bg-background hover:border-galli/40 hover:shadow-lg hover:shadow-galli/10 transition-all"
                     >
                       {/* Preview */}
                       <div className="p-4 bg-muted/20 border-b border-border min-h-[160px] flex items-center justify-center relative">
@@ -472,8 +472,8 @@ export default function CardStudioPage() {
                           <h3 className="font-semibold truncate">{item.name}</h3>
                           <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full flex-shrink-0 ${
                             provider.type === 'builtin'
-                              ? 'bg-gallio/10 text-gallio'
-                              : 'bg-gallio-violet/10 text-gallio-violet'
+                              ? 'bg-galli/10 text-gallio'
+                              : 'bg-galli-violet/10 text-galli-violet'
                           }`}>
                             {provider.name}
                           </span>
@@ -513,8 +513,8 @@ export default function CardStudioPage() {
                 <div className="flex items-center gap-3 mb-4 p-3 bg-muted/30 rounded-lg border border-border/50">
                   <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
                     CARD_PROVIDERS[addModalProvider].type === 'builtin'
-                      ? 'bg-gallio/10 text-gallio'
-                      : 'bg-gallio-violet/10 text-gallio-violet'
+                      ? 'bg-galli/10 text-gallio'
+                      : 'bg-galli-violet/10 text-galli-violet'
                   }`}>
                     {CARD_PROVIDERS[addModalProvider].name}
                   </span>
@@ -528,7 +528,7 @@ export default function CardStudioPage() {
                 value={addModalName}
                 onChange={e => setAddModalName(e.target.value)}
                 placeholder="e.g. My LinkedIn Card"
-                className="w-full px-3 py-2.5 bg-muted border border-border rounded-lg text-sm outline-none focus:ring-2 focus:ring-gallio/30 mb-4"
+                className="w-full px-3 py-2.5 bg-muted border border-border rounded-lg text-sm outline-none focus:ring-2 focus:ring-galli/30 mb-4"
                 autoFocus
                 onKeyDown={e => e.key === 'Enter' && handleAddToLibrary()}
               />

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { CheckCircle2, Shield } from 'lucide-react';
 
@@ -11,11 +11,11 @@ const features = [
 ];
 
 const miniStudents = [
-  { initials: 'JM', color: 'bg-gallio-violet' },
-  { initials: 'KL', color: 'bg-gallio-aqua' },
+  { initials: 'JM', color: 'bg-galli-violet' },
+  { initials: 'KL', color: 'bg-galli-aqua' },
   { initials: 'TS', color: 'bg-gallio' },
-  { initials: 'AR', color: 'bg-gallio-violet/70' },
-  { initials: 'WD', color: 'bg-gallio-aqua/70' },
+  { initials: 'AR', color: 'bg-galli-violet/70' },
+  { initials: 'WD', color: 'bg-galli-aqua/70' },
 ];
 
 export default function SchoolSection() {
@@ -27,7 +27,7 @@ export default function SchoolSection() {
           <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-6 shadow-lg">
             {/* Card header */}
             <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-gallio-violet" />
+              <Shield className="h-5 w-5 text-galli-violet" />
               <h3 className="text-lg font-semibold text-foreground">
                 Lincoln High School
               </h3>
@@ -35,16 +35,16 @@ export default function SchoolSection() {
 
             {/* Mini stats row */}
             <div className="mt-5 grid grid-cols-3 gap-3">
-              <div className="rounded-xl bg-gallio-violet/10 px-3 py-3 text-center">
-                <p className="text-lg font-bold text-gallio-violet">142</p>
+              <div className="rounded-xl bg-galli-violet/10 px-3 py-3 text-center">
+                <p className="text-lg font-bold text-galli-violet">142</p>
                 <p className="text-[11px] text-muted-foreground">Students</p>
               </div>
-              <div className="rounded-xl bg-gallio-violet/10 px-3 py-3 text-center">
-                <p className="text-lg font-bold text-gallio-violet">6</p>
+              <div className="rounded-xl bg-galli-violet/10 px-3 py-3 text-center">
+                <p className="text-lg font-bold text-galli-violet">6</p>
                 <p className="text-[11px] text-muted-foreground">Teams</p>
               </div>
-              <div className="rounded-xl bg-gallio-violet/10 px-3 py-3 text-center">
-                <p className="text-lg font-bold text-gallio-violet">4</p>
+              <div className="rounded-xl bg-galli-violet/10 px-3 py-3 text-center">
+                <p className="text-lg font-bold text-galli-violet">4</p>
                 <p className="text-[11px] text-muted-foreground">Kits Active</p>
               </div>
             </div>
@@ -75,8 +75,8 @@ export default function SchoolSection() {
                 Kit activity
               </p>
               {[
-                { label: 'Academic Portfolio', pct: 87, color: 'bg-gallio-violet' },
-                { label: 'Athletic Profile', pct: 64, color: 'bg-gallio-aqua' },
+                { label: 'Academic Portfolio', pct: 87, color: 'bg-galli-violet' },
+                { label: 'Athletic Profile', pct: 64, color: 'bg-galli-aqua' },
                 { label: 'Creative Showcase', pct: 41, color: 'bg-gallio' },
               ].map((kit) => (
                 <div key={kit.label}>
@@ -99,7 +99,7 @@ export default function SchoolSection() {
         {/* Right — Text */}
         <div className="md:order-2">
           {/* Badge */}
-          <span className="inline-block rounded-full bg-gallio-violet/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gallio-violet">
+          <span className="inline-block rounded-full bg-galli-violet/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-galli-violet">
             For Schools &amp; Districts
           </span>
 
@@ -112,7 +112,7 @@ export default function SchoolSection() {
           <ul className="mt-8 space-y-4">
             {features.map((text) => (
               <li key={text} className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-gallio-violet" />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-galli-violet" />
                 <span className="text-sm text-foreground/90 md:text-base">
                   {text}
                 </span>

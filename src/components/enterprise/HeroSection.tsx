@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
@@ -13,12 +13,12 @@ function smoothScroll(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
 
 export default function HeroSection() {
   useEffect(() => {
-    const id = 'gallio-hero-keyframes';
+    const id = 'galli-hero-keyframes';
     if (document.getElementById(id)) return;
     const style = document.createElement('style');
     style.id = id;
     style.textContent = `
-      @keyframes gallio-float {
+      @keyframes galli-float {
         0%, 100% { transform: translateY(0) scale(1); }
         50% { transform: translateY(-30px) scale(1.05); }
       }
@@ -33,19 +33,19 @@ export default function HeroSection() {
     <section className="relative flex min-h-[90vh] items-center justify-center overflow-hidden px-6">
       {/* Animated blur background circles */}
       <div
-        className="pointer-events-none absolute left-1/4 top-1/4 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gallio/30 blur-3xl"
+        className="pointer-events-none absolute left-1/4 top-1/4 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-galli/30 blur-3xl"
         aria-hidden="true"
-        style={{ animation: 'gallio-float 8s ease-in-out infinite' }}
+        style={{ animation: 'galli-float 8s ease-in-out infinite' }}
       />
       <div
-        className="pointer-events-none absolute right-1/4 top-1/3 h-[400px] w-[400px] rounded-full bg-gallio-aqua/20 blur-3xl"
+        className="pointer-events-none absolute right-1/4 top-1/3 h-[400px] w-[400px] rounded-full bg-galli-aqua/20 blur-3xl"
         aria-hidden="true"
-        style={{ animation: 'gallio-float 10s ease-in-out infinite reverse' }}
+        style={{ animation: 'galli-float 10s ease-in-out infinite reverse' }}
       />
       <div
-        className="pointer-events-none absolute bottom-1/4 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-gallio-violet/20 blur-3xl"
+        className="pointer-events-none absolute bottom-1/4 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-galli-violet/20 blur-3xl"
         aria-hidden="true"
-        style={{ animation: 'gallio-float 12s ease-in-out infinite' }}
+        style={{ animation: 'galli-float 12s ease-in-out infinite' }}
       />
 
       {/* Content */}
@@ -57,7 +57,7 @@ export default function HeroSection() {
         </div>
 
         {/* Main Heading */}
-        <h1 className="text-gallio-gradient text-5xl font-extrabold tracking-tight md:text-7xl">
+        <h1 className="text-galli-gradient text-5xl font-extrabold tracking-tight md:text-7xl">
           The Operating System
           <br />
           for Student Identity
@@ -75,7 +75,7 @@ export default function HeroSection() {
           <a
             href="#waitlist"
             onClick={(e) => smoothScroll(e, '#waitlist')}
-            className="rounded-full bg-primary px-8 py-4 text-lg font-semibold text-primary-foreground transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-gallio/25"
+            className="rounded-full bg-primary px-8 py-4 text-lg font-semibold text-primary-foreground transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-galli/25"
           >
             Join the Waitlist
           </a>

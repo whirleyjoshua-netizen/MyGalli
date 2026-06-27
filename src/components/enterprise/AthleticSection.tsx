@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { CheckCircle2, TrendingUp } from 'lucide-react';
 
@@ -17,7 +17,7 @@ export default function AthleticSection() {
         {/* Left — Text */}
         <div>
           {/* Badge */}
-          <span className="inline-block rounded-full bg-gallio/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gallio-dark">
+          <span className="inline-block rounded-full bg-galli/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-galli-dark">
             For Athletic Programs
           </span>
 
@@ -57,15 +57,15 @@ export default function AthleticSection() {
 
             {/* Mini stats */}
             <div className="mt-5 grid grid-cols-3 gap-3">
-              <div className="rounded-xl bg-gallio/10 px-3 py-3 text-center">
-                <p className="text-lg font-bold text-gallio-dark">4.42s</p>
+              <div className="rounded-xl bg-galli/10 px-3 py-3 text-center">
+                <p className="text-lg font-bold text-galli-dark">4.42s</p>
                 <p className="text-[11px] text-muted-foreground">PB</p>
               </div>
-              <div className="rounded-xl bg-gallio/10 px-3 py-3 text-center">
-                <p className="text-lg font-bold text-gallio-dark">4.51s</p>
+              <div className="rounded-xl bg-galli/10 px-3 py-3 text-center">
+                <p className="text-lg font-bold text-galli-dark">4.51s</p>
                 <p className="text-[11px] text-muted-foreground">Avg</p>
               </div>
-              <div className="rounded-xl bg-gallio/10 px-3 py-3 text-center">
+              <div className="rounded-xl bg-galli/10 px-3 py-3 text-center">
                 <p className="text-lg font-bold text-gallio">&#8593; 3.2%</p>
                 <p className="text-[11px] text-muted-foreground">Improvement</p>
               </div>

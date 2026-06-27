@@ -39,18 +39,18 @@
   }
 }
 
-/* Gallio brand gradient text */
+/* Galli brand gradient text */
 @layer utilities {
-  .text-gallio-gradient {
+  .text-galli-gradient {
     background: linear-gradient(135deg, #39D98A, #1FB6FF, #6C63FF);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  .bg-gallio-gradient {
+  .bg-galli-gradient {
     background: linear-gradient(135deg, #39D98A, #1FB6FF, #6C63FF);
   }
-  .border-gallio-gradient {
+  .border-galli-gradient {
     border-image: linear-gradient(135deg, #39D98A, #1FB6FF, #6C63FF) 1;
   }
 }

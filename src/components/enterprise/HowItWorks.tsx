@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Building2, Users, TrendingUp } from 'lucide-react'
 
@@ -32,7 +32,7 @@ export function HowItWorks() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="text-xs font-semibold uppercase tracking-widest text-gallio-aqua mb-3">
+          <div className="text-xs font-semibold uppercase tracking-widest text-galli-aqua mb-3">
             HOW IT WORKS
           </div>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight">

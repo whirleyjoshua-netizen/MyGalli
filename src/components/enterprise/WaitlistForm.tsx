@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { Check, Loader2, Send } from 'lucide-react'
@@ -45,7 +45,7 @@ export function WaitlistForm() {
       <div className="max-w-2xl mx-auto">
         {submitted ? (
           <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-full bg-gallio/10 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-full bg-galli/10 flex items-center justify-center mx-auto mb-4">
               <Check className="w-8 h-8 text-gallio" />
             </div>
             <h2 className="text-3xl font-bold mb-2">You&apos;re on the list!</h2>
@@ -150,7 +150,7 @@ export function WaitlistForm() {
               <button
                 type="submit"
                 disabled={submitting || !email}
-                className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-full text-lg font-semibold hover:shadow-lg hover:shadow-gallio/25 hover:scale-[1.01] transition-all disabled:opacity-50 disabled:hover:scale-100"
+                className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-full text-lg font-semibold hover:shadow-lg hover:shadow-galli/25 hover:scale-[1.01] transition-all disabled:opacity-50 disabled:hover:scale-100"
               >
                 {submitting ? (
                   <>

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Trophy, GraduationCap, Building2, Check, Sparkles } from 'lucide-react'
 
@@ -56,13 +56,13 @@ export function PricingTeaser() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="text-xs font-semibold uppercase tracking-widest text-gallio-violet mb-3">
+          <div className="text-xs font-semibold uppercase tracking-widest text-galli-violet mb-3">
             PRICING
           </div>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
             Plans for every program
           </h2>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gallio/10 text-gallio-dark rounded-full text-sm font-medium">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-galli/10 text-galli-dark rounded-full text-sm font-medium">
             <Sparkles className="w-3.5 h-3.5 text-gallio" />
             Early access partners get founding pricing
           </div>
@@ -75,13 +75,13 @@ export function PricingTeaser() {
               key={tier.name}
               className={`relative rounded-2xl border p-6 transition-all ${
                 tier.featured
-                  ? 'border-gallio-violet/40 shadow-lg shadow-gallio-violet/10 scale-[1.02]'
+                  ? 'border-galli-violet/40 shadow-lg shadow-galli-violet/10 scale-[1.02]'
                   : 'border-border shadow-sm hover:shadow-md'
               }`}
             >
               {/* Featured badge */}
               {tier.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-gallio-violet text-white text-xs font-semibold rounded-full">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-galli-violet text-white text-xs font-semibold rounded-full">
                   Most Popular
                 </div>
               )}

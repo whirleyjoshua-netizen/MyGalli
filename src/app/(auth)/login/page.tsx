@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -87,7 +87,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-gallio/25 transition-all disabled:opacity-50"
+              className="w-full py-2.5 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 transition-all disabled:opacity-50"
             >
               {loading ? 'Logging in...' : 'Log in'}
             </button>

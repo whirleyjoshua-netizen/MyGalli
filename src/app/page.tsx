@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import Image from 'next/image'
 import {
   Layers,
@@ -71,15 +71,15 @@ export default function Home() {
   return (
     <main className="min-h-screen relative overflow-hidden bg-background">
       {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gallio/5 via-transparent to-gallio-aqua/5 pointer-events-none" />
-      <div className="absolute top-20 -right-40 w-96 h-96 bg-gallio/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-20 -left-40 w-96 h-96 bg-gallio-violet/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-galli/5 via-transparent to-galli-aqua/5 pointer-events-none" />
+      <div className="absolute top-20 -right-40 w-96 h-96 bg-galli/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-20 -left-40 w-96 h-96 bg-galli-violet/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
         <div className="flex items-center gap-2">
           <Image src="/gallio-frog.svg" alt="Gallio" width={32} height={32} />
-          <span className="text-xl font-bold text-gallio-gradient">Gallio</span>
+          <span className="text-xl font-bold text-galli-gradient">Gallio</span>
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -96,7 +96,7 @@ export default function Home() {
           </Link>
           <Link
             href="/signup"
-            className="px-5 py-2 bg-primary text-primary-foreground text-sm rounded-full font-medium hover:shadow-lg hover:shadow-gallio/25 transition-all"
+            className="px-5 py-2 bg-primary text-primary-foreground text-sm rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 transition-all"
           >
             Get Started
           </Link>
@@ -109,7 +109,7 @@ export default function Home() {
           <Image src="/gallio-frog.svg" alt="Gallio" width={80} height={80} />
         </div>
 
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-center tracking-tight text-gallio-gradient">
+        <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-center tracking-tight text-galli-gradient">
           Gallio
         </h1>
         <p className="mt-4 text-xl md:text-2xl text-muted-foreground text-center max-w-2xl">
@@ -123,7 +123,7 @@ export default function Home() {
         <div className="mt-10 flex flex-col sm:flex-row gap-4">
           <Link
             href="/signup"
-            className="px-8 py-3.5 bg-primary text-primary-foreground rounded-full font-semibold text-lg hover:shadow-xl hover:shadow-gallio/25 hover:scale-[1.02] transition-all text-center"
+            className="px-8 py-3.5 bg-primary text-primary-foreground rounded-full font-semibold text-lg hover:shadow-xl hover:shadow-galli/25 hover:scale-[1.02] transition-all text-center"
           >
             Create Your Page
           </Link>
@@ -149,7 +149,7 @@ export default function Home() {
           {FEATURES.map((feature) => (
             <div
               key={feature.title}
-              className="p-6 rounded-2xl border border-border bg-background/80 backdrop-blur-sm hover:border-primary/30 hover:shadow-lg hover:shadow-gallio/5 transition-all"
+              className="p-6 rounded-2xl border border-border bg-background/80 backdrop-blur-sm hover:border-primary/30 hover:shadow-lg hover:shadow-galli/5 transition-all"
             >
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                 <feature.icon className="w-5 h-5 text-primary" />
@@ -207,7 +207,7 @@ export default function Home() {
 
       {/* CTA */}
       <section className="relative z-10 max-w-4xl mx-auto px-6 pb-24">
-        <div className="rounded-3xl bg-gradient-to-br from-gallio/10 via-gallio-aqua/5 to-gallio-violet/10 border border-primary/20 p-12 text-center">
+        <div className="rounded-3xl bg-gradient-to-br from-galli/10 via-galli-aqua/5 to-galli-violet/10 border border-primary/20 p-12 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Ready to build yours?
           </h2>
@@ -216,7 +216,7 @@ export default function Home() {
           </p>
           <Link
             href="/signup"
-            className="inline-block px-10 py-4 bg-primary text-primary-foreground rounded-full font-semibold text-lg hover:shadow-xl hover:shadow-gallio/25 hover:scale-[1.02] transition-all"
+            className="inline-block px-10 py-4 bg-primary text-primary-foreground rounded-full font-semibold text-lg hover:shadow-xl hover:shadow-galli/25 hover:scale-[1.02] transition-all"
           >
             Get Started Free
           </Link>

@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+﻿import { Suspense } from 'react'
 import { db } from '@/lib/db'
 import { ExploreClient } from '@/components/explore/ExploreClient'
 import type { Metadata } from 'next'
@@ -55,8 +55,8 @@ async function ExploreContent() {
 function ExploreLoadingShell() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="h-14 border-b border-border/50 bg-gradient-to-r from-gallio/10 via-gallio-aqua/5 to-gallio-violet/10" />
-      <div className="bg-gradient-to-br from-gallio/10 via-gallio-aqua/5 to-gallio-violet/10 border-b border-border/30">
+      <div className="h-14 border-b border-border/50 bg-gradient-to-r from-galli/10 via-galli-aqua/5 to-galli-violet/10" />
+      <div className="bg-gradient-to-br from-galli/10 via-galli-aqua/5 to-galli-violet/10 border-b border-border/30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
           <div className="h-10 bg-muted/50 rounded w-64 mb-3 animate-pulse" />
           <div className="h-6 bg-muted/50 rounded w-96 animate-pulse" />

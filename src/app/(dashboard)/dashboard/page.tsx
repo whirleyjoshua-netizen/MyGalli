@@ -1,10 +1,10 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Plus, ExternalLink, Eye, MoreHorizontal, BarChart3, Compass, LogOut, Menu, Layout, Clock, Settings, Pin, PinOff, GripVertical, Trophy, Trash2, ImageIcon, X } from 'lucide-react'
+import { Plus, ExternalLink, Eye, MoreHorizontal, BarChart3, Compass, LogOut, Menu, Layout, Clock, Settings, Pin, PinOff, GripVertical, Trophy, Trash2, ImageIcon, X, Sparkles } from 'lucide-react'
 import {
   DndContext,
   DragOverlay,
@@ -41,12 +41,12 @@ interface Display {
 }
 
 const GRADIENTS = [
-  'from-gallio/20 via-gallio-aqua/10 to-gallio-violet/5',
-  'from-gallio-aqua/20 via-gallio-violet/10 to-gallio/5',
-  'from-gallio-violet/20 via-gallio/10 to-gallio-aqua/5',
-  'from-gallio/15 via-gallio-aqua/8 to-transparent',
-  'from-gallio-violet/15 via-gallio/8 to-transparent',
-  'from-gallio-aqua/15 via-gallio-violet/8 to-transparent',
+  'from-galli/20 via-galli-aqua/10 to-galli-violet/5',
+  'from-galli-aqua/20 via-galli-violet/10 to-galli/5',
+  'from-galli-violet/20 via-galli/10 to-galli-aqua/5',
+  'from-galli/15 via-galli-aqua/8 to-transparent',
+  'from-galli-violet/15 via-galli/8 to-transparent',
+  'from-galli-aqua/15 via-galli-violet/8 to-transparent',
 ]
 
 // Sortable display card wrapper
@@ -111,7 +111,7 @@ function SortableDisplayCard({
 
       <Link
         href={`/editor?id=${display.id}`}
-        className="relative overflow-hidden border border-border rounded-xl hover:border-gallio/40 hover:shadow-lg hover:shadow-gallio/10 transition-all block bg-background"
+        className="relative overflow-hidden border border-border rounded-xl hover:border-galli/40 hover:shadow-lg hover:shadow-galli/10 transition-all block bg-background"
       >
         {/* Cover image or gradient preview area */}
         <div className={`h-28 relative ${display.coverImage ? '' : `bg-gradient-to-br ${gradient}`}`}>
@@ -127,7 +127,7 @@ function SortableDisplayCard({
             <span
               className={`px-2.5 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
                 display.published
-                  ? 'bg-gallio/20 text-gallio-dark border border-gallio/20'
+                  ? 'bg-galli/20 text-galli-dark border border-galli/20'
                   : 'bg-background/60 text-muted-foreground border border-border/50'
               }`}
             >
@@ -436,17 +436,17 @@ export default function DashboardPage() {
     <div className="min-h-screen relative">
 
       {/* Nav bar */}
-      <nav className="sticky top-0 z-30 bg-gradient-to-r from-gallio/15 via-gallio-aqua/10 to-gallio-violet/15 backdrop-blur-xl border-b border-gallio/20 shadow-md shadow-gallio/10">
+      <nav className="sticky top-0 z-30 bg-gradient-to-r from-galli/15 via-galli-aqua/10 to-galli-violet/15 backdrop-blur-xl border-b border-galli/20 shadow-md shadow-galli/10">
         <div className="px-6 py-3.5 flex items-center">
           <div className="flex-1" />
           <Link href="/" className="flex items-center gap-3 text-2xl font-extrabold">
             <Image src="/gallio-frog.svg" alt="" width={38} height={38} className="drop-shadow-sm" />
-            <span className="text-gallio-gradient tracking-tight">Gallio</span>
+            <span className="text-galli-gradient tracking-tight">Gallio</span>
           </Link>
           <div className="flex-1 flex justify-end gap-2">
             <button
               onClick={() => setBgSettingsOpen(true)}
-              className="p-2.5 bg-gallio/10 hover:bg-gallio/20 rounded-xl transition-all hover:scale-105"
+              className="p-2.5 bg-galli/10 hover:bg-galli/20 rounded-xl transition-all hover:scale-105"
               title="Dashboard background"
             >
               <Settings className="w-5 h-5 text-gallio" />
@@ -454,9 +454,9 @@ export default function DashboardPage() {
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="p-2.5 bg-gallio-violet/10 hover:bg-gallio-violet/20 rounded-xl transition-all hover:scale-105"
+                className="p-2.5 bg-galli-violet/10 hover:bg-galli-violet/20 rounded-xl transition-all hover:scale-105"
               >
-                <Menu className="w-5 h-5 text-gallio-violet" />
+                <Menu className="w-5 h-5 text-galli-violet" />
               </button>
               {menuOpen && (
                 <>
@@ -490,7 +490,7 @@ export default function DashboardPage() {
 
       {/* Hero header */}
       <header className="relative overflow-hidden">
-        <div className="bg-gradient-to-br from-gallio/10 via-gallio-aqua/5 to-gallio-violet/10">
+        <div className="bg-gradient-to-br from-galli/10 via-galli-aqua/5 to-galli-violet/10">
           <div className="max-w-6xl mx-auto px-6 py-12">
             <div className="flex items-end justify-between">
               <div>
@@ -502,16 +502,25 @@ export default function DashboardPage() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
+                {/* Hidden for now — AI page builder (no API credits) and Kit pages
+                <Link
+                  href="/create"
+                  className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-gallio to-galli-aqua text-white rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 hover:scale-[1.02] transition-all"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Create with AI
+                </Link>
                 <Link
                   href="/new-kit"
-                  className="flex items-center gap-2 px-5 py-3 bg-gallio/10 text-gallio-dark border border-gallio/20 rounded-full font-medium hover:bg-gallio/20 hover:shadow-lg hover:shadow-gallio/15 hover:scale-[1.02] transition-all"
+                  className="flex items-center gap-2 px-5 py-3 bg-galli/10 text-galli-dark border border-galli/20 rounded-full font-medium hover:bg-galli/20 hover:shadow-lg hover:shadow-galli/15 hover:scale-[1.02] transition-all"
                 >
                   <Trophy className="w-4 h-4 text-gallio" />
                   New Kit Page
                 </Link>
+                */}
                 <button
                   onClick={createDisplay}
-                  className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-gallio/25 hover:scale-[1.02] transition-all"
+                  className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 hover:scale-[1.02] transition-all"
                 >
                   <Plus className="w-4 h-4" />
                   New Page
@@ -526,11 +535,11 @@ export default function DashboardPage() {
                 <span className="text-sm font-medium">{displays.length} pages</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-background/60 backdrop-blur-sm rounded-full border border-border/50">
-                <Eye className="w-4 h-4 text-gallio-aqua" />
+                <Eye className="w-4 h-4 text-galli-aqua" />
                 <span className="text-sm font-medium">{totalViews} total views</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-background/60 backdrop-blur-sm rounded-full border border-border/50">
-                <ExternalLink className="w-4 h-4 text-gallio-violet" />
+                <ExternalLink className="w-4 h-4 text-galli-violet" />
                 <span className="text-sm font-medium">{publishedCount} published</span>
               </div>
             </div>
@@ -546,8 +555,8 @@ export default function DashboardPage() {
           <div className="absolute inset-0 -z-10" style={getBackgroundStyles(dashboardPrefs.background)} />
         ) : (
           <div className="absolute inset-0 -z-10 overflow-hidden">
-            <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-gallio/[0.04] rounded-full blur-3xl" />
-            <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-gallio-violet/[0.04] rounded-full blur-3xl" />
+            <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-galli/[0.04] rounded-full blur-3xl" />
+            <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-galli-violet/[0.04] rounded-full blur-3xl" />
           </div>
         )}
         <main className="max-w-6xl mx-auto px-6 py-8 relative z-10">
@@ -560,7 +569,7 @@ export default function DashboardPage() {
             </p>
             <button
               onClick={createDisplay}
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-gallio/25 transition-all"
+              className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 transition-all"
             >
               Create your first page
             </button>
@@ -580,9 +589,9 @@ export default function DashboardPage() {
                 {/* New page card — always first, not sortable */}
                 <button
                   onClick={createDisplay}
-                  className="group border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center py-12 hover:border-gallio/40 hover:bg-gallio/[0.03] transition-all"
+                  className="group border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center py-12 hover:border-galli/40 hover:bg-galli/[0.03] transition-all"
                 >
-                  <div className="w-12 h-12 rounded-full bg-gallio/10 flex items-center justify-center mb-3 group-hover:bg-gallio/20 group-hover:scale-110 transition-all">
+                  <div className="w-12 h-12 rounded-full bg-galli/10 flex items-center justify-center mb-3 group-hover:bg-galli/20 group-hover:scale-110 transition-all">
                     <Plus className="w-6 h-6 text-gallio" />
                   </div>
                   <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
@@ -613,7 +622,7 @@ export default function DashboardPage() {
             {/* Drag overlay */}
             <DragOverlay>
               {activeDisplay && (
-                <div className="opacity-80 shadow-2xl rounded-xl bg-background border border-gallio/30 w-[300px] overflow-hidden pointer-events-none">
+                <div className="opacity-80 shadow-2xl rounded-xl bg-background border border-galli/30 w-[300px] overflow-hidden pointer-events-none">
                   <div className={`h-20 bg-gradient-to-br ${GRADIENTS[0]}`} />
                   <div className="px-4 py-3">
                     <h3 className="text-sm font-semibold truncate">{activeDisplay.title}</h3>

@@ -7,6 +7,7 @@ const PROTECTED_PATHS = [
   '/card-studio',
   '/new-kit',
   '/editor',
+  '/create',
 ]
 
 export function middleware(request: NextRequest) {
@@ -34,5 +35,6 @@ export const config = {
     '/card-studio/:path*',
     '/new-kit/:path*',
     '/editor/:path*',
+    '/create/:path*',
   ],
 }

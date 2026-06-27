@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 const stats = [
   { value: '5', label: 'Pre-built tabs' },
@@ -30,7 +30,7 @@ export default function SolutionSection() {
         {/* Stats row */}
         <div className="relative mx-auto mt-16 max-w-4xl">
           {/* Gradient background card */}
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-gallio/5 via-gallio-aqua/5 to-gallio-violet/5 blur-sm" />
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-galli/5 via-galli-aqua/5 to-galli-violet/5 blur-sm" />
           <div className="relative rounded-2xl border border-border bg-background/60 px-6 py-10 shadow-sm backdrop-blur-sm">
             <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
               {stats.map((stat) => (

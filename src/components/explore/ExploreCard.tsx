@@ -1,16 +1,16 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import Image from 'next/image'
 import { Eye, Trophy, FileText, Layout } from 'lucide-react'
 
 const GRADIENTS = [
-  'from-gallio/20 via-gallio-aqua/10 to-gallio-violet/5',
-  'from-gallio-aqua/20 via-gallio-violet/10 to-gallio/5',
-  'from-gallio-violet/20 via-gallio/10 to-gallio-aqua/5',
-  'from-gallio/15 via-gallio-aqua/8 to-transparent',
-  'from-gallio-violet/15 via-gallio/8 to-transparent',
-  'from-gallio-aqua/15 via-gallio-violet/8 to-transparent',
+  'from-galli/20 via-galli-aqua/10 to-galli-violet/5',
+  'from-galli-aqua/20 via-galli-violet/10 to-galli/5',
+  'from-galli-violet/20 via-galli/10 to-galli-aqua/5',
+  'from-galli/15 via-galli-aqua/8 to-transparent',
+  'from-galli-violet/15 via-galli/8 to-transparent',
+  'from-galli-aqua/15 via-galli-violet/8 to-transparent',
 ]
 
 interface ExploreCardProps {
@@ -69,14 +69,14 @@ function getKitBadge(kitConfig: unknown) {
     return {
       label: 'Athlete',
       icon: Trophy,
-      className: 'bg-gallio/15 text-green-700 dark:text-green-300 border border-gallio/20',
+      className: 'bg-galli/15 text-green-700 dark:text-green-300 border border-galli/20',
     }
   }
   if (kitId === 'resume') {
     return {
       label: 'Resume',
       icon: FileText,
-      className: 'bg-gallio-violet/15 text-violet-700 dark:text-violet-300 border border-gallio-violet/20',
+      className: 'bg-galli-violet/15 text-violet-700 dark:text-violet-300 border border-galli-violet/20',
     }
   }
   return {
@@ -102,7 +102,7 @@ export function ExploreCard({ display, index }: ExploreCardProps) {
   return (
     <Link
       href={`/${display.user.username}/${display.slug}`}
-      className="group block rounded-xl border border-border/50 bg-card overflow-hidden shadow-sm hover:shadow-md hover:border-gallio/30 transition-all duration-200"
+      className="group block rounded-xl border border-border/50 bg-card overflow-hidden shadow-sm hover:shadow-md hover:border-galli/30 transition-all duration-200"
     >
       {/* Preview area */}
       <div className="relative h-36 overflow-hidden">
@@ -165,7 +165,7 @@ export function ExploreCard({ display, index }: ExploreCardProps) {
               className="rounded-full"
             />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-gallio/20 text-gallio-dark flex items-center justify-center text-[10px] font-bold">
+            <div className="w-6 h-6 rounded-full bg-galli/20 text-galli-dark flex items-center justify-center text-[10px] font-bold">
               {getInitials(display.user.name, display.user.username)}
             </div>
           )}

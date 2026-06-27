@@ -25,7 +25,7 @@ const config: Config = {
           foreground: 'hsl(var(--accent-foreground))',
         },
         destructive: 'hsl(var(--destructive))',
-        gallio: {
+        galli: {
           DEFAULT: '#39D98A',
           dark: '#0F3D2E',
           aqua: '#1FB6FF',

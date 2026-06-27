@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Image from 'next/image';
 
@@ -31,7 +31,7 @@ export default function EnterpriseNav() {
             className="shrink-0"
           />
           <span className="text-lg font-bold text-foreground">Gallio</span>
-          <span className="rounded-full bg-gallio/15 px-2.5 py-0.5 text-xs font-semibold text-gallio-dark">
+          <span className="rounded-full bg-galli/15 px-2.5 py-0.5 text-xs font-semibold text-galli-dark">
             Enterprise
           </span>
         </div>
@@ -54,7 +54,7 @@ export default function EnterpriseNav() {
         <a
           href="#waitlist"
           onClick={(e) => smoothScroll(e, '#waitlist')}
-          className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:scale-[1.02] hover:shadow-md hover:shadow-gallio/25"
+          className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:scale-[1.02] hover:shadow-md hover:shadow-galli/25"
         >
           Join Waitlist
         </a>
