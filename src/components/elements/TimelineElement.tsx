@@ -53,7 +53,7 @@ const ICON_OPTIONS: { name: string; icon: LucideIcon }[] = [
 ]
 
 const PRESET_COLORS = [
-  '#39D98A', // Gallio green
+  '#39D98A', // Galli green
   '#6C63FF', // Violet
   '#1FB6FF', // Aqua
   '#F59E0B', // Amber

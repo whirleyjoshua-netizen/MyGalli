@@ -5,8 +5,8 @@ import type { Metadata } from 'next'
 import { ExploreCardSkeleton } from '@/components/explore/ExploreCardSkeleton'
 
 export const metadata: Metadata = {
-  title: 'Explore — Gallio',
-  description: 'Discover published pages from athletes, creators, and professionals on Gallio.',
+  title: 'Explore — Galli',
+  description: 'Discover published pages from athletes, creators, and professionals on Galli.',
 }
 
 const PAGE_SIZE = 12

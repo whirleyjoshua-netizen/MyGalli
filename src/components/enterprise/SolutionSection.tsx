@@ -18,7 +18,7 @@ export default function SolutionSection() {
 
         {/* Heading */}
         <h2 className="mt-4 text-3xl font-bold text-foreground md:text-4xl">
-          Gallio Changes Everything
+          Galli Changes Everything
         </h2>
 
         {/* Description */}

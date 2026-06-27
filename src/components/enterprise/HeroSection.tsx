@@ -65,7 +65,7 @@ export default function HeroSection() {
 
         {/* Subheading */}
         <p className="mx-auto mt-6 max-w-3xl text-xl text-muted-foreground">
-          Gallio Enterprise gives schools, athletic programs, and districts a
+          Galli Enterprise gives schools, athletic programs, and districts a
           structured platform to track student growth, showcase achievements, and
           build digital identities — from freshman year to graduation.
         </p>

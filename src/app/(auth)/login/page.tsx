@@ -49,7 +49,7 @@ export default function LoginPage() {
         {/* Frog + Brand */}
         <div className="flex flex-col items-center mb-8">
           <Wordmark className="text-3xl mb-3" />
-          <h1 className="text-2xl font-bold text-center">Log in to Gallio</h1>
+          <h1 className="text-2xl font-bold text-center">Log in to Galli</h1>
         </div>
 
         <div className="bg-background border border-border rounded-2xl p-6 shadow-sm">

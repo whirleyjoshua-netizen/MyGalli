@@ -345,7 +345,7 @@ export default function CardStudioPage() {
                       Developer Info
                     </h3>
                     <p className="text-sm text-muted-foreground mb-2">
-                      This card runs in a sandboxed iframe using the Gallio Card SDK.
+                      This card runs in a sandboxed iframe using the Galli Card SDK.
                     </p>
                     <code className="text-xs font-mono bg-muted px-2 py-1 rounded block overflow-x-auto">
                       {selected.iframeUrl}
@@ -404,7 +404,7 @@ export default function CardStudioPage() {
                   </div>
                   <h3 className="font-semibold mb-1">Build Your Own</h3>
                   <p className="text-sm text-muted-foreground text-center max-w-[200px] mb-4">
-                    Create custom cards using the Gallio Card SDK
+                    Create custom cards using the Galli Card SDK
                   </p>
                   <span className="text-xs text-galli font-medium">
                     See /sdk/example-card.html

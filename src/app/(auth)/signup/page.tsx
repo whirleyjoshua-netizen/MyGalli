@@ -85,7 +85,7 @@ export default function SignupPage() {
                 required
               />
               <p className="mt-1.5 text-xs text-muted-foreground">
-                Your displays will be at gallio.app/{username || 'username'}
+                Your displays will be at galli.page/{username || 'username'}
               </p>
             </div>
 

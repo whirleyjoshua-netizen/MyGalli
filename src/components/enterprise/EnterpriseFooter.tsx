@@ -24,7 +24,7 @@ export function EnterpriseFooter() {
 
           {/* Copyright */}
           <div className="text-xs text-muted-foreground/60">
-            &copy; {new Date().getFullYear()} Gallio. A living gallery of you.
+            &copy; {new Date().getFullYear()} Galli. A living gallery of you.
           </div>
         </div>
       </div>

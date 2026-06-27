@@ -103,7 +103,7 @@ export default function CreatePage() {
             Dashboard
           </Link>
           <Link href="/" className="font-bold text-lg text-galli-anchor">
-            gallio
+            Galli
           </Link>
           <div className="w-20" />
         </div>

@@ -50,7 +50,7 @@ export function WaitlistForm() {
             </div>
             <h2 className="text-3xl font-bold mb-2">You&apos;re on the list!</h2>
             <p className="text-muted-foreground">
-              We&apos;ll be in touch soon with early access details. Thank you for your interest in Gallio Enterprise.
+              We&apos;ll be in touch soon with early access details. Thank you for your interest in Galli Enterprise.
             </p>
           </div>
         ) : (
@@ -64,7 +64,7 @@ export function WaitlistForm() {
                 Get Early Access
               </h2>
               <p className="text-muted-foreground max-w-lg mx-auto">
-                We&apos;re partnering with a small group of schools and programs to shape Gallio Enterprise.
+                We&apos;re partnering with a small group of schools and programs to shape Galli Enterprise.
                 Join the waitlist to lock in founding pricing.
               </p>
             </div>

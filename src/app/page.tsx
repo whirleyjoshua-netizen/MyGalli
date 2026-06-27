@@ -37,7 +37,7 @@ const FEATURES = [
   {
     icon: Globe,
     title: 'Your Own URL',
-    description: 'Every page lives at gallio.app/you — a clean, memorable link.',
+    description: 'Every page lives at galli.page/you — a clean, memorable link.',
   },
   {
     icon: Shield,
@@ -105,7 +105,7 @@ export default function Home() {
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center pt-20 pb-24 px-4">
         <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-center tracking-tight text-galli-gradient">
-          Gallio
+          Galli
         </h1>
         <p className="mt-4 text-xl md:text-2xl text-muted-foreground text-center max-w-2xl">
           A living gallery of you.

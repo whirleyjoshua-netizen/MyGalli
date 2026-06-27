@@ -187,7 +187,7 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
           <div className="flex items-center gap-3 mb-3">
             <Compass className="w-8 h-8 text-galli" />
             <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-galli via-galli-aqua to-galli-violet bg-clip-text text-transparent">
-              Explore Gallio
+              Explore Galli
             </h1>
           </div>
           <p className="text-muted-foreground text-lg max-w-xl">

@@ -142,7 +142,7 @@ export function PublicTabView({
                 <p className="text-sm opacity-50">
                   Made with{' '}
                   <a href="/" className="underline hover:opacity-80">
-                    Gallio
+                    Galli
                   </a>
                 </p>
               </footer>

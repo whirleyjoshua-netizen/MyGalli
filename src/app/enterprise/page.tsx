@@ -10,9 +10,9 @@ import { WaitlistForm } from '@/components/enterprise/WaitlistForm'
 import { EnterpriseFooter } from '@/components/enterprise/EnterpriseFooter'
 
 export const metadata = {
-  title: 'Gallio Enterprise — The Operating System for Student Identity',
+  title: 'Galli Enterprise — The Operating System for Student Identity',
   description:
-    'Gallio Enterprise gives schools, athletic programs, and districts a structured platform to track student growth, showcase achievements, and build digital identities.',
+    'Galli Enterprise gives schools, athletic programs, and districts a structured platform to track student growth, showcase achievements, and build digital identities.',
 }
 
 export default function EnterprisePage() {
