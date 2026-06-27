@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { sign } from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
+import { AUTH_COOKIE } from '@/lib/constants'
 
 interface GoogleTokenPayload {
   sub: string       // Google user ID
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
       isNewUser: !user.googleId || user.googleId === googleUser.sub,
     })
 
-    response.cookies.set('gallio-auth', token, {
+    response.cookies.set(AUTH_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

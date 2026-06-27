@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { AUTH_COOKIE } from '@/lib/constants'
 
 const PROTECTED_PATHS = [
   '/dashboard',
@@ -16,7 +17,7 @@ export function middleware(request: NextRequest) {
 
   if (!isProtected) return NextResponse.next()
 
-  const token = request.cookies.get('gallio-auth')?.value
+  const token = request.cookies.get(AUTH_COOKIE)?.value
 
   if (!token) {
     const loginUrl = new URL('/login', request.url)

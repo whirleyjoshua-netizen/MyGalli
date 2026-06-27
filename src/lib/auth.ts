@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { db } from './db'
+import { AUTH_COOKIE } from './constants'
 
 export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET
@@ -38,7 +39,7 @@ export async function verifyAuth(token: string) {
 
 // Verify auth from NextRequest (extracts token from httpOnly cookie)
 export async function getUser(request: NextRequest) {
-  const token = request.cookies.get('gallio-auth')?.value
+  const token = request.cookies.get(AUTH_COOKIE)?.value
 
   if (!token) {
     return null

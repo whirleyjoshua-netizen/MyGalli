@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { hash } from 'bcryptjs'
 import { sign } from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/auth'
+import { AUTH_COOKIE } from '@/lib/constants'
 import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({ user }, { status: 201 })
 
-    response.cookies.set('gallio-auth', token, {
+    response.cookies.set(AUTH_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
