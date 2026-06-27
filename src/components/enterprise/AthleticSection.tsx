@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { CheckCircle2, TrendingUp } from 'lucide-react';
 

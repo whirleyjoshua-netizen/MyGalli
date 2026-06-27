@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Wordmark } from '@/components/brand/Wordmark';
 

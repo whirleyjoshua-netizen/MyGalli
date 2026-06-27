@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { Trophy, GraduationCap, Building2, Check, Sparkles } from 'lucide-react'
 

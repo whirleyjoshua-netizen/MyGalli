@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 const stats = [
   { value: '5', label: 'Pre-built tabs' },

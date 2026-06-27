@@ -1,4 +1,4 @@
-﻿import { Suspense } from 'react'
+import { Suspense } from 'react'
 import { db } from '@/lib/db'
 import { ExploreClient } from '@/components/explore/ExploreClient'
 import type { Metadata } from 'next'

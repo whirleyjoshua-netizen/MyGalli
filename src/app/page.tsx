@@ -1,4 +1,4 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 import { Wordmark } from '@/components/brand/Wordmark'
 import {
   Layers,

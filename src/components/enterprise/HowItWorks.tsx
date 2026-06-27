@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { Building2, Users, TrendingUp } from 'lucide-react'
 

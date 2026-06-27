@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -102,7 +102,7 @@ export default function CreatePage() {
             <ChevronLeft className="w-4 h-4" />
             Dashboard
           </Link>
-          <Link href="/" className="font-bold text-lg text-galli-anchor">
+          <Link href="/" className="font-bold text-lg text-galli-dark">
             Galli
           </Link>
           <div className="w-20" />
@@ -204,7 +204,7 @@ export default function CreatePage() {
             <button
               onClick={handleGenerate}
               disabled={loading || !prompt.trim()}
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-galli-primary text-white font-semibold text-base hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-200/50"
+              className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-galli text-white font-semibold text-base hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-200/50"
             >
               {loading ? (
                 <>
@@ -260,7 +260,7 @@ export default function CreatePage() {
                 href={result.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 py-3 px-6 rounded-full bg-galli-primary text-white font-semibold hover:brightness-110 transition-all shadow-lg shadow-emerald-200/50"
+                className="flex-1 flex items-center justify-center gap-2 py-3 px-6 rounded-full bg-galli text-white font-semibold hover:brightness-110 transition-all shadow-lg shadow-emerald-200/50"
               >
                 <ExternalLink className="w-4 h-4" />
                 Open Page
