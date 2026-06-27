@@ -1,5 +1,5 @@
 ﻿import Link from 'next/link'
-import Image from 'next/image'
+import { Wordmark } from '@/components/brand/Wordmark'
 import {
   Layers,
   BarChart3,
@@ -78,8 +78,7 @@ export default function Home() {
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
         <div className="flex items-center gap-2">
-          <Image src="/gallio-frog.svg" alt="Gallio" width={32} height={32} />
-          <span className="text-xl font-bold text-galli-gradient">Gallio</span>
+          <Wordmark className="text-xl" />
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -105,10 +104,6 @@ export default function Home() {
 
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center pt-20 pb-24 px-4">
-        <div className="mb-6 w-20 h-20 relative">
-          <Image src="/gallio-frog.svg" alt="Gallio" width={80} height={80} />
-        </div>
-
         <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-center tracking-tight text-galli-gradient">
           Gallio
         </h1>
@@ -227,9 +222,9 @@ export default function Home() {
       <footer className="relative z-10 border-t border-border py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Image src="/gallio-frog.svg" alt="Gallio" width={24} height={24} />
+            <Wordmark className="text-xl" />
             <span className="text-sm text-muted-foreground">
-              Gallio &mdash; A living gallery of you.
+              &mdash; A living gallery of you.
             </span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">

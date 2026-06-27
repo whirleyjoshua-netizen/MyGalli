@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Wordmark } from '@/components/brand/Wordmark'
 import { Plus, ExternalLink, Eye, MoreHorizontal, BarChart3, Compass, LogOut, Menu, Layout, Clock, Settings, Pin, PinOff, GripVertical, Trophy, Trash2, ImageIcon, X, Sparkles } from 'lucide-react'
 import {
   DndContext,
@@ -439,9 +440,8 @@ export default function DashboardPage() {
       <nav className="sticky top-0 z-30 bg-gradient-to-r from-galli/15 via-galli-aqua/10 to-galli-violet/15 backdrop-blur-xl border-b border-galli/20 shadow-md shadow-galli/10">
         <div className="px-6 py-3.5 flex items-center">
           <div className="flex-1" />
-          <Link href="/" className="flex items-center gap-3 text-2xl font-extrabold">
-            <Image src="/gallio-frog.svg" alt="" width={38} height={38} className="drop-shadow-sm" />
-            <span className="text-galli-gradient tracking-tight">Gallio</span>
+          <Link href="/" className="flex items-center text-2xl">
+            <Wordmark />
           </Link>
           <div className="flex-1 flex justify-end gap-2">
             <button
@@ -562,7 +562,6 @@ export default function DashboardPage() {
         <main className="max-w-6xl mx-auto px-6 py-8 relative z-10">
         {displays.length === 0 ? (
           <div className="text-center py-24">
-            <Image src="/gallio-frog.svg" alt="" width={64} height={64} className="mx-auto mb-6 opacity-50" />
             <h2 className="text-xl font-semibold mb-2">Your gallery is empty</h2>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
               Create your first display — add elements, collect responses, and share it with the world.

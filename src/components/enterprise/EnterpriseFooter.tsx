@@ -1,7 +1,7 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
+import { Wordmark } from '@/components/brand/Wordmark'
 
 export function EnterpriseFooter() {
   return (
@@ -10,8 +10,8 @@ export function EnterpriseFooter() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <Image src="/gallio-frog.svg" alt="" width={28} height={28} className="opacity-60" />
-            <span className="text-sm font-semibold text-muted-foreground">Gallio Enterprise</span>
+            <Wordmark className="text-xl" />
+            <span className="text-sm font-semibold text-muted-foreground">Enterprise</span>
           </div>
 
           {/* Links */}

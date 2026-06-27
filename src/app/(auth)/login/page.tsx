@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useAuthStore } from '@/lib/store'
+import { Wordmark } from '@/components/brand/Wordmark'
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
 
 export default function LoginPage() {
@@ -48,7 +48,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Frog + Brand */}
         <div className="flex flex-col items-center mb-8">
-          <Image src="/gallio-frog.svg" alt="Gallio" width={48} height={48} className="mb-3" />
+          <Wordmark className="text-3xl mb-3" />
           <h1 className="text-2xl font-bold text-center">Log in to Gallio</h1>
         </div>
 

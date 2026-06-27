@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import Image from 'next/image';
+import { Wordmark } from '@/components/brand/Wordmark';
 
 const navLinks = [
   { label: 'Features', href: '#features' },
@@ -23,14 +23,7 @@ export default function EnterpriseNav() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
         {/* Left: Logo + Brand + Badge */}
         <div className="flex items-center gap-3">
-          <Image
-            src="/gallio-frog.svg"
-            alt="Gallio"
-            width={32}
-            height={32}
-            className="shrink-0"
-          />
-          <span className="text-lg font-bold text-foreground">Gallio</span>
+          <Wordmark className="text-lg" />
           <span className="rounded-full bg-galli/15 px-2.5 py-0.5 text-xs font-semibold text-galli-dark">
             Enterprise
           </span>

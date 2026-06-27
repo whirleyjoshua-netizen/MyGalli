@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import { Wordmark } from '@/components/brand/Wordmark'
 import { ArrowLeft, ExternalLink, Code2, Layers, Search, Plus, Trash2, BookOpen, X, Library } from 'lucide-react'
 import { CARD_PROVIDERS } from '@/lib/cards/registry'
 import type { CardProviderConfig } from '@/lib/cards/registry'
@@ -165,9 +165,8 @@ export default function CardStudioPage() {
             Back to Dashboard
           </Link>
           <div className="flex-1 flex justify-center">
-            <Link href="/" className="flex items-center gap-3 text-2xl font-extrabold">
-              <Image src="/gallio-frog.svg" alt="" width={38} height={38} className="drop-shadow-sm" />
-              <span className="text-galli-gradient tracking-tight">Gallio</span>
+            <Link href="/" className="flex items-center text-2xl">
+              <Wordmark />
             </Link>
           </div>
           <div className="w-[140px]" />

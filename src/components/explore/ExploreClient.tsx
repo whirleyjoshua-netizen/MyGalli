@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { Search, X, Compass, ChevronDown, Loader2 } from 'lucide-react'
+import { Wordmark } from '@/components/brand/Wordmark'
 import { useAuthStore } from '@/lib/store'
 import { ExploreCard } from './ExploreCard'
 import { ExploreCardSkeleton } from './ExploreCardSkeleton'
@@ -150,11 +150,8 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
       {/* Navbar */}
       <nav className="sticky top-0 z-30 border-b border-border/50 bg-gradient-to-r from-galli/10 via-galli-aqua/5 to-galli-violet/10 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/gallio-frog.svg" alt="Gallio" width={28} height={28} />
-            <span className="font-bold text-lg bg-gradient-to-r from-galli to-galli-aqua bg-clip-text text-transparent">
-              Gallio
-            </span>
+          <Link href="/" className="flex items-center text-lg">
+            <Wordmark />
           </Link>
           <div className="flex items-center gap-3">
             {user ? (
@@ -273,13 +270,6 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
         ) : displays.length === 0 ? (
           /* Empty state */
           <div className="text-center py-20">
-            <Image
-              src="/gallio-frog.svg"
-              alt=""
-              width={48}
-              height={48}
-              className="mx-auto opacity-50 mb-4"
-            />
             <h2 className="text-lg font-semibold text-foreground mb-1">No pages found</h2>
             <p className="text-sm text-muted-foreground mb-4">
               Try different filters or search terms.
