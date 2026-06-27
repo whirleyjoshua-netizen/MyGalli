@@ -63,7 +63,7 @@ export function PricingTeaser() {
             Plans for every program
           </h2>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-galli/10 text-galli-dark rounded-full text-sm font-medium">
-            <Sparkles className="w-3.5 h-3.5 text-gallio" />
+            <Sparkles className="w-3.5 h-3.5 text-galli" />
             Early access partners get founding pricing
           </div>
         </div>

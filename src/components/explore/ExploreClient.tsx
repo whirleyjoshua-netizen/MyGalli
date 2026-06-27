@@ -152,7 +152,7 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/gallio-frog.svg" alt="Gallio" width={28} height={28} />
-            <span className="font-bold text-lg bg-gradient-to-r from-gallio to-galli-aqua bg-clip-text text-transparent">
+            <span className="font-bold text-lg bg-gradient-to-r from-galli to-galli-aqua bg-clip-text text-transparent">
               Gallio
             </span>
           </Link>
@@ -160,7 +160,7 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
             {user ? (
               <Link
                 href="/dashboard"
-                className="px-4 py-1.5 rounded-full text-sm font-medium bg-gallio text-white hover:bg-galli/90 transition"
+                className="px-4 py-1.5 rounded-full text-sm font-medium bg-galli text-white hover:bg-galli/90 transition"
               >
                 Dashboard
               </Link>
@@ -174,7 +174,7 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
                 </Link>
                 <Link
                   href="/signup"
-                  className="px-4 py-1.5 rounded-full text-sm font-medium bg-gallio text-white hover:bg-galli/90 transition"
+                  className="px-4 py-1.5 rounded-full text-sm font-medium bg-galli text-white hover:bg-galli/90 transition"
                 >
                   Get Started
                 </Link>
@@ -188,8 +188,8 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
       <div className="bg-gradient-to-br from-galli/10 via-galli-aqua/5 to-galli-violet/10 border-b border-border/30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
           <div className="flex items-center gap-3 mb-3">
-            <Compass className="w-8 h-8 text-gallio" />
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gallio via-galli-aqua to-galli-violet bg-clip-text text-transparent">
+            <Compass className="w-8 h-8 text-galli" />
+            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-galli via-galli-aqua to-galli-violet bg-clip-text text-transparent">
               Explore Gallio
             </h1>
           </div>
@@ -214,7 +214,7 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
                   onClick={() => setKit(f.value)}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
                     kit === f.value
-                      ? 'bg-gallio text-white shadow-sm'
+                      ? 'bg-galli text-white shadow-sm'
                       : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
                 >
@@ -287,7 +287,7 @@ export function ExploreClient({ initialDisplays, initialTotal, pageSize }: Explo
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="px-4 py-2 rounded-full text-sm font-medium bg-gallio text-white hover:bg-galli/90 transition"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-galli text-white hover:bg-galli/90 transition"
               >
                 Clear filters
               </button>

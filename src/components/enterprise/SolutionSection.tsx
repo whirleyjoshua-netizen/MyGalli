@@ -12,7 +12,7 @@ export default function SolutionSection() {
     <section id="features" className="py-24 px-6">
       <div className="mx-auto max-w-6xl text-center">
         {/* Label */}
-        <p className="text-xs font-semibold uppercase tracking-widest text-gallio">
+        <p className="text-xs font-semibold uppercase tracking-widest text-galli">
           The Solution
         </p>
 
@@ -35,7 +35,7 @@ export default function SolutionSection() {
             <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
               {stats.map((stat) => (
                 <div key={stat.label} className="flex flex-col items-center gap-1">
-                  <span className="text-4xl font-extrabold text-gallio">
+                  <span className="text-4xl font-extrabold text-galli">
                     {stat.value}
                   </span>
                   <span className="text-sm text-muted-foreground">

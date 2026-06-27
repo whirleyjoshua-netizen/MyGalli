@@ -105,7 +105,7 @@ function SortableDisplayCard({
       {/* Pin indicator */}
       {isPinned && (
         <div className="absolute top-3 left-12 z-10">
-          <Pin className="w-3.5 h-3.5 text-gallio rotate-[-30deg]" />
+          <Pin className="w-3.5 h-3.5 text-galli rotate-[-30deg]" />
         </div>
       )}
 
@@ -449,7 +449,7 @@ export default function DashboardPage() {
               className="p-2.5 bg-galli/10 hover:bg-galli/20 rounded-xl transition-all hover:scale-105"
               title="Dashboard background"
             >
-              <Settings className="w-5 h-5 text-gallio" />
+              <Settings className="w-5 h-5 text-galli" />
             </button>
             <div className="relative">
               <button
@@ -505,7 +505,7 @@ export default function DashboardPage() {
                 {/* Hidden for now — AI page builder (no API credits) and Kit pages
                 <Link
                   href="/create"
-                  className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-gallio to-galli-aqua text-white rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 hover:scale-[1.02] transition-all"
+                  className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-galli to-galli-aqua text-white rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 hover:scale-[1.02] transition-all"
                 >
                   <Sparkles className="w-4 h-4" />
                   Create with AI
@@ -514,7 +514,7 @@ export default function DashboardPage() {
                   href="/new-kit"
                   className="flex items-center gap-2 px-5 py-3 bg-galli/10 text-galli-dark border border-galli/20 rounded-full font-medium hover:bg-galli/20 hover:shadow-lg hover:shadow-galli/15 hover:scale-[1.02] transition-all"
                 >
-                  <Trophy className="w-4 h-4 text-gallio" />
+                  <Trophy className="w-4 h-4 text-galli" />
                   New Kit Page
                 </Link>
                 */}
@@ -531,7 +531,7 @@ export default function DashboardPage() {
             {/* Stats strip */}
             <div className="mt-8 flex gap-6">
               <div className="flex items-center gap-2 px-4 py-2 bg-background/60 backdrop-blur-sm rounded-full border border-border/50">
-                <Layout className="w-4 h-4 text-gallio" />
+                <Layout className="w-4 h-4 text-galli" />
                 <span className="text-sm font-medium">{displays.length} pages</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-background/60 backdrop-blur-sm rounded-full border border-border/50">
@@ -592,7 +592,7 @@ export default function DashboardPage() {
                   className="group border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center py-12 hover:border-galli/40 hover:bg-galli/[0.03] transition-all"
                 >
                   <div className="w-12 h-12 rounded-full bg-galli/10 flex items-center justify-center mb-3 group-hover:bg-galli/20 group-hover:scale-110 transition-all">
-                    <Plus className="w-6 h-6 text-gallio" />
+                    <Plus className="w-6 h-6 text-galli" />
                   </div>
                   <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                     New Page

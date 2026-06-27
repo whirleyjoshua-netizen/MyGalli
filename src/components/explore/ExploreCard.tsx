@@ -144,7 +144,7 @@ export function ExploreCard({ display, index }: ExploreCardProps) {
 
       {/* Info area */}
       <div className="px-4 pb-4 pt-3">
-        <h3 className="text-base font-semibold text-foreground truncate group-hover:text-gallio transition-colors">
+        <h3 className="text-base font-semibold text-foreground truncate group-hover:text-galli transition-colors">
           {display.title}
         </h3>
 

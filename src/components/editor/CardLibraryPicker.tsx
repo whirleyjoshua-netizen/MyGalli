@@ -75,7 +75,7 @@ export function CardLibraryPicker({ isOpen, onClose, onSelect }: CardLibraryPick
           <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-galli/10 rounded-lg">
-                <Layers className="w-5 h-5 text-gallio" />
+                <Layers className="w-5 h-5 text-galli" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Choose a Card</h3>
@@ -131,12 +131,12 @@ export function CardLibraryPicker({ isOpen, onClose, onSelect }: CardLibraryPick
                       {/* Info */}
                       <div className="p-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold group-hover:text-gallio transition-colors truncate">
+                          <span className="text-sm font-semibold group-hover:text-galli transition-colors truncate">
                             {item.name}
                           </span>
                           <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full flex-shrink-0 ${
                             provider.type === 'builtin'
-                              ? 'bg-galli/10 text-gallio'
+                              ? 'bg-galli/10 text-galli'
                               : 'bg-galli-violet/10 text-galli-violet'
                           }`}>
                             {provider.name}

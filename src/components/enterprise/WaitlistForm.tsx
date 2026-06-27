@@ -46,7 +46,7 @@ export function WaitlistForm() {
         {submitted ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 rounded-full bg-galli/10 flex items-center justify-center mx-auto mb-4">
-              <Check className="w-8 h-8 text-gallio" />
+              <Check className="w-8 h-8 text-galli" />
             </div>
             <h2 className="text-3xl font-bold mb-2">You&apos;re on the list!</h2>
             <p className="text-muted-foreground">
@@ -57,7 +57,7 @@ export function WaitlistForm() {
           <>
             {/* Header */}
             <div className="text-center mb-10">
-              <div className="text-xs font-semibold uppercase tracking-widest text-gallio mb-3">
+              <div className="text-xs font-semibold uppercase tracking-widest text-galli mb-3">
                 EARLY ACCESS
               </div>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">

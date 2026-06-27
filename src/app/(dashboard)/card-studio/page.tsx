@@ -180,7 +180,7 @@ export default function CardStudioPage() {
           <div className="max-w-6xl mx-auto px-6 py-12">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2.5 bg-galli/10 rounded-xl">
-                <Layers className="w-6 h-6 text-gallio" />
+                <Layers className="w-6 h-6 text-galli" />
               </div>
               <h1 className="text-3xl font-bold">Card Studio</h1>
             </div>
@@ -214,7 +214,7 @@ export default function CardStudioPage() {
                   <Library className="w-4 h-4" />
                   My Library
                   {libraryItems.length > 0 && (
-                    <span className="ml-1 px-1.5 py-0.5 text-[10px] font-semibold bg-galli/15 text-gallio rounded-full">
+                    <span className="ml-1 px-1.5 py-0.5 text-[10px] font-semibold bg-galli/15 text-galli rounded-full">
                       {libraryItems.length}
                     </span>
                   )}
@@ -237,7 +237,7 @@ export default function CardStudioPage() {
             {/* Stats */}
             <div className="mt-4 flex gap-4">
               <div className="flex items-center gap-2 px-4 py-2 bg-background/60 backdrop-blur-sm rounded-full border border-border/50">
-                <Layers className="w-4 h-4 text-gallio" />
+                <Layers className="w-4 h-4 text-galli" />
                 <span className="text-sm font-medium">{providers.length} available</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-background/60 backdrop-blur-sm rounded-full border border-border/50">
@@ -295,7 +295,7 @@ export default function CardStudioPage() {
                   <h2 className="text-2xl font-bold">{selected.name}</h2>
                   <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
                     selected.type === 'builtin'
-                      ? 'bg-galli/10 text-gallio border border-galli/20'
+                      ? 'bg-galli/10 text-galli border border-galli/20'
                       : 'bg-galli-violet/10 text-galli-violet border border-galli-violet/20'
                   }`}>
                     {selected.type === 'builtin' ? 'Built-in' : 'External'}
@@ -379,12 +379,12 @@ export default function CardStudioPage() {
                     </div>
                     <div className="p-4">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold group-hover:text-gallio transition-colors">
+                        <h3 className="font-semibold group-hover:text-galli transition-colors">
                           {provider.name}
                         </h3>
                         <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
                           provider.type === 'builtin'
-                            ? 'bg-galli/10 text-gallio'
+                            ? 'bg-galli/10 text-galli'
                             : 'bg-galli-violet/10 text-galli-violet'
                         }`}>
                           {provider.type === 'builtin' ? 'Built-in' : 'External'}
@@ -401,13 +401,13 @@ export default function CardStudioPage() {
                 {/* Build your own */}
                 <div className="border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center p-8 hover:border-galli/40 hover:bg-galli/[0.02] transition-all min-h-[300px]">
                   <div className="w-14 h-14 rounded-full bg-galli/10 flex items-center justify-center mb-4">
-                    <Code2 className="w-7 h-7 text-gallio" />
+                    <Code2 className="w-7 h-7 text-galli" />
                   </div>
                   <h3 className="font-semibold mb-1">Build Your Own</h3>
                   <p className="text-sm text-muted-foreground text-center max-w-[200px] mb-4">
                     Create custom cards using the Gallio Card SDK
                   </p>
-                  <span className="text-xs text-gallio font-medium">
+                  <span className="text-xs text-galli font-medium">
                     See /sdk/example-card.html
                   </span>
                 </div>
@@ -472,7 +472,7 @@ export default function CardStudioPage() {
                           <h3 className="font-semibold truncate">{item.name}</h3>
                           <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full flex-shrink-0 ${
                             provider.type === 'builtin'
-                              ? 'bg-galli/10 text-gallio'
+                              ? 'bg-galli/10 text-galli'
                               : 'bg-galli-violet/10 text-galli-violet'
                           }`}>
                             {provider.name}
@@ -513,7 +513,7 @@ export default function CardStudioPage() {
                 <div className="flex items-center gap-3 mb-4 p-3 bg-muted/30 rounded-lg border border-border/50">
                   <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
                     CARD_PROVIDERS[addModalProvider].type === 'builtin'
-                      ? 'bg-galli/10 text-gallio'
+                      ? 'bg-galli/10 text-galli'
                       : 'bg-galli-violet/10 text-galli-violet'
                   }`}>
                     {CARD_PROVIDERS[addModalProvider].name}

@@ -13,7 +13,7 @@ const features = [
 const miniStudents = [
   { initials: 'JM', color: 'bg-galli-violet' },
   { initials: 'KL', color: 'bg-galli-aqua' },
-  { initials: 'TS', color: 'bg-gallio' },
+  { initials: 'TS', color: 'bg-galli' },
   { initials: 'AR', color: 'bg-galli-violet/70' },
   { initials: 'WD', color: 'bg-galli-aqua/70' },
 ];
@@ -77,7 +77,7 @@ export default function SchoolSection() {
               {[
                 { label: 'Academic Portfolio', pct: 87, color: 'bg-galli-violet' },
                 { label: 'Athletic Profile', pct: 64, color: 'bg-galli-aqua' },
-                { label: 'Creative Showcase', pct: 41, color: 'bg-gallio' },
+                { label: 'Creative Showcase', pct: 41, color: 'bg-galli' },
               ].map((kit) => (
                 <div key={kit.label}>
                   <div className="flex items-center justify-between text-[11px]">

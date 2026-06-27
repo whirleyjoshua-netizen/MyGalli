@@ -30,7 +30,7 @@ export default function AthleticSection() {
           <ul className="mt-8 space-y-4">
             {features.map((text) => (
               <li key={text} className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-gallio" />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-galli" />
                 <span className="text-sm text-foreground/90 md:text-base">
                   {text}
                 </span>
@@ -49,7 +49,7 @@ export default function AthleticSection() {
           <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-6 shadow-lg">
             {/* Card header */}
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-gallio" />
+              <TrendingUp className="h-5 w-5 text-galli" />
               <h3 className="text-lg font-semibold text-foreground">
                 40-Yard Dash
               </h3>
@@ -66,7 +66,7 @@ export default function AthleticSection() {
                 <p className="text-[11px] text-muted-foreground">Avg</p>
               </div>
               <div className="rounded-xl bg-galli/10 px-3 py-3 text-center">
-                <p className="text-lg font-bold text-gallio">&#8593; 3.2%</p>
+                <p className="text-lg font-bold text-galli">&#8593; 3.2%</p>
                 <p className="text-[11px] text-muted-foreground">Improvement</p>
               </div>
             </div>
