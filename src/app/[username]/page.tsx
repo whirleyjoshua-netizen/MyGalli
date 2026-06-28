@@ -10,6 +10,10 @@ import { ProfileIdCard } from '@/components/profile/ProfileIdCard'
 import { ProfileOwnerControls } from '@/components/profile/ProfileOwnerControls'
 import { ProfilePagesScroll } from '@/components/profile/ProfilePagesScroll'
 import { ProfileAbout } from '@/components/profile/ProfileAbout'
+import { ProfileCanvas } from '@/components/profile/ProfileCanvas'
+import { ProfileCanvasBar } from '@/components/profile/ProfileCanvasBar'
+import type { Section } from '@/lib/types/canvas'
+import type { BackgroundConfig } from '@/lib/types/background'
 
 async function getMeId(): Promise<string | null> {
   const token = cookies().get(AUTH_COOKIE)?.value
@@ -27,7 +31,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     where: { username },
     select: {
       id: true, email: true, username: true, name: true, avatar: true, bio: true,
-      location: true, interests: true, links: true, featuredDisplayId: true,
+      location: true, interests: true, links: true, featuredDisplayId: true, profileDisplayId: true,
     },
   })
   if (!user) notFound()
@@ -37,7 +41,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     db.follow.count({ where: { followingId: user.id } }),
     db.follow.count({ where: { followerId: user.id } }),
     db.display.findMany({
-      where: { userId: user.id, published: true },
+      where: { userId: user.id, published: true, kind: { not: 'profile' } },
       orderBy: { createdAt: 'desc' },
       select: { id: true, slug: true, title: true, coverImage: true, views: true },
     }),
@@ -48,6 +52,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const isFriend = deriveFriend(isFollowing, !!followsMe)
   const isMe = meId === user.id
   const links = (user.links as { label: string; url: string }[] | null) || []
+
+  const canvas = user.profileDisplayId
+    ? await db.display.findUnique({ where: { id: user.profileDisplayId }, select: { id: true, sections: true, background: true } })
+    : null
+  const canvasSections = (canvas ? (typeof canvas.sections === 'string' ? JSON.parse(canvas.sections) : canvas.sections) : []) as Section[]
+  const canvasBackground = (canvas ? (typeof canvas.background === 'string' ? JSON.parse(canvas.background) : canvas.background) : null) as BackgroundConfig | null
 
   const ownerUser: User = {
     id: user.id,
@@ -85,7 +95,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         {/* Row 2: About */}
         <ProfileAbout bio={user.bio} interests={user.interests} links={links} />
 
-        {/* Row 3: Sub-project B editable canvas mounts here */}
+        {/* Row 3: editable profile canvas */}
+        {canvas && <ProfileCanvas sections={canvasSections} background={canvasBackground} displayId={canvas.id} />}
+        {isMe && <ProfileCanvasBar hasCanvas={!!canvas} profileDisplayId={user.profileDisplayId ?? null} />}
       </div>
     </div>
   )
