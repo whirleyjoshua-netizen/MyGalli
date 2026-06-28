@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Eye, Image as ImageIcon, Save, Check, Share2, CreditCard, LayoutList } from 'lucide-react'
+import { ArrowLeft, Eye, Image as ImageIcon, Save, Check, Share2, CreditCard, LayoutList, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/store'
 import { ColumnCanvas } from '@/components/canvas/ColumnCanvas'
@@ -10,6 +10,8 @@ import { SlashCommandMenu } from '@/components/canvas/SlashCommandMenu'
 import { BackgroundSettings } from '@/components/canvas/BackgroundSettings'
 import { ColumnStyleSettings } from '@/components/canvas/ColumnStyleSettings'
 import { ShareDialog } from '@/components/editor/ShareDialog'
+import { CollaborateModal } from '@/components/editor/CollaborateModal'
+import { PresenceBar } from '@/components/editor/PresenceBar'
 import { CardLibraryPicker } from '@/components/editor/CardLibraryPicker'
 import { HeaderCard } from '@/components/header/HeaderCard'
 import { HeaderCardEditor } from '@/components/header/HeaderCardEditor'
@@ -62,6 +64,13 @@ export function PageEditor({ pageId }: PageEditorProps) {
 
   // Share dialog state
   const [showShareDialog, setShowShareDialog] = useState(false)
+
+  // Collaboration state
+  const [version, setVersion] = useState(0)
+  const versionRef = useRef(0)
+  const [isOwner, setIsOwner] = useState(true)
+  const [conflict, setConflict] = useState(false)
+  const [showCollaborate, setShowCollaborate] = useState(false)
 
   // Header card & tab editor state
   const [showHeaderEditor, setShowHeaderEditor] = useState(false)
@@ -191,6 +200,9 @@ export function PageEditor({ pageId }: PageEditorProps) {
         setTitle(data.title)
         setSlug(data.slug)
         setPublished(data.published)
+        setVersion(typeof data.version === 'number' ? data.version : 0)
+        versionRef.current = typeof data.version === 'number' ? data.version : 0
+        setIsOwner(data.isOwner !== false)
 
         // Parse sections
         const loadedSections = typeof data.sections === 'string'
@@ -231,8 +243,12 @@ export function PageEditor({ pageId }: PageEditorProps) {
           ? (typeof data.kitConfig === 'string' ? JSON.parse(data.kitConfig) : data.kitConfig)
           : null
         setKitConfig(loadedKitConfig)
+      } else if (res.status === 403 || res.status === 404) {
+        // No access to this page (not owner/collaborator) — back to dashboard
+        router.push('/dashboard')
+        return
       } else {
-        // Page not found, create new
+        // Unexpected error, create new
         createNewPage()
       }
     } catch (error) {
@@ -279,7 +295,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
   })
 
   const savePage = useCallback(async () => {
-    if (!id || saving) return
+    if (!id || saving || conflict) return
 
     setSaving(true)
     try {
@@ -288,24 +304,37 @@ export function PageEditor({ pageId }: PageEditorProps) {
         ? tabsConfig.tabs[0].sections
         : sections
 
-      await fetch(`/api/displays/${id}`, {
+      const res = await fetch(`/api/displays/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title,
+          // title is owner-only; collaborators omit it to avoid a 403
+          ...(isOwner ? { title } : {}),
           sections: sectionsToSave,
           background,
           headerCard: headerCard.enabled ? headerCard : null,
           tabs: tabsConfig.enabled ? tabsConfig : null,
+          version: versionRef.current,
         }),
       })
-      setLastSaved(new Date())
+      if (res.status === 409) {
+        setConflict(true)
+        return
+      }
+      if (res.ok) {
+        const updated = await res.json()
+        if (typeof updated.version === 'number') {
+          versionRef.current = updated.version
+          setVersion(updated.version)
+        }
+        setLastSaved(new Date())
+      }
     } catch (error) {
       console.error('Error saving:', error)
     } finally {
       setSaving(false)
     }
-  }, [id, title, sections, background, headerCard, tabsConfig, saving])
+  }, [id, title, sections, background, headerCard, tabsConfig, saving, conflict, isOwner])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -971,28 +1000,55 @@ export function PageEditor({ pageId }: PageEditorProps) {
               </Link>
             )}
 
-            {/* Share */}
-            <button
-              onClick={() => setShowShareDialog(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted rounded-lg transition"
-            >
-              <Share2 className="w-4 h-4" />
-              Share
-            </button>
+            {/* Presence (who's editing) */}
+            {id && <PresenceBar displayId={id} />}
 
-            {/* Publish */}
-            <button
-              onClick={handlePublishToggle}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
-                published
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-primary text-primary-foreground hover:opacity-90'
-              }`}
-            >
-              {published ? 'Published' : 'Publish'}
-            </button>
+            {/* Collaborate */}
+            {id && (
+              <button
+                onClick={() => setShowCollaborate(true)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted rounded-lg transition"
+              >
+                <Users className="w-4 h-4" />
+                Collaborate
+              </button>
+            )}
+
+            {/* Owner-only: Share + Publish */}
+            {isOwner && (
+              <>
+                <button
+                  onClick={() => setShowShareDialog(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted rounded-lg transition"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </button>
+
+                <button
+                  onClick={handlePublishToggle}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
+                    published
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-primary text-primary-foreground hover:opacity-90'
+                  }`}
+                >
+                  {published ? 'Published' : 'Publish'}
+                </button>
+              </>
+            )}
           </div>
         </header>
+      )}
+
+      {/* Conflict banner */}
+      {conflict && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 px-4 py-2.5 text-sm flex items-center justify-between flex-shrink-0">
+          <span>This page was updated by another editor. Reload to get the latest — your unsaved changes will be lost.</span>
+          <button onClick={() => window.location.reload()} className="ml-4 px-3 py-1 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition cursor-pointer">
+            Reload
+          </button>
+        </div>
       )}
 
       {/* Kit Banner */}
@@ -1116,6 +1172,16 @@ export function PageEditor({ pageId }: PageEditorProps) {
           pageTitle={title}
           published={published}
           onClose={() => setShowShareDialog(false)}
+        />
+      )}
+
+      {/* Collaborate Modal */}
+      {id && (
+        <CollaborateModal
+          isOpen={showCollaborate}
+          onClose={() => setShowCollaborate(false)}
+          displayId={id}
+          isOwner={isOwner}
         />
       )}
 

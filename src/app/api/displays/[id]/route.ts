@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { canEdit, splitUpdate } from '@/lib/collab'
+import { canEdit, splitUpdate, COLLAB_FIELDS } from '@/lib/collab'
 
 // GET /api/displays/[id] - Get a display
 export async function GET(
@@ -94,8 +94,8 @@ export async function PATCH(
       return NextResponse.json({ error: `Not allowed to edit: ${rejected.join(', ')}` }, { status: 403 })
     }
 
-    // Optimistic concurrency on content edits
-    const touchesContent = Object.keys(data).length > 0
+    // Optimistic concurrency applies only to content fields (not publish/title-only changes)
+    const touchesContent = Object.keys(data).some((k) => (COLLAB_FIELDS as readonly string[]).includes(k))
     if (touchesContent && typeof clientVersion === 'number' && clientVersion !== display.version) {
       return NextResponse.json({ error: 'Version conflict', currentVersion: display.version }, { status: 409 })
     }
