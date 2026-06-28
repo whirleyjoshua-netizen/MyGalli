@@ -74,6 +74,7 @@ export interface User {
   name?: string
   avatar?: string
   bio?: string
+  emailVerified?: string | Date | null
 }
 
 export interface AuthState {

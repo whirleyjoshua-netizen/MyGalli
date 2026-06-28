@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
         name: true,
         avatar: true,
         bio: true,
+        emailVerified: true,
       },
     })
 

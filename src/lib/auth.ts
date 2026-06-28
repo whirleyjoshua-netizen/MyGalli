@@ -28,6 +28,7 @@ export async function verifyAuth(token: string) {
         name: true,
         avatar: true,
         bio: true,
+        emailVerified: true,
       },
     })
 
@@ -60,6 +61,7 @@ export async function getUser(request: NextRequest) {
         name: true,
         avatar: true,
         bio: true,
+        emailVerified: true,
       },
     })
 
