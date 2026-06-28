@@ -17,6 +17,10 @@ model User {
   avatar    String?
   bio            String?
   emailVerified  DateTime?
+  location          String?
+  interests         String[]  @default([])
+  links             Json?
+  featuredDisplayId String?
   dashboardPrefs Json?
   createdAt      DateTime  @default(now())
   updatedAt DateTime  @updatedAt
