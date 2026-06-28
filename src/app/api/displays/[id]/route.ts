@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
+import { canEdit, splitUpdate } from '@/lib/collab'
 
 // GET /api/displays/[id] - Get a display
 export async function GET(
@@ -17,6 +18,7 @@ export async function GET(
         user: {
           select: { username: true, name: true, avatar: true },
         },
+        collaborators: { select: { userId: true } },
       },
     })
 
@@ -24,20 +26,27 @@ export async function GET(
       return NextResponse.json({ error: 'Display not found' }, { status: 404 })
     }
 
-    // Only owner can see unpublished displays
-    if (!display.published && display.userId !== user?.id) {
+    const collaboratorIds = display.collaborators.map((c) => c.userId)
+    const viewerCanEdit = canEdit(user?.id ?? null, display.userId, collaboratorIds)
+
+    // Only owner or collaborator can see unpublished displays
+    if (!display.published && !viewerCanEdit) {
       return NextResponse.json({ error: 'Display not found' }, { status: 404 })
     }
 
-    // Increment views for published displays viewed by non-owners
-    if (display.published && display.userId !== user?.id) {
+    // Increment views for published displays viewed by non-editors
+    if (display.published && !viewerCanEdit) {
       await db.display.update({
         where: { id },
         data: { views: { increment: 1 } },
       })
     }
 
-    return NextResponse.json(display)
+    return NextResponse.json({
+      ...display,
+      isOwner: display.userId === (user?.id ?? null),
+      canEdit: viewerCanEdit,
+    })
   } catch (error) {
     console.error('GET /api/displays/[id] error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -57,27 +66,43 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const display = await db.display.findUnique({ where: { id } })
+    const display = await db.display.findUnique({
+      where: { id },
+      include: { collaborators: { select: { userId: true } } },
+    })
 
-    if (!display || display.userId !== user.id) {
+    if (!display) {
       return NextResponse.json({ error: 'Display not found' }, { status: 404 })
     }
 
-    const updates = await request.json()
-    const { title, description, published, sections, background, headerCard, tabs, coverImage } = updates
+    const collaboratorIds = display.collaborators.map((c) => c.userId)
+    const isOwner = display.userId === user.id
+    if (!canEdit(user.id, display.userId, collaboratorIds)) {
+      return NextResponse.json({ error: 'Display not found' }, { status: 404 })
+    }
+
+    const body = await request.json()
+    const { version: clientVersion, ...updates } = body
+
+    // Only pass through known fields, then split owner-only vs collaborator-allowed
+    const known: Record<string, unknown> = {}
+    for (const k of ['title', 'description', 'published', 'sections', 'background', 'headerCard', 'tabs', 'coverImage']) {
+      if (updates[k] !== undefined) known[k] = updates[k]
+    }
+    const { data, rejected } = splitUpdate(known, isOwner)
+    if (rejected.length > 0) {
+      return NextResponse.json({ error: `Not allowed to edit: ${rejected.join(', ')}` }, { status: 403 })
+    }
+
+    // Optimistic concurrency on content edits
+    const touchesContent = Object.keys(data).length > 0
+    if (touchesContent && typeof clientVersion === 'number' && clientVersion !== display.version) {
+      return NextResponse.json({ error: 'Version conflict', currentVersion: display.version }, { status: 409 })
+    }
 
     const updated = await db.display.update({
       where: { id },
-      data: {
-        ...(title !== undefined && { title }),
-        ...(description !== undefined && { description }),
-        ...(published !== undefined && { published }),
-        ...(sections !== undefined && { sections }),
-        ...(background !== undefined && { background }),
-        ...(headerCard !== undefined && { headerCard }),
-        ...(tabs !== undefined && { tabs }),
-        ...(coverImage !== undefined && { coverImage }),
-      },
+      data: { ...data, ...(touchesContent ? { version: { increment: 1 } } : {}) },
     })
 
     return NextResponse.json(updated)
