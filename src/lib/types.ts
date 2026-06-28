@@ -75,6 +75,10 @@ export interface User {
   avatar?: string
   bio?: string
   emailVerified?: string | Date | null
+  location?: string | null
+  interests?: string[]
+  links?: { label: string; url: string }[]
+  featuredDisplayId?: string | null
 }
 
 export interface AuthState {
