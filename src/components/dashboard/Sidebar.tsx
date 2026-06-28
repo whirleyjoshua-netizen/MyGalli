@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { Wordmark } from '@/components/brand/Wordmark'
 import { useAuthStore } from '@/lib/store'
+import { ProfileCard } from '@/components/dashboard/ProfileCard'
 
 interface NavItem {
   label: string
@@ -38,22 +39,12 @@ const NAV: NavItem[] = [
   { label: 'Integrations', icon: Blocks, soon: true },
 ]
 
-const PAGE_QUOTA = 20
-
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useAuthStore()
   const [collapsed, setCollapsed] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [pageCount, setPageCount] = useState<number | null>(null)
-
-  useEffect(() => {
-    fetch('/api/displays')
-      .then((r) => (r.ok ? r.json() : []))
-      .then((d) => setPageCount(Array.isArray(d) ? d.length : 0))
-      .catch(() => setPageCount(0))
-  }, [])
 
   const handleLogout = () => {
     logout()
@@ -141,24 +132,8 @@ export function Sidebar() {
 
       <div className="flex-1" />
 
-      {/* Usage card */}
-      {!collapsed && (
-        <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-galli/10 via-galli-aqua/5 to-galli-violet/10 border border-border">
-          <p className="text-sm font-semibold text-foreground leading-snug">
-            Your universe is <span className="text-primary">wide open.</span>
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">Create without limits. Share without borders.</p>
-          <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground mb-1.5">
-            <span>{pageCount ?? '—'} / {PAGE_QUOTA} pages</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-galli to-galli-aqua transition-all"
-              style={{ width: `${Math.min(100, ((pageCount ?? 0) / PAGE_QUOTA) * 100)}%` }}
-            />
-          </div>
-        </div>
-      )}
+      {/* Profile ID card */}
+      {!collapsed && <ProfileCard />}
 
       {/* User menu */}
       <div className="relative">
