@@ -5,6 +5,7 @@ import { verify } from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/auth'
 import { deriveFriend } from '@/lib/social'
 import { FollowButton } from '@/components/social/FollowButton'
+import { ProfileFollowCounts } from '@/components/social/ProfileFollowCounts'
 import { AUTH_COOKIE } from '@/lib/constants'
 
 async function getMeId(): Promise<string | null> {
@@ -52,10 +53,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <h1 className="text-2xl font-extrabold">{user.name || user.username}</h1>
             <p className="text-muted-foreground">@{user.username}</p>
             {user.bio && <p className="mt-2 text-sm text-foreground/80">{user.bio}</p>}
-            <div className="mt-3 flex items-center gap-5 text-sm">
-              <span><b className="text-foreground">{followerCount}</b> <span className="text-muted-foreground">followers</span></span>
-              <span><b className="text-foreground">{followingCount}</b> <span className="text-muted-foreground">following</span></span>
-            </div>
+            <ProfileFollowCounts username={user.username} followerCount={followerCount} followingCount={followingCount} />
           </div>
           {!isMe && meId && (
             <FollowButton username={user.username} initialIsFollowing={isFollowing} initialIsFriend={isFriend} />

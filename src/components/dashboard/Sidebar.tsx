@@ -15,6 +15,7 @@ import {
   ChevronDown,
   LogOut,
   BarChart3,
+  UserCircle,
 } from 'lucide-react'
 import { Wordmark } from '@/components/brand/Wordmark'
 import { useAuthStore } from '@/lib/store'
@@ -31,7 +32,8 @@ const NAV: NavItem[] = [
   { label: 'Home', icon: Home, href: '/dashboard', match: (p) => p === '/dashboard' },
   { label: 'My Pages', icon: FileText, href: '/dashboard?view=mine' },
   { label: 'Shared with me', icon: Users, href: '/shared', match: (p) => p.startsWith('/shared') },
-  { label: 'Discover', icon: Compass, href: '/explore', match: (p) => p.startsWith('/explore') },
+  { label: 'Explore', icon: Compass, href: '/explore', match: (p) => p.startsWith('/explore') },
+  { label: 'Analytics', icon: BarChart3, href: '/analytics', match: (p) => p.startsWith('/analytics') },
   { label: 'Templates', icon: LayoutTemplate, soon: true },
   { label: 'Integrations', icon: Blocks, soon: true },
 ]
@@ -190,20 +192,12 @@ export function Sidebar() {
             <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
             <div className="absolute bottom-full left-0 right-0 mb-2 z-50 bg-surface border border-border rounded-xl shadow-soft-lg py-1 overflow-hidden">
               <Link
-                href="/analytics"
+                href={user?.username ? `/${user.username}` : '#'}
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
-                <BarChart3 className="w-4 h-4" />
-                Analytics
-              </Link>
-              <Link
-                href="/explore"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              >
-                <Compass className="w-4 h-4" />
-                Explore
+                <UserCircle className="w-4 h-4" />
+                View profile
               </Link>
               <div className="border-t border-border">
                 <button

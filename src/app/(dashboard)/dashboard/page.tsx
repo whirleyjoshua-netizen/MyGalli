@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Search, Bell, Plus, Globe, FileText } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import type { DashboardPrefs } from '@/lib/types/dashboard'
@@ -163,6 +164,7 @@ export default function DashboardPage() {
           title={feedLabel === 'follow' ? 'Public feed' : 'Discover'}
           subtitle={feedLabel === 'follow' ? 'Pages from people you follow.' : 'Explore what the world is building.'}
           icon={<Globe className="w-4 h-4" />}
+          action={<Link href="/explore" className="text-xs font-medium text-primary hover:underline cursor-pointer mr-1">See all</Link>}
         >
           {feed.length === 0 ? (
             <div className="shrink-0 w-full py-10 text-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">
