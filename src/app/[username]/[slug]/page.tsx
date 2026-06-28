@@ -11,6 +11,12 @@ import { renderElement, getGridClass, getColumnStyles } from '@/lib/render-eleme
 import { PublicHeaderCard } from '@/components/header/PublicHeaderCard'
 import { PublicTabView } from '@/components/tabs/PublicTabView'
 import { FontLoader } from '@/components/FontLoader'
+import { cookies } from 'next/headers'
+import { verify } from 'jsonwebtoken'
+import { getJwtSecret } from '@/lib/auth'
+import { AUTH_COOKIE } from '@/lib/constants'
+import { deriveFriend } from '@/lib/social'
+import { FollowButton } from '@/components/social/FollowButton'
 
 interface Props {
   params: Promise<{ username: string; slug: string }>
@@ -81,6 +87,24 @@ export default async function PublicDisplayPage({ params }: Props) {
     notFound()
   }
 
+  // Viewer follow state (for the author follow button)
+  let meId: string | null = null
+  const token = cookies().get(AUTH_COOKIE)?.value
+  if (token) {
+    try { meId = (verify(token, getJwtSecret()) as { userId: string }).userId } catch { meId = null }
+  }
+  const isOwner = meId === user.id
+  let viewerIsFollowing = false
+  let viewerIsFriend = false
+  if (meId && !isOwner) {
+    const [iFollow, followsMe] = await Promise.all([
+      db.follow.findUnique({ where: { followerId_followingId: { followerId: meId, followingId: user.id } }, select: { id: true } }),
+      db.follow.findUnique({ where: { followerId_followingId: { followerId: user.id, followingId: meId } }, select: { id: true } }),
+    ])
+    viewerIsFollowing = !!iFollow
+    viewerIsFriend = deriveFriend(viewerIsFollowing, !!followsMe)
+  }
+
   // Parse sections
   const sections: Section[] =
     typeof display.sections === 'string'
@@ -145,9 +169,14 @@ export default async function PublicDisplayPage({ params }: Props) {
               {display.description && (
                 <p className="text-lg opacity-70">{display.description}</p>
               )}
-              <p className="mt-4 text-sm opacity-50">
-                by {user.name || user.username}
-              </p>
+              <div className="mt-4 flex items-center justify-center gap-3">
+                <a href={`/${user.username}`} className="text-sm opacity-50 hover:opacity-80 hover:underline">
+                  by {user.name || user.username}
+                </a>
+                {meId && !isOwner && (
+                  <FollowButton username={user.username} initialIsFollowing={viewerIsFollowing} initialIsFriend={viewerIsFriend} size="sm" />
+                )}
+              </div>
             </header>
           )}
 

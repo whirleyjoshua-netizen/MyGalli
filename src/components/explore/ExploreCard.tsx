@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Eye, Trophy, FileText, Layout } from 'lucide-react'
+import { FollowButton } from '@/components/social/FollowButton'
 
 const GRADIENTS = [
   'from-galli/20 via-galli-aqua/10 to-galli-violet/5',
@@ -27,23 +28,6 @@ interface ExploreCardProps {
     user: { username: string; name: string | null; avatar: string | null }
   }
   index: number
-}
-
-function timeAgo(dateStr: string): string {
-  const now = new Date()
-  const date = new Date(dateStr)
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-
-  if (seconds < 60) return 'just now'
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}d ago`
-  const months = Math.floor(days / 30)
-  if (months < 12) return `${months}mo ago`
-  return `${Math.floor(months / 12)}y ago`
 }
 
 function parseKitConfig(raw: unknown): { kitId?: string } | null {
@@ -169,11 +153,11 @@ export function ExploreCard({ display, index }: ExploreCardProps) {
               {getInitials(display.user.name, display.user.username)}
             </div>
           )}
-          <span className="text-sm text-muted-foreground truncate">
+          <span className="text-sm text-muted-foreground truncate min-w-0">
             {display.user.name || `@${display.user.username}`}
           </span>
-          <span className="text-xs text-muted-foreground/60 ml-auto flex-shrink-0">
-            {timeAgo(display.createdAt)}
+          <span className="ml-auto flex-shrink-0">
+            <FollowButton username={display.user.username} initialIsFollowing={false} size="sm" />
           </span>
         </div>
       </div>

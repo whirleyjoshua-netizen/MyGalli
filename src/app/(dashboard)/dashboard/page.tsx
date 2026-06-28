@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [prefs, setPrefs] = useState<DashboardPrefs>({})
   const [cardMenuOpen, setCardMenuOpen] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [feedLabel, setFeedLabel] = useState<'follow' | 'discover'>('follow')
 
   useEffect(() => {
     fetch('/api/displays')
@@ -43,9 +44,18 @@ export default function DashboardPage() {
       .then((d) => setPrefs(d || {}))
       .catch(() => {})
 
-    fetch('/api/explore?sort=recent&page=1&limit=12')
-      .then((r) => (r.ok ? r.json() : { displays: [] }))
-      .then((d) => setFeed(Array.isArray(d?.displays) ? d.displays : []))
+    fetch('/api/feed?page=1&limit=12')
+      .then((r) => (r.ok ? r.json() : { empty: true, displays: [] }))
+      .then((d) => {
+        if (d.empty || !Array.isArray(d.displays) || d.displays.length === 0) {
+          setFeedLabel('discover')
+          return fetch('/api/explore?sort=popular&page=1&limit=12')
+            .then((r) => (r.ok ? r.json() : { displays: [] }))
+            .then((e) => setFeed(Array.isArray(e?.displays) ? e.displays : []))
+        }
+        setFeedLabel('follow')
+        setFeed(d.displays)
+      })
       .catch(() => {})
   }, [])
 
@@ -150,8 +160,8 @@ export default function DashboardPage() {
 
         {/* Public feed */}
         <ScrollRow
-          title="Public feed"
-          subtitle="Explore what the world is building."
+          title={feedLabel === 'follow' ? 'Public feed' : 'Discover'}
+          subtitle={feedLabel === 'follow' ? 'Pages from people you follow.' : 'Explore what the world is building.'}
           icon={<Globe className="w-4 h-4" />}
         >
           {feed.length === 0 ? (
