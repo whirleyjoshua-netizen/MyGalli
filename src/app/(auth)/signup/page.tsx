@@ -46,15 +46,19 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Soft brand backdrop */}
+      <div className="absolute -top-40 -right-40 w-[480px] h-[480px] bg-galli/10 rounded-full blur-3xl -z-10" />
+      <div className="absolute -bottom-40 -left-40 w-[480px] h-[480px] bg-galli-violet/10 rounded-full blur-3xl -z-10" />
+
       <div className="w-full max-w-sm">
-        {/* Frog + Brand */}
+        {/* Brand */}
         <div className="flex flex-col items-center mb-8">
           <Wordmark className="text-3xl mb-3" />
           <h1 className="text-2xl font-bold text-center">Create your account</h1>
         </div>
 
-        <div className="bg-background border border-border rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-border rounded-2xl p-6 shadow-soft">
           <GoogleSignInButton mode="signup" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -70,7 +74,7 @@ export default function SignupPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-border rounded-xl bg-muted/30 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-2.5 border border-border rounded-xl bg-surface focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition"
                 placeholder="Optional"
               />
             </div>
@@ -81,7 +85,7 @@ export default function SignupPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                className="w-full px-4 py-2.5 border border-border rounded-xl bg-muted/30 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-2.5 border border-border rounded-xl bg-surface focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition"
                 required
               />
               <p className="mt-1.5 text-xs text-muted-foreground">
@@ -95,7 +99,7 @@ export default function SignupPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border border-border rounded-xl bg-muted/30 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-2.5 border border-border rounded-xl bg-surface focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition"
                 required
               />
             </div>
@@ -106,7 +110,7 @@ export default function SignupPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-border rounded-xl bg-muted/30 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-2.5 border border-border rounded-xl bg-surface focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition"
                 minLength={8}
                 required
               />
@@ -115,7 +119,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 transition-all disabled:opacity-50"
+              className="w-full py-2.5 bg-primary text-primary-foreground rounded-full font-semibold shadow-soft hover:brightness-105 transition-all disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'Creating account...' : 'Create account'}
             </button>
