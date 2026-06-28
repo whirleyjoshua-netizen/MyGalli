@@ -4,28 +4,19 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 160 45% 15%;
-    --primary: 153 65% 54%;
-    --primary-foreground: 160 45% 10%;
-    --muted: 210 15% 93%;
-    --muted-foreground: 210 10% 45%;
-    --accent: 210 15% 93%;
-    --accent-foreground: 160 45% 15%;
-    --border: 210 15% 87%;
-    --destructive: 0 84% 60%;
-  }
-
-  .dark {
-    --background: 216 20% 8%;
-    --foreground: 0 0% 95%;
-    --primary: 153 65% 54%;
-    --primary-foreground: 160 45% 10%;
-    --muted: 216 15% 14%;
-    --muted-foreground: 210 10% 60%;
-    --accent: 216 15% 18%;
-    --accent-foreground: 0 0% 95%;
-    --border: 216 10% 20%;
+    --background: 220 23% 97%;        /* soft neutral page bg */
+    --foreground: 222 47% 11%;        /* slate-900 */
+    --surface: 0 0% 100%;             /* white cards */
+    --surface-foreground: 222 47% 11%;
+    --sidebar: 210 25% 99%;           /* near-white sidebar */
+    --primary: 153 64% 53%;           /* Galli green */
+    --primary-foreground: 0 0% 100%;  /* white text on green */
+    --muted: 220 16% 95%;
+    --muted-foreground: 220 9% 46%;   /* slate-500/600 */
+    --accent: 220 16% 95%;
+    --accent-foreground: 222 47% 11%;
+    --border: 220 14% 91%;            /* slate-200 */
+    --ring: 153 64% 53%;
     --destructive: 0 84% 60%;
   }
 }
@@ -35,7 +26,31 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep horizontal scroll for feed/page rows */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
 

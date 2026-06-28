@@ -12,6 +12,12 @@ const config: Config = {
         border: 'hsl(var(--border))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        ring: 'hsl(var(--ring))',
+        surface: {
+          DEFAULT: 'hsl(var(--surface))',
+          foreground: 'hsl(var(--surface-foreground))',
+        },
+        sidebar: 'hsl(var(--sidebar))',
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
@@ -33,10 +39,17 @@ const config: Config = {
           light: '#A8F0C8',
         },
       },
+      fontFamily: {
+        sans: ['var(--font-jakarta)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
       borderRadius: {
         lg: '0.75rem',
         xl: '1rem',
         '2xl': '1.25rem',
+      },
+      boxShadow: {
+        soft: '0 1px 2px rgba(16,24,40,.04), 0 4px 16px rgba(16,24,40,.06)',
+        'soft-lg': '0 8px 30px rgba(16,24,40,.08)',
       },
     },
   },
