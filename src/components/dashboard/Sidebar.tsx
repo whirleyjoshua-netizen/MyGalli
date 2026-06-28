@@ -30,7 +30,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { label: 'Home', icon: Home, href: '/dashboard', match: (p) => p === '/dashboard' },
   { label: 'My Pages', icon: FileText, href: '/dashboard?view=mine' },
-  { label: 'Shared with me', icon: Users, soon: true },
+  { label: 'Shared with me', icon: Users, href: '/shared', match: (p) => p.startsWith('/shared') },
   { label: 'Discover', icon: Compass, href: '/explore', match: (p) => p.startsWith('/explore') },
   { label: 'Templates', icon: LayoutTemplate, soon: true },
   { label: 'Integrations', icon: Blocks, soon: true },
