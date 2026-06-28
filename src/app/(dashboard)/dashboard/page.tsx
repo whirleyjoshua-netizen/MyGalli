@@ -2,315 +2,63 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import Image from 'next/image'
-import { Wordmark } from '@/components/brand/Wordmark'
-import { Plus, ExternalLink, Eye, MoreHorizontal, BarChart3, Compass, LogOut, Menu, Layout, Clock, Settings, Pin, PinOff, GripVertical, Trophy, Trash2, ImageIcon, X, Sparkles } from 'lucide-react'
-import {
-  DndContext,
-  DragOverlay,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragStartEvent,
-  DragEndEvent,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { Search, Bell, Plus, Globe, FileText } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
-import { BackgroundSettings } from '@/components/canvas/BackgroundSettings'
-import { getBackgroundStyles, DEFAULT_BACKGROUND_CONFIG } from '@/lib/types/background'
-import type { BackgroundConfig } from '@/lib/types/background'
 import type { DashboardPrefs } from '@/lib/types/dashboard'
-
-interface Display {
-  id: string
-  title: string
-  slug: string
-  published: boolean
-  views: number
-  updatedAt: string
-  coverImage?: string | null
-  _count: { elements: number }
-}
+import { ScrollRow } from '@/components/dashboard/ScrollRow'
+import { PageCard, type DashDisplay } from '@/components/dashboard/PageCard'
+import { FeedCard, type FeedItem } from '@/components/dashboard/FeedCard'
+import { AnalyticsPanel } from '@/components/dashboard/AnalyticsPanel'
 
 const GRADIENTS = [
-  'from-galli/20 via-galli-aqua/10 to-galli-violet/5',
-  'from-galli-aqua/20 via-galli-violet/10 to-galli/5',
-  'from-galli-violet/20 via-galli/10 to-galli-aqua/5',
-  'from-galli/15 via-galli-aqua/8 to-transparent',
-  'from-galli-violet/15 via-galli/8 to-transparent',
-  'from-galli-aqua/15 via-galli-violet/8 to-transparent',
+  'from-galli/20 via-galli-aqua/10 to-galli-violet/10',
+  'from-galli-aqua/20 via-galli-violet/10 to-galli/10',
+  'from-galli-violet/20 via-galli/10 to-galli-aqua/10',
+  'from-galli/15 via-galli-aqua/10 to-transparent',
+  'from-galli-violet/15 via-galli/10 to-transparent',
 ]
-
-// Sortable display card wrapper
-function SortableDisplayCard({
-  display,
-  isPinned,
-  gradient,
-  onTogglePin,
-  onOpenMenu,
-  isMenuOpen,
-  onCloseMenu,
-  onDelete,
-  onCoverChange,
-  user,
-  timeAgo,
-}: {
-  display: Display
-  isPinned: boolean
-  gradient: string
-  onTogglePin: (id: string) => void
-  onOpenMenu: (id: string) => void
-  isMenuOpen: boolean
-  onCloseMenu: () => void
-  onDelete: (id: string) => void
-  onCoverChange: (id: string, file: File | null) => void
-  user: { username?: string } | null
-  timeAgo: (dateStr: string) => string
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: display.id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-    zIndex: isDragging ? 50 : 'auto' as const,
-  }
-
-  return (
-    <div ref={setNodeRef} style={style} className="relative group">
-      {/* Drag handle */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="absolute top-3 left-3 z-10 p-1 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity rounded-lg bg-background/60 backdrop-blur-sm"
-      >
-        <GripVertical className="w-4 h-4 text-muted-foreground" />
-      </div>
-
-      {/* Pin indicator */}
-      {isPinned && (
-        <div className="absolute top-3 left-12 z-10">
-          <Pin className="w-3.5 h-3.5 text-galli rotate-[-30deg]" />
-        </div>
-      )}
-
-      <Link
-        href={`/editor?id=${display.id}`}
-        className="relative overflow-hidden border border-border rounded-xl hover:border-galli/40 hover:shadow-lg hover:shadow-galli/10 transition-all block bg-background"
-      >
-        {/* Cover image or gradient preview area */}
-        <div className={`h-28 relative ${display.coverImage ? '' : `bg-gradient-to-br ${gradient}`}`}>
-          {display.coverImage && (
-            <img
-              src={display.coverImage}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          )}
-          {/* Status badge */}
-          <div className="absolute top-3 right-3">
-            <span
-              className={`px-2.5 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
-                display.published
-                  ? 'bg-galli/20 text-galli-dark border border-galli/20'
-                  : 'bg-background/60 text-muted-foreground border border-border/50'
-              }`}
-            >
-              {display.published ? 'Published' : 'Draft'}
-            </span>
-          </div>
-          {/* Element count overlay */}
-          <div className={`absolute bottom-3 left-4 flex items-center gap-1.5 text-xs ${display.coverImage ? 'text-white drop-shadow-md' : 'text-muted-foreground'}`}>
-            <Layout className="w-3 h-3" />
-            {display._count.elements} elements
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-background to-transparent" />
-        </div>
-
-        <div className="px-4 pb-4 pt-1">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="text-base font-semibold group-hover:text-primary transition-colors truncate pr-2">
-              {display.title}
-            </h3>
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onOpenMenu(display.id)
-              }}
-              className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-            >
-              <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1">
-                <Eye className="w-3 h-3" />
-                {display.views}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {timeAgo(display.updatedAt)}
-              </span>
-            </div>
-            {display.published && (
-              <span
-                onClick={(e) => { e.preventDefault(); window.open(`/${user?.username}/${display.slug}`, '_blank') }}
-                className="flex items-center gap-1 text-primary hover:underline"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Live
-              </span>
-            )}
-          </div>
-        </div>
-      </Link>
-
-      {/* Card dropdown menu */}
-      {isMenuOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={onCloseMenu} />
-          <div className="absolute right-4 top-[7.5rem] z-50 w-44 bg-background border border-border rounded-xl shadow-lg py-1 overflow-hidden">
-            <button
-              onClick={() => { onTogglePin(display.id); onCloseMenu() }}
-              className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors"
-            >
-              {isPinned ? (
-                <>
-                  <PinOff className="w-4 h-4" />
-                  Unpin
-                </>
-              ) : (
-                <>
-                  <Pin className="w-4 h-4" />
-                  Pin to top
-                </>
-              )}
-            </button>
-            {display.published && (
-              <button
-                onClick={() => { window.open(`/${user?.username}/${display.slug}`, '_blank'); onCloseMenu() }}
-                className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors"
-              >
-                <ExternalLink className="w-4 h-4" />
-                View live
-              </button>
-            )}
-            <label className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors cursor-pointer">
-              <ImageIcon className="w-4 h-4" />
-              {display.coverImage ? 'Change cover' : 'Add cover'}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) { onCoverChange(display.id, file); onCloseMenu() }
-                  e.target.value = ''
-                }}
-              />
-            </label>
-            {display.coverImage && (
-              <button
-                onClick={() => { onCoverChange(display.id, null); onCloseMenu() }}
-                className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors"
-              >
-                <X className="w-4 h-4" />
-                Remove cover
-              </button>
-            )}
-            <div className="border-t border-border">
-              <button
-                onClick={() => { onDelete(display.id); onCloseMenu() }}
-                className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 w-full transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { user, logout } = useAuthStore()
-  const [displays, setDisplays] = useState<Display[]>([])
+  const { user } = useAuthStore()
+  const [displays, setDisplays] = useState<DashDisplay[]>([])
+  const [feed, setFeed] = useState<FeedItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [prefs, setPrefs] = useState<DashboardPrefs>({})
   const [cardMenuOpen, setCardMenuOpen] = useState<string | null>(null)
-  const [bgSettingsOpen, setBgSettingsOpen] = useState(false)
-  const [dashboardPrefs, setDashboardPrefs] = useState<DashboardPrefs>({})
-  const [activeCardId, setActiveCardId] = useState<string | null>(null)
-
-  // DnD sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  )
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchDisplays()
-    fetchDashboardPrefs()
-  }, [router])
+    fetch('/api/displays')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d: DashDisplay[]) => {
+        setDisplays(Array.isArray(d) ? d : [])
+        if (Array.isArray(d) && d.length > 0) setSelectedId((cur) => cur ?? d[0].id)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
 
-  const fetchDisplays = async () => {
-    try {
-      const res = await fetch('/api/displays')
-      if (res.ok) {
-        const data = await res.json()
-        setDisplays(data)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
+    fetch('/api/dashboard-prefs')
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((d) => setPrefs(d || {}))
+      .catch(() => {})
 
-  const fetchDashboardPrefs = async () => {
-    try {
-      const res = await fetch('/api/dashboard-prefs')
-      if (res.ok) {
-        const data = await res.json()
-        setDashboardPrefs(data || {})
-      }
-    } catch {}
-  }
+    fetch('/api/explore?sort=recent&page=1&limit=12')
+      .then((r) => (r.ok ? r.json() : { displays: [] }))
+      .then((d) => setFeed(Array.isArray(d?.displays) ? d.displays : []))
+      .catch(() => {})
+  }, [])
 
-  const savePrefs = useCallback(async (prefs: DashboardPrefs) => {
-    setDashboardPrefs(prefs)
+  const savePrefs = useCallback(async (next: DashboardPrefs) => {
+    setPrefs(next)
     try {
       await fetch('/api/dashboard-prefs', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(prefs),
+        body: JSON.stringify(next),
       })
     } catch {}
   }, [])
-
-  const createDisplay = () => {
-    router.push('/editor')
-  }
 
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime()
@@ -323,326 +71,142 @@ export default function DashboardPage() {
     return `${Math.floor(days / 30)}mo ago`
   }
 
-  // Sorted displays: custom order + pinned first
   const sortedDisplays = useMemo(() => {
-    const order = dashboardPrefs.displayOrder || []
-    const pinned = new Set(dashboardPrefs.pinnedDisplayIds || [])
+    const pinned = new Set(prefs.pinnedDisplayIds || [])
+    return [...displays.filter((d) => pinned.has(d.id)), ...displays.filter((d) => !pinned.has(d.id))]
+  }, [displays, prefs.pinnedDisplayIds])
 
-    // Start with displays in custom order, append any not yet ordered
-    const ordered = [
-      ...order.filter(id => displays.some(d => d.id === id)).map(id => displays.find(d => d.id === id)!),
-      ...displays.filter(d => !order.includes(d.id)),
-    ]
+  const togglePin = useCallback((id: string) => {
+    const pinned = new Set(prefs.pinnedDisplayIds || [])
+    if (pinned.has(id)) pinned.delete(id)
+    else pinned.add(id)
+    savePrefs({ ...prefs, pinnedDisplayIds: Array.from(pinned) })
+  }, [prefs, savePrefs])
 
-    // Stable partition: pinned first, then unpinned
-    return [
-      ...ordered.filter(d => pinned.has(d.id)),
-      ...ordered.filter(d => !pinned.has(d.id)),
-    ]
-  }, [displays, dashboardPrefs.displayOrder, dashboardPrefs.pinnedDisplayIds])
-
-  // DnD handlers
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveCardId(event.active.id as string)
-  }
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveCardId(null)
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    const currentOrder = sortedDisplays.map(d => d.id)
-    const oldIndex = currentOrder.indexOf(active.id as string)
-    const newIndex = currentOrder.indexOf(over.id as string)
-    if (oldIndex === -1 || newIndex === -1) return
-
-    const newOrder = [...currentOrder]
-    const [removed] = newOrder.splice(oldIndex, 1)
-    newOrder.splice(newIndex, 0, removed)
-
-    savePrefs({ ...dashboardPrefs, displayOrder: newOrder })
-  }
-
-  // Pin/unpin
-  const togglePin = useCallback((displayId: string) => {
-    const pinned = new Set(dashboardPrefs.pinnedDisplayIds || [])
-    if (pinned.has(displayId)) {
-      pinned.delete(displayId)
-    } else {
-      pinned.add(displayId)
-    }
-    savePrefs({ ...dashboardPrefs, pinnedDisplayIds: Array.from(pinned) })
-  }, [dashboardPrefs, savePrefs])
-
-  // Cover image upload/remove
-  const handleCoverChange = useCallback(async (displayId: string, file: File | null) => {
+  const handleCoverChange = useCallback(async (id: string, file: File | null) => {
     try {
       let coverImage: string | null = null
-
       if (file) {
-        // Upload the file
-        const formData = new FormData()
-        formData.append('file', file)
-        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData })
-        if (!uploadRes.ok) return
-        const { url } = await uploadRes.json()
-        coverImage = url
+        const fd = new FormData()
+        fd.append('file', file)
+        const up = await fetch('/api/upload', { method: 'POST', body: fd })
+        if (!up.ok) return
+        coverImage = (await up.json()).url
       }
-
-      // Update the display
-      const res = await fetch(`/api/displays/${displayId}`, {
+      const res = await fetch(`/api/displays/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ coverImage }),
       })
-
-      if (res.ok) {
-        setDisplays(prev => prev.map(d => d.id === displayId ? { ...d, coverImage } : d))
-      }
+      if (res.ok) setDisplays((prev) => prev.map((d) => (d.id === id ? { ...d, coverImage } : d)))
     } catch {}
   }, [])
 
-  // Delete display
-  const deleteDisplay = useCallback(async (displayId: string) => {
-    const display = displays.find(d => d.id === displayId)
-    if (!display) return
-    if (!window.confirm(`Delete "${display.title}"? This cannot be undone.`)) return
-
+  const deleteDisplay = useCallback(async (id: string) => {
+    const d = displays.find((x) => x.id === id)
+    if (!d || !window.confirm(`Delete "${d.title}"? This cannot be undone.`)) return
     try {
-      const res = await fetch(`/api/displays/${displayId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/displays/${id}`, { method: 'DELETE' })
       if (res.ok) {
-        setDisplays(prev => prev.filter(d => d.id !== displayId))
+        setDisplays((prev) => prev.filter((x) => x.id !== id))
+        setSelectedId((cur) => (cur === id ? null : cur))
       }
     } catch {}
   }, [displays])
 
-  // Background change
-  const handleBgChange = useCallback((config: BackgroundConfig) => {
-    savePrefs({ ...dashboardPrefs, background: config })
-  }, [dashboardPrefs, savePrefs])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    )
-  }
-
-  const totalViews = displays.reduce((sum, d) => sum + d.views, 0)
-  const publishedCount = displays.filter(d => d.published).length
-  const activeDisplay = activeCardId ? displays.find(d => d.id === activeCardId) : null
+  const pinnedSet = new Set(prefs.pinnedDisplayIds || [])
+  const selected = displays.find((d) => d.id === selectedId) || sortedDisplays[0] || null
 
   return (
-    <div className="min-h-screen relative">
-
-      {/* Nav bar */}
-      <nav className="sticky top-0 z-30 bg-gradient-to-r from-galli/15 via-galli-aqua/10 to-galli-violet/15 backdrop-blur-xl border-b border-galli/20 shadow-md shadow-galli/10">
-        <div className="px-6 py-3.5 flex items-center">
-          <div className="flex-1" />
-          <Link href="/" className="flex items-center text-2xl">
-            <Wordmark />
-          </Link>
-          <div className="flex-1 flex justify-end gap-2">
+    <div className="flex">
+      {/* Center column */}
+      <div className="flex-1 min-w-0 px-6 lg:px-8 py-7">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+              Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
+            </h1>
+            <p className="text-muted-foreground mt-1">Everything you create lives in your universe.</p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="hidden sm:flex items-center gap-2 px-3.5 h-10 rounded-full border border-border bg-surface text-muted-foreground w-56">
+              <Search className="w-4 h-4 shrink-0" />
+              <input
+                aria-label="Search"
+                placeholder="Search anything..."
+                className="bg-transparent outline-none text-sm w-full placeholder:text-muted-foreground"
+              />
+            </div>
             <button
-              onClick={() => setBgSettingsOpen(true)}
-              className="p-2.5 bg-galli/10 hover:bg-galli/20 rounded-xl transition-all hover:scale-105"
-              title="Dashboard background"
+              aria-label="Notifications"
+              className="relative w-10 h-10 rounded-full border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
-              <Settings className="w-5 h-5 text-galli" />
-            </button>
-            <div className="relative">
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="p-2.5 bg-galli-violet/10 hover:bg-galli-violet/20 rounded-xl transition-all hover:scale-105"
-              >
-                <Menu className="w-5 h-5 text-galli-violet" />
-              </button>
-              {menuOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-background border border-border rounded-xl shadow-lg z-50 py-1 overflow-hidden">
-                    <div className="px-3 py-2.5 border-b border-border">
-                      <p className="text-sm font-medium">{user?.name || user?.username}</p>
-                      <p className="text-xs text-muted-foreground">@{user?.username}</p>
-                    </div>
-                    <Link href="/explore" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                      <Compass className="w-4 h-4" />
-                      Explore
-                    </Link>
-                    <Link href="/analytics" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                      <BarChart3 className="w-4 h-4" />
-                      Analytics
-                    </Link>
-                    <div className="border-t border-border">
-                      <button onClick={() => { logout(); setMenuOpen(false) }} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 w-full transition-colors">
-                        <LogOut className="w-4 h-4" />
-                        Log out
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero header */}
-      <header className="relative overflow-hidden">
-        <div className="bg-gradient-to-br from-galli/10 via-galli-aqua/5 to-galli-violet/10">
-          <div className="max-w-6xl mx-auto px-6 py-12">
-            <div className="flex items-end justify-between">
-              <div>
-                <h1 className="text-3xl font-bold mb-1">
-                  Welcome back{user?.name ? `, ${user.name}` : ''}
-                </h1>
-                <p className="text-muted-foreground">
-                  Your living gallery — {displays.length} display{displays.length !== 1 ? 's' : ''}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                {/* Hidden for now — AI page builder (no API credits) and Kit pages
-                <Link
-                  href="/create"
-                  className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-galli to-galli-aqua text-white rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 hover:scale-[1.02] transition-all"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Create with AI
-                </Link>
-                <Link
-                  href="/new-kit"
-                  className="flex items-center gap-2 px-5 py-3 bg-galli/10 text-galli-dark border border-galli/20 rounded-full font-medium hover:bg-galli/20 hover:shadow-lg hover:shadow-galli/15 hover:scale-[1.02] transition-all"
-                >
-                  <Trophy className="w-4 h-4 text-galli" />
-                  New Kit Page
-                </Link>
-                */}
-                <button
-                  onClick={createDisplay}
-                  className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 hover:scale-[1.02] transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                  New Page
-                </button>
-              </div>
-            </div>
-
-            {/* Stats strip */}
-            <div className="mt-8 flex gap-6">
-              <div className="flex items-center gap-2 px-4 py-2 bg-background/60 backdrop-blur-sm rounded-full border border-border/50">
-                <Layout className="w-4 h-4 text-galli" />
-                <span className="text-sm font-medium">{displays.length} pages</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-background/60 backdrop-blur-sm rounded-full border border-border/50">
-                <Eye className="w-4 h-4 text-galli-aqua" />
-                <span className="text-sm font-medium">{totalViews} total views</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-background/60 backdrop-blur-sm rounded-full border border-border/50">
-                <ExternalLink className="w-4 h-4 text-galli-violet" />
-                <span className="text-sm font-medium">{publishedCount} published</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Fade edge */}
-        <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-background to-transparent" />
-      </header>
-
-      {/* Canvas area — background only applies here */}
-      <div className="relative min-h-[50vh]">
-        {dashboardPrefs.background ? (
-          <div className="absolute inset-0 -z-10" style={getBackgroundStyles(dashboardPrefs.background)} />
-        ) : (
-          <div className="absolute inset-0 -z-10 overflow-hidden">
-            <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-galli/[0.04] rounded-full blur-3xl" />
-            <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-galli-violet/[0.04] rounded-full blur-3xl" />
-          </div>
-        )}
-        <main className="max-w-6xl mx-auto px-6 py-8 relative z-10">
-        {displays.length === 0 ? (
-          <div className="text-center py-24">
-            <h2 className="text-xl font-semibold mb-2">Your gallery is empty</h2>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Create your first display — add elements, collect responses, and share it with the world.
-            </p>
-            <button
-              onClick={createDisplay}
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:shadow-lg hover:shadow-galli/25 transition-all"
-            >
-              Create your first page
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-galli-violet" />
             </button>
           </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
+        </div>
+
+        {/* Public feed */}
+        <ScrollRow
+          title="Public feed"
+          subtitle="Explore what the world is building."
+          icon={<Globe className="w-4 h-4" />}
+        >
+          {feed.length === 0 ? (
+            <div className="shrink-0 w-full py-10 text-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">
+              No public pages yet — published pages from the community show up here.
+            </div>
+          ) : (
+            feed.map((item, i) => <FeedCard key={item.id} item={item} index={i} />)
+          )}
+        </ScrollRow>
+
+        {/* My pages */}
+        <ScrollRow
+          title="My pages"
+          subtitle="Your world, your rules."
+          icon={<FileText className="w-4 h-4" />}
+        >
+          {sortedDisplays.map((display, i) => (
+            <PageCard
+              key={display.id}
+              display={display}
+              gradient={GRADIENTS[i % GRADIENTS.length]}
+              selected={selected?.id === display.id}
+              isPinned={pinnedSet.has(display.id)}
+              isMenuOpen={cardMenuOpen === display.id}
+              username={user?.username}
+              timeAgo={timeAgo}
+              onSelect={setSelectedId}
+              onOpenMenu={(id) => setCardMenuOpen((cur) => (cur === id ? null : id))}
+              onCloseMenu={() => setCardMenuOpen(null)}
+              onTogglePin={togglePin}
+              onDelete={deleteDisplay}
+              onCoverChange={handleCoverChange}
+            />
+          ))}
+          {/* Create new page tile */}
+          <button
+            onClick={() => router.push('/editor')}
+            className="group shrink-0 w-60 snap-start rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-primary/[0.03] transition-all cursor-pointer"
+            style={{ minHeight: 188 }}
           >
-            <SortableContext
-              items={sortedDisplays.map(d => d.id)}
-              strategy={rectSortingStrategy}
-            >
-              <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                {/* New page card — always first, not sortable */}
-                <button
-                  onClick={createDisplay}
-                  className="group border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center py-12 hover:border-galli/40 hover:bg-galli/[0.03] transition-all"
-                >
-                  <div className="w-12 h-12 rounded-full bg-galli/10 flex items-center justify-center mb-3 group-hover:bg-galli/20 group-hover:scale-110 transition-all">
-                    <Plus className="w-6 h-6 text-galli" />
-                  </div>
-                  <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-                    New Page
-                  </span>
-                </button>
+            <span className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <Plus className="w-5 h-5 text-primary" />
+            </span>
+            <span className="text-sm font-medium">Create new page</span>
+          </button>
+        </ScrollRow>
 
-                {/* Sortable display cards */}
-                {sortedDisplays.map((display, i) => (
-                  <SortableDisplayCard
-                    key={display.id}
-                    display={display}
-                    isPinned={(dashboardPrefs.pinnedDisplayIds || []).includes(display.id)}
-                    gradient={GRADIENTS[i % GRADIENTS.length]}
-                    onTogglePin={togglePin}
-                    onOpenMenu={(id) => setCardMenuOpen(cardMenuOpen === id ? null : id)}
-                    isMenuOpen={cardMenuOpen === display.id}
-                    onCloseMenu={() => setCardMenuOpen(null)}
-                    onDelete={deleteDisplay}
-                    onCoverChange={handleCoverChange}
-                    user={user}
-                    timeAgo={timeAgo}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-
-            {/* Drag overlay */}
-            <DragOverlay>
-              {activeDisplay && (
-                <div className="opacity-80 shadow-2xl rounded-xl bg-background border border-galli/30 w-[300px] overflow-hidden pointer-events-none">
-                  <div className={`h-20 bg-gradient-to-br ${GRADIENTS[0]}`} />
-                  <div className="px-4 py-3">
-                    <h3 className="text-sm font-semibold truncate">{activeDisplay.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{activeDisplay.views} views</p>
-                  </div>
-                </div>
-              )}
-            </DragOverlay>
-          </DndContext>
+        {loading && displays.length === 0 && (
+          <p className="text-sm text-muted-foreground">Loading your pages…</p>
         )}
-        </main>
       </div>
 
-      {/* Background settings modal */}
-      <BackgroundSettings
-        isOpen={bgSettingsOpen}
-        onClose={() => setBgSettingsOpen(false)}
-        config={dashboardPrefs.background || DEFAULT_BACKGROUND_CONFIG}
-        onChange={handleBgChange}
-      />
-
+      {/* Right analytics panel */}
+      <AnalyticsPanel display={selected} username={user?.username} />
     </div>
   )
 }

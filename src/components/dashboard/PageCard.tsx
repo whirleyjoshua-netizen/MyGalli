@@ -1,0 +1,136 @@
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { Globe, Lock, Eye, MoreHorizontal, Pin, PinOff, ImageIcon, Trash2, ExternalLink, Pencil, X } from 'lucide-react'
+
+export interface DashDisplay {
+  id: string
+  title: string
+  slug: string
+  published: boolean
+  views: number
+  updatedAt: string
+  coverImage?: string | null
+  _count: { elements: number }
+}
+
+export function PageCard({
+  display,
+  gradient,
+  selected,
+  isPinned,
+  isMenuOpen,
+  username,
+  timeAgo,
+  onSelect,
+  onOpenMenu,
+  onCloseMenu,
+  onTogglePin,
+  onDelete,
+  onCoverChange,
+}: {
+  display: DashDisplay
+  gradient: string
+  selected: boolean
+  isPinned: boolean
+  isMenuOpen: boolean
+  username?: string
+  timeAgo: (s: string) => string
+  onSelect: (id: string) => void
+  onOpenMenu: (id: string) => void
+  onCloseMenu: () => void
+  onTogglePin: (id: string) => void
+  onDelete: (id: string) => void
+  onCoverChange: (id: string, file: File | null) => void
+}) {
+  const router = useRouter()
+  return (
+    <div
+      onClick={() => onSelect(display.id)}
+      className={`group relative shrink-0 w-60 snap-start rounded-2xl border bg-surface overflow-hidden shadow-soft hover:shadow-soft-lg transition-all cursor-pointer ${
+        selected ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-primary/30'
+      }`}
+    >
+      <div className={`h-36 relative ${display.coverImage ? '' : `bg-gradient-to-br ${gradient}`}`}>
+        {display.coverImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={display.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        )}
+        {isPinned && (
+          <span className="absolute top-2.5 left-2.5 p-1 rounded-lg bg-surface/80 backdrop-blur-sm">
+            <Pin className="w-3.5 h-3.5 text-primary rotate-[-30deg]" />
+          </span>
+        )}
+        <span
+          className={`absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[11px] font-medium backdrop-blur-sm ${
+            display.published
+              ? 'bg-primary/20 text-galli-dark border border-primary/20'
+              : 'bg-surface/70 text-muted-foreground border border-border'
+          }`}
+        >
+          {display.published ? 'Public' : 'Draft'}
+        </span>
+        <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-black/35 to-transparent" />
+        <h3 className="absolute bottom-2.5 left-3 right-3 text-white font-semibold text-sm truncate drop-shadow">
+          {display.title}
+        </h3>
+      </div>
+
+      <div className="flex items-center justify-between px-3 py-2.5">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {display.published ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+          {display.published ? 'Public' : 'Private'}
+        </span>
+        <span className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Eye className="w-3.5 h-3.5" />
+            {display.views}
+          </span>
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenMenu(display.id) }}
+            aria-label="Page options"
+            className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+        </span>
+      </div>
+
+      {isMenuOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); onCloseMenu() }} />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="absolute right-3 bottom-12 z-50 w-44 bg-surface border border-border rounded-xl shadow-soft-lg py-1 overflow-hidden"
+          >
+            <button onClick={() => { router.push(`/editor?id=${display.id}`) }} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors cursor-pointer">
+              <Pencil className="w-4 h-4" /> Open in editor
+            </button>
+            <button onClick={() => { onTogglePin(display.id); onCloseMenu() }} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors cursor-pointer">
+              {isPinned ? <><PinOff className="w-4 h-4" /> Unpin</> : <><Pin className="w-4 h-4" /> Pin to top</>}
+            </button>
+            {display.published && (
+              <button onClick={() => { window.open(`/${username}/${display.slug}`, '_blank'); onCloseMenu() }} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors cursor-pointer">
+                <ExternalLink className="w-4 h-4" /> View live
+              </button>
+            )}
+            <label className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors cursor-pointer">
+              <ImageIcon className="w-4 h-4" /> {display.coverImage ? 'Change cover' : 'Add cover'}
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { onCoverChange(display.id, f); onCloseMenu() } e.target.value = '' }} />
+            </label>
+            {display.coverImage && (
+              <button onClick={() => { onCoverChange(display.id, null); onCloseMenu() }} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors cursor-pointer">
+                <X className="w-4 h-4" /> Remove cover
+              </button>
+            )}
+            <div className="border-t border-border">
+              <button onClick={() => { onDelete(display.id); onCloseMenu() }} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-destructive hover:bg-destructive/10 w-full transition-colors cursor-pointer">
+                <Trash2 className="w-4 h-4" /> Delete
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
