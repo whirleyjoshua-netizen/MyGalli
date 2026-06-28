@@ -5,6 +5,8 @@ import { sign } from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/auth'
 import { AUTH_COOKIE } from '@/lib/constants'
 import { rateLimit } from '@/lib/rate-limit'
+import { createToken } from '@/lib/auth-tokens'
+import { sendEmail, verificationEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   // 3 signup attempts per minute per IP
@@ -79,6 +81,16 @@ export async function POST(request: NextRequest) {
         bio: true,
       },
     })
+
+    // Fire a verification email (non-blocking on failure)
+    try {
+      const verifyTok = await createToken(user.id, 'verify')
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      const { subject, html } = verificationEmail(`${appUrl}/verify?token=${verifyTok}`)
+      await sendEmail({ to: user.email, subject, html })
+    } catch (e) {
+      console.error('Verification email failed:', e)
+    }
 
     // Generate token
     const token = sign(
