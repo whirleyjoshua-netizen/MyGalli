@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   }
 
   const displays = await db.display.findMany({
-    where: { userId: user.id },
+    where: { userId: user.id, kind: { not: 'profile' } },
     orderBy: { updatedAt: 'desc' },
   })
 

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ displays: [], hasMore: false, page, pageSize: limit, empty: true })
     }
 
-    const where = { published: true, userId: { in: followingIds } }
+    const where = { published: true, kind: { not: 'profile' }, userId: { in: followingIds } }
     const [total, displays] = await Promise.all([
       db.display.count({ where }),
       db.display.findMany({

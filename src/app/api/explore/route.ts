@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         }
       : {}
 
-    const where = { published: true, ...kitFilter, ...searchFilter }
+    const where = { published: true, kind: { not: 'profile' }, ...kitFilter, ...searchFilter }
 
     const orderBy =
       sort === 'popular'
