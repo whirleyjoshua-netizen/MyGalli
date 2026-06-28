@@ -23,6 +23,7 @@ model User {
   cardLibrary CardLibraryItem[]
   following   Follow[]  @relation("Following")
   followers   Follow[]  @relation("Followers")
+  collaborations DisplayCollaborator[]
 }
 
 model Follow {
@@ -87,9 +88,28 @@ model Display {
   // Jersey signatures
   jerseySignatures JerseySignature[]
 
+  // Collaborative editing
+  version       Int      @default(0)
+  collaborators DisplayCollaborator[]
+
   @@unique([userId, slug])
   @@index([userId])
   @@index([published])
+}
+
+model DisplayCollaborator {
+  id        String   @id @default(cuid())
+  displayId String
+  display   Display  @relation(fields: [displayId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("editor")
+  invitedBy String
+  createdAt DateTime @default(now())
+
+  @@unique([displayId, userId])
+  @@index([userId])
+  @@index([displayId])
 }
 
 model AnalyticsEvent {
