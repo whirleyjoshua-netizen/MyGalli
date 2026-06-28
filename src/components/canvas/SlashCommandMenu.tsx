@@ -12,7 +12,6 @@ import {
   BarChart3,
   Table,
   AlertCircle,
-  ChevronRight,
   CircleDot,
   Star,
   MessageSquare,
@@ -65,6 +64,7 @@ const commands: Command[] = [
   { id: 'callout', label: 'Callout', icon: AlertCircle, description: 'Highlighted info box', category: 'Content' },
   { id: 'toggle', label: 'Toggle', icon: ChevronDownIcon, description: 'Collapsible content', category: 'Content' },
   { id: 'code', label: 'Code Block', icon: Code2, description: 'Syntax-highlighted code', category: 'Content' },
+  { id: 'timeline', label: 'Timeline', icon: Clock, description: 'Interactive event timeline', category: 'Content' },
 
   // Data & Visuals
   { id: 'list', label: 'Bulleted List', icon: List, description: 'Simple bullet list', category: 'Data & Visuals' },
@@ -125,11 +125,14 @@ const commands: Command[] = [
   { id: 'business-hours', label: 'Hours & Location', icon: Clock, description: 'Business hours & contact', category: 'Kit' },
   { id: 'business-review', label: 'Customer Reviews', icon: Star, description: 'Interactive review wall', category: 'Kit' },
   { id: 'business-promo', label: 'Promos & Specials', icon: Sparkles, description: 'Deals & promotions', category: 'Kit' },
-  // General-purpose
-  { id: 'timeline', label: 'Timeline', icon: Clock, description: 'Interactive event timeline', category: 'Content' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Integrations', 'Kit']
+
+interface Column {
+  category: string
+  cmds: Command[]
+}
 
 interface SlashCommandMenuProps {
   position: { x: number; y: number }
@@ -140,81 +143,35 @@ interface SlashCommandMenuProps {
 
 export function SlashCommandMenu({ position, onSelect, onClose, isKitPage }: SlashCommandMenuProps) {
   const [search, setSearch] = useState('')
-  const [selectedIndex, setSelectedIndex] = useState(0)
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
+  const [sel, setSel] = useState<{ col: number; row: number }>({ col: 0, row: 0 })
   const menuRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const isSearching = search.length > 0
-
   // Filter commands based on search and kit visibility
-  const filteredCommands = commands.filter(
-    (cmd) => {
-      if (cmd.category === 'Kit' && !isKitPage) return false
-      return cmd.label.toLowerCase().includes(search.toLowerCase()) ||
-        cmd.description.toLowerCase().includes(search.toLowerCase()) ||
-        cmd.category.toLowerCase().includes(search.toLowerCase())
-    }
-  )
+  const filteredCommands = commands.filter((cmd) => {
+    if (cmd.category === 'Kit' && !isKitPage) return false
+    return (
+      cmd.label.toLowerCase().includes(search.toLowerCase()) ||
+      cmd.description.toLowerCase().includes(search.toLowerCase()) ||
+      cmd.category.toLowerCase().includes(search.toLowerCase())
+    )
+  })
 
-  // Group by category
-  const groupedCommands: Record<string, Command[]> = {}
+  // Group into ordered columns (one per category)
+  const columns: Column[] = []
   for (const cat of CATEGORY_ORDER) {
-    const cmds = filteredCommands.filter(c => c.category === cat)
-    if (cmds.length > 0) groupedCommands[cat] = cmds
+    const cmds = filteredCommands.filter((c) => c.category === cat)
+    if (cmds.length > 0) columns.push({ category: cat, cmds })
   }
 
-  // Flatten visible commands (only non-collapsed, non-disabled) for keyboard navigation
-  const flatCommands: Command[] = []
-  for (const [category, cmds] of Object.entries(groupedCommands)) {
-    if (!isSearching && collapsedCategories.has(category)) continue
-    flatCommands.push(...cmds.filter(c => !c.disabled))
-  }
+  const clampedCol = Math.min(sel.col, Math.max(columns.length - 1, 0))
+  const activeCmds = columns[clampedCol]?.cmds ?? []
+  const clampedRow = Math.min(sel.row, Math.max(activeCmds.length - 1, 0))
+  const selectedCmd = activeCmds[clampedRow]
 
-  const toggleCategory = (category: string) => {
-    setCollapsedCategories(prev => {
-      const next = new Set(prev)
-      if (next.has(category)) {
-        next.delete(category)
-      } else {
-        next.add(category)
-      }
-      return next
-    })
-  }
-
-  // Keyboard navigation
+  // Reset selection when search changes
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault()
-          setSelectedIndex((i) => (i + 1) % Math.max(flatCommands.length, 1))
-          break
-        case 'ArrowUp':
-          e.preventDefault()
-          setSelectedIndex((i) => (i - 1 + flatCommands.length) % Math.max(flatCommands.length, 1))
-          break
-        case 'Enter':
-          e.preventDefault()
-          if (flatCommands[selectedIndex]) {
-            onSelect(flatCommands[selectedIndex].id)
-          }
-          break
-        case 'Escape':
-          e.preventDefault()
-          onClose()
-          break
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [flatCommands, selectedIndex, onSelect, onClose])
-
-  // Reset selected index when search changes
-  useEffect(() => {
-    setSelectedIndex(0)
+    setSel({ col: 0, row: 0 })
   }, [search])
 
   // Focus input on mount
@@ -222,29 +179,73 @@ export function SlashCommandMenu({ position, onSelect, onClose, isKitPage }: Sla
     inputRef.current?.focus()
   }, [])
 
-  // Scroll selected item into view
+  // Scroll selected item into view (horizontal + vertical)
   useEffect(() => {
     const selected = menuRef.current?.querySelector('[data-selected="true"]')
-    selected?.scrollIntoView({ block: 'nearest' })
-  }, [selectedIndex])
+    selected?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [clampedCol, clampedRow])
 
-  // Calculate position to stay in viewport
-  const menuHeight = 420
-  const menuWidth = 300
+  // Keyboard navigation (2D)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (columns.length === 0) {
+        if (e.key === 'Escape') { e.preventDefault(); onClose() }
+        return
+      }
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault()
+          setSel((s) => {
+            const cmds = columns[Math.min(s.col, columns.length - 1)].cmds
+            return { col: Math.min(s.col, columns.length - 1), row: Math.min(s.row + 1, cmds.length - 1) }
+          })
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          setSel((s) => ({ col: Math.min(s.col, columns.length - 1), row: Math.max(s.row - 1, 0) }))
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          setSel((s) => {
+            const col = Math.min(s.col + 1, columns.length - 1)
+            return { col, row: Math.min(s.row, columns[col].cmds.length - 1) }
+          })
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          setSel((s) => {
+            const col = Math.max(s.col - 1, 0)
+            return { col, row: Math.min(s.row, columns[col].cmds.length - 1) }
+          })
+          break
+        case 'Enter': {
+          e.preventDefault()
+          const cmd = columns[Math.min(sel.col, columns.length - 1)]?.cmds[clampedRow]
+          if (cmd && !cmd.disabled) onSelect(cmd.id)
+          break
+        }
+        case 'Escape':
+          e.preventDefault()
+          onClose()
+          break
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [columns, sel, clampedRow, onSelect, onClose])
+
+  // Position to stay in viewport (wide horizontal panel)
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200
+  const menuWidth = Math.min(viewportWidth - 32, 760)
+  const menuHeight = 400
 
   let adjustedX = position.x
   let adjustedY = position.y
-
-  if (adjustedX + menuWidth > viewportWidth) {
-    adjustedX = viewportWidth - menuWidth - 20
-  }
-  if (adjustedY + menuHeight > viewportHeight) {
-    adjustedY = viewportHeight - menuHeight - 20
-  }
-  adjustedX = Math.max(20, adjustedX)
-  adjustedY = Math.max(20, adjustedY)
+  if (adjustedX + menuWidth > viewportWidth) adjustedX = viewportWidth - menuWidth - 16
+  if (adjustedY + menuHeight > viewportHeight) adjustedY = viewportHeight - menuHeight - 16
+  adjustedX = Math.max(16, adjustedX)
+  adjustedY = Math.max(16, adjustedY)
 
   return (
     <>
@@ -254,13 +255,8 @@ export function SlashCommandMenu({ position, onSelect, onClose, isKitPage }: Sla
       {/* Menu */}
       <div
         ref={menuRef}
-        className="fixed z-50 bg-background border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col"
-        style={{
-          left: adjustedX,
-          top: adjustedY,
-          width: menuWidth,
-          maxHeight: 'calc(100vh - 40px)',
-        }}
+        className="fixed z-50 bg-surface border border-border rounded-xl shadow-soft-lg overflow-hidden flex flex-col"
+        style={{ left: adjustedX, top: adjustedY, width: menuWidth, maxHeight: menuHeight }}
       >
         {/* Search Input */}
         <div className="p-2 border-b border-border flex-shrink-0">
@@ -268,91 +264,70 @@ export function SlashCommandMenu({ position, onSelect, onClose, isKitPage }: Sla
             ref={inputRef}
             type="text"
             placeholder="Search elements..."
-            className="w-full px-3 py-2 bg-muted border border-border rounded-lg outline-none focus:ring-2 focus:ring-primary text-sm"
+            className="w-full px-3 py-2 bg-muted border border-border rounded-lg outline-none focus:ring-2 focus:ring-ring text-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
-        {/* Commands List */}
-        <div className="overflow-y-auto flex-1 py-1">
-          {Object.entries(groupedCommands).map(([category, cmds]) => {
-            const isCollapsed = !isSearching && collapsedCategories.has(category)
-            return (
-              <div key={category}>
-                {/* Category toggle header */}
-                <button
-                  onClick={() => !isSearching && toggleCategory(category)}
-                  className="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-muted/50 transition-colors"
-                >
-                  {!isSearching && (
-                    <ChevronRight
-                      className={`w-3 h-3 transition-transform duration-200 ${isCollapsed ? '' : 'rotate-90'}`}
-                    />
-                  )}
-                  <span>{category}</span>
-                  <span className="text-[10px] font-normal normal-case tracking-normal opacity-60 ml-auto">
-                    {cmds.length}
-                  </span>
-                </button>
-
-                {/* Items */}
-                {!isCollapsed && (
-                  <div>
-                    {cmds.map((cmd) => {
+        {/* Columns — horizontal scroll */}
+        <div className="overflow-x-auto overflow-y-hidden flex-1 scrollbar-hide">
+          {columns.length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">No elements found</div>
+          ) : (
+            <div className="flex h-full divide-x divide-border">
+              {columns.map((column, colIdx) => (
+                <div key={column.category} className="flex flex-col w-[210px] flex-shrink-0 h-full">
+                  {/* Category header */}
+                  <div className="px-3 py-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-shrink-0 sticky top-0 bg-surface">
+                    <span>{column.category}</span>
+                    <span className="text-[10px] font-normal normal-case tracking-normal opacity-60 ml-auto">
+                      {column.cmds.length}
+                    </span>
+                  </div>
+                  {/* Items — vertical scroll within the column */}
+                  <div className="overflow-y-auto flex-1 px-1 pb-1 scrollbar-hide">
+                    {column.cmds.map((cmd, rowIdx) => {
+                      const isSelected = colIdx === clampedCol && rowIdx === clampedRow
                       if (cmd.disabled) {
                         return (
-                          <div
-                            key={cmd.id}
-                            className="w-full px-3 py-2 flex items-center gap-3 opacity-40 cursor-not-allowed"
-                          >
+                          <div key={cmd.id} className="w-full px-2 py-2 flex items-center gap-2.5 opacity-40 cursor-not-allowed rounded-lg">
                             <cmd.icon className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-muted-foreground">{cmd.label}</div>
-                            </div>
+                            <span className="text-sm font-medium text-muted-foreground truncate">{cmd.label}</span>
                             {cmd.disabledLabel && (
-                              <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                              <span className="ml-auto text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
                                 {cmd.disabledLabel}
                               </span>
                             )}
                           </div>
                         )
                       }
-                      const globalIndex = flatCommands.indexOf(cmd)
-                      const isSelected = globalIndex === selectedIndex
                       return (
                         <button
                           key={cmd.id}
                           data-selected={isSelected}
-                          className={`w-full px-3 py-2 flex items-center gap-3 transition-colors text-left ${
+                          title={cmd.description}
+                          className={`w-full px-2 py-2 flex items-center gap-2.5 rounded-lg transition-colors text-left cursor-pointer ${
                             isSelected ? 'bg-primary/10' : 'hover:bg-muted'
                           }`}
                           onClick={() => onSelect(cmd.id)}
-                          onMouseEnter={() => setSelectedIndex(globalIndex)}
+                          onMouseEnter={() => setSel({ col: colIdx, row: rowIdx })}
                         >
                           <cmd.icon className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-foreground">{cmd.label}</div>
-                          </div>
+                          <span className="text-sm font-medium text-foreground truncate">{cmd.label}</span>
                         </button>
                       )
                     })}
                   </div>
-                )}
-              </div>
-            )
-          })}
-
-          {filteredCommands.length === 0 && (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              No elements found
+                </div>
+              ))}
             </div>
           )}
         </div>
 
         {/* Footer hint */}
-        <div className="px-3 py-1.5 border-t border-border text-[11px] text-muted-foreground bg-muted/30 flex items-center gap-3">
-          <span><kbd className="font-mono bg-muted px-1 rounded text-[10px]">↑↓</kbd> navigate</span>
+        <div className="px-3 py-1.5 border-t border-border text-[11px] text-muted-foreground bg-muted/30 flex items-center gap-3 flex-shrink-0">
+          <span><kbd className="font-mono bg-muted px-1 rounded text-[10px]">↑↓←→</kbd> navigate</span>
           <span><kbd className="font-mono bg-muted px-1 rounded text-[10px]">↵</kbd> select</span>
           <span><kbd className="font-mono bg-muted px-1 rounded text-[10px]">esc</kbd> close</span>
         </div>
