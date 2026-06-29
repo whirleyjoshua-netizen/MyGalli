@@ -5,6 +5,7 @@ import * as Icons from 'lucide-react'
 import { listedApps } from '@/lib/cards/registry'
 import { useAuthStore } from '@/lib/store'
 import { isPro } from '@/lib/plan'
+import { useRefreshUser } from '@/lib/use-refresh-user'
 import { ProBadge } from '@/components/pro/ProBadge'
 import { UpgradePrompt } from '@/components/pro/UpgradePrompt'
 
@@ -14,6 +15,7 @@ function LucideIcon({ name, className }: { name: string; className?: string }) {
 }
 
 export function AppsClient() {
+  useRefreshUser()
   const { user } = useAuthStore()
   const pro = isPro(user)
   const apps = listedApps()
@@ -84,6 +86,7 @@ export function AppsClient() {
                   <button
                     onClick={() => addApp(app.id, app.name, app.defaultData)}
                     disabled={pending === app.id}
+                    aria-busy={pending === app.id}
                     className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background transition hover:opacity-90 disabled:opacity-60"
                   >
                     <Icons.Plus className="h-3.5 w-3.5" />

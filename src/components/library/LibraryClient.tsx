@@ -7,6 +7,7 @@ import { Trash2, Layers, Plus } from 'lucide-react'
 import { CARD_PROVIDERS } from '@/lib/cards/registry'
 import { useAuthStore } from '@/lib/store'
 import { isPro } from '@/lib/plan'
+import { useRefreshUser } from '@/lib/use-refresh-user'
 import { UpgradePrompt } from '@/components/pro/UpgradePrompt'
 
 interface LibItem {
@@ -24,6 +25,7 @@ const TABS: { id: Tab; label: string; soon?: boolean }[] = [
 ]
 
 export function LibraryClient() {
+  useRefreshUser()
   const router = useRouter()
   const { user } = useAuthStore()
   const pro = isPro(user)
@@ -31,6 +33,7 @@ export function LibraryClient() {
   const [items, setItems] = useState<LibItem[]>([])
   const [loading, setLoading] = useState(true)
   const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/card-library')
@@ -41,11 +44,17 @@ export function LibraryClient() {
   }, [])
 
   const remove = async (id: string) => {
-    const res = await fetch(`/api/card-library/${id}`, { method: 'DELETE' })
-    if (res.ok) setItems((prev) => prev.filter((i) => i.id !== id))
+    setError(null)
+    try {
+      const res = await fetch(`/api/card-library/${id}`, { method: 'DELETE' })
+      if (res.ok) setItems((prev) => prev.filter((i) => i.id !== id))
+      else setError('Could not remove that item. Please try again.')
+    } catch {
+      setError('Could not remove that item. Please try again.')
+    }
   }
 
-  const use = () => {
+  const handleUse = () => {
     if (!pro) { setUpgradeOpen(true); return }
     router.push('/editor')
   }
@@ -75,6 +84,12 @@ export function LibraryClient() {
         ))}
       </div>
 
+      {error && tab === 'apps' && (
+        <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
       {tab !== 'apps' ? (
         <p className="py-16 text-center text-muted-foreground">Coming soon.</p>
       ) : loading ? (
@@ -101,7 +116,7 @@ export function LibraryClient() {
                   <p className="text-xs text-muted-foreground">{provider?.name ?? item.provider}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <button onClick={use} className="rounded-full bg-foreground px-3 py-1.5 text-xs font-semibold text-background hover:opacity-90">
+                  <button onClick={handleUse} className="rounded-full bg-foreground px-3 py-1.5 text-xs font-semibold text-background hover:opacity-90">
                     Use on a page
                   </button>
                   <button onClick={() => remove(item.id)} aria-label="Remove" className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive">

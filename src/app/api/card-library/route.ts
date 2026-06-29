@@ -40,6 +40,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unknown card provider' }, { status: 400 })
     }
 
+    if (CARD_PROVIDERS[provider].status !== 'live') {
+      return NextResponse.json({ error: 'This app is not available to add yet' }, { status: 400 })
+    }
+
     const item = await db.cardLibraryItem.create({
       data: {
         userId: user.id,

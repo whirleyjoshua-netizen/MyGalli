@@ -33,7 +33,7 @@ export function UpgradePrompt({
           </div>
           <h3 className="text-lg font-bold">Upgrade to Pro</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            {feature} is part of My Galli Pro. Upgrade to add Apps to your Library and use them on your pages.
+            {feature} is part of My Galli Pro. Upgrade to unlock it.
           </p>
           <Link
             href="/enterprise"
