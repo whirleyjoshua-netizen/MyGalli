@@ -43,6 +43,7 @@ import {
   DollarSign,
   Store,
   Sparkles,
+  Blocks,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -114,6 +115,8 @@ const commands: Command[] = [
   { id: 'social-stats', label: 'Social Stats', icon: Users, description: 'Social media presence', category: 'Kit' },
   { id: 'collab-card', label: 'Collab Card', icon: Briefcase, description: 'Brand partnership card', category: 'Kit' },
   { id: 'rate-card', label: 'Rate Card', icon: DollarSign, description: 'Package pricing cards', category: 'Kit' },
+  // Apps
+  { id: 'card', label: 'App Card', icon: Blocks, description: 'Insert a card from your Library', category: 'Apps' },
   { id: 'media-kit-stats', label: 'Media Kit Stats', icon: BarChart2, description: 'Audience demographics', category: 'Kit' },
   // Academic Kit
   { id: 'course-list', label: 'Course List', icon: BookOpen, description: 'Academic course table', category: 'Kit' },
@@ -127,7 +130,7 @@ const commands: Command[] = [
   { id: 'business-promo', label: 'Promos & Specials', icon: Sparkles, description: 'Deals & promotions', category: 'Kit' },
 ]
 
-const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Integrations', 'Kit']
+const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Apps', 'Kit']
 
 interface Column {
   category: string

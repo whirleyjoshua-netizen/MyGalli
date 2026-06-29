@@ -29,6 +29,8 @@ import { DEFAULT_TABS_CONFIG, createTab } from '@/lib/types/tabs'
 import type { KitPageConfig } from '@/lib/types/kit'
 import { KitBanner } from '@/components/kits/KitBanner'
 import { loadGoogleFont } from '@/lib/fonts'
+import { isPro } from '@/lib/plan'
+import { UpgradePrompt } from '@/components/pro/UpgradePrompt'
 
 interface PageEditorProps {
   pageId?: string
@@ -84,6 +86,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
 
   // Card picker state
   const [cardPickerOpen, setCardPickerOpen] = useState(false)
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
 
   // Column settings state
   const [showColumnSettings, setShowColumnSettings] = useState(false)
@@ -480,8 +483,12 @@ export function PageEditor({ pageId }: PageEditorProps) {
         newElement.slideshowShowOverlay = true
         break
       case 'card': {
-        // Open the library picker instead of creating element immediately
+        // Library Apps are a Pro feature; gate the insert.
         setShowSlashMenu(false)
+        if (!isPro(user)) {
+          setUpgradeOpen(true)
+          return
+        }
         setCardPickerOpen(true)
         return
       }
@@ -1240,6 +1247,8 @@ export function PageEditor({ pageId }: PageEditorProps) {
         }}
         onSelect={handleCardPickerSelect}
       />
+
+      <UpgradePrompt isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} feature="Using library Apps" />
 
       {/* Tab Editor */}
       <TabEditor
