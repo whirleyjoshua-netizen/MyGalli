@@ -96,15 +96,15 @@ export function CardLibraryPicker({ isOpen, onClose, onSelect }: CardLibraryPick
                 <Library className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No cards in your library</h3>
                 <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
-                  Visit Card Studio to browse available cards and add them to your library.
+                  Browse Apps to add cards to your library, then use them on any page.
                 </p>
                 <Link
-                  href="/card-studio"
+                  href="/apps"
                   onClick={onClose}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:shadow-lg transition"
                 >
                   <Layers className="w-4 h-4" />
-                  Open Card Studio
+                  Browse Apps
                 </Link>
               </div>
             ) : (
@@ -153,11 +153,11 @@ export function CardLibraryPicker({ isOpen, onClose, onSelect }: CardLibraryPick
           {/* Footer */}
           <div className="px-6 py-3 border-t border-border flex-shrink-0 flex items-center justify-between bg-muted/20">
             <Link
-              href="/card-studio"
+              href="/library"
               onClick={onClose}
               className="text-xs text-muted-foreground hover:text-foreground transition"
             >
-              Manage library in Card Studio
+              Manage your Library
             </Link>
             <button
               onClick={onClose}
