@@ -36,7 +36,7 @@ const NAV: NavItem[] = [
   { label: 'Explore', icon: Compass, href: '/explore', match: (p) => p.startsWith('/explore') },
   { label: 'Analytics', icon: BarChart3, href: '/analytics', match: (p) => p.startsWith('/analytics') },
   { label: 'Templates', icon: LayoutTemplate, soon: true },
-  { label: 'Integrations', icon: Blocks, soon: true },
+  { label: 'Apps', icon: Blocks, href: '/apps', match: (p) => p.startsWith('/apps') },
 ]
 
 export function Sidebar() {

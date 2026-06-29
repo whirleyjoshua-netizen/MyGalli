@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { CARD_PROVIDERS } from '@/lib/cards/registry'
+import { isPro } from '@/lib/plan'
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,6 +25,9 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getUser(request)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!isPro(user)) {
+      return NextResponse.json({ error: 'Pro required' }, { status: 403 })
+    }
 
     const body = await request.json()
     const { provider, name, data, style } = body
