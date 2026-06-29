@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
           { email: googleUser.email },
         ],
       },
-      select: { id: true, email: true, username: true, name: true, avatar: true, bio: true, googleId: true, emailVerified: true },
+      select: { id: true, email: true, username: true, name: true, avatar: true, bio: true, googleId: true, emailVerified: true, plan: true },
     })
 
     if (user) {
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
           avatar: googleUser.picture || null,
           emailVerified: new Date(), // Google verifies the email
         },
-        select: { id: true, email: true, username: true, name: true, avatar: true, bio: true, googleId: true, emailVerified: true },
+        select: { id: true, email: true, username: true, name: true, avatar: true, bio: true, googleId: true, emailVerified: true, plan: true },
       })
     }
 
@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
         avatar: user.avatar,
         bio: user.bio,
         emailVerified: user.emailVerified,
+        plan: user.plan,
       },
       isNewUser: !user.googleId || user.googleId === googleUser.sub,
     })

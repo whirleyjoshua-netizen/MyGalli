@@ -29,6 +29,7 @@ export async function verifyAuth(token: string) {
         avatar: true,
         bio: true,
         emailVerified: true,
+        plan: true,
       },
     })
 
@@ -62,6 +63,7 @@ export async function getUser(request: NextRequest) {
         avatar: true,
         bio: true,
         emailVerified: true,
+        plan: true,
       },
     })
 

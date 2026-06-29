@@ -79,6 +79,7 @@ export interface User {
   interests?: string[]
   links?: { label: string; url: string }[]
   featuredDisplayId?: string | null
+  plan?: 'free' | 'pro'
 }
 
 export interface AuthState {

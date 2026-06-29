@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
         avatar: true,
         bio: true,
         emailVerified: true,
+        plan: true,
       },
     })
 
