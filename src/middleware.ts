@@ -3,6 +3,8 @@ import { AUTH_COOKIE } from '@/lib/constants'
 
 const PROTECTED_PATHS = [
   '/dashboard',
+  '/my-pages',
+  '/shared',
   '/analytics',
   '/responses',
   '/card-studio',
@@ -31,6 +33,8 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/my-pages/:path*',
+    '/shared/:path*',
     '/analytics/:path*',
     '/responses/:path*',
     '/card-studio/:path*',
