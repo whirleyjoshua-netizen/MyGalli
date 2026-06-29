@@ -11,6 +11,7 @@ import {
   Compass,
   LayoutTemplate,
   Blocks,
+  Library,
   ChevronLeft,
   ChevronDown,
   LogOut,
@@ -37,6 +38,7 @@ const NAV: NavItem[] = [
   { label: 'Analytics', icon: BarChart3, href: '/analytics', match: (p) => p.startsWith('/analytics') },
   { label: 'Templates', icon: LayoutTemplate, soon: true },
   { label: 'Apps', icon: Blocks, href: '/apps', match: (p) => p.startsWith('/apps') },
+  { label: 'Library', icon: Library, href: '/library', match: (p) => p.startsWith('/library') },
 ]
 
 export function Sidebar() {
