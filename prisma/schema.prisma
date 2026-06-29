@@ -112,9 +112,13 @@ model Display {
   kind          String   @default("page")
   collaborators DisplayCollaborator[]
 
+  // Discovery category (set on publish)
+  category      String?
+
   @@unique([userId, slug])
   @@index([userId])
   @@index([published])
+  @@index([category])
 }
 
 model DisplayCollaborator {
