@@ -18,7 +18,7 @@ export function UpgradePrompt({
       <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="w-full max-w-sm rounded-2xl border border-border bg-surface p-6 text-center shadow-soft-lg"
+          className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-6 text-center shadow-soft-lg"
           onClick={(e) => e.stopPropagation()}
         >
           <button
