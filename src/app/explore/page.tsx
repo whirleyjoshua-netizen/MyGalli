@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { db } from '@/lib/db'
+import { getExploreRows } from '@/lib/explore'
 import { ExploreClient } from '@/components/explore/ExploreClient'
 import type { Metadata } from 'next'
 import { ExploreCardSkeleton } from '@/components/explore/ExploreCardSkeleton'
@@ -12,44 +12,8 @@ export const metadata: Metadata = {
 const PAGE_SIZE = 12
 
 async function ExploreContent() {
-  const [total, displays] = await Promise.all([
-    db.display.count({ where: { published: true } }),
-    db.display.findMany({
-      where: { published: true },
-      orderBy: { createdAt: 'desc' },
-      take: PAGE_SIZE,
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        description: true,
-        views: true,
-        createdAt: true,
-        updatedAt: true,
-        kitConfig: true,
-        headerCard: true,
-        background: true,
-        user: {
-          select: { username: true, name: true, avatar: true },
-        },
-      },
-    }),
-  ])
-
-  // Serialize dates for client component
-  const serialized = displays.map((d) => ({
-    ...d,
-    createdAt: d.createdAt.toISOString(),
-    updatedAt: d.updatedAt.toISOString(),
-  }))
-
-  return (
-    <ExploreClient
-      initialDisplays={serialized}
-      initialTotal={total}
-      pageSize={PAGE_SIZE}
-    />
-  )
+  const initialRows = await getExploreRows()
+  return <ExploreClient initialRows={initialRows} />
 }
 
 function ExploreLoadingShell() {
