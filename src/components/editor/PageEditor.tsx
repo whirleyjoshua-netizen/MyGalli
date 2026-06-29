@@ -12,6 +12,7 @@ import { ColumnStyleSettings } from '@/components/canvas/ColumnStyleSettings'
 import { ShareDialog } from '@/components/editor/ShareDialog'
 import { CollaborateModal } from '@/components/editor/CollaborateModal'
 import { PresenceBar } from '@/components/editor/PresenceBar'
+import { PublishDialog } from '@/components/editor/PublishDialog'
 import { CardLibraryPicker } from '@/components/editor/CardLibraryPicker'
 import { HeaderCard } from '@/components/header/HeaderCard'
 import { HeaderCardEditor } from '@/components/header/HeaderCardEditor'
@@ -71,6 +72,11 @@ export function PageEditor({ pageId }: PageEditorProps) {
   const [isOwner, setIsOwner] = useState(true)
   const [conflict, setConflict] = useState(false)
   const [showCollaborate, setShowCollaborate] = useState(false)
+
+  // Publish/category state
+  const [category, setCategory] = useState<string | null>(null)
+  const [coverImage, setCoverImage] = useState<string | null>(null)
+  const [showPublishDialog, setShowPublishDialog] = useState(false)
 
   // Header card & tab editor state
   const [showHeaderEditor, setShowHeaderEditor] = useState(false)
@@ -200,6 +206,8 @@ export function PageEditor({ pageId }: PageEditorProps) {
         setTitle(data.title)
         setSlug(data.slug)
         setPublished(data.published)
+        setCategory(data.category ?? null)
+        setCoverImage(data.coverImage ?? null)
         setVersion(typeof data.version === 'number' ? data.version : 0)
         versionRef.current = typeof data.version === 'number' ? data.version : 0
         setIsOwner(data.isOwner !== false)
@@ -893,13 +901,18 @@ export function PageEditor({ pageId }: PageEditorProps) {
 
   // Publish
   const handlePublishToggle = async () => {
-    const newPublished = !published
-    setPublished(newPublished)
-
+    if (!id) return
+    if (!published) {
+      // Going public requires choosing a category — open the publish dialog
+      setShowPublishDialog(true)
+      return
+    }
+    // Unpublish is a one-click toggle
+    setPublished(false)
     await fetch(`/api/displays/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ published: newPublished }),
+      body: JSON.stringify({ published: false }),
     })
   }
 
@@ -1182,6 +1195,18 @@ export function PageEditor({ pageId }: PageEditorProps) {
           onClose={() => setShowCollaborate(false)}
           displayId={id}
           isOwner={isOwner}
+        />
+      )}
+
+      {/* Publish Dialog */}
+      {showPublishDialog && id && (
+        <PublishDialog
+          isOpen={showPublishDialog}
+          onClose={() => setShowPublishDialog(false)}
+          displayId={id}
+          currentCategory={category}
+          currentCover={coverImage}
+          onPublished={(cat, cover) => { setPublished(true); setCategory(cat); setCoverImage(cover) }}
         />
       )}
 
