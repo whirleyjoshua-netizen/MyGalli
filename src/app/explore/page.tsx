@@ -1,18 +1,23 @@
 import { Suspense } from 'react'
+import { cookies } from 'next/headers'
 import { getExploreRows } from '@/lib/explore'
+import { verifyAuth } from '@/lib/auth'
+import { AUTH_COOKIE } from '@/lib/constants'
 import { ExploreClient } from '@/components/explore/ExploreClient'
 import type { Metadata } from 'next'
 import { ExploreCardSkeleton } from '@/components/explore/ExploreCardSkeleton'
 
 export const metadata: Metadata = {
-  title: 'Explore — Galli',
-  description: 'Discover published pages from athletes, creators, and professionals on Galli.',
+  title: 'Explore — My Galli',
+  description: 'Discover published pages from athletes, creators, and professionals on My Galli.',
 }
 
 const PAGE_SIZE = 12
 
 async function ExploreContent() {
-  const initialRows = await getExploreRows()
+  const token = cookies().get(AUTH_COOKIE)?.value
+  const user = token ? await verifyAuth(token) : null
+  const initialRows = await getExploreRows(user?.id)
   return <ExploreClient initialRows={initialRows} />
 }
 

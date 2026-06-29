@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const displayName = user.name || user.username
   const title = display.title
-  const description = `${title} by ${displayName} on Galli`
+  const description = `${title} by ${displayName} on My Galli`
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://galli.page'
   const pageUrl = `${appUrl}/${username}/${slug}`
 
@@ -216,7 +216,7 @@ export default async function PublicDisplayPage({ params }: Props) {
             <p className="text-sm opacity-50">
               Made with{' '}
               <a href="/" className="underline hover:opacity-80">
-                Galli
+                My Galli
               </a>
             </p>
           </footer>

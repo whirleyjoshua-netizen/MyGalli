@@ -53,7 +53,7 @@ export default function LoginPage() {
         {/* Brand */}
         <div className="flex flex-col items-center mb-8">
           <Wordmark className="text-3xl mb-3" />
-          <h1 className="text-2xl font-bold text-center">Log in to Galli</h1>
+          <h1 className="text-2xl font-bold text-center">Log in to My Galli</h1>
         </div>
 
         <div className="bg-surface border border-border rounded-2xl p-6 shadow-soft">

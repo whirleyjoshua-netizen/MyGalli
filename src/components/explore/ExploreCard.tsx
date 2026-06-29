@@ -86,54 +86,55 @@ export function ExploreCard({ display, index }: ExploreCardProps) {
   return (
     <Link
       href={`/${display.user.username}/${display.slug}`}
-      className="group block rounded-xl border border-border/50 bg-card overflow-hidden shadow-sm hover:shadow-md hover:border-galli/30 transition-all duration-200"
+      className="group relative block h-72 rounded-xl border border-border/50 overflow-hidden shadow-sm hover:shadow-md hover:border-galli/30 transition-all duration-200"
     >
-      {/* Preview area */}
-      <div className="relative h-36 overflow-hidden">
-        {headerCard?.coverImageUrl ? (
+      {/* Full-bleed cover */}
+      {headerCard?.coverImageUrl ? (
+        <Image
+          src={headerCard.coverImageUrl}
+          alt=""
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+      ) : headerCard?.photoUrl ? (
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradient} flex items-center justify-center`}>
           <Image
-            src={headerCard.coverImageUrl}
+            src={headerCard.photoUrl}
             alt=""
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            width={72}
+            height={72}
+            className="rounded-full border-2 border-white/50 shadow-lg"
           />
-        ) : headerCard?.photoUrl ? (
-          <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-            <Image
-              src={headerCard.photoUrl}
-              alt=""
-              width={64}
-              height={64}
-              className="rounded-full border-2 border-white/50 shadow-lg"
-            />
-          </div>
-        ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${gradient}`} />
-        )}
-
-        {/* Kit badge */}
-        <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm ${badge.className}`}>
-          <BadgeIcon className="w-3 h-3" />
-          {badge.label}
         </div>
+      ) : (
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+      )}
 
-        {/* View count */}
-        {display.views > 0 && (
-          <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-black/50 text-white backdrop-blur-sm">
-            <Eye className="w-3 h-3" />
-            {display.views.toLocaleString()}
-          </div>
-        )}
+      {/* Kit badge */}
+      <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm ${badge.className}`}>
+        <BadgeIcon className="w-3 h-3" />
+        {badge.label}
       </div>
 
-      {/* Info area */}
-      <div className="px-4 pb-4 pt-3">
-        <h3 className="text-base font-semibold text-foreground truncate group-hover:text-galli transition-colors">
+      {/* View count */}
+      {display.views > 0 && (
+        <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-black/50 text-white backdrop-blur-sm">
+          <Eye className="w-3 h-3" />
+          {display.views.toLocaleString()}
+        </div>
+      )}
+
+      {/* scrim for legibility of overlaid info */}
+      <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+
+      {/* Overlaid info (was the white info area) */}
+      <div className="absolute inset-x-0 bottom-0 p-4">
+        <h3 className="text-base font-semibold text-white truncate drop-shadow">
           {display.title}
         </h3>
 
         {display.description && (
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+          <p className="text-sm text-white/80 mt-1 line-clamp-2 drop-shadow">
             {display.description}
           </p>
         )}
@@ -146,14 +147,14 @@ export function ExploreCard({ display, index }: ExploreCardProps) {
               alt=""
               width={24}
               height={24}
-              className="rounded-full"
+              className="rounded-full border border-white/40"
             />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-galli/20 text-galli-dark flex items-center justify-center text-[10px] font-bold">
+            <div className="w-6 h-6 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px] font-bold">
               {getInitials(display.user.name, display.user.username)}
             </div>
           )}
-          <span className="text-sm text-muted-foreground truncate min-w-0">
+          <span className="text-sm text-white/90 truncate min-w-0 drop-shadow">
             {display.user.name || `@${display.user.username}`}
           </span>
           <span className="ml-auto flex-shrink-0">

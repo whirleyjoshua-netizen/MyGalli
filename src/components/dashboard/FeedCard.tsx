@@ -25,22 +25,25 @@ export function FeedCard({ item, index }: { item: FeedItem; index: number }) {
       rel="noreferrer"
       className="group shrink-0 w-60 snap-start rounded-2xl border border-border bg-surface overflow-hidden shadow-soft hover:shadow-soft-lg hover:border-primary/30 transition-all cursor-pointer"
     >
-      <div className={`h-36 relative ${item.coverImage ? '' : `bg-gradient-to-br ${GRADIENTS[index % GRADIENTS.length]}`}`}>
+      {/* Full-bleed cover — info overlaid, no white strip */}
+      <div className={`h-52 relative ${item.coverImage ? '' : `bg-gradient-to-br ${GRADIENTS[index % GRADIENTS.length]}`}`}>
         {item.coverImage && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
         )}
-        <div className="absolute bottom-0 inset-x-0 h-14 bg-gradient-to-t from-black/40 to-transparent" />
-        <h3 className="absolute bottom-2.5 left-3 right-3 text-white font-semibold text-sm truncate drop-shadow">
-          {item.title}
-        </h3>
-      </div>
-      <div className="flex items-center justify-between px-3 py-2.5">
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
-          <Globe className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">by {author}</span>
-        </span>
-        <MoreHorizontal className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+        <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-black/75 via-black/35 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 inset-x-0 p-3">
+          <h3 className="text-white font-semibold text-sm truncate drop-shadow">
+            {item.title}
+          </h3>
+          <div className="mt-1.5 flex items-center justify-between text-white/90">
+            <span className="flex items-center gap-1.5 text-xs min-w-0 drop-shadow">
+              <Globe className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">by {author}</span>
+            </span>
+            <MoreHorizontal className="w-4 h-4 text-white/70 shrink-0" />
+          </div>
+        </div>
       </div>
     </a>
   )

@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 
-const FROM = process.env.EMAIL_FROM || 'Galli <onboarding@resend.dev>'
+const FROM = process.env.EMAIL_FROM || 'My Galli <onboarding@resend.dev>'
 
 export async function sendEmail(opts: { to: string; subject: string; html: string }): Promise<void> {
   const key = process.env.RESEND_API_KEY
@@ -24,14 +24,14 @@ function shell(title: string, body: string, cta: { href: string; label: string }
 
 export function verificationEmail(link: string) {
   return {
-    subject: 'Verify your Galli email',
-    html: shell('Welcome to Galli', 'Confirm your email to secure your account.', { href: link, label: 'Verify email' }),
+    subject: 'Verify your My Galli email',
+    html: shell('Welcome to My Galli', 'Confirm your email to secure your account.', { href: link, label: 'Verify email' }),
   }
 }
 
 export function resetEmail(link: string) {
   return {
-    subject: 'Reset your Galli password',
+    subject: 'Reset your My Galli password',
     html: shell('Reset your password', 'Click below to choose a new password. This link expires in 1 hour.', { href: link, label: 'Reset password' }),
   }
 }

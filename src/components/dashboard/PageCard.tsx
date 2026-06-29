@@ -51,7 +51,8 @@ export function PageCard({
         selected ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-primary/30'
       }`}
     >
-      <div className={`h-36 relative ${display.coverImage ? '' : `bg-gradient-to-br ${gradient}`}`}>
+      {/* Full-bleed cover — info is overlaid, no white strip */}
+      <div className={`h-52 relative ${display.coverImage ? '' : `bg-gradient-to-br ${gradient}`}`}>
         {display.coverImage && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={display.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -64,36 +65,41 @@ export function PageCard({
         <span
           className={`absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[11px] font-medium backdrop-blur-sm ${
             display.published
-              ? 'bg-primary/20 text-galli-dark border border-primary/20'
-              : 'bg-surface/70 text-muted-foreground border border-border'
+              ? 'bg-primary/30 text-white border border-white/30'
+              : 'bg-black/40 text-white border border-white/20'
           }`}
         >
           {display.published ? 'Public' : 'Draft'}
         </span>
-        <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-black/35 to-transparent" />
-        <h3 className="absolute bottom-2.5 left-3 right-3 text-white font-semibold text-sm truncate drop-shadow">
-          {display.title}
-        </h3>
-      </div>
 
-      <div className="flex items-center justify-between px-3 py-2.5">
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          {display.published ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-          {display.published ? 'Public' : 'Private'}
-        </span>
-        <span className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Eye className="w-3.5 h-3.5" />
-            {display.views}
-          </span>
-          <button
-            onClick={(e) => { e.stopPropagation(); onOpenMenu(display.id) }}
-            aria-label="Page options"
-            className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-          >
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
-        </span>
+        {/* scrim for legibility of overlaid info */}
+        <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-black/75 via-black/35 to-transparent pointer-events-none" />
+
+        {/* Overlaid info (was the white strip) */}
+        <div className="absolute bottom-0 inset-x-0 p-3">
+          <h3 className="text-white font-semibold text-sm truncate drop-shadow">
+            {display.title}
+          </h3>
+          <div className="mt-1.5 flex items-center justify-between text-white/90">
+            <span className="flex items-center gap-1.5 text-xs drop-shadow">
+              {display.published ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+              {display.published ? 'Public' : 'Private'}
+            </span>
+            <span className="flex items-center gap-3 text-xs drop-shadow">
+              <span className="flex items-center gap-1">
+                <Eye className="w-3.5 h-3.5" />
+                {display.views}
+              </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onOpenMenu(display.id) }}
+                aria-label="Page options"
+                className="p-0.5 rounded hover:bg-white/20 text-white/90 hover:text-white transition-colors cursor-pointer"
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+            </span>
+          </div>
+        </div>
       </div>
 
       {isMenuOpen && (
