@@ -2,35 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import { rateLimit } from '@/lib/rate-limit'
+import { isValidCategory } from '@/lib/categories'
 
 const PAGE_SIZE = 12
-const KNOWN_KITS = ['athlete', 'resume']
-
-// kitConfig is stored as a JSON string (double-encoded), so JSON path
-// filtering doesn't work. Use string_contains for kit matching instead.
-function buildKitFilter(kit: string) {
-  if (kit === 'athlete') {
-    return { kitConfig: { string_contains: 'athlete' } }
-  }
-  if (kit === 'resume') {
-    return { kitConfig: { string_contains: 'resume' } }
-  }
-  if (kit === 'custom') {
-    // No kitConfig at all (null), or kitConfig without any known kit ID
-    return {
-      OR: [
-        { kitConfig: { equals: Prisma.DbNull } },
-        {
-          AND: [
-            { NOT: { kitConfig: { string_contains: 'athlete' } } },
-            { NOT: { kitConfig: { string_contains: 'resume' } } },
-          ],
-        },
-      ],
-    }
-  }
-  return {} // 'all'
-}
 
 export async function GET(request: NextRequest) {
   const limited = await rateLimit(request, { limit: 120, windowMs: 60_000, prefix: 'explore' })
@@ -38,13 +12,11 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = request.nextUrl
-    const kit = searchParams.get('kit') || 'all'
+    const category = searchParams.get('category') || ''
     const search = searchParams.get('search') || ''
     const sort = searchParams.get('sort') || 'recent'
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
     const limit = Math.min(PAGE_SIZE, Math.max(1, parseInt(searchParams.get('limit') || String(PAGE_SIZE), 10)))
-
-    const kitFilter = buildKitFilter(kit)
 
     // Search filter
     const searchFilter = search
@@ -58,7 +30,12 @@ export async function GET(request: NextRequest) {
         }
       : {}
 
-    const where = { published: true, kind: { not: 'profile' }, ...kitFilter, ...searchFilter }
+    const where = {
+      published: true,
+      kind: { not: 'profile' },
+      ...(category && isValidCategory(category) ? { category } : {}),
+      ...searchFilter,
+    }
 
     const orderBy =
       sort === 'popular'
@@ -82,6 +59,7 @@ export async function GET(request: NextRequest) {
           views: true,
           createdAt: true,
           updatedAt: true,
+          category: true,
           kitConfig: true,
           headerCard: true,
           background: true,

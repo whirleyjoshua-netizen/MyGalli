@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { canEdit, splitUpdate, COLLAB_FIELDS } from '@/lib/collab'
+import { isValidCategory } from '@/lib/categories'
 
 // GET /api/displays/[id] - Get a display
 export async function GET(
@@ -86,12 +87,16 @@ export async function PATCH(
 
     // Only pass through known fields, then split owner-only vs collaborator-allowed
     const known: Record<string, unknown> = {}
-    for (const k of ['title', 'description', 'published', 'sections', 'background', 'headerCard', 'tabs', 'coverImage']) {
+    for (const k of ['title', 'description', 'published', 'sections', 'background', 'headerCard', 'tabs', 'coverImage', 'category']) {
       if (updates[k] !== undefined) known[k] = updates[k]
     }
     const { data, rejected } = splitUpdate(known, isOwner)
     if (rejected.length > 0) {
       return NextResponse.json({ error: `Not allowed to edit: ${rejected.join(', ')}` }, { status: 403 })
+    }
+
+    if (data.category !== undefined && data.category !== null && !isValidCategory(String(data.category))) {
+      return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
     }
 
     // Optimistic concurrency applies only to content fields (not publish/title-only changes)
