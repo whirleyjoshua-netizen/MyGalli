@@ -20,11 +20,15 @@ export interface CardProviderConfig {
   iframeUrl?: string // Required when type is 'external'
   defaultData: Record<string, any>
   fields: CardField[]
+  listed?: boolean // appears on the Apps storefront
+  status?: 'live' | 'coming-soon' // live = addable; coming-soon = visible only
 }
 
 export const CARD_PROVIDERS: Record<string, CardProviderConfig> = {
   vouch: {
     id: 'vouch',
+    listed: true,
+    status: 'live',
     name: 'Vouch',
     description: 'Verified professional credibility card — mutual references, achievements, reviews',
     icon: 'ShieldCheck',
@@ -71,6 +75,7 @@ export const CARD_PROVIDERS: Record<string, CardProviderConfig> = {
   },
   example: {
     id: 'example',
+    listed: false,
     name: 'Example Card',
     description: 'Developer template — external iframe card',
     icon: 'ExternalLink',
@@ -87,6 +92,17 @@ export const CARD_PROVIDERS: Record<string, CardProviderConfig> = {
       { key: 'color', label: 'Accent Color', type: 'text', placeholder: '#39D98A' },
     ],
   },
+  kollabshare: {
+    id: 'kollabshare',
+    name: 'KollabShare',
+    description: 'Collaborative sharing widget — coming soon to My Galli.',
+    icon: 'Share2',
+    type: 'external',
+    listed: true,
+    status: 'coming-soon',
+    defaultData: {},
+    fields: [],
+  },
 }
 
 // Register an external card at runtime
@@ -95,6 +111,11 @@ export function registerExternalCard(config: CardProviderConfig): void {
     throw new Error('External cards must have type "external" and an iframeUrl')
   }
   CARD_PROVIDERS[config.id] = config
+}
+
+// Providers shown on the Apps storefront
+export function listedApps(): CardProviderConfig[] {
+  return Object.values(CARD_PROVIDERS).filter((p) => p.listed)
 }
 
 // Achievement type icons + colors (maps to Vouch's 12 types)
