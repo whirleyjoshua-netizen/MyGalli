@@ -1,7 +1,7 @@
-import { AppsClient } from '@/components/apps/AppsClient'
+import { redirect } from 'next/navigation'
 
-export const metadata = { title: 'Apps' }
-
+// The Apps storefront now lives inside the Library hub. Its previous standalone
+// implementation (AppsClient) is preserved in git history.
 export default function AppsPage() {
-  return <AppsClient />
+  redirect('/library?tab=apps')
 }

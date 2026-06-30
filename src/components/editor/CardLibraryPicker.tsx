@@ -99,7 +99,7 @@ export function CardLibraryPicker({ isOpen, onClose, onSelect }: CardLibraryPick
                   Browse Apps to add cards to your library, then use them on any page.
                 </p>
                 <Link
-                  href="/apps"
+                  href="/library?tab=apps"
                   onClick={onClose}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:shadow-lg transition"
                 >

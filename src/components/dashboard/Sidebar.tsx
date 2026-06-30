@@ -9,8 +9,6 @@ import {
   FileText,
   Users,
   Compass,
-  LayoutTemplate,
-  Blocks,
   Library,
   ChevronLeft,
   ChevronDown,
@@ -36,8 +34,6 @@ const NAV: NavItem[] = [
   { label: 'Shared with me', icon: Users, href: '/shared', match: (p) => p.startsWith('/shared') },
   { label: 'Explore', icon: Compass, href: '/explore', match: (p) => p.startsWith('/explore') },
   { label: 'Analytics', icon: BarChart3, href: '/analytics', match: (p) => p.startsWith('/analytics') },
-  { label: 'Templates', icon: LayoutTemplate, soon: true },
-  { label: 'Apps', icon: Blocks, href: '/apps', match: (p) => p.startsWith('/apps') },
   { label: 'Library', icon: Library, href: '/library', match: (p) => p.startsWith('/library') },
 ]
 
