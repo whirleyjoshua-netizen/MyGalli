@@ -1,17 +1,11 @@
 import { existsSync } from 'fs'
 import { join } from 'path'
-import { LandingNav } from '@/components/marketing/LandingNav'
-import { Hero } from '@/components/marketing/Hero'
-import { FeatureSection } from '@/components/marketing/FeatureSection'
-import { TemplateCarousel } from '@/components/marketing/TemplateCarousel'
-import { Testimonial } from '@/components/marketing/Testimonial'
-import { FinalCTA } from '@/components/marketing/FinalCTA'
-import { LandingFooter } from '@/components/marketing/LandingFooter'
+import { LilyPond } from '@/components/marketing/LilyPond'
 
 /**
  * Progressive-enhancement hero art: drop a generated illustration at
- * `public/hero-village.png` (or .jpg/.webp) and it replaces the CSS scene
- * automatically — no code change needed.
+ * `public/hero-village.png` (or .jpg/.webp) and the lily-pond scene uses it
+ * as the full-bleed background. Falls back to a CSS gradient if absent.
  */
 function resolveHeroImage(): string | null {
   const candidates = ['hero-village.png', 'hero-village.jpg', 'hero-village.webp']
@@ -26,15 +20,5 @@ function resolveHeroImage(): string | null {
 export default function Home() {
   const heroImage = resolveHeroImage()
 
-  return (
-    <main className="min-h-screen bg-gradient-to-b from-galli-aqua/15 via-background to-background">
-      <LandingNav />
-      <Hero imageSrc={heroImage} />
-      <FeatureSection />
-      <TemplateCarousel />
-      <Testimonial />
-      <FinalCTA />
-      <LandingFooter />
-    </main>
-  )
+  return <LilyPond imageSrc={heroImage} />
 }
