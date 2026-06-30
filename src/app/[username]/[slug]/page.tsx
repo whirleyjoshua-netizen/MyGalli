@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const display = await db.display.findUnique({
     where: { userId_slug: { userId: user.id, slug } },
-    select: { title: true, published: true },
+    select: { title: true, published: true, coverImage: true },
   })
 
   if (!display || !display.published) return {}
@@ -44,6 +44,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = `${title} by ${displayName} on My Galli`
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://galli.page'
   const pageUrl = `${appUrl}/${username}/${slug}`
+  // Use the page's own cover as the share preview when set; otherwise the route
+  // falls back to the site-wide branded opengraph-image.
+  const images = display.coverImage ? [{ url: display.coverImage }] : undefined
 
   return {
     title,
@@ -53,11 +56,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       type: 'article',
       url: pageUrl,
+      ...(images && { images }),
     },
     twitter: {
-      card: 'summary',
+      card: images ? 'summary_large_image' : 'summary',
       title,
       description,
+      ...(images && { images }),
     },
     alternates: {
       canonical: pageUrl,
