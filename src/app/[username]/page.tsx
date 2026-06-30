@@ -16,7 +16,7 @@ import type { Section } from '@/lib/types/canvas'
 import type { BackgroundConfig } from '@/lib/types/background'
 
 async function getMeId(): Promise<string | null> {
-  const token = cookies().get(AUTH_COOKIE)?.value
+  const token = (await cookies()).get(AUTH_COOKIE)?.value
   if (!token) return null
   try {
     return (verify(token, getJwtSecret()) as { userId: string }).userId

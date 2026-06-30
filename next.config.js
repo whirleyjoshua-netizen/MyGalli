@@ -23,6 +23,9 @@ const securityHeaders = [
 ]
 
 const nextConfig = {
+  // Pin the tracing root to this project — a stray lockfile in a parent dir
+  // otherwise makes Next infer the wrong workspace root (breaks file tracing on deploy).
+  outputFileTracingRoot: __dirname,
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },

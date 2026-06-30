@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 const PAGE_SIZE = 12
 
 async function ExploreContent() {
-  const token = cookies().get(AUTH_COOKIE)?.value
+  const token = (await cookies()).get(AUTH_COOKIE)?.value
   const user = token ? await verifyAuth(token) : null
   const initialRows = await getExploreRows(user?.id)
   return <ExploreClient initialRows={initialRows} />

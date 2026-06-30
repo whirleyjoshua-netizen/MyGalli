@@ -5,16 +5,17 @@ import { getUser } from '@/lib/auth'
 // DELETE /api/tracker-entries/[id]
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getUser(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const entry = await db.trackerEntry.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { display: { select: { userId: true } } },
     })
 
@@ -26,7 +27,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    await db.trackerEntry.delete({ where: { id: params.id } })
+    await db.trackerEntry.delete({ where: { id } })
 
     return NextResponse.json({ success: true })
   } catch (error) {

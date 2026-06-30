@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import type { Metadata } from 'next'
 import { db } from '@/lib/db'
 import type { Section } from '@/lib/types/canvas'
@@ -94,7 +95,7 @@ export default async function PublicDisplayPage({ params }: Props) {
 
   // Viewer follow state (for the author follow button)
   let meId: string | null = null
-  const token = cookies().get(AUTH_COOKIE)?.value
+  const token = (await cookies()).get(AUTH_COOKIE)?.value
   if (token) {
     try { meId = (verify(token, getJwtSecret()) as { userId: string }).userId } catch { meId = null }
   }
@@ -220,9 +221,9 @@ export default async function PublicDisplayPage({ params }: Props) {
           <footer className="mt-16 pt-8 border-t border-current/10 text-center">
             <p className="text-sm opacity-50">
               Made with{' '}
-              <a href="/" className="underline hover:opacity-80">
+              <Link href="/" className="underline hover:opacity-80">
                 My Galli
-              </a>
+              </Link>
             </p>
           </footer>
         </div>

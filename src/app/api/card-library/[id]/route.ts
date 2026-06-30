@@ -4,13 +4,14 @@ import { db } from '@/lib/db'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getUser(request)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const item = await db.cardLibraryItem.findUnique({ where: { id: params.id } })
+    const item = await db.cardLibraryItem.findUnique({ where: { id } })
     if (!item || item.userId !== user.id) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
@@ -19,7 +20,7 @@ export async function PATCH(
     const { name, data, style } = body
 
     const updated = await db.cardLibraryItem.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name !== undefined && { name }),
         ...(data !== undefined && { data }),
@@ -36,18 +37,19 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getUser(request)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const item = await db.cardLibraryItem.findUnique({ where: { id: params.id } })
+    const item = await db.cardLibraryItem.findUnique({ where: { id } })
     if (!item || item.userId !== user.id) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
-    await db.cardLibraryItem.delete({ where: { id: params.id } })
+    await db.cardLibraryItem.delete({ where: { id } })
 
     return NextResponse.json({ ok: true })
   } catch (error) {

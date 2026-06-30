@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import type { Tab } from '@/lib/types/tabs'
 import type { HeaderCardConfig } from '@/lib/types/header-card'
 import type { BackgroundConfig } from '@/lib/types/background'
@@ -141,9 +142,9 @@ export function PublicTabView({
               <footer className="mt-16 pt-8 border-t border-current/10 text-center">
                 <p className="text-sm opacity-50">
                   Made with{' '}
-                  <a href="/" className="underline hover:opacity-80">
+                  <Link href="/" className="underline hover:opacity-80">
                     My Galli
-                  </a>
+                  </Link>
                 </p>
               </footer>
             </div>

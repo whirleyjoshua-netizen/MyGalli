@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Search, X, Compass, Loader2, Users, Home, User as UserIcon } from 'lucide-react'
+import Link from 'next/link'
 import { useAuthStore } from '@/lib/store'
 import { ScrollRow } from '@/components/dashboard/ScrollRow'
 import { ExploreRowCard } from './ExploreRowCard'
@@ -66,13 +67,13 @@ export function ExploreClient({ initialRows }: { initialRows: Rows }) {
           <div className="flex items-center px-4 py-3 sm:px-8">
             {/* Left — home */}
             <div className="flex flex-1 justify-start">
-              <a
+              <Link
                 href="/dashboard"
                 aria-label="Home"
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
               >
                 <Home className="h-5 w-5" />
-              </a>
+              </Link>
             </div>
 
             {/* Center — brand + search */}
@@ -119,13 +120,13 @@ export function ExploreClient({ initialRows }: { initialRows: Rows }) {
                   )}
                 </a>
               ) : (
-                <a
+                <Link
                   href="/login"
                   aria-label="Log in"
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
                 >
                   <UserIcon className="h-5 w-5" />
-                </a>
+                </Link>
               )}
             </div>
           </div>
