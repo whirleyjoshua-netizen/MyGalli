@@ -69,3 +69,66 @@
     border-image: linear-gradient(135deg, #39D98A, #1FB6FF, #6C63FF) 1;
   }
 }
+
+/* ---- Lily-pond landing: floating pads + popup entrances ---- */
+@keyframes lily-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.2deg);
+  }
+  50% {
+    transform: translateY(-9px) rotate(1.2deg);
+  }
+}
+@keyframes lily-ripple {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+@keyframes pad-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pad-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@layer utilities {
+  .animate-lily-float {
+    animation: lily-float 5.5s ease-in-out infinite;
+  }
+  .animate-lily-ripple {
+    animation: lily-ripple 2.4s ease-out infinite;
+  }
+  .animate-pad-overlay-in {
+    animation: pad-overlay-in 200ms ease-out both;
+  }
+  .animate-pad-modal-in {
+    animation: pad-modal-in 240ms ease-out both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-lily-float,
+  .animate-lily-ripple,
+  .animate-pad-overlay-in,
+  .animate-pad-modal-in {
+    animation: none !important;
+  }
+}
