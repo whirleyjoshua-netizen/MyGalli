@@ -2,6 +2,7 @@ import { registerKit, type KitConfig } from './registry'
 
 export const ACADEMIC_KIT: KitConfig = {
   id: 'academic',
+  pro: true,
   name: 'Academic Kit',
   description: 'Flexible academic portfolio for high school and college students — GPA, courses, test scores, awards, and extracurriculars.',
   icon: 'Library',

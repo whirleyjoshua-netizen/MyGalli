@@ -2,6 +2,7 @@ import { registerKit, type KitConfig } from './registry'
 
 export const ATHLETE_KIT: KitConfig = {
   id: 'athlete',
+  pro: true,
   name: 'Athlete Kit',
   description: 'Performance Identity Kit — track progress, showcase stats, and tell your athletic story.',
   icon: 'Trophy',

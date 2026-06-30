@@ -2,6 +2,7 @@ import { registerKit, type KitConfig } from './registry'
 
 export const WEDDING_KIT: KitConfig = {
   id: 'wedding',
+  pro: true,
   name: 'Wedding Kit',
   description: 'Digital wedding suite — invites, RSVP, timeline, guestbook, and registry all in one living page.',
   icon: 'Heart',

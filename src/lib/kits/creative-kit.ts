@@ -2,6 +2,7 @@ import { registerKit, type KitConfig } from './registry'
 
 export const CREATIVE_KIT: KitConfig = {
   id: 'creative',
+  pro: true,
   name: 'Personal Creative Kit',
   description: 'Flexible creative elements for self-expression — mood boards, color palettes, playlists, and quote walls.',
   icon: 'Sparkles',

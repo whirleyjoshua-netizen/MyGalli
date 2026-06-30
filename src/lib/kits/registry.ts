@@ -50,6 +50,7 @@ export interface KitConfig {
     template: 'profile' | 'resume' | 'catalog'
     photoPosition: string
   }
+  pro?: boolean
 }
 
 // Global kit registry — add new kits here
@@ -61,4 +62,8 @@ export function registerKit(kit: KitConfig) {
 
 export function getKit(kitId: string): KitConfig | undefined {
   return KIT_REGISTRY[kitId]
+}
+
+export function listKits(): KitConfig[] {
+  return Object.values(KIT_REGISTRY)
 }

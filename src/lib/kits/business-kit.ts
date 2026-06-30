@@ -2,6 +2,7 @@ import { registerKit, type KitConfig } from './registry'
 
 export const BUSINESS_KIT: KitConfig = {
   id: 'business',
+  pro: true,
   name: 'Business Kit',
   description: 'For storefronts, shops, restaurants & local businesses — menus, hours, reviews, and promotions.',
   icon: 'Store',

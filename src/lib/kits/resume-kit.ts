@@ -2,6 +2,7 @@ import { registerKit, type KitConfig } from './registry'
 
 export const RESUME_KIT: KitConfig = {
   id: 'resume',
+  pro: true,
   name: 'Resume Kit',
   description: 'Professional identity page — showcase experience, skills, education, and projects.',
   icon: 'FileText',

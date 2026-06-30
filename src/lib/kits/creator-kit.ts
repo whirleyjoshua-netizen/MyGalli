@@ -2,6 +2,7 @@ import { registerKit, type KitConfig } from './registry'
 
 export const CREATOR_KIT: KitConfig = {
   id: 'creator',
+  pro: true,
   name: 'Creator Kit',
   description: 'Content creator media kit — showcase your social reach, brand collabs, audience demographics, and rates.',
   icon: 'Sparkles',
