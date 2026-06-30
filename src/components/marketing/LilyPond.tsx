@@ -80,6 +80,50 @@ function PrimaryCta() {
   )
 }
 
+/** Authentic lily-pad silhouette: notched disc, radial veins, lit gradient. */
+function PadShape() {
+  return (
+    <svg
+      viewBox="0 0 150 100"
+      preserveAspectRatio="none"
+      aria-hidden
+      className="absolute inset-0 h-full w-full drop-shadow-[0_10px_16px_rgba(15,61,46,.45)]"
+    >
+      <defs>
+        <radialGradient id="lily-pad-fill" cx="38%" cy="30%" r="80%">
+          <stop offset="0%" stopColor="#c2edce" />
+          <stop offset="52%" stopColor="#6cc08e" />
+          <stop offset="100%" stopColor="#3a875a" />
+        </radialGradient>
+        <radialGradient id="lily-pad-sheen" cx="34%" cy="24%" r="42%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {/* pad body with the signature top wedge notch */}
+      <path
+        d="M75 50 L66 4 A72 47 0 1 0 84 4 Z"
+        fill="url(#lily-pad-fill)"
+        stroke="#2f7a4e"
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+      />
+      {/* veins fanning out from the centre */}
+      <g stroke="#2f7a4e" strokeOpacity="0.3" strokeWidth="1.25" strokeLinecap="round">
+        <line x1="75" y1="50" x2="75" y2="94" />
+        <line x1="75" y1="50" x2="44" y2="86" />
+        <line x1="75" y1="50" x2="106" y2="86" />
+        <line x1="75" y1="50" x2="19" y2="64" />
+        <line x1="75" y1="50" x2="131" y2="64" />
+        <line x1="75" y1="50" x2="14" y2="44" />
+        <line x1="75" y1="50" x2="136" y2="44" />
+      </g>
+      {/* wet sheen */}
+      <path d="M75 50 L66 4 A72 47 0 1 0 84 4 Z" fill="url(#lily-pad-sheen)" />
+    </svg>
+  )
+}
+
 function LilyPad({
   label,
   onClick,
@@ -101,21 +145,21 @@ function LilyPad({
       {/* floater — gentle idle bob, staggered per pad */}
       <span className="animate-lily-float" style={{ animationDelay: floatDelay }}>
         {/* lift wrapper — hover/active raise the pad off the water */}
-        <span className="relative flex h-24 w-36 items-center justify-center transition-transform duration-300 ease-out group-hover:-translate-y-2.5 group-active:-translate-y-1">
+        <span className="relative flex h-24 w-40 items-center justify-center transition-transform duration-300 ease-out group-hover:-translate-y-2.5 group-active:-translate-y-1">
           {/* expanding ripple ring while hovered */}
           <span
             aria-hidden
             className="pointer-events-none absolute inset-0 rounded-[46%] ring-2 ring-white/60 opacity-0 group-hover:animate-lily-ripple"
           />
-          {/* pad body */}
-          <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[46%] bg-gradient-to-br from-[#84d3a0] to-[#4ea873] shadow-[0_10px_26px_rgba(15,61,46,.4)] ring-2 ring-[#3f8f63]/50 transition-shadow duration-300 group-hover:shadow-[0_20px_38px_rgba(15,61,46,.5)] group-focus-visible:ring-4 group-focus-visible:ring-white">
-            {/* glossy "wet" highlight */}
-            <span aria-hidden className="absolute -top-2 left-3 h-10 w-16 rounded-[50%] bg-white/25 blur-[6px]" />
-            {/* leaf vein ring */}
-            <span aria-hidden className="absolute inset-2 rounded-[46%] border border-white/25" />
-            <span className="relative whitespace-pre-line px-2 text-center text-sm font-extrabold leading-tight text-[#0F3D2E] drop-shadow-sm">
-              {label}
-            </span>
+          {/* keyboard focus halo */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -inset-1 rounded-[46%] opacity-0 ring-4 ring-white transition-opacity group-focus-visible:opacity-100"
+          />
+          {/* the lily pad itself */}
+          <PadShape />
+          <span className="relative whitespace-pre-line px-3 text-center text-sm font-extrabold leading-tight text-[#0F3D2E] [text-shadow:0_1px_2px_rgba(255,255,255,.45)]">
+            {label}
           </span>
         </span>
       </span>
