@@ -61,7 +61,7 @@ export function LibraryClient() {
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState<string | null>(null)
 
-  const useStarter = async (s: Starter) => {
+  const handleStarterClick = async (s: Starter) => {
     if (s.pro && !pro) { setUpgradeOpen(true); return }
     setCreating(s.id)
     setError(null)
@@ -133,7 +133,7 @@ export function LibraryClient() {
                   <p className="mt-1 flex-1 text-sm leading-relaxed text-muted-foreground">{s.description}</p>
                   <div className="mt-4">
                     <button
-                      onClick={() => useStarter(s)}
+                      onClick={() => handleStarterClick(s)}
                       disabled={creating === s.id}
                       aria-busy={creating === s.id}
                       className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background transition hover:opacity-90 disabled:opacity-60"
