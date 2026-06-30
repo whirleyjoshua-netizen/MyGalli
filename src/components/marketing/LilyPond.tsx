@@ -16,35 +16,42 @@ const PADS: { id: PadId; label: string; title: string }[] = [
   { id: 'loved', label: 'Loved by\ncreators', title: 'Loved by creators' },
 ]
 
-// Desktop absolute positions per pad (tuned live in Task 4).
+// Desktop absolute positions — pads scattered up/down the left side, over the pond.
 const PAD_POS: Record<PadId, string> = {
-  features: 'bottom-[15%] left-[12%]',
-  templates: 'bottom-[5%] left-1/2 -translate-x-1/2',
-  loved: 'bottom-[17%] right-[13%]',
+  features: 'top-[22%] left-[5%]',
+  templates: 'top-[44%] left-[10%]',
+  loved: 'top-[67%] left-[4%]',
+}
+
+// Staggered float delays so the pads bob out of sync (organic, not synced).
+const PAD_FLOAT_DELAY: Record<PadId, string> = {
+  features: '0s',
+  templates: '-1.8s',
+  loved: '-3.4s',
 }
 
 function GlassNav() {
   return (
-    <nav className="flex w-full items-center justify-between border-b border-white/20 bg-[#0F3D2E]/35 px-6 py-3.5 backdrop-blur-md sm:px-10">
+    <nav className="flex w-full items-center justify-between border-b border-white/20 bg-[#0F3D2E]/35 px-4 py-3.5 backdrop-blur-md sm:px-10">
       <Link href="/" className="flex items-center gap-2.5">
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-soft">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/gallio-frog.svg" alt="" aria-hidden className="h-6 w-6" />
         </span>
-        <span className="text-xl font-extrabold tracking-tight text-white drop-shadow">
+        <span className="text-lg font-extrabold tracking-tight text-white drop-shadow sm:text-xl">
           My Galli
         </span>
       </Link>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <Link
           href="/login"
-          className="rounded-full border border-white/40 bg-white/15 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/25"
+          className="rounded-full border border-white/40 bg-white/15 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/25 sm:px-4"
         >
           Log in
         </Link>
         <Link
           href="/signup"
-          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-galli-dark shadow-soft transition hover:bg-white/90"
+          className="hidden items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-galli-dark shadow-soft transition hover:bg-white/90 sm:inline-flex sm:gap-2 sm:px-4"
         >
           Get started
           <ArrowRight className="h-4 w-4" />
@@ -77,22 +84,39 @@ function LilyPad({
   label,
   onClick,
   className,
+  floatDelay,
 }: {
   label: string
   onClick: () => void
   className?: string
+  floatDelay?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-haspopup="dialog"
-      className={`group absolute flex flex-col items-center outline-none ${className ?? ''}`}
+      className={`group absolute flex cursor-pointer flex-col items-center outline-none ${className ?? ''}`}
     >
-      <span className="relative flex h-24 w-36 items-center justify-center rounded-[46%] bg-gradient-to-br from-[#84d3a0] to-[#4ea873] shadow-[0_10px_26px_rgba(15,61,46,.4)] ring-2 ring-[#3f8f63]/50 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_18px_34px_rgba(15,61,46,.45)] group-focus-visible:ring-4 group-focus-visible:ring-white">
-        <span aria-hidden className="absolute inset-2 rounded-[46%] border border-white/20" />
-        <span className="whitespace-pre-line px-2 text-center text-sm font-extrabold leading-tight text-[#0F3D2E] drop-shadow-sm">
-          {label}
+      {/* floater — gentle idle bob, staggered per pad */}
+      <span className="animate-lily-float" style={{ animationDelay: floatDelay }}>
+        {/* lift wrapper — hover/active raise the pad off the water */}
+        <span className="relative flex h-24 w-36 items-center justify-center transition-transform duration-300 ease-out group-hover:-translate-y-2.5 group-active:-translate-y-1">
+          {/* expanding ripple ring while hovered */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-[46%] ring-2 ring-white/60 opacity-0 group-hover:animate-lily-ripple"
+          />
+          {/* pad body */}
+          <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[46%] bg-gradient-to-br from-[#84d3a0] to-[#4ea873] shadow-[0_10px_26px_rgba(15,61,46,.4)] ring-2 ring-[#3f8f63]/50 transition-shadow duration-300 group-hover:shadow-[0_20px_38px_rgba(15,61,46,.5)] group-focus-visible:ring-4 group-focus-visible:ring-white">
+            {/* glossy "wet" highlight */}
+            <span aria-hidden className="absolute -top-2 left-3 h-10 w-16 rounded-[50%] bg-white/25 blur-[6px]" />
+            {/* leaf vein ring */}
+            <span aria-hidden className="absolute inset-2 rounded-[46%] border border-white/25" />
+            <span className="relative whitespace-pre-line px-2 text-center text-sm font-extrabold leading-tight text-[#0F3D2E] drop-shadow-sm">
+              {label}
+            </span>
+          </span>
         </span>
       </span>
     </button>
@@ -127,7 +151,7 @@ export function LilyPond({ imageSrc }: { imageSrc?: string | null }) {
         <div className="absolute inset-x-0 top-0 z-30">
           <GlassNav />
         </div>
-        <div className="absolute left-1/2 top-[60%] z-20 -translate-x-1/2">
+        <div className="absolute left-1/2 top-[72%] z-20 -translate-x-1/2">
           <PrimaryCta />
         </div>
         {PADS.map((pad) => (
@@ -135,6 +159,7 @@ export function LilyPond({ imageSrc }: { imageSrc?: string | null }) {
             key={pad.id}
             label={pad.label}
             onClick={() => setOpenPad(pad.id)}
+            floatDelay={PAD_FLOAT_DELAY[pad.id]}
             className={`z-20 ${PAD_POS[pad.id]}`}
           />
         ))}

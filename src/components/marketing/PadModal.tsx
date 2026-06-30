@@ -45,7 +45,7 @@ export function PadModal({ isOpen, onClose, title, children }: PadModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F3D2E]/55 p-4 backdrop-blur-sm"
+      className="animate-pad-overlay-in fixed inset-0 z-50 flex items-center justify-center bg-[#0F3D2E]/55 p-4 backdrop-blur-sm"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -56,7 +56,7 @@ export function PadModal({ isOpen, onClose, title, children }: PadModalProps) {
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border-4 border-[#a9743f] bg-[#fbf5e6] shadow-[0_20px_60px_rgba(80,50,20,.35)] outline-none"
+        className="animate-pad-modal-in relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border-4 border-[#a9743f] bg-[#fbf5e6] shadow-[0_20px_60px_rgba(80,50,20,.35)] outline-none"
       >
         <div className="flex items-center justify-between gap-4 border-b border-[#a9743f]/30 px-6 py-4">
           <h2 className="text-xl font-extrabold tracking-tight text-galli-dark sm:text-2xl">
