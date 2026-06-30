@@ -29,6 +29,18 @@ jobs:
       - name: Run linter
         run: pnpm lint
 
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Security audit (fail on critical)
+        run: pnpm audit --audit-level critical
+
   build:
     runs-on: ubuntu-latest
     steps:
