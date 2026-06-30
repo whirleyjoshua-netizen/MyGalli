@@ -27,7 +27,37 @@ export function PadModal({ isOpen, onClose, title, children }: PadModalProps) {
     const prevOverflow = document.body.style.overflow
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab') return
+
+      // Trap focus within the dialog while open.
+      const root = dialogRef.current
+      if (!root) return
+      const focusable = Array.from(
+        root.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+        )
+      )
+      if (focusable.length === 0) {
+        e.preventDefault()
+        root.focus()
+        return
+      }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+      if (e.shiftKey) {
+        if (active === first || active === root) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else if (active === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
 
     document.addEventListener('keydown', onKey)
@@ -56,7 +86,7 @@ export function PadModal({ isOpen, onClose, title, children }: PadModalProps) {
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="animate-pad-modal-in relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border-4 border-[#a9743f] bg-[#fbf5e6] shadow-[0_20px_60px_rgba(80,50,20,.35)] outline-none"
+        className="animate-pad-modal-in relative flex max-h-[85svh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border-4 border-[#a9743f] bg-[#fbf5e6] shadow-[0_20px_60px_rgba(80,50,20,.35)] outline-none"
       >
         <div className="flex items-center justify-between gap-4 border-b border-[#a9743f]/30 px-6 py-4">
           <h2 className="text-xl font-extrabold tracking-tight text-galli-dark sm:text-2xl">

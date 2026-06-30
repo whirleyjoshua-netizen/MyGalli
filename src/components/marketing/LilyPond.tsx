@@ -96,7 +96,7 @@ function LilyPad({
       type="button"
       onClick={onClick}
       aria-haspopup="dialog"
-      className={`group absolute flex cursor-pointer flex-col items-center outline-none ${className ?? ''}`}
+      className={`group absolute flex cursor-pointer flex-col items-center outline-none focus-visible:ring-0 ${className ?? ''}`}
     >
       {/* floater — gentle idle bob, staggered per pad */}
       <span className="animate-lily-float" style={{ animationDelay: floatDelay }}>
