@@ -6,7 +6,7 @@ import { getUser } from '@/lib/auth'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads')
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
 export async function POST(request: NextRequest) {
   try {
@@ -90,7 +90,6 @@ function getExtensionFromMime(mimeType: string): string {
     'image/png': '.png',
     'image/gif': '.gif',
     'image/webp': '.webp',
-    'image/svg+xml': '.svg',
   }
   return mimeToExt[mimeType] || '.jpg'
 }
