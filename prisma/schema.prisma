@@ -23,6 +23,7 @@ model User {
   featuredDisplayId String?
   profileDisplayId  String?
   plan        String   @default("free")
+  tokenVersion Int      @default(0)
   dashboardPrefs Json?
   createdAt      DateTime  @default(now())
   updatedAt DateTime  @updatedAt

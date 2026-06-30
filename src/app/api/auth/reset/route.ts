@@ -14,7 +14,10 @@ export async function POST(request: NextRequest) {
     }
     const userId = await consumeToken(token, 'reset')
     if (!userId) return NextResponse.json({ error: 'Invalid or expired link' }, { status: 400 })
-    await db.user.update({ where: { id: userId }, data: { password: await hash(password, 12) } })
+    await db.user.update({
+      where: { id: userId },
+      data: { password: await hash(password, 12), tokenVersion: { increment: 1 } },
+    })
     return NextResponse.json({ reset: true })
   } catch (e) {
     console.error('Reset error:', e)

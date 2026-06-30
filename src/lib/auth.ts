@@ -17,7 +17,7 @@ export async function verifyAuth(token: string) {
     const decoded = verify(
       token,
       getJwtSecret()
-    ) as { userId: string }
+    ) as { userId: string; tokenVersion?: number }
 
     const user = await db.user.findUnique({
       where: { id: decoded.userId },
@@ -30,9 +30,12 @@ export async function verifyAuth(token: string) {
         bio: true,
         emailVerified: true,
         plan: true,
+        tokenVersion: true,
       },
     })
 
+    if (!user) return null
+    if ((decoded.tokenVersion ?? 0) !== user.tokenVersion) return null
     return user
   } catch {
     return null
@@ -51,7 +54,7 @@ export async function getUser(request: NextRequest) {
     const decoded = verify(
       token,
       getJwtSecret()
-    ) as { userId: string }
+    ) as { userId: string; tokenVersion?: number }
 
     const user = await db.user.findUnique({
       where: { id: decoded.userId },
@@ -64,9 +67,12 @@ export async function getUser(request: NextRequest) {
         bio: true,
         emailVerified: true,
         plan: true,
+        tokenVersion: true,
       },
     })
 
+    if (!user) return null
+    if ((decoded.tokenVersion ?? 0) !== user.tokenVersion) return null
     return user
   } catch {
     return null

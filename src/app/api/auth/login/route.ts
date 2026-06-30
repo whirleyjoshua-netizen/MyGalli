@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     // Generate token
     const token = sign(
-      { userId: user.id },
+      { userId: user.id, tokenVersion: user.tokenVersion },
       getJwtSecret(),
       { expiresIn: '7d' }
     )

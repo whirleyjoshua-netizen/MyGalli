@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
         bio: true,
         emailVerified: true,
         plan: true,
+        tokenVersion: true,
       },
     })
 
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     // Generate token
     const token = sign(
-      { userId: user.id },
+      { userId: user.id, tokenVersion: user.tokenVersion },
       getJwtSecret(),
       { expiresIn: '7d' }
     )

@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
           { email: googleUser.email },
         ],
       },
-      select: { id: true, email: true, username: true, name: true, avatar: true, bio: true, googleId: true, emailVerified: true, plan: true },
+      select: { id: true, email: true, username: true, name: true, avatar: true, bio: true, googleId: true, emailVerified: true, plan: true, tokenVersion: true },
     })
 
     if (user) {
@@ -108,12 +108,12 @@ export async function POST(request: NextRequest) {
           avatar: googleUser.picture || null,
           emailVerified: new Date(), // Google verifies the email
         },
-        select: { id: true, email: true, username: true, name: true, avatar: true, bio: true, googleId: true, emailVerified: true, plan: true },
+        select: { id: true, email: true, username: true, name: true, avatar: true, bio: true, googleId: true, emailVerified: true, plan: true, tokenVersion: true },
       })
     }
 
     // Generate JWT
-    const token = sign({ userId: user.id }, getJwtSecret(), { expiresIn: '7d' })
+    const token = sign({ userId: user.id, tokenVersion: user.tokenVersion }, getJwtSecret(), { expiresIn: '7d' })
 
     const response = NextResponse.json({
       user: {
