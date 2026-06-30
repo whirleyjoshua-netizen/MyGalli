@@ -4,13 +4,9 @@ import { getUser } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
 import { KIT_REGISTRY } from '@/lib/kits/registry'
 import { generateKitDisplay } from '@/lib/kits/generate'
-import '@/lib/kits/athlete-kit'
-import '@/lib/kits/resume-kit'
-import '@/lib/kits/wedding-kit'
-import '@/lib/kits/creator-kit'
-import '@/lib/kits/creative-kit'
-import '@/lib/kits/academic-kit'
-import '@/lib/kits/business-kit'
+import '@/lib/kits/all'
+import { TEMPLATE_REGISTRY } from '@/lib/templates/registry'
+import { isPro } from '@/lib/plan'
 
 // GET /api/displays - List user's displays
 export async function GET(request: NextRequest) {
@@ -71,7 +67,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { title, description, kitId } = await request.json()
+    const { title, description, kitId, templateId } = await request.json()
 
     if (!title) {
       return NextResponse.json(
@@ -95,12 +91,15 @@ export async function POST(request: NextRequest) {
       counter++
     }
 
-    // If kitId is provided, generate kit structure
+    // Seed from a kit or a template; Pro items require a Pro plan.
     let kitData: any = {}
     if (kitId) {
       const kit = KIT_REGISTRY[kitId]
       if (!kit) {
         return NextResponse.json({ error: 'Unknown kit' }, { status: 400 })
+      }
+      if (kit.pro && !isPro(user)) {
+        return NextResponse.json({ error: 'Pro required' }, { status: 403 })
       }
       const generated = generateKitDisplay(kit, user.name || user.username)
       kitData = {
@@ -108,6 +107,19 @@ export async function POST(request: NextRequest) {
         tabs: generated.tabs,
         headerCard: generated.headerCard,
         kitConfig: generated.kitConfig,
+      }
+    } else if (templateId) {
+      const template = TEMPLATE_REGISTRY[templateId]
+      if (!template) {
+        return NextResponse.json({ error: 'Unknown template' }, { status: 400 })
+      }
+      if (template.pro && !isPro(user)) {
+        return NextResponse.json({ error: 'Pro required' }, { status: 403 })
+      }
+      kitData = {
+        sections: template.seed.sections,
+        tabs: template.seed.tabs,
+        headerCard: template.seed.headerCard,
       }
     }
 
