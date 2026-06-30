@@ -120,12 +120,16 @@ export async function PATCH(
       return NextResponse.json({ error: 'commentId and approved required' }, { status: 400 })
     }
 
-    const comment = await db.comment.update({
-      where: { id: commentId },
+    const result = await db.comment.updateMany({
+      where: { id: commentId, displayId: id },
       data: { approved },
     })
 
-    return NextResponse.json(comment)
+    if (result.count === 0) {
+      return NextResponse.json({ error: 'Comment not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ id: commentId, approved })
   } catch (error) {
     console.error('Error updating comment:', error)
     return NextResponse.json({ error: 'Failed to update comment' }, { status: 500 })
