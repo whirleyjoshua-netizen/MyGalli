@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import * as Icons from 'lucide-react'
-import { Trash2, Layers, Plus } from 'lucide-react'
+import { Trash2, Layers, Plus, Trophy, FileText, Heart, Sparkles, Library, Store } from 'lucide-react'
 import { CARD_PROVIDERS } from '@/lib/cards/registry'
 import { listTemplates } from '@/lib/templates/registry'
 import { listKits } from '@/lib/kits/registry'
@@ -40,8 +39,13 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'kits', label: 'Kits' },
 ]
 
+// Explicit map of the icons the 7 kits use — avoids bundling all of lucide-react.
+const KIT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  Trophy, FileText, Heart, Sparkles, Library, Store,
+}
+
 function LucideIcon({ name, className }: { name?: string; className?: string }) {
-  const Cmp = (name && (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[name]) || Icons.Layers
+  const Cmp = (name && KIT_ICONS[name]) || Layers
   return <Cmp className={className} />
 }
 
@@ -214,7 +218,11 @@ export function LibraryClient() {
         </div>
       )}
 
-      <UpgradePrompt isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} feature="This" />
+      <UpgradePrompt
+        isOpen={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        feature={tab === 'kits' ? 'Kits' : tab === 'templates' ? 'Templates' : 'Library Apps'}
+      />
     </div>
   )
 }
