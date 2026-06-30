@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { isSelfFollow } from '@/lib/social'
+import { rateLimit } from '@/lib/rate-limit'
 
 async function resolveTarget(username: string) {
   return db.user.findUnique({ where: { username }, select: { id: true } })
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ username: string }> }) {
+  const limited = await rateLimit(request, { limit: 30, windowMs: 60_000, prefix: 'follow' })
+  if (limited) return limited
   try {
     const me = await getUser(request)
     if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -29,6 +32,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ username: string }> }) {
+  const limited = await rateLimit(request, { limit: 30, windowMs: 60_000, prefix: 'follow' })
+  if (limited) return limited
   try {
     const me = await getUser(request)
     if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

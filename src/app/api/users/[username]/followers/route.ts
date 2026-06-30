@@ -12,6 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const rows = await db.follow.findMany({
       where: { followingId: user.id },
       orderBy: { createdAt: 'desc' },
+      take: 100,
       select: { follower: { select: { id: true, username: true, name: true, avatar: true } } },
     })
     const users = rows.map((r) => r.follower)

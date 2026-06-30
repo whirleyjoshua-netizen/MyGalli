@@ -35,13 +35,9 @@ export async function GET(
       return NextResponse.json({ error: 'Display not found' }, { status: 404 })
     }
 
-    // Increment views for published displays viewed by non-editors
-    if (display.published && !viewerCanEdit) {
-      await db.display.update({
-        where: { id },
-        data: { views: { increment: 1 } },
-      })
-    }
+    // NOTE: page views are counted once, in POST /api/analytics/track (eventType
+    // 'view', deduped per session via PageViewTracker). Do NOT increment here — a
+    // second increment double-counts and corrupts the explore "popular" ranking.
 
     return NextResponse.json({
       ...display,
