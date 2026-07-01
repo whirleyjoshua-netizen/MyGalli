@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
+import { redisRestUrl, redisRestToken } from './storage-env'
 
 // --- Redis-backed rate limiter (production) ---
 let redisLimiters: Map<string, Ratelimit> | null = null
 
 function getRedisLimiter(prefix: string, limit: number, windowMs: number): Ratelimit | null {
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+  const url = redisRestUrl()
+  const token = redisRestToken()
+  if (!url || !token) {
     return null
   }
 
@@ -15,8 +18,8 @@ function getRedisLimiter(prefix: string, limit: number, windowMs: number): Ratel
   const key = `${prefix}:${limit}:${windowMs}`
   if (!redisLimiters.has(key)) {
     const redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      url,
+      token,
     })
 
     redisLimiters.set(

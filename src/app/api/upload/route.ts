@@ -3,6 +3,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 import { getUser } from '@/lib/auth'
+import { blobReadWriteToken } from '@/lib/storage-env'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads')
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
@@ -40,8 +41,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use Vercel Blob in production (when BLOB_READ_WRITE_TOKEN is set)
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
+    // Use Vercel Blob in production (when a Blob read-write token is present)
+    const blobToken = blobReadWriteToken()
+    if (blobToken) {
       const { put } = await import('@vercel/blob')
       const ext = path.extname(file.name) || getExtensionFromMime(file.type)
       const blobPath = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`
@@ -49,6 +51,7 @@ export async function POST(request: NextRequest) {
       const blob = await put(blobPath, file, {
         access: 'public',
         contentType: file.type,
+        token: blobToken,
       })
 
       return NextResponse.json({ url: blob.url, filename: path.basename(blob.url) })
