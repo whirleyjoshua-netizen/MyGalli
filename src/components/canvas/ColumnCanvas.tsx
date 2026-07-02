@@ -28,6 +28,8 @@ import type {
   LayoutMode,
 } from '@/lib/types/canvas'
 import { DEFAULT_COLUMN_SETTINGS } from '@/lib/types/canvas'
+import type { SpacingConfig } from '@/lib/types/spacing'
+import { getSpacingStyles, getContainerStyle } from '@/lib/types/spacing'
 import {
   TextElement,
   HeadingElement,
@@ -131,6 +133,7 @@ interface ColumnCanvasProps {
   onOpenColumnSettings?: (sectionId: string, columnId: string) => void
   isPreviewMode?: boolean
   displayId?: string
+  spacing?: SpacingConfig | null
 }
 
 // Sortable element wrapper
@@ -184,7 +187,10 @@ export function ColumnCanvas({
   onOpenColumnSettings,
   isPreviewMode = false,
   displayId,
+  spacing,
 }: ColumnCanvasProps) {
+  const space = getSpacingStyles(spacing)
+  const containerStyle = getContainerStyle(spacing)
   const [selectedElement, setSelectedElement] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -1289,10 +1295,11 @@ export function ColumnCanvas({
       onDragEnd={handleDragEnd}
     >
       <div
-        className="flex-1 p-8 min-h-full"
+        className="flex-1 min-h-full"
+        style={{ paddingTop: `${space.paddingY}px`, paddingBottom: `${space.paddingY}px` }}
         onClick={() => setSelectedElement(null)}
       >
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div style={{ ...containerStyle, display: 'flex', flexDirection: 'column', gap: `${space.sectionGap}px` }}>
           {sections.map((section, sectionIndex) => (
             <div
               key={section.id}
@@ -1315,7 +1322,7 @@ export function ColumnCanvas({
               )}
 
               {/* Section Content */}
-              <div className={`grid gap-4 ${getGridClass(section.layout)}`}>
+              <div className={`grid ${getGridClass(section.layout)}`} style={{ gap: `${space.columnGap}px` }}>
                 {section.columns.map((column) => (
                   <div
                     key={column.id}
@@ -1352,7 +1359,7 @@ export function ColumnCanvas({
                       items={column.elements.map((el) => el.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-4 pl-4">
+                      <div className="pl-4" style={{ display: 'flex', flexDirection: 'column', gap: `${space.elementGap}px` }}>
                         {column.elements.map((element) => (
                           <SortableElement
                             key={element.id}

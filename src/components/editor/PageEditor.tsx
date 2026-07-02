@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Eye, Image as ImageIcon, Save, Check, Share2, CreditCard, LayoutList, Users } from 'lucide-react'
+import { ArrowLeft, Eye, Image as ImageIcon, Save, Check, Share2, CreditCard, LayoutList, Users, AlignVerticalSpaceAround } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/store'
 import { ColumnCanvas } from '@/components/canvas/ColumnCanvas'
 import { SlashCommandMenu } from '@/components/canvas/SlashCommandMenu'
 import { BackgroundSettings } from '@/components/canvas/BackgroundSettings'
 import { ColumnStyleSettings } from '@/components/canvas/ColumnStyleSettings'
+import { SpacingSettings } from '@/components/canvas/SpacingSettings'
 import { ShareDialog } from '@/components/editor/ShareDialog'
 import { CollaborateModal } from '@/components/editor/CollaborateModal'
 import { PresenceBar } from '@/components/editor/PresenceBar'
@@ -22,6 +23,8 @@ import type { Section, LayoutMode, ElementType, CanvasElement, ColumnSettings } 
 import { DEFAULT_COLUMN_SETTINGS } from '@/lib/types/canvas'
 import type { BackgroundConfig } from '@/lib/types/background'
 import { DEFAULT_BACKGROUND_CONFIG, getBackgroundStyles } from '@/lib/types/background'
+import type { SpacingConfig } from '@/lib/types/spacing'
+import { DEFAULT_SPACING_CONFIG } from '@/lib/types/spacing'
 import type { HeaderCardConfig } from '@/lib/types/header-card'
 import { DEFAULT_HEADER_CARD } from '@/lib/types/header-card'
 import type { TabsConfig } from '@/lib/types/tabs'
@@ -47,6 +50,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
   const [published, setPublished] = useState(false)
   const [sections, setSections] = useState<Section[]>([])
   const [background, setBackground] = useState<BackgroundConfig>(DEFAULT_BACKGROUND_CONFIG)
+  const [spacing, setSpacing] = useState<SpacingConfig>(DEFAULT_SPACING_CONFIG)
   const [headerCard, setHeaderCard] = useState<HeaderCardConfig>(DEFAULT_HEADER_CARD)
   const [tabsConfig, setTabsConfig] = useState<TabsConfig>(DEFAULT_TABS_CONFIG)
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
@@ -57,6 +61,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
   const [saving, setSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [showBackgroundSettings, setShowBackgroundSettings] = useState(false)
+  const [showSpacingSettings, setShowSpacingSettings] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
 
   // Slash menu state
@@ -197,7 +202,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [id, sections, background, title, headerCard, tabsConfig])
+  }, [id, sections, background, spacing, title, headerCard, tabsConfig])
 
   const loadPage = async (pid: string) => {
     try {
@@ -233,6 +238,12 @@ export function PageEditor({ pageId }: PageEditorProps) {
           : data.background || DEFAULT_BACKGROUND_CONFIG
 
         setBackground(loadedBackground)
+
+        // Parse spacing (null on legacy pages → defaults)
+        const loadedSpacing = data.spacing
+          ? (typeof data.spacing === 'string' ? JSON.parse(data.spacing) : data.spacing)
+          : DEFAULT_SPACING_CONFIG
+        setSpacing({ ...DEFAULT_SPACING_CONFIG, ...loadedSpacing })
 
         // Parse header card
         const loadedHeaderCard = data.headerCard
@@ -323,6 +334,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
           ...(isOwner ? { title } : {}),
           sections: sectionsToSave,
           background,
+          spacing,
           headerCard: headerCard.enabled ? headerCard : null,
           tabs: tabsConfig.enabled ? tabsConfig : null,
           version: versionRef.current,
@@ -345,7 +357,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
     } finally {
       setSaving(false)
     }
-  }, [id, title, sections, background, headerCard, tabsConfig, saving, conflict, isOwner])
+  }, [id, title, sections, background, spacing, headerCard, tabsConfig, saving, conflict, isOwner])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -940,7 +952,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
       {/* Header */}
       {!isPreviewMode && (
         <header className="border-b border-border bg-background px-4 py-3 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 shrink-0">
             <Link
               href="/dashboard"
               className="p-2 hover:bg-muted rounded-lg transition"
@@ -957,7 +969,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-1 min-w-0 items-center flex-wrap justify-end gap-2">
             {/* Save Status */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               {saving ? (
@@ -998,6 +1010,15 @@ export function PageEditor({ pageId }: PageEditorProps) {
             >
               <ImageIcon className="w-4 h-4" />
               Background
+            </button>
+
+            {/* Layout & Spacing */}
+            <button
+              onClick={() => setShowSpacingSettings(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted rounded-lg transition"
+            >
+              <AlignVerticalSpaceAround className="w-4 h-4" />
+              Spacing
             </button>
 
             {/* Preview */}
@@ -1163,6 +1184,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
             onOpenColumnSettings={openColumnSettings}
             isPreviewMode={isPreviewMode}
             displayId={id || undefined}
+            spacing={spacing}
           />
         </div>
       </div>
@@ -1183,6 +1205,14 @@ export function PageEditor({ pageId }: PageEditorProps) {
         onClose={() => setShowBackgroundSettings(false)}
         config={activeBackgroundConfig}
         onChange={setActiveBackground}
+      />
+
+      {/* Layout & Spacing Settings */}
+      <SpacingSettings
+        isOpen={showSpacingSettings}
+        onClose={() => setShowSpacingSettings(false)}
+        config={spacing}
+        onChange={setSpacing}
       />
 
       {/* Share Dialog */}

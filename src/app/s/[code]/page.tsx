@@ -5,6 +5,8 @@ import { db } from '@/lib/db'
 import type { Section } from '@/lib/types/canvas'
 import type { BackgroundConfig } from '@/lib/types/background'
 import { getBackgroundStyles, DEFAULT_BACKGROUND_CONFIG } from '@/lib/types/background'
+import type { SpacingConfig } from '@/lib/types/spacing'
+import { getSpacingStyles, getContainerStyle } from '@/lib/types/spacing'
 import type { HeaderCardConfig } from '@/lib/types/header-card'
 import type { TabsConfig } from '@/lib/types/tabs'
 import { PageViewTracker } from '@/components/analytics/PageViewTracker'
@@ -97,6 +99,14 @@ export default async function ShareLinkPage({ params }: Props) {
 
   const backgroundStyles = getBackgroundStyles(background)
 
+  // Parse spacing (null on legacy pages → defaults)
+  const spacing: SpacingConfig | null =
+    typeof display.spacing === 'string'
+      ? JSON.parse(display.spacing)
+      : (display.spacing as unknown as SpacingConfig) || null
+  const space = getSpacingStyles(spacing)
+  const containerStyle = getContainerStyle(spacing)
+
   // When tabs are enabled, PublicTabView is the entire page
   if (tabsConfig?.enabled && tabsConfig.tabs.length > 0) {
     return (
@@ -109,6 +119,7 @@ export default async function ShareLinkPage({ params }: Props) {
           displayId={display.id}
           defaultHeaderCard={headerCard}
           defaultBackground={background}
+          spacing={spacing}
         />
       </>
     )
@@ -124,8 +135,8 @@ export default async function ShareLinkPage({ params }: Props) {
         <PublicHeaderCard config={headerCard} />
       )}
 
-      <main className="py-12 px-4">
-        <div className="max-w-6xl mx-auto">
+      <main style={{ paddingTop: `${space.paddingY}px`, paddingBottom: `${space.paddingY}px` }}>
+        <div style={containerStyle}>
           {/* Default text header — only show if NO header card */}
           {!headerCard?.enabled && (
             <header className="mb-12 text-center">
@@ -140,17 +151,17 @@ export default async function ShareLinkPage({ params }: Props) {
           )}
 
           {/* Sections */}
-          <div className="space-y-8">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: `${space.sectionGap}px` }}>
             {sections.map((section) => (
               <div
                 key={section.id}
-                className={`grid gap-6 ${getGridClass(section.layout)}`}
+                className={`grid ${getGridClass(section.layout)}`}
+                style={{ gap: `${space.columnGap}px` }}
               >
                 {section.columns.map((column) => (
                   <div
                     key={column.id}
-                    className="space-y-4"
-                    style={getColumnStyles(column)}
+                    style={{ ...getColumnStyles(column), display: 'flex', flexDirection: 'column', gap: `${space.elementGap}px` }}
                   >
                     {column.elements.map((element) => (
                       <div key={element.id}>

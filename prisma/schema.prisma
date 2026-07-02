@@ -85,6 +85,10 @@ model Display {
   // Structure: { type, solidColor, gradient, patternId, imageUrl, imageMode, scrollBehavior, opacity }
   background  Json?
 
+  // Page layout & spacing configuration stored as JSON
+  // Structure: { contentWidth, sectionSpacing, elementSpacing, pagePadding }
+  spacing     Json?
+
   // Header card configuration (profile/resume/catalog hero section)
   headerCard  Json?
 

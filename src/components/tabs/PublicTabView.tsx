@@ -6,6 +6,8 @@ import type { Tab } from '@/lib/types/tabs'
 import type { HeaderCardConfig } from '@/lib/types/header-card'
 import type { BackgroundConfig } from '@/lib/types/background'
 import { getBackgroundStyles, DEFAULT_BACKGROUND_CONFIG } from '@/lib/types/background'
+import type { SpacingConfig } from '@/lib/types/spacing'
+import { getSpacingStyles, getContainerStyle } from '@/lib/types/spacing'
 import { renderElement, getGridClass, getColumnStyles } from '@/lib/render-elements'
 import { PublicHeaderCard } from '@/components/header/PublicHeaderCard'
 
@@ -16,6 +18,7 @@ interface PublicTabViewProps {
   displayId?: string
   defaultHeaderCard?: HeaderCardConfig | null
   defaultBackground?: BackgroundConfig
+  spacing?: SpacingConfig | null
 }
 
 export function PublicTabView({
@@ -25,7 +28,10 @@ export function PublicTabView({
   displayId,
   defaultHeaderCard,
   defaultBackground = DEFAULT_BACKGROUND_CONFIG,
+  spacing,
 }: PublicTabViewProps) {
+  const space = getSpacingStyles(spacing)
+  const containerStyle = getContainerStyle(spacing)
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id)
 
   // Support URL hash for direct tab linking
@@ -107,19 +113,19 @@ export function PublicTabView({
             <PublicHeaderCard config={activeHeaderCard} />
           )}
 
-          <main className="py-12 px-4">
-            <div className="max-w-6xl mx-auto">
-              <div className="space-y-8">
+          <main style={{ paddingTop: `${space.paddingY}px`, paddingBottom: `${space.paddingY}px` }}>
+            <div style={containerStyle}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: `${space.sectionGap}px` }}>
                 {activeTab.sections.map((section) => (
                   <div
                     key={section.id}
-                    className={`grid gap-6 ${getGridClass(section.layout)}`}
+                    className={`grid ${getGridClass(section.layout)}`}
+                    style={{ gap: `${space.columnGap}px` }}
                   >
                     {section.columns.map((column) => (
                       <div
                         key={column.id}
-                        className="space-y-4"
-                        style={getColumnStyles(column)}
+                        style={{ ...getColumnStyles(column), display: 'flex', flexDirection: 'column', gap: `${space.elementGap}px` }}
                       >
                         {column.elements.map((element) => (
                           <div key={element.id}>

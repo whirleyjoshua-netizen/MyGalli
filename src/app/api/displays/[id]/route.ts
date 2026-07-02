@@ -83,7 +83,7 @@ export async function PATCH(
 
     // Only pass through known fields, then split owner-only vs collaborator-allowed
     const known: Record<string, unknown> = {}
-    for (const k of ['title', 'description', 'published', 'sections', 'background', 'headerCard', 'tabs', 'coverImage', 'category']) {
+    for (const k of ['title', 'description', 'published', 'sections', 'background', 'spacing', 'headerCard', 'tabs', 'coverImage', 'category']) {
       if (updates[k] !== undefined) known[k] = updates[k]
     }
     const { data, rejected } = splitUpdate(known, isOwner)

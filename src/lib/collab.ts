@@ -1,4 +1,4 @@
-export const COLLAB_FIELDS = ['sections', 'background', 'headerCard', 'tabs'] as const
+export const COLLAB_FIELDS = ['sections', 'background', 'spacing', 'headerCard', 'tabs'] as const
 
 export function canEdit(userId: string | null, ownerId: string, collaboratorIds: string[]): boolean {
   if (!userId) return false
