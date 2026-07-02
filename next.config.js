@@ -3,7 +3,7 @@
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://www.gstatic.com",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com",
   "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com https://images.unsplash.com https://ui-avatars.com https://lh3.googleusercontent.com https://www.gstatic.com",
   "font-src 'self' data:",
   "connect-src 'self' https://accounts.google.com https://apis.google.com https://oauth2.googleapis.com",
