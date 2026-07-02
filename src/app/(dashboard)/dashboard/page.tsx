@@ -191,7 +191,7 @@ export default function DashboardPage() {
               isMenuOpen={cardMenuOpen === display.id}
               username={user?.username}
               timeAgo={timeAgo}
-              onSelect={setSelectedId}
+              onSelect={(id) => router.push(`/editor?id=${id}`)}
               onOpenMenu={(id) => setCardMenuOpen((cur) => (cur === id ? null : id))}
               onCloseMenu={() => setCardMenuOpen(null)}
               onTogglePin={togglePin}
