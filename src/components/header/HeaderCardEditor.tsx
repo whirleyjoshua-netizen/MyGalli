@@ -1,7 +1,7 @@
 'use client'
 
-import { X, Plus, Trash2, User, FileText, ShoppingBag, Download, Mail, Link, Phone, Github, Linkedin } from 'lucide-react'
-import type { HeaderCardConfig, HeaderTemplate, PhotoPosition, HeaderAction } from '@/lib/types/header-card'
+import { X, Plus, Trash2, Download, Mail, Link, Phone, Github, Linkedin } from 'lucide-react'
+import type { HeaderCardConfig, PhotoPosition, HeaderAction } from '@/lib/types/header-card'
 import { createHeaderAction } from '@/lib/types/header-card'
 import { HeaderCard } from './HeaderCard'
 import { ImageUploadField } from '@/components/ui/ImageUploadField'
@@ -13,16 +13,10 @@ interface HeaderCardEditorProps {
   onChange: (config: HeaderCardConfig) => void
 }
 
-const templates: { id: HeaderTemplate; label: string; icon: typeof User; description: string }[] = [
-  { id: 'profile', label: 'Profile', icon: User, description: 'Centered photo with bio' },
-  { id: 'resume', label: 'Resume', icon: FileText, description: 'Photo left, actions right' },
-  { id: 'catalog', label: 'Catalog', icon: ShoppingBag, description: 'Full-bleed cover overlay' },
-]
-
 const photoPositions: { id: PhotoPosition; label: string; description: string }[] = [
-  { id: 'center-overlap', label: 'Center', description: 'Centered over banner edge' },
-  { id: 'left-offset', label: 'Left', description: 'Left side, offset from edge' },
-  { id: 'right-inline', label: 'Right', description: 'Right side, inline with text' },
+  { id: 'left-offset', label: 'Left', description: 'Photo left of the text' },
+  { id: 'center-overlap', label: 'Center', description: 'Photo centered on top' },
+  { id: 'right-inline', label: 'Right', description: 'Photo right of the text' },
   { id: 'hidden', label: 'Hidden', description: 'No profile photo' },
 ]
 
@@ -100,28 +94,6 @@ export function HeaderCardEditor({ isOpen, onClose, config, onChange }: HeaderCa
 
           {config.enabled && (
             <>
-              {/* Template Picker */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Template</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {templates.map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => update({ template: t.id })}
-                      className={`p-3 rounded-lg border-2 text-left transition-all ${
-                        config.template === t.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <t.icon className="w-5 h-5 mb-1 text-muted-foreground" />
-                      <div className="font-medium text-sm">{t.label}</div>
-                      <div className="text-xs text-muted-foreground">{t.description}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Cover Image */}
               <div>
                 <ImageUploadField
