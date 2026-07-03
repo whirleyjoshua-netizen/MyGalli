@@ -4,6 +4,7 @@ import { getUser } from '@/lib/auth'
 import type { Section } from '@/lib/types/canvas'
 import type { TabsConfig } from '@/lib/types/tabs'
 import { collectRsvpGuests, summarizeRsvp, buildItemBoard } from '@/lib/rsvp'
+import { aggregatePoll as sharedPoll, aggregateRating as sharedRating, aggregateShortAnswer as sharedShortAnswer, type ResponseRecord } from '@/lib/element-aggregate'
 
 const INTERACTIVE_TYPES = ['mcq', 'rating', 'shortanswer', 'poll', 'comment', 'wedding-rsvp', 'business-review', 'rsvp'] as const
 
@@ -162,103 +163,18 @@ function aggregateMCQ(el: InteractiveElement, responses: any[]) {
 }
 
 function aggregateRating(el: InteractiveElement, responses: any[]) {
-  const max = el.config.ratingMax || 5
-  const distribution: Record<number, number> = {}
-  for (let i = 1; i <= max; i++) distribution[i] = 0
-
-  let responseCount = 0
-  let sum = 0
-
-  for (const response of responses) {
-    const data = response.responses as Record<string, any>
-    const entry = data[el.id]
-    if (entry && entry.type === 'rating') {
-      const value = Number(entry.answer)
-      if (value >= 1 && value <= max) {
-        responseCount++
-        sum += value
-        distribution[value]++
-      }
-    }
-  }
-
-  return {
-    elementId: el.id,
-    type: 'rating',
-    question: el.config.ratingQuestion || 'Untitled Rating',
-    ratingMax: max,
-    ratingStyle: el.config.ratingStyle || 'stars',
-    responseCount,
-    average: responseCount > 0 ? Math.round((sum / responseCount) * 10) / 10 : 0,
-    distribution: Object.entries(distribution)
-      .map(([value, count]) => ({ value: Number(value), count }))
-      .sort((a, b) => b.value - a.value),
-    tabLabel: el.tabLabel,
-  }
+  const records: ResponseRecord[] = responses.map((r) => ({ responses: r.responses, submittedAt: r.submittedAt }))
+  return { ...sharedRating(el.config as any, records), tabLabel: el.tabLabel }
 }
 
 function aggregateShortAnswer(el: InteractiveElement, responses: any[]) {
-  const answers: { answer: string; submittedAt: string; sessionId?: string }[] = []
-
-  for (const response of responses) {
-    const data = response.responses as Record<string, any>
-    const entry = data[el.id]
-    if (entry && entry.type === 'shortanswer' && entry.answer) {
-      answers.push({
-        answer: String(entry.answer),
-        submittedAt: response.submittedAt?.toISOString?.() || response.submittedAt,
-        sessionId: response.sessionId || undefined,
-      })
-    }
-  }
-
-  return {
-    elementId: el.id,
-    type: 'shortanswer',
-    question: el.config.shortAnswerQuestion || 'Untitled Question',
-    responseCount: answers.length,
-    recentAnswers: answers.slice(0, 50),
-    tabLabel: el.tabLabel,
-  }
+  const records: ResponseRecord[] = responses.map((r) => ({ responses: r.responses, submittedAt: r.submittedAt }))
+  return { ...sharedShortAnswer(el.config as any, records), tabLabel: el.tabLabel }
 }
 
 function aggregatePoll(el: InteractiveElement, responses: any[]) {
-  const options: string[] = el.config.pollOptions || []
-  const distribution: Record<string, number> = {}
-  for (const opt of options) distribution[opt] = 0
-
-  let totalVoters = 0
-
-  for (const response of responses) {
-    const data = response.responses as Record<string, any>
-    const entry = data[el.id]
-    if (entry && entry.type === 'poll') {
-      totalVoters++
-      const selections = Array.isArray(entry.answer) ? entry.answer : [entry.answer]
-      for (const option of selections) {
-        if (option in distribution) {
-          distribution[option]++
-        } else {
-          distribution[option] = (distribution[option] || 0) + 1
-        }
-      }
-    }
-  }
-
-  return {
-    elementId: el.id,
-    type: 'poll',
-    question: el.config.pollQuestion || 'Untitled Poll',
-    options,
-    allowMultiple: el.config.pollAllowMultiple || false,
-    totalVoters,
-    distribution: Object.entries(distribution).map(([option, count]) => ({
-      option,
-      count,
-      percentage: totalVoters > 0 ? Math.round((count / totalVoters) * 100) : 0,
-    })),
-    tabLabel: el.tabLabel,
-  }
+  const records: ResponseRecord[] = responses.map((r) => ({ responses: r.responses, submittedAt: r.submittedAt }))
+  return { ...sharedPoll(el.config as any, records), tabLabel: el.tabLabel }
 }
 
 function aggregateComments(el: InteractiveElement, comments: any[]) {
