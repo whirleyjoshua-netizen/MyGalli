@@ -40,3 +40,8 @@ prisma/*.db-journal
 
 # uploads (local development)
 uploads/
+
+.vercel
+
+# brainstorming visual-companion mockups
+.superpowers/
