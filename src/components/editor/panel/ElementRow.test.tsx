@@ -16,8 +16,8 @@ describe('ElementRow', () => {
     fireEvent.click(screen.getByRole('button', { name: /Image — hero\.jpg/ }))
     expect(onToggle).toHaveBeenCalled()
   })
-  it('renders the inspector (DefaultInspector for image until migrated) when expanded', () => {
+  it('renders the ImageInspector when expanded', () => {
     render(<ElementRow row={row} expanded onToggle={() => {}} onChange={() => {}} onDelete={() => {}} isPro={false} />)
-    expect(screen.getByText(/settings for this element/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/image url/i)).toBeInTheDocument()
   })
 })
