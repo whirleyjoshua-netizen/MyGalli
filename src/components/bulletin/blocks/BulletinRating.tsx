@@ -8,8 +8,9 @@ import type { BulletinBlockProps } from '../BulletinBlock'
 export function BulletinRating({ postId, block, results, myResponse, onResults }: BulletinBlockProps) {
   const max = block.ratingMax || 5
   const priorAnswer = myResponse?.[block.id]?.answer
-  const answered = priorAnswer != null
-  const [rating, setRating] = useState<number | null>(answered ? Number(priorAnswer) : null)
+  const [submitted, setSubmitted] = useState(false)
+  const answered = priorAnswer != null || submitted
+  const [rating, setRating] = useState<number | null>(priorAnswer != null ? Number(priorAnswer) : null)
   const [hovered, setHovered] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [localResults, setLocalResults] = useState<RatingAggregate | null>((results as RatingAggregate) || null)
@@ -29,6 +30,7 @@ export function BulletinRating({ postId, block, results, myResponse, onResults }
           setLocalResults(data.results)
           onResults(data.results)
         }
+        setSubmitted(true)
       }
     } catch {
       /* degrade quietly */

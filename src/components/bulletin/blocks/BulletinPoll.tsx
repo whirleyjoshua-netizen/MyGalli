@@ -9,7 +9,8 @@ export function BulletinPoll({ postId, block, results, myResponse, onResults }: 
   const options = block.pollOptions || []
   const allowMultiple = block.pollAllowMultiple ?? false
   const priorAnswer = myResponse?.[block.id]?.answer
-  const answered = !!priorAnswer
+  const [submitted, setSubmitted] = useState(false)
+  const answered = !!priorAnswer || submitted
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [submitting, setSubmitting] = useState(false)
@@ -49,6 +50,7 @@ export function BulletinPoll({ postId, block, results, myResponse, onResults }: 
           setLocalResults(data.results)
           onResults(data.results)
         }
+        setSubmitted(true)
       }
     } catch {
       /* degrade quietly */
@@ -64,7 +66,7 @@ export function BulletinPoll({ postId, block, results, myResponse, onResults }: 
         {options.map((opt) => {
           const d = pctByOption.get(opt)
           const isSel = selected.has(opt)
-          const mineOpt = Array.isArray(priorAnswer) && (priorAnswer as string[]).includes(opt)
+          const mineOpt = (submitted && selected.has(opt)) || (Array.isArray(priorAnswer) && (priorAnswer as string[]).includes(opt))
           return (
             <button
               key={opt}

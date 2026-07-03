@@ -7,7 +7,8 @@ import type { BulletinBlockProps } from '../BulletinBlock'
 
 export function BulletinShortAnswer({ postId, block, results, myResponse, onResults }: BulletinBlockProps) {
   const priorAnswer = myResponse?.[block.id]?.answer
-  const answered = priorAnswer != null && priorAnswer !== ''
+  const [submitted, setSubmitted] = useState(false)
+  const answered = (priorAnswer != null && priorAnswer !== '') || submitted
   const [value, setValue] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [localResults, setLocalResults] = useState<ShortAnswerAggregate | null>((results as ShortAnswerAggregate) || null)
@@ -28,6 +29,7 @@ export function BulletinShortAnswer({ postId, block, results, myResponse, onResu
           setLocalResults(data.results)
           onResults(data.results)
         }
+        setSubmitted(true)
       }
     } catch {
       /* degrade quietly */

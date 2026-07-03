@@ -28,6 +28,7 @@ describe('BulletinPoll', () => {
     const body = JSON.parse(fetchMock.mock.calls[0][1].body)
     expect(body.responses['blk-1']).toMatchObject({ type: 'poll', answer: ['Coffee'] })
     await waitFor(() => expect(onResults).toHaveBeenCalledWith(results))
+    await waitFor(() => expect(screen.queryByRole('button', { name: /vote/i })).not.toBeInTheDocument())
   })
 
   it('shows results (percentages) when results are already visible', () => {
