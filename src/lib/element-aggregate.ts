@@ -84,7 +84,7 @@ export function aggregatePoll(config: CanvasElement, records: ResponseRecord[]):
   return {
     elementId: config.id,
     type: 'poll',
-    question: config.pollQuestion || 'What do you think?',
+    question: config.pollQuestion || 'Untitled Poll',
     options,
     allowMultiple: config.pollAllowMultiple || false,
     totalVoters,
