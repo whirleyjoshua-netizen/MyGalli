@@ -1226,6 +1226,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
           displayId={id}
           pageTitle={title}
           published={published}
+          pageUrl={pageUrl}
           onClose={() => setShowShareDialog(false)}
         />
       )}

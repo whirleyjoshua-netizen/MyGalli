@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { X, Copy, Check, Trash2, Link as LinkIcon, ExternalLink } from 'lucide-react'
 import { slugify } from '@/lib/utils'
+import { SocialShareButtons } from '@/components/share/SocialShareButtons'
 
 interface ShareLink {
   id: string
@@ -17,10 +18,11 @@ interface ShareDialogProps {
   displayId: string
   pageTitle: string
   published: boolean
+  pageUrl: string
   onClose: () => void
 }
 
-export function ShareDialog({ displayId, pageTitle, published, onClose }: ShareDialogProps) {
+export function ShareDialog({ displayId, pageTitle, published, pageUrl, onClose }: ShareDialogProps) {
   const [links, setLinks] = useState<ShareLink[]>([])
   const [loading, setLoading] = useState(true)
   const [newCode, setNewCode] = useState('')
@@ -137,6 +139,16 @@ export function ShareDialog({ displayId, pageTitle, published, onClose }: ShareD
           </div>
 
           <div className="p-5">
+            {/* Share to social (published pages only) */}
+            {published && (
+              <div className="mb-5 pb-5 border-b border-border">
+                <label className="text-sm font-medium text-foreground block mb-2">
+                  Share to social
+                </label>
+                <SocialShareButtons url={pageUrl} title={pageTitle} />
+              </div>
+            )}
+
             {/* Unpublished warning */}
             {!published && (
               <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
