@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ProfileIdCard } from '@/components/profile/ProfileIdCard'
-import { EditProfileModal } from '@/components/profile/EditProfileModal'
 import type { User } from '@/lib/types'
 
 export function ProfileOwnerControls({
@@ -14,25 +13,21 @@ export function ProfileOwnerControls({
   followerCount: number
   followingCount: number
 }) {
-  const [editing, setEditing] = useState(false)
-
+  const router = useRouter()
   return (
-    <>
-      <ProfileIdCard
-        user={{
-          username: user.username,
-          name: user.name ?? null,
-          avatar: user.avatar ?? null,
-          location: user.location ?? null,
-        }}
-        followerCount={followerCount}
-        followingCount={followingCount}
-        isOwner
-        isFollowing={false}
-        isFriend={false}
-        onEdit={() => setEditing(true)}
-      />
-      <EditProfileModal isOpen={editing} onClose={() => setEditing(false)} user={user} />
-    </>
+    <ProfileIdCard
+      user={{
+        username: user.username,
+        name: user.name ?? null,
+        avatar: user.avatar ?? null,
+        location: user.location ?? null,
+      }}
+      followerCount={followerCount}
+      followingCount={followingCount}
+      isOwner
+      isFollowing={false}
+      isFriend={false}
+      onEdit={() => router.push('/profile/edit')}
+    />
   )
 }
