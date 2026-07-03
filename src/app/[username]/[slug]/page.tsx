@@ -20,6 +20,7 @@ import { getJwtSecret } from '@/lib/auth'
 import { AUTH_COOKIE } from '@/lib/constants'
 import { deriveFriend } from '@/lib/social'
 import { CreatorChip } from '@/components/social/CreatorChip'
+import { BackButton } from '@/components/ui/BackButton'
 
 interface Props {
   params: Promise<{ username: string; slug: string }>
@@ -168,6 +169,7 @@ export default async function PublicDisplayPage({ params }: Props) {
     return (
       <>
         <PageViewTracker displayId={display.id} />
+        <BackButton />
         <PublicTabView
           tabs={tabsConfig.tabs}
           style={tabsConfig.style}
@@ -185,6 +187,7 @@ export default async function PublicDisplayPage({ params }: Props) {
   return (
     <div className="min-h-screen" style={backgroundStyles}>
       <PageViewTracker displayId={display.id} />
+      <BackButton />
       <FontLoader sections={sections} />
 
       {/* Header Card */}
