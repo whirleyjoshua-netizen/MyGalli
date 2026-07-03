@@ -71,7 +71,7 @@ export function SocialShareButtons({ url, title }: { url: string; title: string 
         </button>
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
-        Instagram: tap Share… for your story, or copy your link for your bio.
+        Instagram: {canNativeShare ? 'tap Share… for your story, or ' : ''}copy your link for your bio.
       </p>
     </div>
   )

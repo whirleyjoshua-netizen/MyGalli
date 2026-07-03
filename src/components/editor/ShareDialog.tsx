@@ -140,7 +140,7 @@ export function ShareDialog({ displayId, pageTitle, published, pageUrl, onClose 
 
           <div className="p-5">
             {/* Share to social (published pages only) */}
-            {published && (
+            {published && pageUrl && (
               <div className="mb-5 pb-5 border-b border-border">
                 <label className="text-sm font-medium text-foreground block mb-2">
                   Share to social
