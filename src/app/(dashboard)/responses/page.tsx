@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, FileText, Trash2, Download, ChevronLeft, ChevronRight } from 'lucide-react'
+import { formatResponseAnswer } from '@/lib/format-response'
 
 interface FormResponseData {
   id: string
@@ -143,10 +144,7 @@ function ResponsesContent() {
       questions.forEach((q) => {
         const response = Object.values(r.responses).find((resp) => resp.question === q)
         if (response) {
-          const answer = Array.isArray(response.answer)
-            ? response.answer.join('; ')
-            : String(response.answer)
-          row.push(answer)
+          row.push(formatResponseAnswer(response.answer))
         } else {
           row.push('')
         }
@@ -267,9 +265,7 @@ function ResponsesContent() {
                         <div key={elementId}>
                           <div className="text-sm font-medium mb-1">{resp.question}</div>
                           <div className="text-sm text-muted-foreground bg-background rounded px-3 py-2">
-                            {Array.isArray(resp.answer)
-                              ? resp.answer.join(', ')
-                              : String(resp.answer)}
+                            {formatResponseAnswer(resp.answer)}
                           </div>
                         </div>
                       ))}

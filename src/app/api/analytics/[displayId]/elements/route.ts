@@ -3,8 +3,9 @@ import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import type { Section } from '@/lib/types/canvas'
 import type { TabsConfig } from '@/lib/types/tabs'
+import { collectRsvpGuests, summarizeRsvp, buildItemBoard } from '@/lib/rsvp'
 
-const INTERACTIVE_TYPES = ['mcq', 'rating', 'shortanswer', 'poll', 'comment', 'wedding-rsvp', 'business-review'] as const
+const INTERACTIVE_TYPES = ['mcq', 'rating', 'shortanswer', 'poll', 'comment', 'wedding-rsvp', 'business-review', 'rsvp'] as const
 
 interface InteractiveElement {
   id: string
@@ -105,6 +106,7 @@ export async function GET(request: NextRequest, { params }: Props) {
         case 'comment': return aggregateComments(el, allComments)
         case 'wedding-rsvp': return aggregateWeddingRsvp(el, formResponses)
         case 'business-review': return aggregateBusinessReview(el, formResponses)
+        case 'rsvp': return aggregateRSVP(el, formResponses)
         default: return null
       }
     }).filter(Boolean)
@@ -349,6 +351,39 @@ function aggregateWeddingRsvp(el: InteractiveElement, responses: any[]) {
     dietaryNotes: dietaryNotes.slice(0, 50),
     songRequests: songRequests.slice(0, 50),
     guests,
+    tabLabel: el.tabLabel,
+  }
+}
+
+function aggregateRSVP(el: InteractiveElement, responses: any[]) {
+  const items: string[] = el.config.rsvpItems || []
+  const guests = collectRsvpGuests(el.id, responses)
+  const { going, maybe, cant, counts } = summarizeRsvp(guests)
+  const itemBoard = buildItemBoard(items, guests)
+  const notes = guests
+    .filter((g) => g.note)
+    .map((g) => ({ name: g.name, note: g.note as string }))
+
+  return {
+    elementId: el.id,
+    type: 'rsvp',
+    subject: el.config.rsvpSubject || 'RSVP',
+    public: !!el.config.rsvpPublicList,
+    responseCount: counts.responses,
+    going: counts.going,
+    maybe: counts.maybe,
+    cant: counts.cant,
+    totalGuests: counts.totalGuests,
+    itemBoard,
+    notes: notes.slice(0, 50),
+    guests: guests.map((g) => ({
+      name: g.name,
+      attending: g.attending,
+      guests: g.guests,
+      items: g.items,
+      note: g.note,
+      submittedAt: g.submittedAt,
+    })),
     tabLabel: el.tabLabel,
   }
 }

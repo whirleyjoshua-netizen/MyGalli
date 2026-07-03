@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Inbox } from 'lucide-react'
-import { MCQCard, RatingCard, ShortAnswerCard, PollCard, CommentCard, WeddingRsvpCard, BusinessReviewCard } from './element-cards'
+import { MCQCard, RatingCard, ShortAnswerCard, PollCard, CommentCard, WeddingRsvpCard, BusinessReviewCard, RSVPCard } from './element-cards'
 
 interface ElementsTabProps {
   displayId: string | null
@@ -84,6 +84,8 @@ export function ElementsTab({ displayId }: ElementsTabProps) {
             return <WeddingRsvpCard key={element.elementId} data={element} />
           case 'business-review':
             return <BusinessReviewCard key={element.elementId} data={element} />
+          case 'rsvp':
+            return <RSVPCard key={element.elementId} data={element} />
           default:
             return null
         }

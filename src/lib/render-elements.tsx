@@ -23,6 +23,7 @@ import { PublicCertificationBadgeElement } from '@/components/elements/PublicCer
 import { PublicWeddingTimelineElement } from '@/components/elements/PublicWeddingTimelineElement'
 import { PublicWeddingPartyElement } from '@/components/elements/PublicWeddingPartyElement'
 import { PublicWeddingRsvpElement } from '@/components/elements/PublicWeddingRsvpElement'
+import { PublicRSVPElement } from '@/components/elements/PublicRSVPElement'
 import { PublicWeddingStatsElement } from '@/components/elements/PublicWeddingStatsElement'
 import { PublicWeddingRegistryElement } from '@/components/elements/PublicWeddingRegistryElement'
 import { PublicWeddingHashtagsElement } from '@/components/elements/PublicWeddingHashtagsElement'
@@ -450,6 +451,8 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'wedding-rsvp':
       return <PublicWeddingRsvpElement element={element} displayId={displayId || ''} />
+    case 'rsvp':
+      return <PublicRSVPElement element={element} displayId={displayId || ''} />
 
     case 'wedding-stats':
       return <PublicWeddingStatsElement element={element} />

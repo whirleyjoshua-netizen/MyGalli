@@ -50,6 +50,7 @@ export type ElementType =
   | 'mcq'       // Multiple choice question
   | 'rating'    // Star/numeric rating
   | 'shortanswer' // Short text input
+  | 'rsvp'      // RSVP / event attendance with optional claimable list (potluck)
   // Tier 3: Premium elements
   | 'chart'     // Bar, line, pie charts with 3D effects
   // Tier 3: Premium elements
@@ -304,6 +305,13 @@ export interface CanvasElement {
     dietaryField: boolean
     songRequest: boolean
   }
+  // RSVP specific (general-purpose event RSVP; optional potluck-style claim list)
+  rsvpSubject?: string          // event subject / invite headline
+  rsvpDeadline?: string         // optional RSVP-by date (YYYY-MM-DD)
+  rsvpPlusOne?: boolean         // ask "how many additional guests (+1s)"
+  rsvpAllowNote?: boolean       // let respondents leave a note
+  rsvpItems?: string[]          // preset claimable list (potluck); empty = none
+  rsvpPublicList?: boolean      // show a public guest/item board vs. private intake
   // Wedding Stats specific
   weddingStatsItems?: {
     label: string
@@ -815,6 +823,16 @@ export function createElement(type: ElementType): CanvasElement {
           dietaryField: true,
           songRequest: true,
         },
+      }
+    case 'rsvp':
+      return {
+        ...base,
+        rsvpSubject: "You're invited!",
+        rsvpDeadline: '',
+        rsvpPlusOne: true,
+        rsvpAllowNote: true,
+        rsvpItems: [],
+        rsvpPublicList: false,
       }
     case 'wedding-stats':
       return {
