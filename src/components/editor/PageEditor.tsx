@@ -2,23 +2,25 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Eye, Image as ImageIcon, Save, Check, Share2, CreditCard, LayoutList, Users, AlignVerticalSpaceAround } from 'lucide-react'
+import { ArrowLeft, Eye, Save, Check, Share2, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/store'
 import { ColumnCanvas } from '@/components/canvas/ColumnCanvas'
 import { SlashCommandMenu } from '@/components/canvas/SlashCommandMenu'
-import { BackgroundSettings } from '@/components/canvas/BackgroundSettings'
 import { ColumnStyleSettings } from '@/components/canvas/ColumnStyleSettings'
-import { SpacingSettings } from '@/components/canvas/SpacingSettings'
 import { ShareDialog } from '@/components/editor/ShareDialog'
 import { CollaborateModal } from '@/components/editor/CollaborateModal'
 import { PresenceBar } from '@/components/editor/PresenceBar'
 import { PublishDialog } from '@/components/editor/PublishDialog'
 import { CardLibraryPicker } from '@/components/editor/CardLibraryPicker'
+import { ControlPanel } from '@/components/editor/panel/ControlPanel'
+import { ElementsTab } from '@/components/editor/panel/ElementsTab'
+import { PageTab } from '@/components/editor/panel/PageTab'
+import type { EditorSelection } from '@/lib/editor/selection'
+import { selectedElementId } from '@/lib/editor/selection'
+import type { ElementListRow } from '@/lib/editor/element-list'
 import { HeaderCard } from '@/components/header/HeaderCard'
-import { HeaderCardEditor } from '@/components/header/HeaderCardEditor'
 import { TabBar } from '@/components/tabs/TabBar'
-import { TabEditor } from '@/components/tabs/TabEditor'
 import type { Section, LayoutMode, ElementType, CanvasElement, ColumnSettings } from '@/lib/types/canvas'
 import { DEFAULT_COLUMN_SETTINGS } from '@/lib/types/canvas'
 import type { BackgroundConfig } from '@/lib/types/background'
@@ -60,9 +62,12 @@ export function PageEditor({ pageId }: PageEditorProps) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  const [showBackgroundSettings, setShowBackgroundSettings] = useState(false)
-  const [showSpacingSettings, setShowSpacingSettings] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+
+  // Control panel + selection state
+  const [selection, setSelection] = useState<EditorSelection>(null)
+  const [panelCollapsed, setPanelCollapsed] = useState(false)
+  const [panelTab, setPanelTab] = useState<'elements' | 'page'>('elements')
 
   // Slash menu state
   const [showSlashMenu, setShowSlashMenu] = useState(false)
@@ -84,10 +89,6 @@ export function PageEditor({ pageId }: PageEditorProps) {
   const [category, setCategory] = useState<string | null>(null)
   const [coverImage, setCoverImage] = useState<string | null>(null)
   const [showPublishDialog, setShowPublishDialog] = useState(false)
-
-  // Header card & tab editor state
-  const [showHeaderEditor, setShowHeaderEditor] = useState(false)
-  const [showTabEditor, setShowTabEditor] = useState(false)
 
   // Card picker state
   const [cardPickerOpen, setCardPickerOpen] = useState(false)
@@ -918,6 +919,32 @@ export function PageEditor({ pageId }: PageEditorProps) {
     )
   }
 
+  // Section ⚙ opens the existing column-style modal for the section's first column.
+  const openSectionSettings = (sectionId: string) => {
+    const secs = getActiveSections()
+    const section = secs.find((s) => s.id === sectionId)
+    const firstCol = section?.columns[0]
+    if (section && firstCol) openColumnSettings(section.id, firstCol.id)
+  }
+
+  // Panel "+ Add element" reuses the slash menu, targeting the section's first column.
+  const addElementToSection = (sectionId: string) => {
+    const secs = getActiveSections()
+    const section = secs.find((s) => s.id === sectionId)
+    const firstCol = section?.columns[0]
+    if (section && firstCol) openSlashMenu(section.id, firstCol.id)
+  }
+
+  // Single-open accordion: toggling a row sets/clears the element selection.
+  const toggleRow = (row: ElementListRow) => {
+    setSelection((prev) =>
+      selectedElementId(prev) === row.element.id
+        ? null
+        : { kind: 'element', sectionId: row.sectionId, columnId: row.columnId, elementId: row.element.id },
+    )
+    setPanelTab('elements')
+  }
+
   // Publish
   const handlePublishToggle = async () => {
     if (!id) return
@@ -989,42 +1016,6 @@ export function PageEditor({ pageId }: PageEditorProps) {
                 </>
               ) : null}
             </div>
-
-            {/* Header Card */}
-            <button
-              onClick={() => setShowHeaderEditor(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted rounded-lg transition"
-            >
-              <CreditCard className="w-4 h-4" />
-              Header
-            </button>
-
-            {/* Tabs */}
-            <button
-              onClick={() => setShowTabEditor(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted rounded-lg transition"
-            >
-              <LayoutList className="w-4 h-4" />
-              Tabs
-            </button>
-
-            {/* Background */}
-            <button
-              onClick={() => setShowBackgroundSettings(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted rounded-lg transition"
-            >
-              <ImageIcon className="w-4 h-4" />
-              Background
-            </button>
-
-            {/* Layout & Spacing */}
-            <button
-              onClick={() => setShowSpacingSettings(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted rounded-lg transition"
-            >
-              <AlignVerticalSpaceAround className="w-4 h-4" />
-              Spacing
-            </button>
 
             {/* Preview */}
             <button
@@ -1116,7 +1107,8 @@ export function PageEditor({ pageId }: PageEditorProps) {
         </div>
       )}
 
-      {/* Canvas */}
+      {/* Canvas + control panel */}
+      <div className="flex-1 min-h-0 flex">
       <div className="flex-1 overflow-auto flex flex-col">
         {/* Tab Bar — at the very top, above everything */}
         {tabsConfig.enabled && tabsConfig.tabs.length > 0 && (
@@ -1172,7 +1164,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
           {activeHeaderCardConfig.enabled && (
             <div
               className={`${!isPreviewMode ? 'cursor-pointer ring-transparent hover:ring-2 hover:ring-primary/30 transition-all' : ''}`}
-              onClick={() => !isPreviewMode && setShowHeaderEditor(true)}
+              onClick={() => { if (!isPreviewMode) { setPanelTab('page'); setPanelCollapsed(false) } }}
             >
               <HeaderCard config={activeHeaderCardConfig} />
             </div>
@@ -1187,11 +1179,56 @@ export function PageEditor({ pageId }: PageEditorProps) {
             onUpdateElement={updateElement}
             onDeleteElement={deleteElement}
             onOpenColumnSettings={openColumnSettings}
+            selectedElementId={selectedElementId(selection)}
+            onSelectElement={(sel) => setSelection(sel ? { kind: 'element', ...sel } : null)}
             isPreviewMode={isPreviewMode}
             displayId={id || undefined}
             spacing={spacing}
           />
         </div>
+      </div>
+
+        {/* Control panel — hidden in preview */}
+        {!isPreviewMode && (
+          <ControlPanel
+            collapsed={panelCollapsed}
+            onToggleCollapsed={() => setPanelCollapsed((v) => !v)}
+            activeTab={panelTab}
+            onTabChange={setPanelTab}
+            elementsSlot={
+              <ElementsTab
+                sections={getActiveSections()}
+                expandedElementId={selectedElementId(selection)}
+                onToggleElement={toggleRow}
+                onChangeElement={updateElement}
+                onDeleteElement={deleteElement}
+                onOpenSectionSettings={openSectionSettings}
+                onAddElement={addElementToSection}
+                isPro={isPro(user)}
+              />
+            }
+            pageSlot={
+              <PageTab
+                background={activeBackgroundConfig}
+                onBackgroundChange={setActiveBackground}
+                spacing={spacing}
+                onSpacingChange={setSpacing}
+                headerCard={activeHeaderCardConfig}
+                onHeaderCardChange={setActiveHeaderCard}
+                tabsConfig={tabsConfig}
+                onTabsChange={(newConfig) => {
+                  setTabsConfig(newConfig)
+                  if (newConfig.enabled && newConfig.tabs.length > 0 && !activeTabId) setActiveTabId(newConfig.tabs[0].id)
+                  if (!newConfig.enabled) {
+                    if (tabsConfig.tabs.length > 0) setSections(tabsConfig.tabs[0].sections)
+                    setActiveTabId(null)
+                  }
+                }}
+                currentSections={sections}
+              />
+            }
+          />
+        )}
       </div>
 
       {/* Slash Menu */}
@@ -1203,22 +1240,6 @@ export function PageEditor({ pageId }: PageEditorProps) {
           isKitPage={!!kitConfig}
         />
       )}
-
-      {/* Background Settings */}
-      <BackgroundSettings
-        isOpen={showBackgroundSettings}
-        onClose={() => setShowBackgroundSettings(false)}
-        config={activeBackgroundConfig}
-        onChange={setActiveBackground}
-      />
-
-      {/* Layout & Spacing Settings */}
-      <SpacingSettings
-        isOpen={showSpacingSettings}
-        onClose={() => setShowSpacingSettings(false)}
-        config={spacing}
-        onChange={setSpacing}
-      />
 
       {/* Share Dialog */}
       {showShareDialog && id && (
@@ -1267,14 +1288,6 @@ export function PageEditor({ pageId }: PageEditorProps) {
         onChange={updateColumnSettings}
       />
 
-      {/* Header Card Editor */}
-      <HeaderCardEditor
-        isOpen={showHeaderEditor}
-        onClose={() => setShowHeaderEditor(false)}
-        config={activeHeaderCardConfig}
-        onChange={setActiveHeaderCard}
-      />
-
       {/* Card Library Picker */}
       <CardLibraryPicker
         isOpen={cardPickerOpen}
@@ -1287,29 +1300,6 @@ export function PageEditor({ pageId }: PageEditorProps) {
       />
 
       <UpgradePrompt isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} feature="Using library Apps" />
-
-      {/* Tab Editor */}
-      <TabEditor
-        isOpen={showTabEditor}
-        onClose={() => setShowTabEditor(false)}
-        config={tabsConfig}
-        onChange={(newConfig) => {
-          setTabsConfig(newConfig)
-          // Set active tab when enabling tabs
-          if (newConfig.enabled && newConfig.tabs.length > 0 && !activeTabId) {
-            setActiveTabId(newConfig.tabs[0].id)
-          }
-          // Clear active tab when disabling
-          if (!newConfig.enabled) {
-            // Migrate first tab's sections back to top-level
-            if (tabsConfig.tabs.length > 0) {
-              setSections(tabsConfig.tabs[0].sections)
-            }
-            setActiveTabId(null)
-          }
-        }}
-        currentSections={sections}
-      />
     </div>
   )
 }
