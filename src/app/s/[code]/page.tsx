@@ -33,11 +33,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = `${title} by ${displayName} on My Galli`
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://galli.page'
 
+  const images = shareLink.display.coverImage ? [{ url: shareLink.display.coverImage }] : undefined
+
   return {
     title,
     description,
-    openGraph: { title, description, type: 'article', url: `${appUrl}/s/${code}` },
-    twitter: { card: 'summary', title, description },
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      url: `${appUrl}/s/${code}`,
+      ...(images && { images }),
+    },
+    twitter: {
+      card: images ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      ...(images && { images }),
+    },
   }
 }
 
