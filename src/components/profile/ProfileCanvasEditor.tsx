@@ -187,7 +187,7 @@ export function ProfileCanvasEditor({
       />
 
       {showSlashMenu && (
-        <SlashCommandMenu position={slashPos} onSelect={handleCommandSelect} onClose={() => setShowSlashMenu(false)} isKitPage={false} />
+        <SlashCommandMenu position={slashPos} onSelect={handleCommandSelect} onClose={() => setShowSlashMenu(false)} isKitPage={false} hideApps />
       )}
       <BackgroundSettings isOpen={showBackground} onClose={() => setShowBackground(false)} config={background} onChange={setBackground} />
       <SpacingSettings isOpen={showSpacing} onClose={() => setShowSpacing(false)} config={spacing} onChange={setSpacing} />

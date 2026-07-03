@@ -142,9 +142,10 @@ interface SlashCommandMenuProps {
   onSelect: (type: ElementType) => void
   onClose: () => void
   isKitPage?: boolean
+  hideApps?: boolean
 }
 
-export function SlashCommandMenu({ position, onSelect, onClose, isKitPage }: SlashCommandMenuProps) {
+export function SlashCommandMenu({ position, onSelect, onClose, isKitPage, hideApps }: SlashCommandMenuProps) {
   const [search, setSearch] = useState('')
   const [sel, setSel] = useState<{ col: number; row: number }>({ col: 0, row: 0 })
   const menuRef = useRef<HTMLDivElement>(null)
@@ -153,6 +154,7 @@ export function SlashCommandMenu({ position, onSelect, onClose, isKitPage }: Sla
   // Filter commands based on search and kit visibility
   const filteredCommands = commands.filter((cmd) => {
     if (cmd.category === 'Kit' && !isKitPage) return false
+    if (cmd.category === 'Apps' && hideApps) return false
     return (
       cmd.label.toLowerCase().includes(search.toLowerCase()) ||
       cmd.description.toLowerCase().includes(search.toLowerCase()) ||
