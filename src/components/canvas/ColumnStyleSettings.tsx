@@ -227,6 +227,15 @@ export function ColumnStyleSettingsBody({
               </div>
             </div>
           </div>
+
+          <div className="pt-2">
+            <button
+              onClick={() => onChange(DEFAULT_COLUMN_SETTINGS)}
+              className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition"
+            >
+              Reset to Default
+            </button>
+          </div>
         </div>
   )
 }
@@ -238,10 +247,6 @@ export function ColumnStyleSettings({
   onChange,
 }: ColumnStyleSettingsProps) {
   if (!isOpen) return null
-
-  const handleReset = () => {
-    onChange(DEFAULT_COLUMN_SETTINGS)
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -261,13 +266,7 @@ export function ColumnStyleSettings({
         <ColumnStyleSettingsBody settings={settings} onChange={onChange} />
 
         {/* Footer */}
-        <div className="flex justify-between gap-2 p-4 border-t border-border">
-          <button
-            onClick={handleReset}
-            className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition"
-          >
-            Reset to Default
-          </button>
+        <div className="flex justify-end gap-2 p-4 border-t border-border">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition"

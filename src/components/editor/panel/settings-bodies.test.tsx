@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { render } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { SpacingSettingsBody } from '@/components/canvas/SpacingSettings'
 import { BackgroundSettingsBody } from '@/components/canvas/BackgroundSettings'
 import { ColumnStyleSettingsBody } from '@/components/canvas/ColumnStyleSettings'
@@ -31,5 +31,21 @@ describe('settings bodies render standalone (no modal chrome)', () => {
   it('TabEditorBody renders', () => {
     const { container } = render(<TabEditorBody config={DEFAULT_TABS_CONFIG} onChange={() => {}} currentSections={[]} />)
     expect(container.firstChild).toBeTruthy()
+  })
+})
+
+describe('settings bodies include a working Reset to Default control', () => {
+  it('SpacingSettingsBody: clicking reset calls onChange with DEFAULT_SPACING_CONFIG', () => {
+    const onChange = vi.fn()
+    render(<SpacingSettingsBody config={DEFAULT_SPACING_CONFIG} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: /reset/i }))
+    expect(onChange).toHaveBeenCalledWith(DEFAULT_SPACING_CONFIG)
+  })
+
+  it('ColumnStyleSettingsBody: clicking reset calls onChange with DEFAULT_COLUMN_SETTINGS', () => {
+    const onChange = vi.fn()
+    render(<ColumnStyleSettingsBody settings={DEFAULT_COLUMN_SETTINGS} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: /reset/i }))
+    expect(onChange).toHaveBeenCalledWith(DEFAULT_COLUMN_SETTINGS)
   })
 })
