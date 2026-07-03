@@ -943,6 +943,11 @@ export function PageEditor({ pageId }: PageEditorProps) {
     )
   }
 
+  const pageUrl =
+    typeof window !== 'undefined' && user?.username
+      ? `${window.location.origin}/${user.username}/${slug}`
+      : ''
+
   const activeHeaderCardConfig = getActiveHeaderCard()
   const activeBackgroundConfig = getActiveBackground()
   const backgroundStyles = getBackgroundStyles(activeBackgroundConfig)
@@ -1244,6 +1249,8 @@ export function PageEditor({ pageId }: PageEditorProps) {
           currentCategory={category}
           currentCover={coverImage}
           onPublished={(cat, cover) => { setPublished(true); setCategory(cat); setCoverImage(cover) }}
+          pageUrl={pageUrl}
+          pageTitle={title}
         />
       )}
 
