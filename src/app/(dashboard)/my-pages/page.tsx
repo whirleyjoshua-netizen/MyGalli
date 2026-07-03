@@ -112,7 +112,7 @@ export default function MyPagesPage() {
       isMenuOpen={cardMenuOpen === display.id}
       username={user?.username}
       timeAgo={timeAgo}
-      onSelect={(id) => router.push(`/editor?id=${id}`)}
+      onOpen={(id) => router.push(`/editor?id=${id}`)}
       onOpenMenu={(id) => setCardMenuOpen((cur) => (cur === id ? null : id))}
       onCloseMenu={() => setCardMenuOpen(null)}
       onTogglePin={togglePin}

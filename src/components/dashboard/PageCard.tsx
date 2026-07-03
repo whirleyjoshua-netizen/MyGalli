@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Globe, Lock, Eye, MoreHorizontal, Pin, PinOff, ImageIcon, Trash2, ExternalLink, Pencil, X } from 'lucide-react'
+import { Globe, Lock, Eye, MoreHorizontal, Pin, PinOff, ImageIcon, Trash2, ExternalLink, Pencil, X, BarChart3 } from 'lucide-react'
 
 export interface DashDisplay {
   id: string
@@ -22,7 +22,8 @@ export function PageCard({
   isMenuOpen,
   username,
   timeAgo,
-  onSelect,
+  onOpen,
+  onSelectPanel,
   onOpenMenu,
   onCloseMenu,
   onTogglePin,
@@ -36,7 +37,8 @@ export function PageCard({
   isMenuOpen: boolean
   username?: string
   timeAgo: (s: string) => string
-  onSelect: (id: string) => void
+  onOpen: (id: string) => void
+  onSelectPanel?: (id: string) => void
   onOpenMenu: (id: string) => void
   onCloseMenu: () => void
   onTogglePin: (id: string) => void
@@ -46,7 +48,7 @@ export function PageCard({
   const router = useRouter()
   return (
     <div
-      onClick={() => onSelect(display.id)}
+      onClick={() => onOpen(display.id)}
       className={`group relative shrink-0 w-60 snap-start rounded-2xl border bg-surface overflow-hidden shadow-soft hover:shadow-soft-lg transition-all cursor-pointer ${
         selected ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-primary/30'
       }`}
@@ -90,6 +92,18 @@ export function PageCard({
                 <Eye className="w-3.5 h-3.5" />
                 {display.views}
               </span>
+              {onSelectPanel && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onSelectPanel(display.id) }}
+                  aria-label="Show audience at a glance"
+                  title="Show in Audience at a glance"
+                  className={`p-0.5 rounded transition-colors cursor-pointer ${
+                    selected ? 'text-primary bg-white/20' : 'text-white/90 hover:text-white hover:bg-white/20'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                </button>
+              )}
               <button
                 onClick={(e) => { e.stopPropagation(); onOpenMenu(display.id) }}
                 aria-label="Page options"

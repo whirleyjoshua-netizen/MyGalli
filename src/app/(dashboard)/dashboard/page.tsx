@@ -11,6 +11,8 @@ import { PageCard, type DashDisplay } from '@/components/dashboard/PageCard'
 import { FeedCard, type FeedItem } from '@/components/dashboard/FeedCard'
 import { AnalyticsPanel } from '@/components/dashboard/AnalyticsPanel'
 
+const SELECTED_KEY = 'galli:dash:selectedDisplayId'
+
 const GRADIENTS = [
   'from-galli/20 via-galli-aqua/10 to-galli-violet/10',
   'from-galli-aqua/20 via-galli-violet/10 to-galli/10',
@@ -34,8 +36,15 @@ export default function DashboardPage() {
     fetch('/api/displays')
       .then((r) => (r.ok ? r.json() : []))
       .then((d: DashDisplay[]) => {
-        setDisplays(Array.isArray(d) ? d : [])
-        if (Array.isArray(d) && d.length > 0) setSelectedId((cur) => cur ?? d[0].id)
+        const list = Array.isArray(d) ? d : []
+        setDisplays(list)
+        if (list.length > 0) {
+          // Restore the last page the user opened or picked for the panel;
+          // fall back to the most-recent page.
+          const stored = typeof window !== 'undefined' ? localStorage.getItem(SELECTED_KEY) : null
+          const restored = stored && list.some((x) => x.id === stored) ? stored : list[0].id
+          setSelectedId((cur) => cur ?? restored)
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -59,6 +68,24 @@ export default function DashboardPage() {
       })
       .catch(() => {})
   }, [])
+
+  // Set the page the "Audience at a glance" panel reflects, and remember it so
+  // it survives the editor round-trip and reloads.
+  const rememberSelection = useCallback((id: string) => {
+    setSelectedId(id)
+    try { localStorage.setItem(SELECTED_KEY, id) } catch {}
+  }, [])
+
+  // Whole-card click: open in the editor AND make it the panel's page.
+  const handleOpen = useCallback((id: string) => {
+    rememberSelection(id)
+    router.push(`/editor?id=${id}`)
+  }, [rememberSelection, router])
+
+  // Chart button: just drive the panel, no navigation.
+  const handleSelectPanel = useCallback((id: string) => {
+    rememberSelection(id)
+  }, [rememberSelection])
 
   const savePrefs = useCallback(async (next: DashboardPrefs) => {
     setPrefs(next)
@@ -191,7 +218,8 @@ export default function DashboardPage() {
               isMenuOpen={cardMenuOpen === display.id}
               username={user?.username}
               timeAgo={timeAgo}
-              onSelect={(id) => router.push(`/editor?id=${id}`)}
+              onOpen={handleOpen}
+              onSelectPanel={handleSelectPanel}
               onOpenMenu={(id) => setCardMenuOpen((cur) => (cur === id ? null : id))}
               onCloseMenu={() => setCardMenuOpen(null)}
               onTogglePin={togglePin}
