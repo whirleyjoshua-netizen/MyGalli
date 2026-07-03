@@ -8,14 +8,15 @@
 
 A **Bulletin** tab living on the dashboard's right-hand column, beside the existing
 "Audience at a glance" content. Everything happens **inline in that 360px column** —
-compose, read, like, and respond without leaving the panel.
+compose, read, like, and respond without leaving the panel. (MCQ was considered as a
+fourth block type but dropped — poll already covers the choose-an-option case in a feed.)
 
 A bulletin is a lightweight, follower-scoped micro-post. Its feed shows posts **only
 from people you follow**, plus your own posts. A post is:
 
 - optional **text**
 - optional **image**
-- an optional single **trackable block** — one of: **poll, rating, MCQ, short-answer**
+- an optional single **trackable block** — one of the three: **poll, rating, short-answer**
 
 The differentiator: bulletin responses are **identified** — each answer is tied to the
 responding follower's `userId`. That is impossible on a public page (page responses are
@@ -35,7 +36,7 @@ the post talks to its audience and apply to the whole post.
 ## 2. Why new "bulletin blocks" instead of reusing page elements
 
 The existing public interactive elements (`PublicPollElement`, `PublicRatingElement`,
-`PublicMCQElement`, `PublicShortAnswerElement`) are the wrong tool here for two reasons:
+`PublicShortAnswerElement`) are the wrong tool here for two reasons:
 
 1. **Anonymous submission.** Poll posts to `/api/displays/[id]/poll` with a `sessionId`;
    rating/MCQ/short-answer post to `/api/forms/submit` as a `FormResponse` with a
@@ -48,7 +49,7 @@ The existing public interactive elements (`PublicPollElement`, `PublicRatingElem
 Therefore we build **new compact bulletin blocks** that are theme-aware and sized for
 ~300px, submit **identified** responses to a bulletin endpoint, and honor the reveal/live
 settings. Crucially they **reuse the existing element config shapes** (`CanvasElement`
-fields like `pollQuestion`/`pollOptions`, `ratingMax`/`ratingStyle`, `mcqOptions`,
+fields like `pollQuestion`/`pollOptions`, `ratingMax`/`ratingStyle`,
 `shortAnswerQuestion`) so the analytics aggregators can be shared almost verbatim (§5).
 
 ## 3. Data model (3 new Prisma models)
@@ -65,7 +66,7 @@ model BulletinPost {
   text      String?
   imageUrl  String?
 
-  // Zero or one CanvasElement-shaped block config, limited to the 4 allowed types.
+  // Zero or one CanvasElement-shaped block config, limited to the 3 allowed types.
   // Stored as an array for forward-compat (v1 UI allows at most one).
   blocks    Json      @default("[]")
 
@@ -123,7 +124,7 @@ All routes require an authenticated user (`getUser`). Feed/like/respond operate 
 current user's identity.
 
 - **`POST /api/bulletin`** — create a post. Body: `{ text?, imageUrl?, block?, settings }`.
-  Author = current user. Validates block type ∈ {poll, rating, mcq, shortanswer} and that
+  Author = current user. Validates block type ∈ {poll, rating, shortanswer} and that
   the post is non-empty (has text, image, or block). Returns the created post.
 - **`DELETE /api/bulletin/[id]`** — author-only (403 otherwise). Cascade removes likes/responses.
 - **`GET /api/bulletin/feed?page&limit`** — posts from **followed users + self**, newest first,
@@ -179,7 +180,7 @@ Pro-gating is a separate future decision.
 - **"Bulletin"** — a new `BulletinTab` component containing:
   - **Inline composer** at the top: avatar + collapsed "Share something…" that expands to a
     text field, an **add-image** control (reuses `/api/upload`), an **add-block** menu
-    limited to the 4 block types, the **reveal / live** toggles, and a **Post** button.
+    limited to the 3 block types, the **reveal / live** toggles, and a **Post** button.
     Sized to live in the 360px column.
   - **Feed list** below: compact `BulletinPostCard`s (author row with avatar + name +
     timestamp, text, image, the inline answerable block, a **like** button + count).
@@ -192,7 +193,7 @@ existing panel's responsive behavior. A dedicated mobile bulletin surface is out
 ## 7. Compact bulletin blocks
 
 New components under `src/components/bulletin/blocks/`:
-`BulletinPoll.tsx`, `BulletinRating.tsx`, `BulletinMCQ.tsx`, `BulletinShortAnswer.tsx`.
+`BulletinPoll.tsx`, `BulletinRating.tsx`, `BulletinShortAnswer.tsx`.
 
 Each is:
 - **Theme-aware** (semantic tokens: `surface`, `border`, `primary`, `muted-foreground`),
@@ -245,8 +246,8 @@ Each is:
 - **Multiple blocks per post** — schema stores an array, but v1 UI allows at most one block.
 - **Pro-gating of bulletin analytics** — ungated in v1, consistent with page analytics; a
   separate future decision.
-- **MCQ** is kept despite overlapping with poll (approved), but flagged as a possible future
-  consolidation.
+- **MCQ block** — dropped from v1; poll covers the choose-an-option case in a feed. (Page
+  MCQ elements and their aggregator are unaffected.)
 
 ## 12. Implementation phasing (for the plan)
 
