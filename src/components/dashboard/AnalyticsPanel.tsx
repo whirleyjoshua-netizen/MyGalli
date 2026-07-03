@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Globe, ExternalLink, MessageSquare, BarChart3, ArrowUpRight } from 'lucide-react'
 import type { DashDisplay } from './PageCard'
+import { BulletinTab } from '@/components/bulletin/BulletinTab'
 
 interface AnalyticsData {
   summary: { views: number; uniqueVisitors: number }
@@ -40,6 +41,7 @@ export function AnalyticsPanel({ display, username }: { display: DashDisplay | n
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [feedbackCount, setFeedbackCount] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
+  const [tab, setTab] = useState<'glance' | 'bulletin'>('glance')
 
   useEffect(() => {
     if (!display) return
@@ -60,23 +62,19 @@ export function AnalyticsPanel({ display, username }: { display: DashDisplay | n
       .catch(() => setFeedbackCount(0))
   }, [display])
 
-  if (!display) {
-    return (
-      <aside className="hidden xl:flex w-[360px] shrink-0 flex-col items-center justify-center p-6 text-center border-l border-border">
-        <BarChart3 className="w-8 h-8 text-muted-foreground/40 mb-3" />
-        <p className="text-sm text-muted-foreground">Select a page to see its audience at a glance.</p>
-      </aside>
-    )
-  }
-
   const days = data ? Object.keys(data.viewsByDay).sort() : []
   const spark = days.map((d) => data!.viewsByDay[d])
-  const views = data?.summary.views ?? display.views
+  const views = data?.summary.views ?? display?.views ?? 0
   const visitors = data?.summary.uniqueVisitors ?? 0
   const engagement = views > 0 ? Math.round((visitors / views) * 100) : 0
 
-  return (
-    <aside className="hidden xl:block w-[360px] shrink-0 border-l border-border p-5 space-y-5">
+  const glanceBody = !display ? (
+    <div className="flex flex-col items-center justify-center p-6 text-center">
+      <BarChart3 className="mb-3 h-8 w-8 text-muted-foreground/40" />
+      <p className="text-sm text-muted-foreground">Select a page to see its audience at a glance.</p>
+    </div>
+  ) : (
+    <div className="space-y-5 p-5">
       {/* Selected page summary */}
       <div className="p-3 rounded-2xl border border-border bg-surface flex gap-3">
         <div className={`w-16 h-16 rounded-xl shrink-0 overflow-hidden ${display.coverImage ? '' : 'bg-gradient-to-br from-galli/20 to-galli-violet/20'}`}>
@@ -144,6 +142,28 @@ export function AnalyticsPanel({ display, username }: { display: DashDisplay | n
         View full analytics
         <ArrowUpRight className="w-4 h-4" />
       </Link>
+    </div>
+  )
+
+  return (
+    <aside className="hidden xl:flex w-[360px] shrink-0 flex-col border-l border-border">
+      <div className="flex border-b border-border">
+        <button
+          onClick={() => setTab('glance')}
+          className={`flex-1 py-3 text-sm font-semibold transition-colors ${tab === 'glance' ? 'border-b-2 border-primary text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          At a glance
+        </button>
+        <button
+          onClick={() => setTab('bulletin')}
+          className={`flex-1 py-3 text-sm font-semibold transition-colors ${tab === 'bulletin' ? 'border-b-2 border-primary text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          Bulletin
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {tab === 'glance' ? glanceBody : <div className="p-4"><BulletinTab /></div>}
+      </div>
     </aside>
   )
 }
