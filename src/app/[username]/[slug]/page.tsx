@@ -19,7 +19,7 @@ import { verify } from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/auth'
 import { AUTH_COOKIE } from '@/lib/constants'
 import { deriveFriend } from '@/lib/social'
-import { FollowButton } from '@/components/social/FollowButton'
+import { CreatorChip } from '@/components/social/CreatorChip'
 
 interface Props {
   params: Promise<{ username: string; slug: string }>
@@ -113,6 +113,20 @@ export default async function PublicDisplayPage({ params }: Props) {
     viewerIsFriend = deriveFriend(viewerIsFollowing, !!followsMe)
   }
 
+  // Persistent creator affordance — shown to everyone except the owner, across
+  // all layout branches (header card, tabs, plain page).
+  const creatorChip = !isOwner ? (
+    <CreatorChip
+      username={user.username}
+      name={user.name}
+      avatar={user.avatar}
+      slug={slug}
+      isAuthed={!!meId}
+      viewerIsFollowing={viewerIsFollowing}
+      viewerIsFriend={viewerIsFriend}
+    />
+  ) : null
+
   // Parse sections
   const sections: Section[] =
     typeof display.sections === 'string'
@@ -163,6 +177,7 @@ export default async function PublicDisplayPage({ params }: Props) {
           defaultBackground={background}
           spacing={spacing}
         />
+        {creatorChip}
       </>
     )
   }
@@ -190,9 +205,6 @@ export default async function PublicDisplayPage({ params }: Props) {
                 <a href={`/${user.username}`} className="text-sm opacity-50 hover:opacity-80 hover:underline">
                   by {user.name || user.username}
                 </a>
-                {meId && !isOwner && (
-                  <FollowButton username={user.username} initialIsFollowing={viewerIsFollowing} initialIsFriend={viewerIsFriend} size="sm" />
-                )}
               </div>
             </header>
           )}
@@ -239,6 +251,7 @@ export default async function PublicDisplayPage({ params }: Props) {
           </footer>
         </div>
       </main>
+      {creatorChip}
     </div>
   )
 }
