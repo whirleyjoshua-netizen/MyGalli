@@ -130,6 +130,8 @@ interface ColumnCanvasProps {
   onOpenSlashMenu: (sectionId: string, columnId: string, position?: { x: number; y: number }) => void
   onUpdateElement: (sectionId: string, columnId: string, elementId: string, updates: Partial<CanvasElement>) => void
   onDeleteElement: (sectionId: string, columnId: string, elementId: string) => void
+  selectedElementId?: string | null
+  onSelectElement?: (sel: { sectionId: string; columnId: string; elementId: string } | null) => void
   onOpenColumnSettings?: (sectionId: string, columnId: string) => void
   isPreviewMode?: boolean
   displayId?: string
@@ -184,6 +186,8 @@ export function ColumnCanvas({
   onOpenSlashMenu,
   onUpdateElement,
   onDeleteElement,
+  selectedElementId = null,
+  onSelectElement,
   onOpenColumnSettings,
   isPreviewMode = false,
   displayId,
@@ -191,7 +195,7 @@ export function ColumnCanvas({
 }: ColumnCanvasProps) {
   const space = getSpacingStyles(spacing)
   const containerStyle = getContainerStyle(spacing)
-  const [selectedElement, setSelectedElement] = useState<string | null>(null)
+  // selection is controlled by the parent (PageEditor)
   const [activeId, setActiveId] = useState<string | null>(null)
 
   // DnD sensors
@@ -357,10 +361,10 @@ export function ColumnCanvas({
     sectionId: string,
     columnId: string
   ) => {
-    const isSelected = selectedElement === element.id && !isPreviewMode
+    const isSelected = selectedElementId === element.id && !isPreviewMode
     const commonProps = {
       isSelected,
-      onSelect: () => !isPreviewMode && setSelectedElement(element.id),
+      onSelect: () => !isPreviewMode && onSelectElement?.({ sectionId, columnId, elementId: element.id }),
       onDelete: () => onDeleteElement(sectionId, columnId, element.id),
     }
 
@@ -1297,7 +1301,7 @@ export function ColumnCanvas({
       <div
         className="flex-1 min-h-full"
         style={{ paddingTop: `${space.paddingY}px`, paddingBottom: `${space.paddingY}px` }}
-        onClick={() => setSelectedElement(null)}
+        onClick={() => onSelectElement?.(null)}
       >
         <div style={{ ...containerStyle, display: 'flex', flexDirection: 'column', gap: `${space.sectionGap}px` }}>
           {sections.map((section, sectionIndex) => (
