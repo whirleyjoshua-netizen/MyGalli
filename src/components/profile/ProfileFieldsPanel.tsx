@@ -8,6 +8,9 @@ import type { User } from '@/lib/types'
 const inputCls =
   'w-full px-3 py-2 border border-border rounded-xl bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition'
 
+// `user` provides INITIAL field values only — this component is mounted fresh
+// per /profile/edit page load, so it intentionally does not react to later
+// `user` prop changes (matches the prior EditProfileModal behavior).
 export function ProfileFieldsPanel({
   user,
   onSavingChange,
@@ -66,10 +69,15 @@ export function ProfileFieldsPanel({
   }
 
   const uploadAvatar = async (file: File) => {
-    const fd = new FormData()
-    fd.append('file', file)
-    const res = await fetch('/api/upload', { method: 'POST', body: fd })
-    if (res.ok) setAvatar((await res.json()).url)
+    onSavingChange(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      if (res.ok) setAvatar((await res.json()).url)
+    } finally {
+      onSavingChange(false)
+    }
   }
 
   return (
