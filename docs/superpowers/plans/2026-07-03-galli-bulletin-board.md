@@ -39,6 +39,7 @@ Extract the poll/rating/short-answer aggregation into a shared, pure, identity-a
   - `aggregateRating(config: CanvasElement, records: ResponseRecord[]): RatingAggregate`
   - `aggregateShortAnswer(config: CanvasElement, records: ResponseRecord[]): ShortAnswerAggregate`
   - `aggregateBlock(config: CanvasElement, records: ResponseRecord[]): ElementAggregate | null`
+  - `toRecords(rows: BulletinResponseRow[]): ResponseRecord[]` — maps Prisma BulletinResponse rows (with selected `user`) to identified records; reused by Tasks 5, 6, 9
   - `type ElementAggregate = PollAggregate | RatingAggregate | ShortAnswerAggregate`
 
 - [ ] **Step 1: Write the failing test**
@@ -47,7 +48,7 @@ Create `src/lib/element-aggregate.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest'
-import { aggregatePoll, aggregateRating, aggregateShortAnswer, type ResponseRecord } from './element-aggregate'
+import { aggregatePoll, aggregateRating, aggregateShortAnswer, toRecords, type ResponseRecord, type BulletinResponseRow } from './element-aggregate'
 import type { CanvasElement } from '@/lib/types/canvas'
 
 const poll: CanvasElement = { id: 'b1', type: 'poll', pollQuestion: 'Pick', pollOptions: ['A', 'B'], pollAllowMultiple: false }
@@ -105,6 +106,18 @@ describe('aggregateShortAnswer', () => {
     expect(out.responseCount).toBe(1)
     expect(out.recentAnswers[0].answer).toBe('Hello')
     expect(out.respondents.map((r) => r.user.name)).toEqual(['Maya'])
+  })
+})
+
+describe('toRecords', () => {
+  it('maps Prisma rows to identified records, falling back to username when name is null', () => {
+    const rows: BulletinResponseRow[] = [
+      { userId: 'u1', responses: { b1: { type: 'poll', answer: ['A'] } }, createdAt: new Date('2026-07-03T00:00:00Z'), user: { name: 'Maya', username: 'maya', avatar: null } },
+      { userId: 'u2', responses: {}, createdAt: '2026-07-03', user: { name: null, username: 'jon', avatar: 'a.png' } },
+    ]
+    const recs = toRecords(rows)
+    expect(recs[0].identity).toEqual({ userId: 'u1', name: 'Maya', avatar: null })
+    expect(recs[1].identity).toEqual({ userId: 'u2', name: 'jon', avatar: 'a.png' })
   })
 })
 ```
@@ -285,6 +298,24 @@ export function aggregateBlock(config: CanvasElement, records: ResponseRecord[])
     default:
       return null
   }
+}
+
+// Prisma BulletinResponse rows (with the responder selected) → identified
+// ResponseRecords. Shared by the feed, respond, and analytics routes so the
+// mapping lives in exactly one place.
+export interface BulletinResponseRow {
+  userId: string
+  responses: unknown
+  createdAt: Date | string
+  user: { name: string | null; username: string; avatar: string | null }
+}
+
+export function toRecords(rows: BulletinResponseRow[]): ResponseRecord[] {
+  return rows.map((r) => ({
+    responses: r.responses,
+    submittedAt: r.createdAt,
+    identity: { userId: r.userId, name: r.user.name ?? r.user.username, avatar: r.user.avatar },
+  }))
 }
 ```
 
@@ -744,7 +775,7 @@ Returns followed-users' + own posts, newest first, each with likes, my-response,
 - Create: `src/app/api/bulletin/feed/route.ts`
 
 **Interfaces:**
-- Consumes: `getUser`, `db`, `normalizeSettings` + `resultsVisible` (`@/lib/bulletin`), `aggregateBlock` + `ResponseRecord` (`@/lib/element-aggregate`).
+- Consumes: `getUser`, `db`, `normalizeSettings` + `resultsVisible` (`@/lib/bulletin`), `aggregateBlock` + `toRecords` (`@/lib/element-aggregate`).
 - Produces: `GET /api/bulletin/feed?page&limit` → `{ posts: FeedPost[]; hasMore: boolean; page: number }`. Shape of `FeedPost`:
 
 ```ts
@@ -772,7 +803,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { normalizeSettings, resultsVisible } from '@/lib/bulletin'
-import { aggregateBlock, type ResponseRecord } from '@/lib/element-aggregate'
+import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
 
 const PAGE_SIZE = 15
 
@@ -843,12 +874,7 @@ export async function GET(request: NextRequest) {
       if (block) {
         const canSee = resultsVisible({ isAuthor, revealAfterAnswer: settings.revealAfterAnswer, hasResponded })
         if (canSee) {
-          const records: ResponseRecord[] = rows.map((r) => ({
-            responses: r.responses,
-            submittedAt: r.createdAt,
-            identity: { userId: r.userId, name: r.user.name ?? r.user.username, avatar: r.user.avatar },
-          }))
-          results = aggregateBlock(block, records)
+          results = aggregateBlock(block, toRecords(rows))
         }
       }
 
@@ -904,7 +930,7 @@ git commit -m "feat(bulletin): follow-scoped feed with reveal-gated results"
 - Create: `src/app/api/bulletin/[id]/respond/route.ts` (`POST`)
 
 **Interfaces:**
-- Consumes: `getUser`, `db`, `isInScope` + `resultsVisible` + `normalizeSettings` (`@/lib/bulletin`), `aggregateBlock` + `ResponseRecord` (`@/lib/element-aggregate`).
+- Consumes: `getUser`, `db`, `isInScope` (`@/lib/bulletin`), `aggregateBlock` + `toRecords` (`@/lib/element-aggregate`).
 - Produces:
   - `POST/DELETE /api/bulletin/[id]/like` → `{ likeCount, likedByMe }`
   - `POST /api/bulletin/[id]/respond` → `{ results, myResponse }`
@@ -984,8 +1010,8 @@ Create `src/app/api/bulletin/[id]/respond/route.ts`:
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { isInScope, normalizeSettings } from '@/lib/bulletin'
-import { aggregateBlock, type ResponseRecord } from '@/lib/element-aggregate'
+import { isInScope } from '@/lib/bulletin'
+import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -1029,12 +1055,7 @@ export async function POST(request: NextRequest, { params }: Props) {
         where: { postId: id },
         select: { userId: true, responses: true, createdAt: true, user: { select: { name: true, username: true, avatar: true } } },
       })
-      const records: ResponseRecord[] = rows.map((r) => ({
-        responses: r.responses,
-        submittedAt: r.createdAt,
-        identity: { userId: r.userId, name: r.user.name ?? r.user.username, avatar: r.user.avatar },
-      }))
-      results = aggregateBlock(block, records)
+      results = aggregateBlock(block, toRecords(rows))
     }
 
     return NextResponse.json({ results, myResponse: responses })
@@ -1933,7 +1954,7 @@ Surface the author's own bulletin posts as instruments on `/analytics`, each sho
 - Modify: `src/app/(dashboard)/analytics/page.tsx` (add a third tab)
 
 **Interfaces:**
-- Consumes: `getUser`, `db`, `aggregateBlock` + `ResponseRecord` + `ElementAggregate` (`@/lib/element-aggregate`).
+- Consumes (route): `getUser`, `db`, `aggregateBlock` + `toRecords` (`@/lib/element-aggregate`). Consumes (UI): `ElementAggregate` + `RespondentAnswer` types (`@/lib/element-aggregate`).
 - Produces: `GET /api/bulletin/analytics` → `{ posts: { id: string; createdAt: string; text: string | null; results: ElementAggregate }[] }` (only the caller's own posts that contain a block).
 
 - [ ] **Step 1: Implement the analytics route**
@@ -1944,7 +1965,7 @@ Create `src/app/api/bulletin/analytics/route.ts`:
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { aggregateBlock, type ResponseRecord } from '@/lib/element-aggregate'
+import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
 
 export async function GET(request: NextRequest) {
   try {
@@ -1970,12 +1991,7 @@ export async function GET(request: NextRequest) {
         const blocks = Array.isArray(p.blocks) ? (p.blocks as any[]) : []
         const block = blocks[0] || null
         if (!block) return null
-        const records: ResponseRecord[] = p.responses.map((r) => ({
-          responses: r.responses,
-          submittedAt: r.createdAt,
-          identity: { userId: r.userId, name: r.user.name ?? r.user.username, avatar: r.user.avatar },
-        }))
-        const results = aggregateBlock(block, records)
+        const results = aggregateBlock(block, toRecords(p.responses))
         if (!results) return null
         return { id: p.id, createdAt: p.createdAt.toISOString(), text: p.text, results }
       })
