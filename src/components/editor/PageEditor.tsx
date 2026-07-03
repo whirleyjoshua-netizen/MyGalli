@@ -883,6 +883,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
           : section
       )
     )
+    setSelection((prev) => (selectedElementId(prev) === elementId ? null : prev))
   }
 
   // Column settings
@@ -1180,7 +1181,13 @@ export function PageEditor({ pageId }: PageEditorProps) {
             onDeleteElement={deleteElement}
             onOpenColumnSettings={openColumnSettings}
             selectedElementId={selectedElementId(selection)}
-            onSelectElement={(sel) => setSelection(sel ? { kind: 'element', ...sel } : null)}
+            onSelectElement={(sel) => {
+              setSelection(sel ? { kind: 'element', ...sel } : null)
+              if (sel) {
+                setPanelTab('elements')
+                setPanelCollapsed(false)
+              }
+            }}
             isPreviewMode={isPreviewMode}
             displayId={id || undefined}
             spacing={spacing}

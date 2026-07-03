@@ -46,4 +46,22 @@ describe('PageEditor renders the control panel', () => {
     fireEvent.click(screen.getByRole('button', { name: /collapse panel/i }))
     expect(screen.getByRole('button', { name: /expand panel/i })).toBeInTheDocument()
   })
+
+  it('clicking the element on the canvas reveals its inspector in the panel', async () => {
+    render(<PageEditor pageId="p1" />)
+    await waitFor(() => expect(screen.getByText('Heading — Hi')).toBeInTheDocument())
+
+    // Switch the panel to the Page tab so the Elements inspector is not already showing.
+    fireEvent.click(screen.getByRole('button', { name: /^page$/i }))
+    expect(screen.queryByText(/settings for this element/i)).not.toBeInTheDocument()
+
+    // "Hi" (exact) only matches the canvas heading's contentEditable node — the panel
+    // row renders "Heading — Hi", a different string. Clicking it exercises the real
+    // ColumnCanvas -> onSelectElement -> PageEditor selection path (Fix 1).
+    fireEvent.click(screen.getByText('Hi'))
+
+    await waitFor(() =>
+      expect(screen.getByText(/settings for this element/i)).toBeInTheDocument()
+    )
+  })
 })
