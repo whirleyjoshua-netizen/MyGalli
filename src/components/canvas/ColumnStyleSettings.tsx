@@ -20,37 +20,18 @@ const PRESET_COLORS = [
   '#a5f3fc', '#bfdbfe', '#ddd6fe', '#f5d0fe',
 ]
 
-export function ColumnStyleSettings({
-  isOpen,
-  onClose,
+export function ColumnStyleSettingsBody({
   settings,
   onChange,
-}: ColumnStyleSettingsProps) {
-  if (!isOpen) return null
-
+}: {
+  settings: ColumnSettings
+  onChange: (settings: ColumnSettings) => void
+}) {
   const handleBackgroundTypeChange = (type: ColumnSettings['background']) => {
     onChange({ ...settings, background: type })
   }
 
-  const handleReset = () => {
-    onChange(DEFAULT_COLUMN_SETTINGS)
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-background rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col border border-border">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-bold">Column Style</h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-muted rounded transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {/* Background Type */}
           <div>
@@ -247,6 +228,37 @@ export function ColumnStyleSettings({
             </div>
           </div>
         </div>
+  )
+}
+
+export function ColumnStyleSettings({
+  isOpen,
+  onClose,
+  settings,
+  onChange,
+}: ColumnStyleSettingsProps) {
+  if (!isOpen) return null
+
+  const handleReset = () => {
+    onChange(DEFAULT_COLUMN_SETTINGS)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-background rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col border border-border">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h2 className="text-lg font-bold">Column Style</h2>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-muted rounded transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <ColumnStyleSettingsBody settings={settings} onChange={onChange} />
 
         {/* Footer */}
         <div className="flex justify-between gap-2 p-4 border-t border-border">

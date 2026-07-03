@@ -13,9 +13,15 @@ interface TabEditorProps {
   currentSections: Section[]  // For migrating existing content when enabling tabs
 }
 
-export function TabEditor({ isOpen, onClose, config, onChange, currentSections }: TabEditorProps) {
-  if (!isOpen) return null
-
+export function TabEditorBody({
+  config,
+  onChange,
+  currentSections,
+}: {
+  config: TabsConfig
+  onChange: (config: TabsConfig) => void
+  currentSections: Section[]
+}) {
   const enableTabs = () => {
     const firstTab = createTab('Main')
     firstTab.sections = currentSections.length > 0 ? [...currentSections] : firstTab.sections
@@ -73,17 +79,6 @@ export function TabEditor({ isOpen, onClose, config, onChange, currentSections }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-background rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col border border-border">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-xl font-bold">Tab Navigation</h2>
-          <button onClick={onClose} className="p-1 hover:bg-muted rounded transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {/* Enable Toggle */}
           <div className="flex items-center justify-between">
@@ -214,6 +209,25 @@ export function TabEditor({ isOpen, onClose, config, onChange, currentSections }
             </>
           )}
         </div>
+  )
+}
+
+export function TabEditor({ isOpen, onClose, config, onChange, currentSections }: TabEditorProps) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-background rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col border border-border">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h2 className="text-xl font-bold">Tab Navigation</h2>
+          <button onClick={onClose} className="p-1 hover:bg-muted rounded transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <TabEditorBody config={config} onChange={onChange} currentSections={currentSections} />
 
         {/* Footer */}
         <div className="flex justify-end gap-2 p-4 border-t border-border">

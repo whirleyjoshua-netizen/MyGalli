@@ -72,37 +72,17 @@ function SegmentedControl<T extends string>({
   )
 }
 
-export function SpacingSettings({
-  isOpen,
-  onClose,
+export function SpacingSettingsBody({
   config,
   onChange,
-}: SpacingSettingsProps) {
-  if (!isOpen) return null
-
+}: {
+  config: SpacingConfig
+  onChange: (config: SpacingConfig) => void
+}) {
   const cfg = { ...DEFAULT_SPACING_CONFIG, ...config }
   const s = getSpacingStyles(cfg)
 
-  const handleReset = () => onChange(DEFAULT_SPACING_CONFIG)
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-background rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col border border-border">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <AlignVerticalSpaceAround className="w-5 h-5" />
-            Layout &amp; Spacing
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-muted rounded transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           <SegmentedControl
             label="Content width"
@@ -172,6 +152,38 @@ export function SpacingSettings({
             </div>
           </div>
         </div>
+  )
+}
+
+export function SpacingSettings({
+  isOpen,
+  onClose,
+  config,
+  onChange,
+}: SpacingSettingsProps) {
+  if (!isOpen) return null
+
+  const handleReset = () => onChange(DEFAULT_SPACING_CONFIG)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-background rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col border border-border">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <AlignVerticalSpaceAround className="w-5 h-5" />
+            Layout &amp; Spacing
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-muted rounded transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <SpacingSettingsBody config={config} onChange={onChange} />
 
         {/* Footer */}
         <div className="flex justify-between gap-2 p-4 border-t border-border">

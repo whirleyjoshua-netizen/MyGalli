@@ -18,15 +18,14 @@ interface BackgroundSettingsProps {
 
 type TabType = 'solid' | 'gradient' | 'pattern' | 'image'
 
-export function BackgroundSettings({
-  isOpen,
-  onClose,
+export function BackgroundSettingsBody({
   config,
   onChange,
-}: BackgroundSettingsProps) {
+}: {
+  config: BackgroundConfig
+  onChange: (config: BackgroundConfig) => void
+}) {
   const [activeTab, setActiveTab] = useState<TabType>(config.type)
-
-  if (!isOpen) return null
 
   const handleTypeChange = (type: TabType) => {
     setActiveTab(type)
@@ -34,19 +33,7 @@ export function BackgroundSettings({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-background rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-border">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-xl font-bold">Background Settings</h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-muted rounded transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+    <>
         {/* Tabs */}
         <div className="flex border-b border-border">
           <button
@@ -319,6 +306,33 @@ export function BackgroundSettings({
             </div>
           </div>
         </div>
+    </>
+  )
+}
+
+export function BackgroundSettings({
+  isOpen,
+  onClose,
+  config,
+  onChange,
+}: BackgroundSettingsProps) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-background rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-border">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h2 className="text-xl font-bold">Background Settings</h2>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-muted rounded transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <BackgroundSettingsBody config={config} onChange={onChange} />
 
         {/* Footer */}
         <div className="flex justify-end gap-2 p-4 border-t border-border">
