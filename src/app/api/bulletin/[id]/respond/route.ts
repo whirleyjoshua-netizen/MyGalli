@@ -46,7 +46,7 @@ export async function POST(request: NextRequest, { params }: Props) {
         where: { postId: id },
         select: { userId: true, responses: true, createdAt: true, user: { select: { name: true, username: true, avatar: true } } },
       })
-      results = aggregateBlock(block, toRecords(rows))
+      results = aggregateBlock(block, toRecords(rows, false))
     }
 
     return NextResponse.json({ results, myResponse: responses })

@@ -176,10 +176,12 @@ export interface BulletinResponseRow {
   user: { name: string | null; username: string; avatar: string | null }
 }
 
-export function toRecords(rows: BulletinResponseRow[]): ResponseRecord[] {
+export function toRecords(rows: BulletinResponseRow[], includeIdentity = true): ResponseRecord[] {
   return rows.map((r) => ({
     responses: r.responses,
     submittedAt: r.createdAt,
-    identity: { userId: r.userId, name: r.user.name ?? r.user.username, avatar: r.user.avatar },
+    ...(includeIdentity
+      ? { identity: { userId: r.userId, name: r.user.name ?? r.user.username, avatar: r.user.avatar } }
+      : {}),
   }))
 }

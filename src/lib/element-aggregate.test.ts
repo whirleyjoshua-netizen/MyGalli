@@ -70,4 +70,16 @@ describe('toRecords', () => {
     expect(recs[0].identity).toEqual({ userId: 'u1', name: 'Maya', avatar: null })
     expect(recs[1].identity).toEqual({ userId: 'u2', name: 'jon', avatar: 'a.png' })
   })
+
+  it('omits identity when includeIdentity=false, so aggregate respondents stay empty', () => {
+    const rows: BulletinResponseRow[] = [
+      { userId: 'u1', responses: { b1: { type: 'poll', answer: ['A'] } }, createdAt: new Date('2026-07-03T00:00:00Z'), user: { name: 'Maya', username: 'maya', avatar: null } },
+    ]
+    const recs = toRecords(rows, false)
+    expect(recs[0].identity).toBeUndefined()
+    const poll: CanvasElement = { id: 'b1', type: 'poll', pollQuestion: 'Pick', pollOptions: ['A', 'B'] }
+    const out = aggregatePoll(poll, recs)
+    expect(out.totalVoters).toBe(1)          // still counted
+    expect(out.respondents).toEqual([])      // but no identities leaked
+  })
 })

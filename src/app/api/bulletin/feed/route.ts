@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       if (block) {
         const canSee = resultsVisible({ isAuthor, revealAfterAnswer: settings.revealAfterAnswer, hasResponded })
         if (canSee) {
-          results = aggregateBlock(block, toRecords(rows))
+          results = aggregateBlock(block, toRecords(rows, false))
         }
       }
 
