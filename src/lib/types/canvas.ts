@@ -104,6 +104,7 @@ export type ElementType =
   | 'timeline'              // Interactive event timeline
   // Batch 1: Special elements
   | 'link-hub'               // Batch 1: link-in-bio hub
+  | 'gallery'                // Batch 1: photo gallery w/ lightbox
 
 // Base element interface
 export interface CanvasElement {
@@ -346,6 +347,10 @@ export interface CanvasElement {
   // Link Hub specific
   linkHubTitle?: string
   linkHubItems?: { label: string; url: string; icon?: string }[]
+  // Gallery specific
+  galleryTitle?: string
+  galleryImages?: { url: string; caption?: string; alt?: string }[]
+  galleryColumns?: 2 | 3 | 4
   // Social Stats specific
   socialStatsTitle?: string
   socialStatsPlatforms?: {
@@ -881,6 +886,8 @@ export function createElement(type: ElementType): CanvasElement {
       }
     case 'link-hub':
       return { ...base, linkHubTitle: '', linkHubItems: [{ label: 'My website', url: '', icon: 'website' }] }
+    case 'gallery':
+      return { ...base, galleryTitle: '', galleryImages: [], galleryColumns: 3 }
     case 'playlist':
       return {
         ...base,

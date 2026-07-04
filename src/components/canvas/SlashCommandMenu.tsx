@@ -38,6 +38,7 @@ import {
   Clock,
   Grid3X3,
   Palette,
+  Images,
   Music,
   Quote as QuoteIcon,
   BookOpen,
@@ -133,6 +134,7 @@ const commands: Command[] = [
   { id: 'business-promo', label: 'Promos & Specials', icon: Sparkles, description: 'Deals & promotions', category: 'Kit' },
   // Batch 1
   { id: 'link-hub', label: 'Link Hub', icon: Link2, description: 'Link-in-bio button stack', category: 'Media' },
+  { id: 'gallery', label: 'Gallery', icon: Images, description: 'Photo grid with lightbox', category: 'Media' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Apps', 'Kit']

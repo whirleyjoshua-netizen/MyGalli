@@ -72,3 +72,5 @@ export { PublicTimelineElement } from './PublicTimelineElement'
 // Batch 1
 export { LinkHubElement } from './LinkHubElement'
 export { PublicLinkHubElement } from './PublicLinkHubElement'
+export { GalleryElement } from './GalleryElement'
+export { PublicGalleryElement } from './PublicGalleryElement'
