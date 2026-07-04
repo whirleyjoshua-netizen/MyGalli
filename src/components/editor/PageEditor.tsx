@@ -25,7 +25,7 @@ import type { ElementListRow } from '@/lib/editor/element-list'
 import { HeaderCard } from '@/components/header/HeaderCard'
 import { TabBar } from '@/components/tabs/TabBar'
 import type { Section, LayoutMode, ElementType, CanvasElement, ColumnSettings } from '@/lib/types/canvas'
-import { DEFAULT_COLUMN_SETTINGS } from '@/lib/types/canvas'
+import { DEFAULT_COLUMN_SETTINGS, createElement } from '@/lib/types/canvas'
 import type { BackgroundConfig } from '@/lib/types/background'
 import { DEFAULT_BACKGROUND_CONFIG, getBackgroundStyles } from '@/lib/types/background'
 import type { SpacingConfig } from '@/lib/types/spacing'
@@ -798,6 +798,11 @@ export function PageEditor({ pageId }: PageEditorProps) {
           { title: 'Grand Opening Special', description: 'Come check us out!', badge: 'NEW', ctaText: '', ctaUrl: '' },
         ]
         break
+      default: {
+        // New element types define their defaults once in createElement().
+        Object.assign(newElement, createElement(type))
+        break
+      }
     }
 
     setActiveSections((prev) =>
