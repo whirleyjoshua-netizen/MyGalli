@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  Plus, Home, FileText, Users, Compass, Library, ChevronDown, LogOut, BarChart3, UserCircle,
+  Plus, Home, FileText, Users, Compass, Library, ChevronDown, LogOut, BarChart3, UserCircle, Megaphone,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import { ProfileCard } from '@/components/dashboard/ProfileCard'
@@ -26,13 +26,26 @@ const NAV: NavItem[] = [
   { label: 'Library', icon: Library, href: '/library', match: (p) => p.startsWith('/library') },
 ]
 
+// Mobile-only entry: on desktop the bulletin lives in the right-hand panel
+// (AnalyticsPanel), which is hidden below xl — so mobile needs its own way in.
+const BULLETIN_NAV: NavItem = {
+  label: 'Bulletin', icon: Megaphone, href: '/bulletin', match: (p) => p.startsWith('/bulletin'),
+}
+
 export function SidebarContent({
   collapsed = false,
   onNavigate,
+  mobile = false,
 }: {
   collapsed?: boolean
   onNavigate?: () => void
+  mobile?: boolean
 }) {
+  // Insert Bulletin after Explore, mobile drawer only. Desktop rail passes no
+  // `mobile`, so its nav is unchanged.
+  const nav = mobile
+    ? [...NAV.slice(0, 4), BULLETIN_NAV, ...NAV.slice(4)]
+    : NAV
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useAuthStore()
@@ -62,7 +75,7 @@ export function SidebarContent({
 
       {/* Nav */}
       <nav className="mt-5 flex flex-col gap-1">
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const active = item.href && (item.match ? item.match(pathname) : pathname === item.href.split('?')[0])
           const Icon = item.icon
           const base = `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${

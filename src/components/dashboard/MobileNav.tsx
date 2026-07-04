@@ -79,7 +79,7 @@ export function MobileNav() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <SidebarContent onNavigate={() => setOpen(false)} />
+            <SidebarContent mobile onNavigate={() => setOpen(false)} />
           </div>
         </div>
       )}

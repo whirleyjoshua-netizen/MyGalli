@@ -31,6 +31,13 @@ describe('MobileNav', () => {
     expect(document.body.style.overflow).toBe('hidden')
   })
 
+  it('includes the mobile-only Bulletin entry linking to /bulletin', () => {
+    render(<MobileNav />)
+    fireEvent.click(screen.getByLabelText('Open menu'))
+    const link = screen.getByRole('link', { name: /bulletin/i })
+    expect(link).toHaveAttribute('href', '/bulletin')
+  })
+
   it('closes the drawer when a nav link is tapped', () => {
     render(<MobileNav />)
     fireEvent.click(screen.getByLabelText('Open menu'))
