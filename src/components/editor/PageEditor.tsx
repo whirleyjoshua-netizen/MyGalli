@@ -628,6 +628,14 @@ export function PageEditor({ pageId }: PageEditorProps) {
           songRequest: true,
         }
         break
+      case 'rsvp':
+        newElement.rsvpSubject = "You're invited!"
+        newElement.rsvpDeadline = ''
+        newElement.rsvpPlusOne = true
+        newElement.rsvpAllowNote = true
+        newElement.rsvpItems = []
+        newElement.rsvpPublicList = false
+        break
       case 'wedding-stats':
         newElement.weddingStatsItems = [
           { label: 'Days Together', value: '544', icon: 'Heart' },

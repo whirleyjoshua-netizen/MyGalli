@@ -52,6 +52,8 @@ function contentHint(element: CanvasElement): string | undefined {
       return element.url ? element.url.split('/').pop() : undefined
     case 'quote':
       return element.quoteText || undefined
+    case 'rsvp':
+      return element.rsvpSubject || undefined
     default:
       return undefined
   }

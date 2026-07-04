@@ -63,6 +63,7 @@ import {
   WeddingTimelineElement,
   WeddingPartyElement,
   WeddingRsvpElement,
+  RSVPElement,
   WeddingStatsElement,
   WeddingRegistryElement,
   WeddingHashtagsElement,
@@ -101,6 +102,7 @@ import { PublicCertificationBadgeElement } from '@/components/elements/PublicCer
 import { PublicWeddingTimelineElement } from '@/components/elements/PublicWeddingTimelineElement'
 import { PublicWeddingPartyElement } from '@/components/elements/PublicWeddingPartyElement'
 import { PublicWeddingRsvpElement } from '@/components/elements/PublicWeddingRsvpElement'
+import { PublicRSVPElement } from '@/components/elements/PublicRSVPElement'
 import { PublicWeddingStatsElement } from '@/components/elements/PublicWeddingStatsElement'
 import { PublicWeddingRegistryElement } from '@/components/elements/PublicWeddingRegistryElement'
 import { PublicWeddingHashtagsElement } from '@/components/elements/PublicWeddingHashtagsElement'
@@ -933,6 +935,20 @@ export function ColumnCanvas({
         }
         return (
           <WeddingRsvpElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'rsvp':
+        if (isPreviewMode && displayId) {
+          return <PublicRSVPElement element={element} displayId={displayId} />
+        }
+        return (
+          <RSVPElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
