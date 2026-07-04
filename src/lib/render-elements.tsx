@@ -33,6 +33,7 @@ import { PublicColorPaletteElement } from '@/components/elements/PublicColorPale
 import { PublicPlaylistElement } from '@/components/elements/PublicPlaylistElement'
 import { PublicQuoteWallElement } from '@/components/elements/PublicQuoteWallElement'
 import { PublicTimelineElement } from '@/components/elements/PublicTimelineElement'
+import { PublicLinkHubElement } from '@/components/elements/PublicLinkHubElement'
 import { PublicCourseListElement } from '@/components/elements/PublicCourseListElement'
 import { PublicGPACardElement } from '@/components/elements/PublicGPACardElement'
 import { PublicTestScoresElement } from '@/components/elements/PublicTestScoresElement'
@@ -480,6 +481,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'timeline':
       return <PublicTimelineElement element={element} />
+
+    case 'link-hub':
+      return <PublicLinkHubElement element={element} />
 
     case 'course-list':
       return <PublicCourseListElement element={element} />

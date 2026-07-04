@@ -74,6 +74,8 @@ import {
   QuoteWallElement,
   TimelineElement,
   PublicTimelineElement,
+  LinkHubElement,
+  PublicLinkHubElement,
   CourseListElement,
   GPACardElement,
   TestScoresElement,
@@ -1075,6 +1077,20 @@ export function ColumnCanvas({
         }
         return (
           <TimelineElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'link-hub':
+        if (isPreviewMode) {
+          return <PublicLinkHubElement element={element} />
+        }
+        return (
+          <LinkHubElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}

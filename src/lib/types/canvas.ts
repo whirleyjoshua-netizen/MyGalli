@@ -102,6 +102,8 @@ export type ElementType =
   | 'business-promo'        // Specials & promotions
   // General-purpose elements
   | 'timeline'              // Interactive event timeline
+  // Batch 1: Special elements
+  | 'link-hub'               // Batch 1: link-in-bio hub
 
 // Base element interface
 export interface CanvasElement {
@@ -341,6 +343,9 @@ export interface CanvasElement {
   // Quote Wall specific
   quoteWallTitle?: string
   quoteWallQuotes?: { text: string; author: string; source: string }[]
+  // Link Hub specific
+  linkHubTitle?: string
+  linkHubItems?: { label: string; url: string; icon?: string }[]
   // Social Stats specific
   socialStatsTitle?: string
   socialStatsPlatforms?: {
@@ -874,6 +879,8 @@ export function createElement(type: ElementType): CanvasElement {
           { hex: '#FFEAA7', name: 'Sunshine' },
         ],
       }
+    case 'link-hub':
+      return { ...base, linkHubTitle: '', linkHubItems: [{ label: 'My website', url: '', icon: 'website' }] }
     case 'playlist':
       return {
         ...base,

@@ -69,3 +69,6 @@ export { BusinessPromoElement } from './BusinessPromoElement'
 // General-purpose Elements
 export { TimelineElement } from './TimelineElement'
 export { PublicTimelineElement } from './PublicTimelineElement'
+// Batch 1
+export { LinkHubElement } from './LinkHubElement'
+export { PublicLinkHubElement } from './PublicLinkHubElement'

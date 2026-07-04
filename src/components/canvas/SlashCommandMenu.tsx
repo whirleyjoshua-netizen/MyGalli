@@ -42,6 +42,7 @@ import {
   Quote as QuoteIcon,
   BookOpen,
   DollarSign,
+  Link2,
   Store,
   Sparkles,
   Blocks,
@@ -130,6 +131,8 @@ const commands: Command[] = [
   { id: 'business-hours', label: 'Hours & Location', icon: Clock, description: 'Business hours & contact', category: 'Kit' },
   { id: 'business-review', label: 'Customer Reviews', icon: Star, description: 'Interactive review wall', category: 'Kit' },
   { id: 'business-promo', label: 'Promos & Specials', icon: Sparkles, description: 'Deals & promotions', category: 'Kit' },
+  // Batch 1
+  { id: 'link-hub', label: 'Link Hub', icon: Link2, description: 'Link-in-bio button stack', category: 'Media' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Apps', 'Kit']
