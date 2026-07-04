@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Menu, X, Plus } from 'lucide-react'
 import { Wordmark } from '@/components/brand/Wordmark'
 import { SidebarContent } from '@/components/dashboard/SidebarContent'
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
+  const pathname = usePathname()
 
   // Lock body scroll + close on Escape while the drawer is open.
   useEffect(() => {
@@ -19,6 +21,21 @@ export function MobileNav() {
       document.body.style.overflow = ''
       window.removeEventListener('keydown', onKey)
     }
+  }, [open])
+
+  // Close drawer on route change (browser back button, etc.)
+  useEffect(() => {
+    setOpen(false)
+  }, [pathname])
+
+  // Close drawer when viewport reaches desktop (≥768px)
+  useEffect(() => {
+    if (!open) return
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+    const mq = window.matchMedia('(min-width: 768px)')
+    const onChange = () => { if (mq.matches) setOpen(false) }
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
   }, [open])
 
   return (
