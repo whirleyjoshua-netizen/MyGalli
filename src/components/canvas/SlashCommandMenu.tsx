@@ -18,6 +18,7 @@ import {
   PieChart,
   Code2,
   GalleryHorizontal,
+  Timer,
   ChevronDown as ChevronDownIcon,
   TrendingUp,
   UserCircle,
@@ -135,6 +136,7 @@ const commands: Command[] = [
   // Batch 1
   { id: 'link-hub', label: 'Link Hub', icon: Link2, description: 'Link-in-bio button stack', category: 'Media' },
   { id: 'gallery', label: 'Gallery', icon: Images, description: 'Photo grid with lightbox', category: 'Media' },
+  { id: 'countdown', label: 'Countdown', icon: Timer, description: 'Live countdown to a date', category: 'Content' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Apps', 'Kit']

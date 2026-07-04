@@ -78,6 +78,8 @@ import {
   PublicLinkHubElement,
   GalleryElement,
   PublicGalleryElement,
+  CountdownElement,
+  PublicCountdownElement,
   CourseListElement,
   GPACardElement,
   TestScoresElement,
@@ -1107,6 +1109,20 @@ export function ColumnCanvas({
         }
         return (
           <GalleryElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'countdown':
+        if (isPreviewMode) {
+          return <PublicCountdownElement element={element} />
+        }
+        return (
+          <CountdownElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}

@@ -105,6 +105,7 @@ export type ElementType =
   // Batch 1: Special elements
   | 'link-hub'               // Batch 1: link-in-bio hub
   | 'gallery'                // Batch 1: photo gallery w/ lightbox
+  | 'countdown'              // Batch 1: countdown timer
 
 // Base element interface
 export interface CanvasElement {
@@ -480,6 +481,12 @@ export interface CanvasElement {
     image?: string      // optional image URL
     isCurrent?: boolean // highlights as "current" event
   }[]
+  // Countdown specific
+  countdownTitle?: string
+  countdownTarget?: string       // datetime-local value, compared to viewer local time
+  countdownStyle?: 'boxes' | 'inline'
+  countdownColor?: string
+  countdownExpiredText?: string
   // Text styling (text, heading, quote, callout, list)
   fontFamily?: string
   fontSize?: number
@@ -1056,6 +1063,8 @@ export function createElement(type: ElementType): CanvasElement {
           { date: 'Dec 2025', title: 'What\'s Next', description: 'Looking ahead to the future', icon: 'Rocket', isCurrent: false },
         ],
       }
+    case 'countdown':
+      return { ...base, countdownTitle: 'Counting down', countdownTarget: '', countdownStyle: 'boxes', countdownColor: '#39D98A', countdownExpiredText: "It's here! 🎉" }
     default:
       return base
   }

@@ -35,6 +35,7 @@ import { PublicQuoteWallElement } from '@/components/elements/PublicQuoteWallEle
 import { PublicTimelineElement } from '@/components/elements/PublicTimelineElement'
 import { PublicLinkHubElement } from '@/components/elements/PublicLinkHubElement'
 import { PublicGalleryElement } from '@/components/elements/PublicGalleryElement'
+import { PublicCountdownElement } from '@/components/elements/PublicCountdownElement'
 import { PublicCourseListElement } from '@/components/elements/PublicCourseListElement'
 import { PublicGPACardElement } from '@/components/elements/PublicGPACardElement'
 import { PublicTestScoresElement } from '@/components/elements/PublicTestScoresElement'
@@ -487,6 +488,8 @@ export function renderElement(element: CanvasElement, displayId?: string) {
       return <PublicLinkHubElement element={element} />
     case 'gallery':
       return <PublicGalleryElement element={element} />
+    case 'countdown':
+      return <PublicCountdownElement element={element} />
 
     case 'course-list':
       return <PublicCourseListElement element={element} />
