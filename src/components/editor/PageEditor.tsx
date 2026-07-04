@@ -16,6 +16,8 @@ import { CardLibraryPicker } from '@/components/editor/CardLibraryPicker'
 import { ControlPanel } from '@/components/editor/panel/ControlPanel'
 import { ElementsTab } from '@/components/editor/panel/ElementsTab'
 import { PageTab } from '@/components/editor/panel/PageTab'
+import { SectionSettingsModal } from '@/components/editor/panel/SectionSettingsModal'
+import { applySectionLayout } from '@/lib/editor/section-layout'
 import type { EditorSelection } from '@/lib/editor/selection'
 import { selectedElementId } from '@/lib/editor/selection'
 import type { ElementListRow } from '@/lib/editor/element-list'
@@ -98,6 +100,8 @@ export function PageEditor({ pageId }: PageEditorProps) {
   const [showColumnSettings, setShowColumnSettings] = useState(false)
   const [editingColumnSection, setEditingColumnSection] = useState<string | null>(null)
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
+  const [showSectionSettings, setShowSectionSettings] = useState(false)
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
 
   // Load or create page
   useEffect(() => {
@@ -928,12 +932,26 @@ export function PageEditor({ pageId }: PageEditorProps) {
     )
   }
 
-  // Section ⚙ opens the existing column-style modal for the section's first column.
+  // Section ⚙ opens the section settings modal (layout/column-count + column style).
   const openSectionSettings = (sectionId: string) => {
-    const secs = getActiveSections()
-    const section = secs.find((s) => s.id === sectionId)
-    const firstCol = section?.columns[0]
-    if (section && firstCol) openColumnSettings(section.id, firstCol.id)
+    setEditingSectionId(sectionId)
+    setShowSectionSettings(true)
+  }
+
+  const changeSectionLayout = (layout: LayoutMode) => {
+    if (!editingSectionId) return
+    setActiveSections((prev) => prev.map((s) => (s.id === editingSectionId ? applySectionLayout(s, layout) : s)))
+  }
+
+  const changeSectionColumnSettings = (settings: ColumnSettings) => {
+    if (!editingSectionId) return
+    setActiveSections((prev) =>
+      prev.map((s) =>
+        s.id === editingSectionId
+          ? { ...s, columns: s.columns.map((c, i) => (i === 0 ? { ...c, settings } : c)) }
+          : s,
+      ),
+    )
   }
 
   // Panel "+ Add element" reuses the slash menu, targeting the section's first column.
@@ -987,6 +1005,9 @@ export function PageEditor({ pageId }: PageEditorProps) {
   const activeHeaderCardConfig = getActiveHeaderCard()
   const activeBackgroundConfig = getActiveBackground()
   const backgroundStyles = getBackgroundStyles(activeBackgroundConfig)
+  const editingSection = editingSectionId
+    ? getActiveSections().find((s) => s.id === editingSectionId)
+    : undefined
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -1302,6 +1323,17 @@ export function PageEditor({ pageId }: PageEditorProps) {
         settings={getCurrentColumnSettings()}
         onChange={updateColumnSettings}
       />
+
+      {editingSection && (
+        <SectionSettingsModal
+          isOpen={showSectionSettings}
+          onClose={() => { setShowSectionSettings(false); setEditingSectionId(null) }}
+          layout={editingSection.layout}
+          onChangeLayout={changeSectionLayout}
+          columnSettings={editingSection.columns[0]?.settings ?? DEFAULT_COLUMN_SETTINGS}
+          onChangeColumnSettings={changeSectionColumnSettings}
+        />
+      )}
 
       {/* Card Library Picker */}
       <CardLibraryPicker
