@@ -19,6 +19,7 @@ import {
   Code2,
   GalleryHorizontal,
   Timer,
+  Contrast,
   ChevronDown as ChevronDownIcon,
   TrendingUp,
   UserCircle,
@@ -137,6 +138,7 @@ const commands: Command[] = [
   { id: 'link-hub', label: 'Link Hub', icon: Link2, description: 'Link-in-bio button stack', category: 'Media' },
   { id: 'gallery', label: 'Gallery', icon: Images, description: 'Photo grid with lightbox', category: 'Media' },
   { id: 'countdown', label: 'Countdown', icon: Timer, description: 'Live countdown to a date', category: 'Content' },
+  { id: 'before-after', label: 'Before / After', icon: Contrast, description: 'Draggable image comparison', category: 'Media' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Apps', 'Kit']

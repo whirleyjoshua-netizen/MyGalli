@@ -106,6 +106,7 @@ export type ElementType =
   | 'link-hub'               // Batch 1: link-in-bio hub
   | 'gallery'                // Batch 1: photo gallery w/ lightbox
   | 'countdown'              // Batch 1: countdown timer
+  | 'before-after'           // Batch 1: before/after image slider
 
 // Base element interface
 export interface CanvasElement {
@@ -487,6 +488,12 @@ export interface CanvasElement {
   countdownStyle?: 'boxes' | 'inline'
   countdownColor?: string
   countdownExpiredText?: string
+  // Before/After specific
+  beforeAfterBefore?: string
+  beforeAfterAfter?: string
+  beforeAfterBeforeLabel?: string
+  beforeAfterAfterLabel?: string
+  beforeAfterHeight?: number
   // Text styling (text, heading, quote, callout, list)
   fontFamily?: string
   fontSize?: number
@@ -1065,6 +1072,8 @@ export function createElement(type: ElementType): CanvasElement {
       }
     case 'countdown':
       return { ...base, countdownTitle: 'Counting down', countdownTarget: '', countdownStyle: 'boxes', countdownColor: '#39D98A', countdownExpiredText: "It's here! 🎉" }
+    case 'before-after':
+      return { ...base, beforeAfterBefore: '', beforeAfterAfter: '', beforeAfterBeforeLabel: 'Before', beforeAfterAfterLabel: 'After', beforeAfterHeight: 400 }
     default:
       return base
   }
