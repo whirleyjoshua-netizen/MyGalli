@@ -163,9 +163,8 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
+              Your Personal Gallery
             </h1>
-            <p className="text-muted-foreground mt-1">Everything you create lives in your universe.</p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <div className="hidden sm:flex items-center gap-2 px-3.5 h-10 rounded-full border border-border bg-surface text-muted-foreground w-56">
@@ -188,7 +187,7 @@ export default function DashboardPage() {
 
         {/* Public feed */}
         <ScrollRow
-          title={feedLabel === 'follow' ? 'Public feed' : 'Discover'}
+          title={feedLabel === 'follow' ? 'Public feed' : 'Explore'}
           subtitle={feedLabel === 'follow' ? 'Pages from people you follow.' : 'Explore what the world is building.'}
           icon={<Globe className="w-4 h-4" />}
           action={<Link href="/explore" className="text-xs font-medium text-primary hover:underline cursor-pointer mr-1">See all</Link>}
