@@ -37,6 +37,7 @@ import { PublicLinkHubElement } from '@/components/elements/PublicLinkHubElement
 import { PublicGalleryElement } from '@/components/elements/PublicGalleryElement'
 import { PublicCountdownElement } from '@/components/elements/PublicCountdownElement'
 import { PublicBeforeAfterElement } from '@/components/elements/PublicBeforeAfterElement'
+import { PublicTipJarElement } from '@/components/elements/PublicTipJarElement'
 import { PublicCourseListElement } from '@/components/elements/PublicCourseListElement'
 import { PublicGPACardElement } from '@/components/elements/PublicGPACardElement'
 import { PublicTestScoresElement } from '@/components/elements/PublicTestScoresElement'
@@ -493,6 +494,8 @@ export function renderElement(element: CanvasElement, displayId?: string) {
       return <PublicCountdownElement element={element} />
     case 'before-after':
       return <PublicBeforeAfterElement element={element} />
+    case 'tip-jar':
+      return <PublicTipJarElement element={element} />
 
     case 'course-list':
       return <PublicCourseListElement element={element} />

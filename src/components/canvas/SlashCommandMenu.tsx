@@ -20,6 +20,7 @@ import {
   GalleryHorizontal,
   Timer,
   Contrast,
+  HandCoins,
   ChevronDown as ChevronDownIcon,
   TrendingUp,
   UserCircle,
@@ -139,6 +140,7 @@ const commands: Command[] = [
   { id: 'gallery', label: 'Gallery', icon: Images, description: 'Photo grid with lightbox', category: 'Media' },
   { id: 'countdown', label: 'Countdown', icon: Timer, description: 'Live countdown to a date', category: 'Content' },
   { id: 'before-after', label: 'Before / After', icon: Contrast, description: 'Draggable image comparison', category: 'Media' },
+  { id: 'tip-jar', label: 'Tip Jar', icon: HandCoins, description: 'Support / donate button', category: 'Media' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Apps', 'Kit']

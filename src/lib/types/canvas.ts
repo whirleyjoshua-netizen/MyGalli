@@ -107,6 +107,7 @@ export type ElementType =
   | 'gallery'                // Batch 1: photo gallery w/ lightbox
   | 'countdown'              // Batch 1: countdown timer
   | 'before-after'           // Batch 1: before/after image slider
+  | 'tip-jar'                // Batch 1: tip jar / support button
 
 // Base element interface
 export interface CanvasElement {
@@ -494,6 +495,13 @@ export interface CanvasElement {
   beforeAfterBeforeLabel?: string
   beforeAfterAfterLabel?: string
   beforeAfterHeight?: number
+  // Tip Jar specific
+  tipJarTitle?: string
+  tipJarMessage?: string
+  tipJarPlatform?: 'kofi' | 'venmo' | 'paypal' | 'cashapp' | 'stripe' | 'custom'
+  tipJarUrl?: string
+  tipJarButtonText?: string
+  tipJarAmounts?: string[]
   // Text styling (text, heading, quote, callout, list)
   fontFamily?: string
   fontSize?: number
@@ -1074,6 +1082,8 @@ export function createElement(type: ElementType): CanvasElement {
       return { ...base, countdownTitle: 'Counting down', countdownTarget: '', countdownStyle: 'boxes', countdownColor: '#39D98A', countdownExpiredText: "It's here! 🎉" }
     case 'before-after':
       return { ...base, beforeAfterBefore: '', beforeAfterAfter: '', beforeAfterBeforeLabel: 'Before', beforeAfterAfterLabel: 'After', beforeAfterHeight: 400 }
+    case 'tip-jar':
+      return { ...base, tipJarTitle: 'Support my work', tipJarMessage: 'If you enjoy what I do, consider leaving a tip 💚', tipJarPlatform: 'custom', tipJarUrl: '', tipJarButtonText: 'Leave a tip', tipJarAmounts: ['$3', '$5', '$10'] }
     default:
       return base
   }

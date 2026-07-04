@@ -82,6 +82,8 @@ import {
   PublicCountdownElement,
   BeforeAfterElement,
   PublicBeforeAfterElement,
+  TipJarElement,
+  PublicTipJarElement,
   CourseListElement,
   GPACardElement,
   TestScoresElement,
@@ -1139,6 +1141,20 @@ export function ColumnCanvas({
         }
         return (
           <BeforeAfterElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'tip-jar':
+        if (isPreviewMode) {
+          return <PublicTipJarElement element={element} />
+        }
+        return (
+          <TipJarElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
