@@ -277,14 +277,17 @@ export function SlashCommandMenu({ position, onSelect, onClose, isKitPage, hideA
           />
         </div>
 
-        {/* Columns — horizontal scroll */}
-        <div className="overflow-x-auto overflow-y-hidden flex-1 scrollbar-hide">
+        {/* Element grid — horizontal columns on desktop, single vertical list on mobile */}
+        <div className="flex-1 scrollbar-hide overflow-y-auto overflow-x-hidden md:overflow-x-auto md:overflow-y-hidden">
           {columns.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground">No elements found</div>
           ) : (
-            <div className="flex h-full divide-x divide-border">
+            <div
+              data-testid="element-grid"
+              className="flex flex-col divide-y md:flex-row md:h-full md:divide-x md:divide-y-0 divide-border"
+            >
               {columns.map((column, colIdx) => (
-                <div key={column.category} className="flex flex-col w-[210px] flex-shrink-0 h-full">
+                <div key={column.category} className="flex flex-col w-full md:w-[210px] md:flex-shrink-0 md:h-full">
                   {/* Category header */}
                   <div className="px-3 py-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-shrink-0 sticky top-0 bg-surface">
                     <span>{column.category}</span>
@@ -332,8 +335,8 @@ export function SlashCommandMenu({ position, onSelect, onClose, isKitPage, hideA
           )}
         </div>
 
-        {/* Footer hint */}
-        <div className="px-3 py-1.5 border-t border-border text-[11px] text-muted-foreground bg-muted/30 flex items-center gap-3 flex-shrink-0">
+        {/* Footer hint (keyboard nav — desktop only) */}
+        <div className="px-3 py-1.5 border-t border-border text-[11px] text-muted-foreground bg-muted/30 hidden md:flex items-center gap-3 flex-shrink-0">
           <span><kbd className="font-mono bg-muted px-1 rounded text-[10px]">↑↓←→</kbd> navigate</span>
           <span><kbd className="font-mono bg-muted px-1 rounded text-[10px]">↵</kbd> select</span>
           <span><kbd className="font-mono bg-muted px-1 rounded text-[10px]">esc</kbd> close</span>

@@ -19,4 +19,13 @@ describe('SlashCommandMenu App Card gating', () => {
     render(<SlashCommandMenu {...props} hideApps />)
     expect(screen.queryByText('App Card')).not.toBeInTheDocument()
   })
+
+  it('stacks categories vertically on mobile, columns on desktop', () => {
+    render(<SlashCommandMenu {...props} />)
+    const grid = screen.getByTestId('element-grid')
+    // mobile: single vertical list
+    expect(grid.className).toContain('flex-col')
+    // desktop: side-by-side columns (unchanged)
+    expect(grid.className).toContain('md:flex-row')
+  })
 })
