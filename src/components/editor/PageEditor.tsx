@@ -9,6 +9,7 @@ import { ColumnCanvas } from '@/components/canvas/ColumnCanvas'
 import { SlashCommandMenu } from '@/components/canvas/SlashCommandMenu'
 import { ColumnStyleSettings } from '@/components/canvas/ColumnStyleSettings'
 import { ShareDialog } from '@/components/editor/ShareDialog'
+import { EditorActionsMenu } from '@/components/editor/EditorActionsMenu'
 import { CollaborateModal } from '@/components/editor/CollaborateModal'
 import { PresenceBar } from '@/components/editor/PresenceBar'
 import { PublishDialog } from '@/components/editor/PublishDialog'
@@ -1014,10 +1015,10 @@ export function PageEditor({ pageId }: PageEditorProps) {
       {/* Header */}
       {!isPreviewMode && (
         <header className="border-b border-border bg-background px-4 py-3 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-2 md:gap-4 min-w-0">
             <Link
               href="/dashboard"
-              className="p-2 hover:bg-muted rounded-lg transition"
+              className="p-2 hover:bg-muted rounded-lg transition shrink-0"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
@@ -1027,11 +1028,12 @@ export function PageEditor({ pageId }: PageEditorProps) {
               onChange={(e) => setTitle(e.target.value)}
               onBlur={savePage}
               placeholder="Untitled Page"
-              className="text-xl font-bold bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-primary rounded px-2 py-1"
+              className="min-w-0 text-base md:text-xl font-bold bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-primary rounded px-2 py-1"
             />
           </div>
 
-          <div className="flex flex-1 min-w-0 items-center flex-wrap justify-end gap-2">
+          {/* Desktop actions row (unchanged) */}
+          <div className="hidden md:flex flex-1 min-w-0 items-center flex-wrap justify-end gap-2">
             {/* Save Status */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               {saving ? (
@@ -1104,6 +1106,30 @@ export function PageEditor({ pageId }: PageEditorProps) {
                 </button>
               </>
             )}
+          </div>
+
+          {/* Mobile actions: primary Publish + overflow menu */}
+          <div className="flex md:hidden items-center gap-1.5 shrink-0">
+            {isOwner && (
+              <button
+                onClick={handlePublishToggle}
+                className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition ${
+                  published
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-primary text-primary-foreground hover:opacity-90'
+                }`}
+              >
+                {published ? 'Published' : 'Publish'}
+              </button>
+            )}
+            <EditorActionsMenu
+              saving={saving}
+              lastSaved={lastSaved}
+              onPreview={() => setIsPreviewMode(true)}
+              onShare={isOwner ? () => setShowShareDialog(true) : undefined}
+              onCollaborate={id ? () => setShowCollaborate(true) : undefined}
+              liveHref={published && user ? `/${user.username}/${slug}` : undefined}
+            />
           </div>
         </header>
       )}
