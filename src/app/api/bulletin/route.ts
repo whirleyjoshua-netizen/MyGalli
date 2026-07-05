@@ -28,11 +28,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Post is empty' }, { status: 400 })
     }
 
+    const isPublic = body.isPublic === true
+
     const post = await db.bulletinPost.create({
       data: {
         authorId: me.id,
         text,
         imageUrl,
+        isPublic,
         blocks: block ? [block] : [],
         settings: normalizeSettings(body.settings) as unknown as Prisma.InputJsonValue,
       },

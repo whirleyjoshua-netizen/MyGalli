@@ -27,11 +27,12 @@ export function BulletinComposer({ onPosted }: { onPosted: () => void }) {
   const [block, setBlock] = useState<CanvasElement | null>(null)
   const [revealAfterAnswer, setReveal] = useState(false)
   const [liveTally, setLive] = useState(true)
+  const [isPublic, setIsPublic] = useState(false)
   const [posting, setPosting] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const reset = () => {
-    setText(''); setImageUrl(null); setBlock(null); setReveal(false); setLive(true); setExpanded(false)
+    setText(''); setImageUrl(null); setBlock(null); setReveal(false); setLive(true); setIsPublic(false); setExpanded(false)
   }
 
   const uploadImage = async (file: File) => {
@@ -48,7 +49,7 @@ export function BulletinComposer({ onPosted }: { onPosted: () => void }) {
       const res = await fetch('/api/bulletin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, imageUrl, block, settings: { revealAfterAnswer, liveTally } }),
+        body: JSON.stringify({ text, imageUrl, block, settings: { revealAfterAnswer, liveTally }, isPublic }),
       })
       if (res.ok) {
         reset()
@@ -117,15 +118,20 @@ export function BulletinComposer({ onPosted }: { onPosted: () => void }) {
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-2">
-        <button onClick={reset} className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">Cancel</button>
-        <button
-          onClick={post}
-          disabled={!canPost || posting}
-          className="rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-        >
-          {posting ? 'Posting…' : 'Post'}
-        </button>
+      <div className="flex items-center justify-between gap-2">
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} /> 🌍 Share to Trending
+        </label>
+        <div className="flex items-center gap-2">
+          <button onClick={reset} className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">Cancel</button>
+          <button
+            onClick={post}
+            disabled={!canPost || posting}
+            className="rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+          >
+            {posting ? 'Posting…' : 'Post'}
+          </button>
+        </div>
       </div>
     </div>
   )
