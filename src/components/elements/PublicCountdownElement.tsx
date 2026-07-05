@@ -26,8 +26,11 @@ export function PublicCountdownElement({ element }: { element: CanvasElement }) 
   if (!element.countdownTarget || Number.isNaN(targetMs)) {
     return <div className="text-center text-sm text-muted-foreground py-6 border border-dashed border-border rounded-xl">Set a date to start the countdown.</div>
   }
-  // Before mount, render as not-yet-expired to avoid SSR/CSR mismatch flashing the expired text.
-  const parts = remainingParts(targetMs, mounted ? nowMs : Math.min(nowMs, targetMs - 1000))
+  // Before mount, render a stable all-zero placeholder to avoid SSR/first-paint showing a
+  // garbage huge day-count (computed against epoch time) or flashing the expired text.
+  const parts = mounted
+    ? remainingParts(targetMs, nowMs)
+    : { expired: false, days: 0, hours: 0, minutes: 0, seconds: 0 }
   return (
     <div className="text-center space-y-3">
       {element.countdownTitle && <h3 className="text-lg font-bold">{element.countdownTitle}</h3>}

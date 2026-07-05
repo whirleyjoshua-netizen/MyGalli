@@ -30,7 +30,7 @@ export function PublicBeforeAfterElement({ element }: { element: CanvasElement }
       </div>
       <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/60 text-white text-xs">{element.beforeAfterAfterLabel || 'After'}</span>
       <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/60 text-white text-xs">{element.beforeAfterBeforeLabel || 'Before'}</span>
-      <div role="slider" aria-valuenow={Math.round(pos)} aria-valuemin={0} aria-valuemax={100} tabIndex={0}
+      <div role="slider" aria-label="Before/after comparison" aria-valuenow={Math.round(pos)} aria-valuemin={0} aria-valuemax={100} tabIndex={0}
         className="absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize" style={{ left: `${pos}%`, transform: 'translateX(-50%)' }}
         onKeyDown={(e) => { if (e.key === 'ArrowLeft') setPos((p) => Math.max(0, p - 2)); if (e.key === 'ArrowRight') setPos((p) => Math.min(100, p + 2)) }}
       >

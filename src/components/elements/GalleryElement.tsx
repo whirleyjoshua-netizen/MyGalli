@@ -30,9 +30,9 @@ export function GalleryElement({ element, onChange, onDelete, isSelected, onSele
   }
 
   const handleFileUpload = async (file: File) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
-      setUploadError('Invalid file type. Use JPEG, PNG, GIF, WebP, or SVG')
+      setUploadError('Invalid file type. Use JPEG, PNG, GIF, or WebP')
       return
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -157,7 +157,7 @@ export function GalleryElement({ element, onChange, onDelete, isSelected, onSele
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+          accept="image/jpeg,image/png,image/gif,image/webp"
           onChange={handleFileSelect}
           onClick={(e) => e.stopPropagation()}
           className="hidden"

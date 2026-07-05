@@ -26,9 +26,9 @@ function UploadSlot({
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   const handleFileUpload = async (file: File) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
-      setUploadError('Invalid file type. Use JPEG, PNG, GIF, WebP, or SVG')
+      setUploadError('Invalid file type. Use JPEG, PNG, GIF, or WebP')
       return
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -66,6 +66,7 @@ function UploadSlot({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) handleFileUpload(file)
+    e.target.value = ''
   }
 
   return (
@@ -93,7 +94,7 @@ function UploadSlot({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+        accept="image/jpeg,image/png,image/gif,image/webp"
         onChange={handleFileSelect}
         className="hidden"
       />

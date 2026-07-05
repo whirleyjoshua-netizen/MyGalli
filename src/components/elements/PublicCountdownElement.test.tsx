@@ -24,4 +24,10 @@ describe('PublicCountdownElement', () => {
     render(<PublicCountdownElement element={el({ countdownTarget: '' })} />)
     expect(screen.getByText(/set a date/i)).toBeInTheDocument()
   })
+  it('does not flash expired text for a far-future target and shows unit labels', () => {
+    render(<PublicCountdownElement element={el({ countdownTarget: '2999-01-01T00:00', countdownExpiredText: 'Done!' })} />)
+    expect(screen.queryByText('Done!')).not.toBeInTheDocument()
+    expect(screen.getByText('Days')).toBeInTheDocument()
+    expect(screen.getByText('Hours')).toBeInTheDocument()
+  })
 })
