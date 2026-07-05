@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { canEdit, splitUpdate, COLLAB_FIELDS } from '@/lib/collab'
 import { isValidCategory } from '@/lib/categories'
+import { notifyFollowers } from '@/lib/notifications'
 
 // GET /api/displays/[id] - Get a display
 export async function GET(
@@ -105,6 +106,15 @@ export async function PATCH(
       where: { id },
       data: { ...data, ...(touchesContent ? { version: { increment: 1 } } : {}) },
     })
+
+    if (data.published === true && display.published === false) {
+      await notifyFollowers(user.id, {
+        type: 'page_published',
+        actor: { id: user.id, name: user.name || user.username, avatar: user.avatar },
+        entityUrl: `/${user.username}/${display.slug}`,
+        contextText: (data.title as string | undefined) ?? display.title,
+      })
+    }
 
     return NextResponse.json(updated)
   } catch (error) {

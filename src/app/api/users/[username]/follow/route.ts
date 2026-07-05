@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { isSelfFollow } from '@/lib/social'
 import { rateLimit } from '@/lib/rate-limit'
+import { createNotification } from '@/lib/notifications'
 
 async function resolveTarget(username: string) {
   return db.user.findUnique({ where: { username }, select: { id: true } })
@@ -19,11 +20,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!target) return NextResponse.json({ error: 'User not found' }, { status: 404 })
     if (isSelfFollow(me.id, target.id)) return NextResponse.json({ error: 'Cannot follow yourself' }, { status: 400 })
 
+    const existing = await db.follow.findUnique({
+      where: { followerId_followingId: { followerId: me.id, followingId: target.id } },
+      select: { followerId: true },
+    })
     await db.follow.upsert({
       where: { followerId_followingId: { followerId: me.id, followingId: target.id } },
       create: { followerId: me.id, followingId: target.id },
       update: {},
     })
+    if (!existing) {
+      await createNotification({
+        userId: target.id,
+        type: 'follow',
+        actor: { id: me.id, name: me.name || me.username, avatar: me.avatar },
+        entityUrl: `/${me.username}`,
+      })
+    }
     return NextResponse.json({ following: true })
   } catch (error) {
     console.error('Follow error:', error)

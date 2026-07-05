@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
+import { createNotification } from '@/lib/notifications'
 
 // GET /api/displays/[id]/comments — public, no auth needed
 export async function GET(
@@ -50,6 +51,7 @@ export async function POST(
     // Verify display exists
     const display = await db.display.findUnique({
       where: { id: id },
+      include: { user: { select: { username: true } } },
     })
 
     if (!display) {
@@ -84,6 +86,14 @@ export async function POST(
         content: content.trim(),
         approved: !moderated,
       },
+    })
+
+    await createNotification({
+      userId: display.userId,
+      type: 'comment',
+      actor: { id: null, name: comment.authorName },
+      entityUrl: `/${display.user.username}/${display.slug}`,
+      contextText: display.title,
     })
 
     return NextResponse.json(comment, { status: 201 })

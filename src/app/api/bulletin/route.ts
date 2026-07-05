@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { isBulletinBlockType, normalizeSettings, isEmptyPost } from '@/lib/bulletin'
+import { notifyFollowers } from '@/lib/notifications'
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,6 +37,12 @@ export async function POST(request: NextRequest) {
         settings: normalizeSettings(body.settings) as unknown as Prisma.InputJsonValue,
       },
       select: { id: true },
+    })
+
+    await notifyFollowers(me.id, {
+      type: 'bulletin',
+      actor: { id: me.id, name: me.name || me.username, avatar: me.avatar },
+      entityUrl: '/bulletin',
     })
 
     return NextResponse.json({ id: post.id }, { status: 201 })
