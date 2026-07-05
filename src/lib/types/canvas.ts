@@ -109,6 +109,29 @@ export type ElementType =
   | 'before-after'           // Batch 1: before/after image slider
   | 'tip-jar'                // Batch 1: tip jar / support button
 
+  // Batch 2: Map
+  | 'map'                   // Interactive Leaflet map with photo-pins + directions
+
+export type MapPlace = {
+  id: string
+  label: string
+  lat: number
+  lng: number
+  address?: string
+  note?: string
+  photo?: string
+  date?: string
+  category?: string
+  directions?: boolean
+}
+
+export type MapCategory = {
+  key: string
+  label: string
+  color: string
+  emoji?: string
+}
+
 // Base element interface
 export interface CanvasElement {
   id: string
@@ -502,6 +525,14 @@ export interface CanvasElement {
   tipJarUrl?: string
   tipJarButtonText?: string
   tipJarAmounts?: string[]
+  // Map element
+  mapTitle?: string
+  mapPlaces?: MapPlace[]
+  mapCategories?: MapCategory[]
+  mapTileStyle?: 'light' | 'standard' | 'terrain'
+  mapHeight?: number
+  mapConnectLine?: boolean
+  mapFitView?: boolean
   // Text styling (text, heading, quote, callout, list)
   fontFamily?: string
   fontSize?: number
@@ -1084,6 +1115,17 @@ export function createElement(type: ElementType): CanvasElement {
       return { ...base, beforeAfterBefore: '', beforeAfterAfter: '', beforeAfterBeforeLabel: 'Before', beforeAfterAfterLabel: 'After', beforeAfterHeight: 400 }
     case 'tip-jar':
       return { ...base, tipJarTitle: 'Support my work', tipJarMessage: 'If you enjoy what I do, consider leaving a tip 💚', tipJarPlatform: 'custom', tipJarUrl: '', tipJarButtonText: 'Leave a tip', tipJarAmounts: ['$3', '$5', '$10'] }
+    case 'map':
+      return {
+        ...base,
+        mapTitle: '',
+        mapPlaces: [],
+        mapCategories: [{ key: 'visited', label: 'Visited', color: '#39D98A' }],
+        mapTileStyle: 'light',
+        mapHeight: 420,
+        mapConnectLine: false,
+        mapFitView: true,
+      }
     default:
       return base
   }
