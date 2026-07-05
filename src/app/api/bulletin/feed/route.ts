@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { normalizeSettings, resultsVisible } from '@/lib/bulletin'
-import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
+import { assembleFeedPosts } from '@/lib/bulletin-feed'
 
 const PAGE_SIZE = 15
 
@@ -51,46 +50,7 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
-    const likeCountByPost = new Map(likeGroups.map((g) => [g.postId, g._count.postId]))
-    const likedSet = new Set(myLikes.map((l) => l.postId))
-    const responsesByPost = new Map<string, typeof allResponses>()
-    for (const r of allResponses) {
-      const arr = responsesByPost.get(r.postId) || []
-      arr.push(r)
-      responsesByPost.set(r.postId, arr)
-    }
-
-    const feed = posts.map((p) => {
-      const blocks = Array.isArray(p.blocks) ? (p.blocks as any[]) : []
-      const block = blocks[0] || null
-      const settings = normalizeSettings(p.settings)
-      const rows = responsesByPost.get(p.id) || []
-      const mine = rows.find((r) => r.userId === me.id)
-      const isAuthor = p.authorId === me.id
-      const hasResponded = !!mine
-
-      let results = null
-      if (block) {
-        const canSee = resultsVisible({ isAuthor, revealAfterAnswer: settings.revealAfterAnswer, hasResponded })
-        if (canSee) {
-          results = aggregateBlock(block, toRecords(rows, false))
-        }
-      }
-
-      return {
-        id: p.id,
-        author: { id: p.author.id, name: p.author.name, username: p.author.username, avatar: p.author.avatar },
-        text: p.text,
-        imageUrl: p.imageUrl,
-        block,
-        settings,
-        createdAt: p.createdAt.toISOString(),
-        likeCount: likeCountByPost.get(p.id) || 0,
-        likedByMe: likedSet.has(p.id),
-        myResponse: (mine?.responses as Record<string, { type: string; answer: unknown }>) || null,
-        results,
-      }
-    })
+    const feed = assembleFeedPosts(posts, likeGroups, myLikes, allResponses, me.id)
 
     return NextResponse.json({ posts: feed, hasMore: page * limit < total, page })
   } catch (error) {
