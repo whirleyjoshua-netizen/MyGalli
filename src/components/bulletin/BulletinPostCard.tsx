@@ -5,6 +5,7 @@ import { Heart, Trash2 } from 'lucide-react'
 import type { ElementAggregate } from '@/lib/element-aggregate'
 import { BulletinBlock } from './BulletinBlock'
 import type { CanvasElement } from '@/lib/types/canvas'
+import { timeAgo } from '@/lib/time-ago'
 
 export interface FeedPost {
   id: string
@@ -18,15 +19,6 @@ export interface FeedPost {
   likedByMe: boolean
   myResponse: Record<string, { type: string; answer: unknown }> | null
   results: ElementAggregate | null
-}
-
-function timeAgo(dateStr: string): string {
-  const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000)
-  if (mins < 1) return 'now'
-  if (mins < 60) return `${mins}m`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h`
-  return `${Math.floor(hrs / 24)}d`
 }
 
 export function BulletinPostCard({ post, currentUserId, onDeleted }: { post: FeedPost; currentUserId?: string; onDeleted: (id: string) => void }) {

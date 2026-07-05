@@ -3,13 +3,14 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Bell, Plus, Globe, FileText } from 'lucide-react'
+import { Search, Plus, Globe, FileText } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import type { DashboardPrefs } from '@/lib/types/dashboard'
 import { ScrollRow } from '@/components/dashboard/ScrollRow'
 import { PageCard, type DashDisplay } from '@/components/dashboard/PageCard'
 import { FeedCard, type FeedItem } from '@/components/dashboard/FeedCard'
 import { AnalyticsPanel } from '@/components/dashboard/AnalyticsPanel'
+import { NotificationBell } from '@/components/dashboard/NotificationBell'
 
 const SELECTED_KEY = 'galli:dash:selectedDisplayId'
 
@@ -175,13 +176,7 @@ export default function DashboardPage() {
                 className="bg-transparent outline-none text-sm w-full placeholder:text-muted-foreground"
               />
             </div>
-            <button
-              aria-label="Notifications"
-              className="relative w-10 h-10 rounded-full border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-galli-violet" />
-            </button>
+            <NotificationBell />
           </div>
         </div>
 
