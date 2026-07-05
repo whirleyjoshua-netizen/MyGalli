@@ -11,6 +11,46 @@ function validPlaces(places: MapPlace[]): MapPlace[] {
   return places.filter((p) => isFiniteCoord(p.lat) && isFiniteCoord(p.lng))
 }
 
+function renderMarkers(
+  L: typeof import('leaflet'),
+  map: import('leaflet').Map,
+  layer: import('leaflet').LayerGroup,
+  places: MapPlace[],
+  categories: MapCategory[],
+  element: CanvasElement,
+) {
+  layer.clearLayers()
+  const latlngs: [number, number][] = []
+  for (const p of places) {
+    const cat = resolveCategory(p, categories)
+    const icon = L.divIcon({
+      html: markerDivHtml(p, cat),
+      className: 'galli-pin-wrap',
+      iconSize: [44, 44],
+      iconAnchor: [22, 22],
+      popupAnchor: [0, -20],
+    })
+    L.marker([p.lat, p.lng], { icon, keyboard: true, title: p.label })
+      .bindPopup(popupHtml(p, cat), { closeButton: true })
+      .addTo(layer)
+    latlngs.push([p.lat, p.lng])
+  }
+
+  if (element.mapConnectLine && latlngs.length > 1) {
+    L.polyline(latlngs, { color: '#0F3D2E', weight: 3, opacity: 0.65, lineJoin: 'round', className: 'galli-journey' }).addTo(layer)
+  }
+
+  if (latlngs.length === 1) {
+    map.setView(latlngs[0], 12)
+  } else if (latlngs.length > 1 && (element.mapFitView ?? true)) {
+    map.fitBounds(latlngs, { padding: [40, 40] })
+  } else if (latlngs.length > 1) {
+    map.setView(latlngs[0], 4)
+  } else {
+    map.setView([20, 0], 2)
+  }
+}
+
 function MapView({ element, active }: { element: CanvasElement; active: string | null }) {
   const ref = useRef<HTMLDivElement>(null)
   const height = element.mapHeight ?? 420
@@ -21,51 +61,45 @@ function MapView({ element, active }: { element: CanvasElement; active: string |
   const categories = element.mapCategories ?? []
   const tile = TILE_STYLES[element.mapTileStyle ?? 'light']
 
+  const mapObj = useRef<import('leaflet').Map | null>(null)
+  const layerRef = useRef<import('leaflet').LayerGroup | null>(null)
+
+  // Build the map once (mount-only).
   useEffect(() => {
-    let map: import('leaflet').Map | null = null
     let cancelled = false
     ;(async () => {
       const L = (await import('leaflet')).default
-      if (cancelled || !ref.current) return
+      if (cancelled || !ref.current || mapObj.current) return
       try {
-        map = L.map(ref.current, { scrollWheelZoom: false, attributionControl: true })
+        const map = L.map(ref.current, { scrollWheelZoom: false, attributionControl: true })
         L.tileLayer(tile.url, { attribution: tile.attribution, subdomains: tile.subdomains ?? 'abc', maxZoom: 19 }).addTo(map)
-
-        const latlngs: [number, number][] = []
-        for (const p of places) {
-          const cat = resolveCategory(p, categories)
-          const icon = L.divIcon({
-            html: markerDivHtml(p, cat),
-            className: 'galli-pin-wrap',
-            iconSize: [44, 44],
-            iconAnchor: [22, 22],
-            popupAnchor: [0, -20],
-          })
-          L.marker([p.lat, p.lng], { icon, keyboard: true, title: p.label })
-            .bindPopup(popupHtml(p, cat), { closeButton: true })
-            .addTo(map)
-          latlngs.push([p.lat, p.lng])
-        }
-
-        if (element.mapConnectLine && latlngs.length > 1) {
-          L.polyline(latlngs, { color: '#0F3D2E', weight: 3, opacity: 0.65, lineJoin: 'round', className: 'galli-journey' }).addTo(map)
-        }
-
-        if (latlngs.length === 1) {
-          map.setView(latlngs[0], 12)
-        } else if (latlngs.length > 1 && (element.mapFitView ?? true)) {
-          map.fitBounds(latlngs, { padding: [40, 40] })
-        } else if (latlngs.length > 1) {
-          map.fitBounds(latlngs, { padding: [40, 40] })
-        } else {
-          map.setView([20, 0], 2)
-        }
+        const layer = L.layerGroup().addTo(map)
+        mapObj.current = map
+        layerRef.current = layer
+        renderMarkers(L, map, layer, places, categories, element)
       } catch {
         /* jsdom/no-layout — leave the skeleton div in place */
       }
     })()
-    return () => { cancelled = true; map?.remove() }
-  }, [places, categories, tile, element.mapConnectLine, element.mapFitView])
+    return () => { cancelled = true; mapObj.current?.remove(); mapObj.current = null; layerRef.current = null }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Re-render markers/line/view when data changes.
+  useEffect(() => {
+    ;(async () => {
+      const L = (await import('leaflet')).default
+      const map = mapObj.current
+      const layer = layerRef.current
+      if (!map || !layer) return
+      try {
+        renderMarkers(L, map, layer, places, categories, element)
+      } catch {
+        /* jsdom/no-layout */
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [places, categories, element.mapConnectLine, element.mapFitView])
 
   return <div ref={ref} className="galli-map w-full rounded-[20px] ring-1 ring-black/5 shadow-soft bg-[#eef2f0]" style={{ height }} />
 }

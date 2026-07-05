@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import 'leaflet/dist/leaflet.css'
 import './map-element.css'
 import { Trash2, MapPin, Search, Loader2, Upload, GripVertical, Navigation } from 'lucide-react'
@@ -26,6 +26,8 @@ export function MapElement({ element, onChange, onDelete, isSelected, onSelect }
   const layerRef = useRef<import('leaflet').LayerGroup | null>(null)
   const placesRef = useRef(places)
   placesRef.current = places
+  const categoriesRef = useRef(categories)
+  categoriesRef.current = categories
 
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
@@ -46,7 +48,7 @@ export function MapElement({ element, onChange, onDelete, isSelected, onSelect }
       const map = L.map(mapRef.current, { scrollWheelZoom: false }).setView([20, 0], 2)
       L.tileLayer(tile.url, { attribution: tile.attribution, subdomains: tile.subdomains ?? 'abc', maxZoom: 19 }).addTo(map)
       map.on('click', (e: import('leaflet').LeafletMouseEvent) => {
-        addPlace({ id: uid(), label: 'New place', lat: e.latlng.lat, lng: e.latlng.lng, category: categories[0]?.key })
+        addPlace({ id: uid(), label: 'New place', lat: e.latlng.lat, lng: e.latlng.lng, category: categoriesRef.current[0]?.key })
       })
       layerRef.current = L.layerGroup().addTo(map)
       mapObj.current = map
