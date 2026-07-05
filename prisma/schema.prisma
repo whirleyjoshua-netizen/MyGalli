@@ -305,6 +305,7 @@ model BulletinPost {
 
   text     String?
   imageUrl String?
+  isPublic Boolean  @default(false)
 
   // Zero or one CanvasElement-shaped block config (v1 UI allows at most one).
   blocks   Json     @default("[]")
@@ -318,6 +319,7 @@ model BulletinPost {
 
   @@index([authorId])
   @@index([createdAt])
+  @@index([isPublic, createdAt])
 }
 
 model BulletinLike {
