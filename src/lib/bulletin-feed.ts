@@ -49,7 +49,7 @@ export function assembleFeedPosts(
     if (block) {
       const canSee = resultsVisible({ isAuthor, revealAfterAnswer: settings.revealAfterAnswer, hasResponded })
       if (canSee) {
-        results = aggregateBlock(block, toRecords(rows as any, false))
+        results = aggregateBlock(block, toRecords(rows, false))
       }
     }
 
