@@ -46,3 +46,34 @@ describe('resultsVisible', () => {
     expect(resultsVisible({ isAuthor: false, revealAfterAnswer: true, hasResponded: true })).toBe(true)
   })
 })
+
+import { scoreTrending, rankTrending } from './bulletin'
+
+describe('scoreTrending', () => {
+  it('weights responses 2x likes', () => {
+    expect(scoreTrending(0, 0)).toBe(0)
+    expect(scoreTrending(3, 0)).toBe(3)
+    expect(scoreTrending(0, 2)).toBe(4)
+    expect(scoreTrending(1, 5)).toBe(11)
+  })
+})
+
+describe('rankTrending', () => {
+  const d = (n: number) => new Date(2026, 0, n)
+  const items = [
+    { id: 'a', likeCount: 10, responseCount: 0, createdAt: d(1) }, // score 10
+    { id: 'b', likeCount: 0, responseCount: 6, createdAt: d(2) },  // score 12
+    { id: 'c', likeCount: 2, responseCount: 2, createdAt: d(3) },  // score 6
+    { id: 'd', likeCount: 2, responseCount: 2, createdAt: d(4) },  // score 6, newer than c
+  ]
+  it('orders by score desc then createdAt desc, and reports total', () => {
+    const { pageItems, total } = rankTrending(items, 1, 10)
+    expect(pageItems.map((i) => i.id)).toEqual(['b', 'a', 'd', 'c'])
+    expect(total).toBe(4)
+  })
+  it('paginates the ranked list', () => {
+    expect(rankTrending(items, 1, 2).pageItems.map((i) => i.id)).toEqual(['b', 'a'])
+    expect(rankTrending(items, 2, 2).pageItems.map((i) => i.id)).toEqual(['d', 'c'])
+    expect(rankTrending(items, 3, 2).pageItems).toEqual([])
+  })
+})
