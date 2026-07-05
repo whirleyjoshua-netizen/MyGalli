@@ -50,6 +50,7 @@ import {
   Store,
   Sparkles,
   Blocks,
+  MapPin,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -141,6 +142,7 @@ const commands: Command[] = [
   { id: 'countdown', label: 'Countdown', icon: Timer, description: 'Live countdown to a date', category: 'Content' },
   { id: 'before-after', label: 'Before / After', icon: Contrast, description: 'Draggable image comparison', category: 'Media' },
   { id: 'tip-jar', label: 'Tip Jar', icon: HandCoins, description: 'Support / donate button', category: 'Media' },
+  { id: 'map', label: 'Map', icon: MapPin, description: 'Pin places on an interactive map', category: 'Media' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Apps', 'Kit']

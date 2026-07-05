@@ -35,6 +35,7 @@ import { PublicQuoteWallElement } from '@/components/elements/PublicQuoteWallEle
 import { PublicTimelineElement } from '@/components/elements/PublicTimelineElement'
 import { PublicLinkHubElement } from '@/components/elements/PublicLinkHubElement'
 import { PublicGalleryElement } from '@/components/elements/PublicGalleryElement'
+import { PublicMapElement } from '@/components/elements/PublicMapElement'
 import { PublicCountdownElement } from '@/components/elements/PublicCountdownElement'
 import { PublicBeforeAfterElement } from '@/components/elements/PublicBeforeAfterElement'
 import { PublicTipJarElement } from '@/components/elements/PublicTipJarElement'
@@ -490,6 +491,8 @@ export function renderElement(element: CanvasElement, displayId?: string) {
       return <PublicLinkHubElement element={element} />
     case 'gallery':
       return <PublicGalleryElement element={element} />
+    case 'map':
+      return <PublicMapElement element={element} />
     case 'countdown':
       return <PublicCountdownElement element={element} />
     case 'before-after':
