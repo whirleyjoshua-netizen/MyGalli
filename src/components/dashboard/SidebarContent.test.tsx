@@ -24,4 +24,10 @@ describe('SidebarContent', () => {
     const link = screen.getByRole('link', { name: /bulletin/i })
     expect(link).toHaveAttribute('href', '/bulletin')
   })
+
+  it('no longer renders a duplicate account bar (@handle lives in ProfileCard)', () => {
+    render(<SidebarContent />)
+    expect(screen.queryByText('@josh')).toBeNull()
+    expect(screen.getByTestId('profile-card')).toBeInTheDocument()
+  })
 })

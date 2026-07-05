@@ -27,7 +27,6 @@ describe('MobileNav', () => {
     for (const label of ['Home', 'My Pages', 'Shared with me', 'Explore', 'Analytics', 'Library', 'Create New']) {
       expect(screen.getByText(label)).toBeTruthy()
     }
-    expect(screen.getByText('@josh')).toBeTruthy()
     expect(document.body.style.overflow).toBe('hidden')
   })
 
