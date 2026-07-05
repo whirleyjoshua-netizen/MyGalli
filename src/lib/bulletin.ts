@@ -32,3 +32,28 @@ export function isInScope(authorId: string, followingIds: string[], myId: string
 export function resultsVisible(p: { isAuthor: boolean; revealAfterAnswer: boolean; hasResponded: boolean }): boolean {
   return p.isAuthor || !p.revealAfterAnswer || p.hasResponded
 }
+
+export function scoreTrending(likeCount: number, responseCount: number): number {
+  return likeCount + 2 * responseCount
+}
+
+export interface TrendingCandidate {
+  id: string
+  likeCount: number
+  responseCount: number
+  createdAt: Date
+}
+
+export function rankTrending<T extends TrendingCandidate>(
+  items: T[],
+  page: number,
+  limit: number,
+): { pageItems: T[]; total: number } {
+  const sorted = [...items].sort((a, b) => {
+    const s = scoreTrending(b.likeCount, b.responseCount) - scoreTrending(a.likeCount, a.responseCount)
+    if (s !== 0) return s
+    return b.createdAt.getTime() - a.createdAt.getTime()
+  })
+  const start = (page - 1) * limit
+  return { pageItems: sorted.slice(start, start + limit), total: sorted.length }
+}
