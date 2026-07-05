@@ -40,6 +40,7 @@ model User {
   followers   Follow[]  @relation("Followers")
   collaborations DisplayCollaborator[]
   verificationTokens VerificationToken[]
+  notifications Notification[] @relation("UserNotifications")
 }
 
 model VerificationToken {
@@ -345,4 +346,21 @@ model BulletinResponse {
 
   @@unique([postId, userId])
   @@index([postId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  type        String
+  actorId     String?
+  actorName   String
+  actorAvatar String?
+  entityUrl   String?
+  contextText String?
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, read])
 }
