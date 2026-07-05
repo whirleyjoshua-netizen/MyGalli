@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isBulletinBlockType, normalizeSettings, isEmptyPost, isInScope, resultsVisible } from './bulletin'
+import { isBulletinBlockType, normalizeSettings, isEmptyPost, isInScope, resultsVisible, scoreTrending, rankTrending } from './bulletin'
 
 describe('isBulletinBlockType', () => {
   it('accepts the three v1 types and rejects everything else', () => {
@@ -46,8 +46,6 @@ describe('resultsVisible', () => {
     expect(resultsVisible({ isAuthor: false, revealAfterAnswer: true, hasResponded: true })).toBe(true)
   })
 })
-
-import { scoreTrending, rankTrending } from './bulletin'
 
 describe('scoreTrending', () => {
   it('weights responses 2x likes', () => {
