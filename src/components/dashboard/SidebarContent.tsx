@@ -1,12 +1,10 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import {
-  Plus, Home, FileText, Users, Compass, Library, ChevronDown, LogOut, BarChart3, UserCircle, Megaphone,
+  Plus, Home, FileText, Users, Compass, Library, BarChart3, Megaphone,
 } from 'lucide-react'
-import { useAuthStore } from '@/lib/store'
 import { ProfileCard } from '@/components/dashboard/ProfileCard'
 
 interface NavItem {
@@ -47,17 +45,6 @@ export function SidebarContent({
     ? [...NAV.slice(0, 4), BULLETIN_NAV, ...NAV.slice(4)]
     : NAV
   const pathname = usePathname()
-  const router = useRouter()
-  const { user, logout } = useAuthStore()
-  const [menuOpen, setMenuOpen] = useState(false)
-
-  const handleLogout = () => {
-    logout()
-    onNavigate?.()
-    router.push('/login')
-  }
-
-  const initial = (user?.name || user?.username || '?').charAt(0).toUpperCase()
 
   return (
     <>
@@ -113,60 +100,7 @@ export function SidebarContent({
       <div className="flex-1" />
 
       {/* Profile ID card */}
-      {!collapsed && <ProfileCard />}
-
-      {/* User menu */}
-      <div className="relative">
-        <button
-          onClick={() => setMenuOpen((o) => !o)}
-          className={`w-full flex items-center gap-2.5 p-2 rounded-xl border border-border bg-surface hover:bg-muted transition-colors cursor-pointer ${
-            collapsed ? 'justify-center' : ''
-          }`}
-        >
-          {user?.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.avatar} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
-          ) : (
-            <span className="w-8 h-8 rounded-lg bg-primary/15 text-primary font-bold text-sm flex items-center justify-center shrink-0">
-              {initial}
-            </span>
-          )}
-          {!collapsed && (
-            <>
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-semibold truncate">{user?.name || user?.username || 'You'}</p>
-                <p className="text-[11px] text-muted-foreground truncate">@{user?.username}</p>
-              </div>
-              <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-            </>
-          )}
-        </button>
-
-        {menuOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-            <div className="absolute bottom-full left-0 right-0 mb-2 z-50 bg-surface border border-border rounded-xl shadow-soft-lg py-1 overflow-hidden">
-              <Link
-                href={user?.username ? `/${user.username}` : '#'}
-                onClick={() => { setMenuOpen(false); onNavigate?.() }}
-                className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              >
-                <UserCircle className="w-4 h-4" />
-                View profile
-              </Link>
-              <div className="border-t border-border">
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Log out
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      <ProfileCard collapsed={collapsed} />
     </>
   )
 }
