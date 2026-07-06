@@ -11,6 +11,7 @@ export interface DashDisplay {
   views: number
   updatedAt: string
   coverImage?: string | null
+  kind?: string
   _count: { elements: number }
 }
 

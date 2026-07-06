@@ -1,5 +1,6 @@
 // Canvas Types - Section/Column/Element Architecture
 import type { CSSProperties } from 'react'
+import type { CollectionMemberCard } from '@/lib/collections'
 
 // Text styling (applicable to text, heading, quote, callout, list)
 export interface TextStyle {
@@ -115,6 +116,8 @@ export type ElementType =
   | 'map'                   // Interactive Leaflet map with photo-pins + directions
   // Batch 2: Audio
   | 'audio-player'          // Custom player (upload/URL) + Spotify/SoundCloud embeds
+  // Collection Boards
+  | 'collection-view'       // Gallery of a board's member pages
 
 export type MapPlace = {
   id: string
@@ -553,6 +556,12 @@ export interface CanvasElement {
   audioCoverUrl?: string
   audioAutoStart?: boolean
   audioLoop?: boolean
+  // Collection View (board gallery)
+  collectionViewType?: 'gallery'          // slice-1 only; seam for later views
+  collectionColumns?: 2 | 3 | 4
+  collectionShowCategory?: boolean
+  collectionShowDescription?: boolean
+  collectionMembers?: CollectionMemberCard[]  // transient: hydrated at render, never persisted
   // Text styling (text, heading, quote, callout, list)
   fontFamily?: string
   fontSize?: number
@@ -1159,6 +1168,14 @@ export function createElement(type: ElementType): CanvasElement {
       }
     case 'audio-player':
       return { ...base, audioSourceType: 'file', audioUrl: '', audioTitle: '', audioArtist: '', audioCoverUrl: '', audioAutoStart: false, audioLoop: false }
+    case 'collection-view':
+      return {
+        ...base,
+        collectionViewType: 'gallery',
+        collectionColumns: 3,
+        collectionShowCategory: true,
+        collectionShowDescription: false,
+      }
     default:
       return base
   }

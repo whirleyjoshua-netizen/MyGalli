@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
           createdAt: true,
           updatedAt: true,
           category: true,
+          kind: true,
           kitConfig: true,
           headerCard: true,
           background: true,
