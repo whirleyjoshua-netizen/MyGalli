@@ -98,6 +98,8 @@ import {
   BusinessHoursElement,
   BusinessReviewElement,
   BusinessPromoElement,
+  AudioPlayerElement,
+  PublicAudioPlayerElement,
 } from '@/components/elements'
 import { PublicCommentSection } from '@/components/elements/PublicCommentSection'
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
@@ -1129,6 +1131,18 @@ export function ColumnCanvas({
         }
         return (
           <MapElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'audio-player':
+        if (isPreviewMode) return <PublicAudioPlayerElement element={element} />
+        return (
+          <AudioPlayerElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}

@@ -51,6 +51,7 @@ import { PublicBusinessMenuElement } from '@/components/elements/PublicBusinessM
 import { PublicBusinessHoursElement } from '@/components/elements/PublicBusinessHoursElement'
 import { PublicBusinessReviewElement } from '@/components/elements/PublicBusinessReviewElement'
 import { PublicBusinessPromoElement } from '@/components/elements/PublicBusinessPromoElement'
+import { PublicAudioPlayerElement } from '@/components/elements/PublicAudioPlayerElement'
 
 export function getGridClass(layout: string): string {
   switch (layout) {
@@ -535,6 +536,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'business-promo':
       return <PublicBusinessPromoElement element={element} />
+
+    case 'audio-player':
+      return <PublicAudioPlayerElement element={element} />
 
     default:
       return null

@@ -82,3 +82,6 @@ export { BeforeAfterElement } from './BeforeAfterElement'
 export { PublicBeforeAfterElement } from './PublicBeforeAfterElement'
 export { TipJarElement } from './TipJarElement'
 export { PublicTipJarElement } from './PublicTipJarElement'
+// Batch 2
+export { AudioPlayerElement } from './AudioPlayerElement'
+export { PublicAudioPlayerElement } from './PublicAudioPlayerElement'

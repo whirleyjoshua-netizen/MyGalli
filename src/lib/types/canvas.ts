@@ -111,6 +111,8 @@ export type ElementType =
 
   // Batch 2: Map
   | 'map'                   // Interactive Leaflet map with photo-pins + directions
+  // Batch 2: Audio
+  | 'audio-player'          // Custom player (upload/URL) + Spotify/SoundCloud embeds
 
 export type MapPlace = {
   id: string
@@ -533,6 +535,14 @@ export interface CanvasElement {
   mapHeight?: number
   mapConnectLine?: boolean
   mapFitView?: boolean
+  // Audio player specific
+  audioSourceType?: 'file' | 'spotify' | 'soundcloud'
+  audioUrl?: string
+  audioTitle?: string
+  audioArtist?: string
+  audioCoverUrl?: string
+  audioAutoStart?: boolean
+  audioLoop?: boolean
   // Text styling (text, heading, quote, callout, list)
   fontFamily?: string
   fontSize?: number
@@ -1126,6 +1136,8 @@ export function createElement(type: ElementType): CanvasElement {
         mapConnectLine: false,
         mapFitView: true,
       }
+    case 'audio-player':
+      return { ...base, audioSourceType: 'file', audioUrl: '', audioTitle: '', audioArtist: '', audioCoverUrl: '', audioAutoStart: false, audioLoop: false }
     default:
       return base
   }

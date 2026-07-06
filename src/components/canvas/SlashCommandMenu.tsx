@@ -143,6 +143,7 @@ const commands: Command[] = [
   { id: 'before-after', label: 'Before / After', icon: Contrast, description: 'Draggable image comparison', category: 'Media' },
   { id: 'tip-jar', label: 'Tip Jar', icon: HandCoins, description: 'Support / donate button', category: 'Media' },
   { id: 'map', label: 'Map', icon: MapPin, description: 'Pin places on an interactive map', category: 'Media' },
+  { id: 'audio-player', label: 'Music Player', icon: Music, description: 'Play a track — upload, URL, Spotify, or SoundCloud', category: 'Media' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Apps', 'Kit']
