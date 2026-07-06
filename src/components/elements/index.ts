@@ -93,3 +93,7 @@ export { PublicCollectionView } from './PublicCollectionView'
 export { CollectionViewElement } from './CollectionViewElement'
 export { FlowchartElement } from './FlowchartElement'
 export { PublicFlowchartElement } from './PublicFlowchartElement'
+
+// Hub
+export { HubElement } from './HubElement'
+export { PublicHubElement } from './PublicHubElement'

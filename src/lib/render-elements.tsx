@@ -41,6 +41,7 @@ import { PublicCountdownElement } from '@/components/elements/PublicCountdownEle
 import { PublicBeforeAfterElement } from '@/components/elements/PublicBeforeAfterElement'
 import { PublicTipJarElement } from '@/components/elements/PublicTipJarElement'
 import { PublicCollectionView } from '@/components/elements/PublicCollectionView'
+import { PublicHubElement } from '@/components/elements/PublicHubElement'
 import { PublicCourseListElement } from '@/components/elements/PublicCourseListElement'
 import { PublicGPACardElement } from '@/components/elements/PublicGPACardElement'
 import { PublicTestScoresElement } from '@/components/elements/PublicTestScoresElement'
@@ -484,6 +485,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'color-palette':
       return <PublicColorPaletteElement element={element} />
+
+    case 'hub':
+      return <PublicHubElement element={element} />
 
     case 'playlist':
       return <PublicPlaylistElement element={element} />

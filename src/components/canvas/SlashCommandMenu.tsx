@@ -53,6 +53,7 @@ import {
   MapPin,
   Radio,
   Workflow,
+  Boxes,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -148,6 +149,7 @@ const commands: Command[] = [
   { id: 'map', label: 'Map', icon: MapPin, description: 'Pin places on an interactive map', category: 'Media' },
   { id: 'audio-player', label: 'Music Player', icon: Music, description: 'Play a track — upload, URL, Spotify, or SoundCloud', category: 'Media' },
   { id: 'live-feed', label: 'Live Feed', icon: Radio, description: 'Live counter/score you control from your phone', category: 'Live' },
+  { id: 'hub', label: 'Hub', icon: Boxes, description: 'A deep-linked collection of files, links & demos', category: 'Media' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Live', 'Forms', 'Social', 'Apps', 'Kit']

@@ -17,7 +17,13 @@ describe('validateUpload', () => {
     expect(validateUpload('audio/mpeg', 26 * 1024 * 1024).ok).toBe(false)
   })
   it('rejects a disallowed type', () => {
-    expect(validateUpload('application/pdf', 100).ok).toBe(false)
+    expect(validateUpload('application/zip', 100).ok).toBe(false)
+  })
+  it('accepts a pdf up to 25MB', () => {
+    expect(validateUpload('application/pdf', 20 * 1024 * 1024)).toEqual({ ok: true })
+  })
+  it('rejects a pdf over 25MB', () => {
+    expect(validateUpload('application/pdf', 26 * 1024 * 1024).ok).toBe(false)
   })
 })
 
