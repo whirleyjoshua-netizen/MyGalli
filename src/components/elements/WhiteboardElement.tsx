@@ -38,6 +38,7 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
   const historyRef = useRef<string[]>([])
   const redoRef = useRef<string[]>([])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isRestoringRef = useRef(false)
 
   const [tool, setTool] = useState<WhiteboardTool>('select')
   const [strokeColor, setStrokeColor] = useState('#111111')
@@ -70,6 +71,7 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
   }, [element.id, onChange])
 
   const snapshot = useCallback(() => {
+    if (isRestoringRef.current) return
     const canvas = fabricRef.current
     if (!canvas) return
     historyRef.current = pushHistory(historyRef.current, JSON.stringify(canvas.toJSON()))
@@ -148,8 +150,9 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
     const cur = historyRef.current[historyRef.current.length - 1]
     redoRef.current = [...redoRef.current, cur]
     historyRef.current = historyRef.current.slice(0, -1)
-    canvas.loadFromJSON(historyRef.current[historyRef.current.length - 1]).then(() => canvas.renderAll())
-    persist()
+    const target = historyRef.current[historyRef.current.length - 1]
+    isRestoringRef.current = true
+    canvas.loadFromJSON(target).then(() => { canvas.renderAll(); isRestoringRef.current = false; persist() })
   }
   const redo = () => {
     const canvas = fabricRef.current
@@ -157,14 +160,17 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
     const scene = redoRef.current[redoRef.current.length - 1]
     redoRef.current = redoRef.current.slice(0, -1)
     historyRef.current = pushHistory(historyRef.current, scene)
-    canvas.loadFromJSON(scene).then(() => canvas.renderAll())
-    persist()
+    isRestoringRef.current = true
+    canvas.loadFromJSON(scene).then(() => { canvas.renderAll(); isRestoringRef.current = false; persist() })
   }
   const clear = () => {
     const canvas = fabricRef.current
     if (!canvas) return
+    isRestoringRef.current = true
     canvas.getObjects().slice().forEach((o: any) => canvas.remove(o))
-    canvas.renderAll(); snapshot()
+    isRestoringRef.current = false
+    canvas.renderAll()
+    snapshot()
   }
   const changeBackground = (b: 'blank'|'grid'|'dots') => {
     setBackground(b); onChange({ whiteboardBackground: b })
