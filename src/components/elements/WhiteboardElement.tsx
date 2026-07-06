@@ -30,6 +30,12 @@ async function uploadImageFile(file: File): Promise<string> {
   return (await res.json()).url as string
 }
 
+async function deleteBlob(url: string): Promise<void> {
+  try {
+    await fetch('/api/upload', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) })
+  } catch { /* best-effort */ }
+}
+
 export function WhiteboardElement({ element, onChange, onDelete, isSelected, onSelect }: Props) {
   const canvasElRef = useRef<HTMLCanvasElement>(null)
   // fabric Canvas instance (typed loosely to avoid a static fabric import at module scope)
@@ -39,6 +45,7 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
   const redoRef = useRef<string[]>([])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isRestoringRef = useRef(false)
+  const prevPreviewRef = useRef<string>(element.whiteboardPreviewUrl || '')
 
   const [tool, setTool] = useState<WhiteboardTool>('select')
   const [strokeColor, setStrokeColor] = useState('#111111')
@@ -61,11 +68,20 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
       if (!canvas) return
       const scene = JSON.stringify(canvas.toJSON())
       onChange({ whiteboardScene: scene })
-      if (isBlankScene(scene)) { onChange({ whiteboardPreviewUrl: '' }); return }
+      if (isBlankScene(scene)) {
+        const old = prevPreviewRef.current
+        prevPreviewRef.current = ''
+        onChange({ whiteboardPreviewUrl: '' })
+        if (old) void deleteBlob(old)
+        return
+      }
       try {
         const dataUrl = canvas.toDataURL({ format: 'png', multiplier: 2 })
         const url = await uploadDataUrl(dataUrl, previewFilename(element.id))
+        const old = prevPreviewRef.current
+        prevPreviewRef.current = url
         onChange({ whiteboardPreviewUrl: url })
+        if (old && old !== url) void deleteBlob(old)
       } catch { /* keep previous preview on failure */ }
     }, 600)
   }, [element.id, onChange])

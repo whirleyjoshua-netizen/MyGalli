@@ -75,3 +75,34 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getUser(request)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { url } = await request.json()
+    if (!url || typeof url !== 'string') return NextResponse.json({ error: 'No url' }, { status: 400 })
+
+    const blobToken = blobReadWriteToken()
+    if (blobToken) {
+      // Prod: Vercel Blob. Ownership = the blob pathname must live under this user's prefix.
+      let pathname: string
+      try { pathname = new URL(url).pathname.replace(/^\//, '') } catch { return NextResponse.json({ error: 'Bad url' }, { status: 400 }) }
+      if (!pathname.startsWith(`${user.id}/`)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      const { del } = await import('@vercel/blob')
+      await del(url, { token: blobToken })
+      return NextResponse.json({ ok: true })
+    }
+
+    // Dev: local file. url = /api/upload/<userId>/<filename>
+    const m = url.match(/^\/api\/upload\/([^/]+)\/([^/]+)$/)
+    if (!m) return NextResponse.json({ error: 'Bad url' }, { status: 400 })
+    if (m[1] !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const fp = path.join(UPLOAD_DIR, m[1], m[2])
+    try { const { unlink } = await import('fs/promises'); await unlink(fp) } catch { /* already gone */ }
+    return NextResponse.json({ ok: true })
+  } catch (e) {
+    console.error('Upload delete error:', e)
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+  }
+}
+
