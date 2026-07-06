@@ -13,8 +13,20 @@ interface Props {
   onSelect: () => void
 }
 
+// Decode a data: URL to a Blob WITHOUT fetch() — the app's CSP `connect-src`
+// does not allow `data:`, so `fetch(dataUrl)` is blocked in the browser.
+function dataUrlToBlob(dataUrl: string): Blob {
+  const comma = dataUrl.indexOf(',')
+  const header = dataUrl.slice(0, comma)
+  const mime = header.match(/data:(.*?)(;|$)/)?.[1] || 'image/png'
+  const binary = atob(dataUrl.slice(comma + 1))
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
+
 async function uploadDataUrl(dataUrl: string, filename: string): Promise<string> {
-  const blob = await (await fetch(dataUrl)).blob()
+  const blob = dataUrlToBlob(dataUrl)
   const fd = new FormData()
   fd.append('file', new File([blob], filename, { type: 'image/png' }))
   const res = await fetch('/api/upload', { method: 'POST', body: fd })
