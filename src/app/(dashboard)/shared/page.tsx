@@ -31,7 +31,7 @@ export default function SharedPage() {
     <div className="px-6 lg:px-8 py-7">
       <div className="mb-8">
         <h1 className="flex items-center gap-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-          <Users className="w-6 h-6 text-primary" /> Shared with me
+          <Users className="w-6 h-6 text-primary" /> Collaborations
         </h1>
         <p className="text-muted-foreground mt-1">Pages you&apos;ve been invited to collaborate on.</p>
       </div>

@@ -24,7 +24,7 @@ describe('MobileNav', () => {
   it('opens the drawer on menu click, showing all nav destinations + profile', () => {
     render(<MobileNav />)
     fireEvent.click(screen.getByLabelText('Open menu'))
-    for (const label of ['Home', 'My Pages', 'Shared with me', 'Explore', 'Analytics', 'Library', 'Create New']) {
+    for (const label of ['Home', 'My Pages', 'Collaborations', 'Explore', 'Analytics', 'Library', 'Create New']) {
       expect(screen.getByText(label)).toBeTruthy()
     }
     expect(document.body.style.overflow).toBe('hidden')

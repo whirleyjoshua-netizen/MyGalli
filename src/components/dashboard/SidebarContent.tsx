@@ -18,7 +18,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { label: 'Home', icon: Home, href: '/dashboard', match: (p) => p === '/dashboard' },
   { label: 'My Pages', icon: FileText, href: '/my-pages', match: (p) => p.startsWith('/my-pages') },
-  { label: 'Shared with me', icon: Users, href: '/shared', match: (p) => p.startsWith('/shared') },
+  { label: 'Collaborations', icon: Users, href: '/shared', match: (p) => p.startsWith('/shared') },
   { label: 'Explore', icon: Compass, href: '/explore', match: (p) => p.startsWith('/explore') },
   { label: 'Analytics', icon: BarChart3, href: '/analytics', match: (p) => p.startsWith('/analytics') },
   { label: 'Library', icon: Library, href: '/library', match: (p) => p.startsWith('/library') },
