@@ -22,6 +22,7 @@ export default function MyPagesPage() {
   const [prefs, setPrefs] = useState<DashboardPrefs>({})
   const [loading, setLoading] = useState(true)
   const [cardMenuOpen, setCardMenuOpen] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'pages' | 'boards'>('pages')
 
   useEffect(() => {
     fetch('/api/displays')
@@ -92,6 +93,18 @@ export default function MyPagesPage() {
     return `${Math.floor(days / 30)}mo ago`
   }
 
+  const createBoard = useCallback(async () => {
+    const res = await fetch('/api/displays', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Untitled Board', kind: 'collection' }),
+    })
+    if (res.status === 403) { router.push('/enterprise'); return }
+    if (!res.ok) return
+    const board = await res.json()
+    router.push(`/editor?id=${board.id}`)
+  }, [router])
+
   const pinnedSet = useMemo(() => new Set(prefs.pinnedDisplayIds || []), [prefs.pinnedDisplayIds])
 
   const sortPinnedFirst = (list: DashDisplay[]) => [
@@ -99,8 +112,14 @@ export default function MyPagesPage() {
     ...list.filter((d) => !pinnedSet.has(d.id)),
   ]
 
-  const published = useMemo(() => sortPinnedFirst(displays.filter((d) => d.published)), [displays, pinnedSet])
-  const drafts = useMemo(() => sortPinnedFirst(displays.filter((d) => !d.published)), [displays, pinnedSet])
+  const boardCount = useMemo(() => displays.filter((d) => d.kind === 'collection').length, [displays])
+  const pageCount = displays.length - boardCount
+  const activeList = useMemo(
+    () => displays.filter((d) => (activeTab === 'boards' ? d.kind === 'collection' : d.kind !== 'collection')),
+    [displays, activeTab],
+  )
+  const published = useMemo(() => sortPinnedFirst(activeList.filter((d) => d.published)), [activeList, pinnedSet])
+  const drafts = useMemo(() => sortPinnedFirst(activeList.filter((d) => !d.published)), [activeList, pinnedSet])
 
   const renderCard = (display: DashDisplay, i: number) => (
     <PageCard
@@ -123,29 +142,55 @@ export default function MyPagesPage() {
 
   return (
     <div className="px-6 lg:px-8 py-7">
-      <div className="flex items-center justify-between gap-4 mb-8">
+      <div className="flex items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">My Pages</h1>
-          <p className="text-muted-foreground mt-1">Everything you&apos;ve created — live and in progress.</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">Gallery</h1>
+          <p className="text-muted-foreground mt-1">Your pages and boards — live and in progress.</p>
         </div>
-        <button
-          onClick={() => router.push('/editor')}
-          className="inline-flex shrink-0 items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-semibold shadow-soft hover:brightness-105 transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> New page
-        </button>
+        {activeTab === 'boards' ? (
+          <button
+            onClick={createBoard}
+            className="inline-flex shrink-0 items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-semibold shadow-soft hover:brightness-105 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> New board
+          </button>
+        ) : (
+          <button
+            onClick={() => router.push('/editor')}
+            className="inline-flex shrink-0 items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-semibold shadow-soft hover:brightness-105 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> New page
+          </button>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 mb-8 border-b border-border">
+        {([['pages', 'Pages', pageCount], ['boards', 'Boards', boardCount]] as const).map(([key, label, count]) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`px-4 py-2.5 -mb-px text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+              activeTab === key ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {label} <span className="font-normal text-muted-foreground">({count})</span>
+          </button>
+        ))}
       </div>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading your pages…</p>
-      ) : displays.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : activeList.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-border rounded-2xl">
-          <p className="text-muted-foreground mb-4">You haven&apos;t created any pages yet.</p>
+          <p className="text-muted-foreground mb-4">
+            {activeTab === 'boards' ? "You haven't created any boards yet." : "You haven't created any pages yet."}
+          </p>
           <button
-            onClick={() => router.push('/editor')}
+            onClick={activeTab === 'boards' ? createBoard : () => router.push('/editor')}
             className="px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-semibold shadow-soft hover:brightness-105 transition-all cursor-pointer"
           >
-            Create your first page
+            {activeTab === 'boards' ? 'Create a board' : 'Create your first page'}
           </button>
         </div>
       ) : (
