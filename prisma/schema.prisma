@@ -117,6 +117,7 @@ model Display {
   // Kit configuration (identifies which kit + stores profile data)
   kitConfig       Json?
   trackerEntries  TrackerEntry[]
+  liveFeeds       LiveFeed[]
 
   // Jersey signatures
   jerseySignatures JerseySignature[]
@@ -147,6 +148,20 @@ model DisplayCollaborator {
 
   @@unique([displayId, userId])
   @@index([userId])
+  @@index([displayId])
+}
+
+model LiveFeed {
+  id            String    @id
+  displayId     String
+  display       Display   @relation(fields: [displayId], references: [id], onDelete: Cascade)
+  isLive        Boolean   @default(false)
+  valueA        Int       @default(0)
+  valueB        Int       @default(0)
+  startedAt     DateTime?
+  lastUpdatedAt DateTime  @updatedAt
+  createdAt     DateTime  @default(now())
+
   @@index([displayId])
 }
 
