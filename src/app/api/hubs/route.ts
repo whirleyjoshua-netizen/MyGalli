@@ -19,7 +19,11 @@ export async function POST(request: NextRequest) {
   const me = await getUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json().catch(() => ({}))
-  const displayId = typeof body.displayId === 'string' ? body.displayId : null
+  let displayId: string | null = typeof body.displayId === 'string' ? body.displayId : null
+  if (displayId) {
+    const owned = await db.display.findUnique({ where: { id: displayId }, select: { userId: true } })
+    if (!owned || owned.userId !== me.id) displayId = null
+  }
   const title = typeof body.title === 'string' && body.title.trim() ? body.title.trim().slice(0, 120) : 'Untitled Hub'
   const slug = `${slugify(title)}-${Math.random().toString(36).slice(2, 7)}`
   const hub = await db.hub.create({ data: { userId: me.id, displayId, title, slug } })
