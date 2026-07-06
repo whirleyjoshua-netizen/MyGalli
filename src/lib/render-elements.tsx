@@ -7,6 +7,7 @@ import { PublicCardElement } from '@/components/elements/PublicCardElement'
 import { PublicCodeElement } from '@/components/elements/PublicCodeElement'
 import { PublicCommentSection } from '@/components/elements/PublicCommentSection'
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
+import { PublicLiveFeedElement } from '@/components/elements/PublicLiveFeedElement'
 import { PublicMCQElement } from '@/components/elements/PublicMCQElement'
 import { PublicRatingElement } from '@/components/elements/PublicRatingElement'
 import { PublicShortAnswerElement } from '@/components/elements/PublicShortAnswerElement'
@@ -539,6 +540,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'audio-player':
       return <PublicAudioPlayerElement element={element} />
+
+    case 'live-feed':
+      return <PublicLiveFeedElement element={element} />
 
     default:
       return null

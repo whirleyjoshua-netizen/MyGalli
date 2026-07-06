@@ -103,6 +103,8 @@ import {
 } from '@/components/elements'
 import { PublicCommentSection } from '@/components/elements/PublicCommentSection'
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
+import { LiveFeedElement } from '@/components/elements/LiveFeedElement'
+import { PublicLiveFeedElement } from '@/components/elements/PublicLiveFeedElement'
 import { PublicTrackerElement } from '@/components/elements/PublicTrackerElement'
 import { PublicKitProfileElement } from '@/components/elements/PublicKitProfileElement'
 import { PublicGameScheduleElement } from '@/components/elements/PublicGameScheduleElement'
@@ -782,6 +784,20 @@ export function ColumnCanvas({
           <TrackerElement
             element={element}
             displayId={displayId || ''}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'live-feed':
+        if (isPreviewMode) {
+          return <PublicLiveFeedElement element={element} />
+        }
+        return (
+          <LiveFeedElement
+            element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
             isSelected={commonProps.isSelected}

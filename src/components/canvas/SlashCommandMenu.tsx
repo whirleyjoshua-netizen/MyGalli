@@ -51,6 +51,7 @@ import {
   Sparkles,
   Blocks,
   MapPin,
+  Radio,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -144,9 +145,10 @@ const commands: Command[] = [
   { id: 'tip-jar', label: 'Tip Jar', icon: HandCoins, description: 'Support / donate button', category: 'Media' },
   { id: 'map', label: 'Map', icon: MapPin, description: 'Pin places on an interactive map', category: 'Media' },
   { id: 'audio-player', label: 'Music Player', icon: Music, description: 'Play a track — upload, URL, Spotify, or SoundCloud', category: 'Media' },
+  { id: 'live-feed', label: 'Live Feed', icon: Radio, description: 'Live counter/score you control from your phone', category: 'Live' },
 ]
 
-const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Forms', 'Social', 'Apps', 'Kit']
+const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Live', 'Forms', 'Social', 'Apps', 'Kit']
 
 interface Column {
   category: string
