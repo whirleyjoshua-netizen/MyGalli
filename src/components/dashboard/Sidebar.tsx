@@ -16,12 +16,17 @@ export function Sidebar() {
       } hidden md:flex shrink-0 h-screen sticky top-0 bg-sidebar border-r border-border flex-col px-3 py-4 transition-[width] duration-200`}
     >
       {/* Brand + collapse */}
-      <div className="flex items-center justify-between px-2 mb-5 h-9">
-        {!collapsed && (
-          <Link href="/dashboard" className="text-2xl">
-            <Wordmark />
-          </Link>
-        )}
+      <div
+        className={`mb-5 ${
+          collapsed
+            ? 'flex flex-col items-center gap-2'
+            : 'flex items-center justify-between px-2 h-9'
+        }`}
+      >
+        <Link href="/dashboard" className="flex items-center gap-2 text-2xl">
+          <img src="/gallio-frog.svg" alt="" aria-hidden="true" className="w-7 h-7 shrink-0" />
+          {!collapsed && <Wordmark />}
+        </Link>
         <button
           onClick={() => setCollapsed((c) => !c)}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
