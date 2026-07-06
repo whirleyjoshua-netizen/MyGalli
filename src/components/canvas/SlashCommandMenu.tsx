@@ -52,6 +52,7 @@ import {
   Blocks,
   MapPin,
   Radio,
+  PenTool,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -63,6 +64,7 @@ interface Command {
   category: string
   disabled?: boolean
   disabledLabel?: string
+  pro?: boolean
 }
 
 const commands: Command[] = [
@@ -86,6 +88,7 @@ const commands: Command[] = [
   { id: 'embed', label: 'Embed', icon: Play, description: 'YouTube, Vimeo, or links', category: 'Media' },
   { id: 'button', label: 'Button', icon: MousePointer, description: 'Call-to-action button', category: 'Media' },
   { id: 'slideshow', label: 'Slideshow', icon: GalleryHorizontal, description: 'Image carousel with text overlays', category: 'Media' },
+  { id: 'whiteboard', label: 'Whiteboard', icon: PenTool, description: 'Draw & design on a board', category: 'Media', pro: true },
 
   // Form Elements
   { id: 'mcq', label: 'Multiple Choice', icon: CircleDot, description: 'Question with options', category: 'Forms' },
@@ -341,6 +344,9 @@ export function SlashCommandMenu({ position, onSelect, onClose, isKitPage, hideA
                         >
                           <cmd.icon className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
                           <span className="text-sm font-medium text-foreground truncate">{cmd.label}</span>
+                          {cmd.pro && (
+                            <span className="ml-auto text-[10px] font-semibold text-galli-violet bg-galli-violet/10 px-1.5 py-0.5 rounded-full">Pro</span>
+                          )}
                         </button>
                       )
                     })}

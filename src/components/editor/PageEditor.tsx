@@ -798,6 +798,10 @@ export function PageEditor({ pageId }: PageEditorProps) {
           { title: 'Grand Opening Special', description: 'Come check us out!', badge: 'NEW', ctaText: '', ctaUrl: '' },
         ]
         break
+      case 'whiteboard':
+        if (!isPro(user)) { setShowSlashMenu(false); setUpgradeOpen(true); return }
+        Object.assign(newElement, createElement('whiteboard'))
+        break
       default: {
         // New element types define their defaults once in createElement().
         Object.assign(newElement, createElement(type))
