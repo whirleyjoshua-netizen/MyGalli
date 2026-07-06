@@ -19,10 +19,15 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
     fetch(`/api/live/${liveFeedId}`, { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((d) => setState(d))
-      .catch(() => setError('Could not load this live feed.'))
+      .then(async (r) => {
+        if (cancelled) return
+        if (!r.ok) { setError('Could not load this live feed. Please try again.'); return }
+        setState(await r.json())
+      })
+      .catch(() => { if (!cancelled) setError('Could not load this live feed.') })
+    return () => { cancelled = true }
   }, [liveFeedId])
 
   const send = async (action: LiveAction) => {
