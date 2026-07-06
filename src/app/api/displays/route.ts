@@ -7,6 +7,7 @@ import { generateKitDisplay } from '@/lib/kits/generate'
 import '@/lib/kits/all'
 import { TEMPLATE_REGISTRY } from '@/lib/templates/registry'
 import { isPro } from '@/lib/plan'
+import { createElement, createSection } from '@/lib/types/canvas'
 
 // GET /api/displays - List user's displays
 export async function GET(request: NextRequest) {
@@ -67,13 +68,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { title, description, kitId, templateId } = await request.json()
+    const { title, description, kitId, templateId, kind } = await request.json()
 
     if (!title) {
       return NextResponse.json(
         { error: 'Title is required' },
         { status: 400 }
       )
+    }
+
+    // Boards are a Pro-only Display kind, seeded with a single gallery element.
+    if (kind === 'collection' && !isPro(user)) {
+      return NextResponse.json({ error: 'Pro required' }, { status: 403 })
     }
 
     // Generate unique slug
@@ -129,7 +135,11 @@ export async function POST(request: NextRequest) {
         slug,
         description,
         userId: user.id,
-        sections: kitData.sections || [],
+        ...(kind === 'collection' ? { kind: 'collection' } : {}),
+        sections:
+          kind === 'collection'
+            ? [(() => { const s = createSection('full-width'); s.columns[0].elements = [createElement('collection-view')]; return s })()]
+            : kitData.sections || [],
         ...(kitData.tabs && { tabs: kitData.tabs }),
         ...(kitData.headerCard && { headerCard: kitData.headerCard }),
         ...(kitData.kitConfig && { kitConfig: kitData.kitConfig }),

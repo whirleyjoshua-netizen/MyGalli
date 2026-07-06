@@ -85,3 +85,7 @@ export { PublicTipJarElement } from './PublicTipJarElement'
 // Batch 2
 export { AudioPlayerElement } from './AudioPlayerElement'
 export { PublicAudioPlayerElement } from './PublicAudioPlayerElement'
+
+// Collection Boards
+export { PublicCollectionView } from './PublicCollectionView'
+export { CollectionViewElement } from './CollectionViewElement'

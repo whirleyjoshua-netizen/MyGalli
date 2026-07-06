@@ -11,6 +11,8 @@ import type { HeaderCardConfig } from '@/lib/types/header-card'
 import type { TabsConfig } from '@/lib/types/tabs'
 import { PageViewTracker } from '@/components/analytics/PageViewTracker'
 import { renderElement, getGridClass, getColumnStyles } from '@/lib/render-elements'
+import { selectVisibleMembers } from '@/lib/collections'
+import { hydrateCollectionElements } from '@/lib/collections-hydrate'
 import { PublicHeaderCard } from '@/components/header/PublicHeaderCard'
 import { PublicTabView } from '@/components/tabs/PublicTabView'
 import { FontLoader } from '@/components/FontLoader'
@@ -133,6 +135,24 @@ export default async function PublicDisplayPage({ params }: Props) {
     typeof display.sections === 'string'
       ? JSON.parse(display.sections)
       : (display.sections as unknown as Section[]) || []
+
+  // Boards: resolve member cards and inject into their gallery element(s).
+  if (display.kind === 'collection') {
+    const rows = await db.collectionMember.findMany({
+      where: { collectionId: display.id },
+      select: {
+        memberId: true,
+        position: true,
+        member: {
+          select: {
+            published: true, slug: true, title: true, description: true, coverImage: true, category: true,
+            user: { select: { username: true } },
+          },
+        },
+      },
+    })
+    hydrateCollectionElements(sections, selectVisibleMembers(rows))
+  }
 
   // Parse background
   const background: BackgroundConfig =

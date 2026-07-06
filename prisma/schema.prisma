@@ -125,6 +125,8 @@ model Display {
   version       Int      @default(0)
   kind          String   @default("page")
   collaborators DisplayCollaborator[]
+  collectionMembers CollectionMember[] @relation("CollectionMembers")
+  memberOf          CollectionMember[] @relation("MemberOfCollections")
 
   // Discovery category (set on publish)
   category      String?
@@ -148,6 +150,20 @@ model DisplayCollaborator {
   @@unique([displayId, userId])
   @@index([userId])
   @@index([displayId])
+}
+
+model CollectionMember {
+  id           String   @id @default(cuid())
+  collectionId String   // the board Display (kind:'collection')
+  memberId     String   // a member Display (kind:'page')
+  position     Int      @default(0)
+  createdAt    DateTime @default(now())
+  collection   Display  @relation("CollectionMembers", fields: [collectionId], references: [id], onDelete: Cascade)
+  member       Display  @relation("MemberOfCollections", fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, memberId])
+  @@index([collectionId])
+  @@index([memberId])
 }
 
 model AnalyticsEvent {

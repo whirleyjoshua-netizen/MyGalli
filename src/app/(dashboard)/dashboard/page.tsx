@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Plus, Globe, FileText } from 'lucide-react'
+import { Search, Plus, Globe, FileText, LayoutGrid } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import type { DashboardPrefs } from '@/lib/types/dashboard'
 import { ScrollRow } from '@/components/dashboard/ScrollRow'
@@ -82,6 +82,18 @@ export default function DashboardPage() {
     rememberSelection(id)
     router.push(`/editor?id=${id}`)
   }, [rememberSelection, router])
+
+  const createBoard = useCallback(async () => {
+    const res = await fetch('/api/displays', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Untitled Board', kind: 'collection' }),
+    })
+    if (res.status === 403) { router.push('/enterprise'); return }
+    if (!res.ok) return
+    const board = await res.json()
+    router.push(`/editor?id=${board.id}`)
+  }, [router])
 
   // Chart button: just drive the panel, no navigation.
   const handleSelectPanel = useCallback((id: string) => {
@@ -231,6 +243,18 @@ export default function DashboardPage() {
               <Plus className="w-5 h-5 text-primary" />
             </span>
             <span className="text-sm font-medium">Create new page</span>
+          </button>
+          {/* Create new board tile (Pro) */}
+          <button
+            onClick={createBoard}
+            className="group shrink-0 w-60 snap-start rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-galli-violet/40 hover:text-foreground hover:bg-galli-violet/[0.03] transition-all cursor-pointer"
+            style={{ minHeight: 188 }}
+          >
+            <span className="w-11 h-11 rounded-full bg-galli-violet/10 flex items-center justify-center group-hover:bg-galli-violet/20 transition-colors">
+              <LayoutGrid className="w-5 h-5 text-galli-violet" />
+            </span>
+            <span className="text-sm font-medium">New board</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-galli-violet">Pro</span>
           </button>
         </ScrollRow>
 

@@ -78,6 +78,7 @@ import {
   PublicLinkHubElement,
   GalleryElement,
   PublicGalleryElement,
+  CollectionViewElement,
   MapElement,
   PublicMapElement,
   CountdownElement,
@@ -137,6 +138,7 @@ import { PublicBusinessMenuElement } from '@/components/elements/PublicBusinessM
 import { PublicBusinessHoursElement } from '@/components/elements/PublicBusinessHoursElement'
 import { PublicBusinessReviewElement } from '@/components/elements/PublicBusinessReviewElement'
 import { PublicBusinessPromoElement } from '@/components/elements/PublicBusinessPromoElement'
+import { PublicCollectionView } from '@/components/elements/PublicCollectionView'
 
 interface ColumnCanvasProps {
   sections: Section[]
@@ -1190,6 +1192,19 @@ export function ColumnCanvas({
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
             isSelected={commonProps.isSelected}
             onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'collection-view':
+        if (isPreviewMode) {
+          return <PublicCollectionView element={element} />
+        }
+        return (
+          <CollectionViewElement
+            {...commonProps}
+            element={element}
+            displayId={displayId || ''}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
           />
         )
 
