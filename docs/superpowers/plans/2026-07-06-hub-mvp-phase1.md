@@ -23,7 +23,7 @@
 
 ## Task 1: Models + migration + PDF upload
 
-**Files:** Modify `prisma/schema.prisma`; create `prisma/migrations/20260706000000_add_hub/migration.sql`; modify `src/lib/upload-validate.ts`; modify `src/lib/upload-validate.test.ts`.
+**Files:** Modify `prisma/schema.prisma`; create `prisma/migrations/20260707000000_add_hub/migration.sql`; modify `src/lib/upload-validate.ts`; modify `src/lib/upload-validate.test.ts`.
 
 **Interfaces:** Produces `db.hub`, `db.hubFolder`, `db.hubItem`; `validateUpload` accepts `application/pdf` (≤25MB).
 
@@ -77,7 +77,7 @@ model HubItem {
 ```
 Add to `model User { ... }`: `hubs Hub[] @relation("UserHubs")`.
 
-- [ ] **Step 2: Create `prisma/migrations/20260706000000_add_hub/migration.sql`**
+- [ ] **Step 2: Create `prisma/migrations/20260707000000_add_hub/migration.sql`**
 
 ```sql
 -- CreateTable
@@ -143,7 +143,7 @@ ALTER TABLE "HubItem" ADD CONSTRAINT "HubItem_hubId_fkey" FOREIGN KEY ("hubId") 
 
 - [ ] **Step 5: Gate + commit** — `npx tsc --noEmit`; `npx vitest run`.
 ```bash
-git add prisma/schema.prisma prisma/migrations/20260706000000_add_hub/migration.sql src/lib/upload-validate.ts src/lib/upload-validate.test.ts
+git add prisma/schema.prisma prisma/migrations/20260707000000_add_hub/migration.sql src/lib/upload-validate.ts src/lib/upload-validate.test.ts
 git commit -m "feat(db): Hub/HubFolder/HubItem models + migration; upload accepts pdf"
 ```
 
