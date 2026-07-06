@@ -4,6 +4,7 @@ import { getUser } from '@/lib/auth'
 import { canEdit, splitUpdate, COLLAB_FIELDS } from '@/lib/collab'
 import { isValidCategory } from '@/lib/categories'
 import { notifyFollowers } from '@/lib/notifications'
+import { findLiveFeedIds } from '@/lib/live-feed-reconcile'
 
 // GET /api/displays/[id] - Get a display
 export async function GET(
@@ -106,6 +107,23 @@ export async function PATCH(
       where: { id },
       data: { ...data, ...(touchesContent ? { version: { increment: 1 } } : {}) },
     })
+
+    // Reconcile live-feed rows: ensure a LiveFeed row exists for every
+    // live-feed element in the saved content (id = element id). Idempotent.
+    try {
+      const liveIds = Array.from(new Set([
+        ...findLiveFeedIds(updated.sections),
+        ...findLiveFeedIds(updated.tabs),
+      ]))
+      if (liveIds.length > 0) {
+        await db.liveFeed.createMany({
+          data: liveIds.map((lfId) => ({ id: lfId, displayId: id })),
+          skipDuplicates: true,
+        })
+      }
+    } catch (err) {
+      console.error('live-feed reconcile failed:', err)
+    }
 
     if (data.published === true && display.published === false) {
       await notifyFollowers(user.id, {
