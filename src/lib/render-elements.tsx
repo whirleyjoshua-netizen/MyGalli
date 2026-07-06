@@ -54,6 +54,7 @@ import { PublicBusinessHoursElement } from '@/components/elements/PublicBusiness
 import { PublicBusinessReviewElement } from '@/components/elements/PublicBusinessReviewElement'
 import { PublicBusinessPromoElement } from '@/components/elements/PublicBusinessPromoElement'
 import { PublicAudioPlayerElement } from '@/components/elements/PublicAudioPlayerElement'
+import { PublicWhiteboardElement } from '@/components/elements/PublicWhiteboardElement'
 
 export function getGridClass(layout: string): string {
   switch (layout) {
@@ -544,6 +545,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'audio-player':
       return <PublicAudioPlayerElement element={element} />
+
+    case 'whiteboard':
+      return <PublicWhiteboardElement element={element} />
 
     case 'live-feed':
       return <PublicLiveFeedElement element={element} />

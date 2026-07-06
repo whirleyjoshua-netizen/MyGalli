@@ -87,6 +87,7 @@ export { AudioPlayerElement } from './AudioPlayerElement'
 export { PublicAudioPlayerElement } from './PublicAudioPlayerElement'
 export { LiveFeedElement } from './LiveFeedElement'
 export { PublicLiveFeedElement } from './PublicLiveFeedElement'
+export { PublicWhiteboardElement } from './PublicWhiteboardElement'
 
 // Collection Boards
 export { PublicCollectionView } from './PublicCollectionView'
