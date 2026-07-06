@@ -30,6 +30,19 @@ export function getTextStyles(element: Partial<TextStyle>): CSSProperties {
   return styles
 }
 
+// Flowchart element — a branching tree of linked blocks (all in element JSON)
+export interface FlowNode {
+  id: string
+  title: string
+  description?: string
+  icon?: string          // single emoji, optional
+  color?: string         // accent color, optional
+  linkUrl?: string       // resolved destination: root-relative internal, or http(s)/mailto external
+  linkLabel?: string     // friendly label for the picked target
+  parentId?: string      // the block this one follows; undefined = a root
+  branchLabel?: string   // optional label on the arrow from parent → this node
+}
+
 // Layout modes for sections
 export type LayoutMode = 'full-width' | 'two-column' | 'three-column'
 
@@ -71,6 +84,7 @@ export type ElementType =
   | 'jersey'       // Interactive jersey card with signatures
   // Batch 2: Live
   | 'live-feed'    // Phone-controlled live counter/score (single/versus/goal)
+  | 'flowchart'    // Branching workflow/flowchart of linked blocks
   // Resume Kit elements
   | 'experience-entry'      // Job/role card
   | 'education-entry'       // School/degree card
@@ -119,6 +133,8 @@ export type ElementType =
   | 'whiteboard'            // fabric.js fixed-artboard drawing surface (Pro)
   // Collection Boards
   | 'collection-view'       // Gallery of a board's member pages
+  // Hub
+  | 'hub'                   // Page-level cover tile doorway into a Hub
 
 export type MapPlace = {
   id: string
@@ -260,6 +276,9 @@ export interface CanvasElement {
   liveFeedTarget?: number          // goal: target value
   liveFeedStep?: number            // control-page +/- increment
   liveFeedColor?: string           // accent color
+  // Flowchart specific (branching tree of linked blocks; all in element JSON)
+  flowTitle?: string
+  flowNodes?: FlowNode[]
   // Kit Profile specific
   kitProfileKitId?: string
   kitProfileData?: Record<string, any>
@@ -569,6 +588,12 @@ export interface CanvasElement {
   collectionShowCategory?: boolean
   collectionShowDescription?: boolean
   collectionMembers?: CollectionMemberCard[]  // transient: hydrated at render, never persisted
+  // Hub specific (cover tile doorway; denormalized so public render needs no DB read)
+  hubId?: string
+  hubCoverImage?: string
+  hubTitleOverride?: string
+  hubSlug?: string
+  hubUsername?: string
   // Text styling (text, heading, quote, callout, list)
   fontFamily?: string
   fontSize?: number
@@ -861,6 +886,14 @@ export function createElement(type: ElementType): CanvasElement {
         liveFeedTarget: 100,
         liveFeedStep: 1,
         liveFeedColor: '#39D98A',
+      }
+    case 'flowchart':
+      return {
+        ...base,
+        flowTitle: 'Workflow',
+        flowNodes: [
+          { id: `fn-${Date.now()}-start`, title: 'Start' },
+        ],
       }
     case 'experience-entry':
       return {
@@ -1192,6 +1225,8 @@ export function createElement(type: ElementType): CanvasElement {
         whiteboardBackground: 'blank',
         whiteboardPreviewUrl: '',
       }
+    case 'hub':
+      return { ...base, hubId: '', hubCoverImage: '', hubTitleOverride: '' }
     default:
       return base
   }

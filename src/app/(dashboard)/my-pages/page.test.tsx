@@ -10,7 +10,6 @@ const rows = [
   { id: 'p1', title: 'My Page', slug: 'my-page', published: true, views: 0, updatedAt: iso, kind: 'page', _count: { elements: 0 } },
   { id: 'b1', title: 'My Board', slug: 'my-board', published: true, views: 0, updatedAt: iso, kind: 'collection', _count: { elements: 0 } },
 ]
-
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn((url: string) =>
     Promise.resolve({ ok: true, json: () => Promise.resolve(url === '/api/displays' ? rows : {}) } as Response),

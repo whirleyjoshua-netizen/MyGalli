@@ -405,6 +405,25 @@ export function PageEditor({ pageId }: PageEditorProps) {
     setShowSlashMenu(true)
   }
 
+  // Appends an element to the currently-targeted section/column (used both by the
+  // synchronous switch below and by async create-on-add flows like 'hub').
+  const appendElement = (el: CanvasElement) => {
+    setActiveSections((prev) =>
+      prev.map((section) =>
+        section.id === currentSection
+          ? {
+              ...section,
+              columns: section.columns.map((col) =>
+                col.id === currentColumn
+                  ? { ...col, elements: [...col.elements, el] }
+                  : col
+              ),
+            }
+          : section
+      )
+    )
+  }
+
   const handleCommandSelect = (type: ElementType) => {
     if (!currentSection || !currentColumn) return
 
@@ -508,6 +527,36 @@ export function PageEditor({ pageId }: PageEditorProps) {
           return
         }
         setCardPickerOpen(true)
+        return
+      }
+      case 'hub': {
+        // Hub elements are create-on-add: provision the Hub record first, then
+        // insert an element carrying the denormalized link (no DB read at render time).
+        setShowSlashMenu(false)
+        ;(async () => {
+          try {
+            const res = await fetch('/api/hubs', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ displayId: id }),
+            })
+            if (!res.ok) return
+            const hub = await res.json()
+            const hubElement: CanvasElement = {
+              id: `el-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              type: 'hub',
+              hubId: hub.id,
+              hubCoverImage: '',
+              hubTitleOverride: '',
+              hubSlug: hub.slug,
+              hubUsername: user?.username || '',
+            }
+            appendElement(hubElement)
+          } finally {
+            setCurrentSection(null)
+            setCurrentColumn(null)
+          }
+        })()
         return
       }
       case 'comment':
@@ -809,20 +858,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
       }
     }
 
-    setActiveSections((prev) =>
-      prev.map((section) =>
-        section.id === currentSection
-          ? {
-              ...section,
-              columns: section.columns.map((col) =>
-                col.id === currentColumn
-                  ? { ...col, elements: [...col.elements, newElement] }
-                  : col
-              ),
-            }
-          : section
-      )
-    )
+    appendElement(newElement)
 
     setShowSlashMenu(false)
     setCurrentSection(null)

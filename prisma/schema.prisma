@@ -41,6 +41,7 @@ model User {
   collaborations DisplayCollaborator[]
   verificationTokens VerificationToken[]
   notifications Notification[] @relation("UserNotifications")
+  hubs Hub[] @relation("UserHubs")
 }
 
 model VerificationToken {
@@ -396,4 +397,49 @@ model Notification {
 
   @@index([userId, createdAt])
   @@index([userId, read])
+}
+
+model Hub {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation("UserHubs", fields: [userId], references: [id], onDelete: Cascade)
+  displayId   String?
+  slug        String
+  title       String      @default("Untitled Hub")
+  description String?
+  coverImage  String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  folders     HubFolder[]
+  items       HubItem[]
+  @@unique([userId, slug])
+  @@index([userId])
+  @@index([displayId])
+}
+
+model HubFolder {
+  id        String   @id @default(cuid())
+  hubId     String
+  hub       Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  parentId  String?
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  @@index([hubId])
+  @@index([parentId])
+}
+
+model HubItem {
+  id        String   @id @default(cuid())
+  hubId     String
+  hub       Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  folderId  String?
+  type      String
+  title     String
+  url       String?
+  content   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  @@index([hubId])
+  @@index([folderId])
 }

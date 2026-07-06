@@ -53,6 +53,8 @@ import {
   MapPin,
   Radio,
   PenTool,
+  Workflow,
+  Boxes,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -82,6 +84,7 @@ const commands: Command[] = [
   { id: 'table', label: 'Table', icon: Table, description: 'Rows and columns', category: 'Data & Visuals' },
   { id: 'kpi', label: 'KPI / Stat', icon: BarChart3, description: 'Metric with trend', category: 'Data & Visuals' },
   { id: 'chart', label: '3D Chart', icon: PieChart, description: 'Bar, line, or pie chart', category: 'Data & Visuals' },
+  { id: 'flowchart', label: 'Flowchart', icon: Workflow, description: 'Branching workflow of linked blocks', category: 'Data & Visuals' },
 
   // Media
   { id: 'image', label: 'Image', icon: Image, description: 'Add an image', category: 'Media' },
@@ -149,6 +152,7 @@ const commands: Command[] = [
   { id: 'map', label: 'Map', icon: MapPin, description: 'Pin places on an interactive map', category: 'Media' },
   { id: 'audio-player', label: 'Music Player', icon: Music, description: 'Play a track — upload, URL, Spotify, or SoundCloud', category: 'Media' },
   { id: 'live-feed', label: 'Live Feed', icon: Radio, description: 'Live counter/score you control from your phone', category: 'Live' },
+  { id: 'hub', label: 'Hub', icon: Boxes, description: 'A deep-linked collection of files, links & demos', category: 'Media' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Live', 'Forms', 'Social', 'Apps', 'Kit']

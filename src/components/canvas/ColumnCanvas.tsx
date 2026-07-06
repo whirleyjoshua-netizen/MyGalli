@@ -103,11 +103,15 @@ import {
   PublicAudioPlayerElement,
   WhiteboardElement,
   PublicWhiteboardElement,
+  HubElement,
+  PublicHubElement,
 } from '@/components/elements'
 import { PublicCommentSection } from '@/components/elements/PublicCommentSection'
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
 import { LiveFeedElement } from '@/components/elements/LiveFeedElement'
 import { PublicLiveFeedElement } from '@/components/elements/PublicLiveFeedElement'
+import { FlowchartElement } from '@/components/elements/FlowchartElement'
+import { PublicFlowchartElement } from '@/components/elements/PublicFlowchartElement'
 import { PublicTrackerElement } from '@/components/elements/PublicTrackerElement'
 import { PublicKitProfileElement } from '@/components/elements/PublicKitProfileElement'
 import { PublicGameScheduleElement } from '@/components/elements/PublicGameScheduleElement'
@@ -809,6 +813,20 @@ export function ColumnCanvas({
           />
         )
 
+      case 'flowchart':
+        if (isPreviewMode) {
+          return <PublicFlowchartElement element={element} />
+        }
+        return (
+          <FlowchartElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
       case 'kit-profile':
         if (isPreviewMode) {
           return <PublicKitProfileElement element={element} />
@@ -1235,6 +1253,20 @@ export function ColumnCanvas({
             element={element}
             displayId={displayId || ''}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+          />
+        )
+
+      case 'hub':
+        if (isPreviewMode) {
+          return <PublicHubElement element={element} />
+        }
+        return (
+          <HubElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
           />
         )
 

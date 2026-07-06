@@ -41,6 +41,7 @@ import { PublicCountdownElement } from '@/components/elements/PublicCountdownEle
 import { PublicBeforeAfterElement } from '@/components/elements/PublicBeforeAfterElement'
 import { PublicTipJarElement } from '@/components/elements/PublicTipJarElement'
 import { PublicCollectionView } from '@/components/elements/PublicCollectionView'
+import { PublicHubElement } from '@/components/elements/PublicHubElement'
 import { PublicCourseListElement } from '@/components/elements/PublicCourseListElement'
 import { PublicGPACardElement } from '@/components/elements/PublicGPACardElement'
 import { PublicTestScoresElement } from '@/components/elements/PublicTestScoresElement'
@@ -55,6 +56,7 @@ import { PublicBusinessReviewElement } from '@/components/elements/PublicBusines
 import { PublicBusinessPromoElement } from '@/components/elements/PublicBusinessPromoElement'
 import { PublicAudioPlayerElement } from '@/components/elements/PublicAudioPlayerElement'
 import { PublicWhiteboardElement } from '@/components/elements/PublicWhiteboardElement'
+import { PublicFlowchartElement } from '@/components/elements/PublicFlowchartElement'
 
 export function getGridClass(layout: string): string {
   switch (layout) {
@@ -426,6 +428,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
     case 'tracker':
       return <PublicTrackerElement element={element} displayId={displayId || ''} />
 
+    case 'flowchart':
+      return <PublicFlowchartElement element={element} />
+
     case 'kit-profile':
       return <PublicKitProfileElement element={element} />
 
@@ -481,6 +486,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'color-palette':
       return <PublicColorPaletteElement element={element} />
+
+    case 'hub':
+      return <PublicHubElement element={element} />
 
     case 'playlist':
       return <PublicPlaylistElement element={element} />
