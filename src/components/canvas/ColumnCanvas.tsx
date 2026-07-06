@@ -101,6 +101,8 @@ import {
   BusinessPromoElement,
   AudioPlayerElement,
   PublicAudioPlayerElement,
+  HubElement,
+  PublicHubElement,
 } from '@/components/elements'
 import { PublicCommentSection } from '@/components/elements/PublicCommentSection'
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
@@ -1221,6 +1223,20 @@ export function ColumnCanvas({
             element={element}
             displayId={displayId || ''}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+          />
+        )
+
+      case 'hub':
+        if (isPreviewMode) {
+          return <PublicHubElement element={element} />
+        }
+        return (
+          <HubElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
           />
         )
 

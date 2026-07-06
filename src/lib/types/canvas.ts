@@ -118,6 +118,8 @@ export type ElementType =
   | 'audio-player'          // Custom player (upload/URL) + Spotify/SoundCloud embeds
   // Collection Boards
   | 'collection-view'       // Gallery of a board's member pages
+  // Hub
+  | 'hub'                   // Page-level cover tile doorway into a Hub
 
 export type MapPlace = {
   id: string
@@ -562,6 +564,12 @@ export interface CanvasElement {
   collectionShowCategory?: boolean
   collectionShowDescription?: boolean
   collectionMembers?: CollectionMemberCard[]  // transient: hydrated at render, never persisted
+  // Hub specific (cover tile doorway; denormalized so public render needs no DB read)
+  hubId?: string
+  hubCoverImage?: string
+  hubTitleOverride?: string
+  hubSlug?: string
+  hubUsername?: string
   // Text styling (text, heading, quote, callout, list)
   fontFamily?: string
   fontSize?: number
@@ -1176,6 +1184,8 @@ export function createElement(type: ElementType): CanvasElement {
         collectionShowCategory: true,
         collectionShowDescription: false,
       }
+    case 'hub':
+      return { ...base, hubId: '', hubCoverImage: '', hubTitleOverride: '' }
     default:
       return base
   }

@@ -91,3 +91,7 @@ export { PublicLiveFeedElement } from './PublicLiveFeedElement'
 // Collection Boards
 export { PublicCollectionView } from './PublicCollectionView'
 export { CollectionViewElement } from './CollectionViewElement'
+
+// Hub
+export { HubElement } from './HubElement'
+export { PublicHubElement } from './PublicHubElement'
