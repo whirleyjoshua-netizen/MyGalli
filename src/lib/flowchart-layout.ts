@@ -9,14 +9,33 @@ export interface FlowLayout { nodes: LaidOutNode[]; edges: LaidOutEdge[]; width:
 
 const DEFAULTS = { nodeW: 190, nodeH: 76, gapX: 28, gapY: 56 }
 
-// Map parentId -> children ids, ignoring parents that don't exist or self-loops.
+// Map parentId -> children ids. A parent link is honored only if it is valid
+// (exists, not self) AND its chain to the root is acyclic; otherwise the node
+// is treated as a root. This makes descendantIds and layoutFlow cycle-safe.
 function childMap(nodes: FlowNode[]): { children: Map<string, string[]>; roots: string[] } {
   const ids = new Set(nodes.map((x) => x.id))
+  const byId = new Map(nodes.map((x) => [x.id, x]))
+
+  const effectiveParent = (node: FlowNode): string | undefined => {
+    const p = node.parentId
+    if (!p || p === node.id || !ids.has(p)) return undefined
+    // Walk up from p; if we revisit node.id (or loop), the link is cyclic → drop it.
+    const seen = new Set<string>([node.id])
+    let cur: string | undefined = p
+    while (cur) {
+      if (seen.has(cur)) return undefined // cycle detected
+      seen.add(cur)
+      const next: string | undefined = byId.get(cur)?.parentId
+      cur = next && next !== cur && ids.has(next) ? next : undefined
+    }
+    return p
+  }
+
   const children = new Map<string, string[]>()
   const roots: string[] = []
   for (const node of nodes) {
-    const p = node.parentId
-    if (!p || p === node.id || !ids.has(p)) {
+    const p = effectiveParent(node)
+    if (!p) {
       roots.push(node.id)
       continue
     }
@@ -80,19 +99,22 @@ export function layoutFlow(nodes: FlowNode[], opts?: Partial<typeof DEFAULTS>): 
   const byId = new Map(laid.map((l) => [l.id, l]))
 
   const edges: LaidOutEdge[] = []
-  for (const node of nodes) {
-    const parent = node.parentId ? byId.get(node.parentId) : undefined
-    if (!parent || node.parentId === node.id) continue
-    const child = byId.get(node.id) as LaidOutNode
-    edges.push({
-      fromId: parent.id,
-      toId: child.id,
-      label: node.branchLabel,
-      x1: parent.x + cfg.nodeW / 2,
-      y1: parent.y + cfg.nodeH,
-      x2: child.x + cfg.nodeW / 2,
-      y2: child.y,
-    })
+  for (const [parentId, kids] of children) {
+    const from = byId.get(parentId)
+    if (!from) continue
+    for (const kid of kids) {
+      const to = byId.get(kid)
+      if (!to) continue
+      edges.push({
+        fromId: parentId,
+        toId: kid,
+        label: to.node.branchLabel,
+        x1: from.x + cfg.nodeW / 2,
+        y1: from.y + cfg.nodeH,
+        x2: to.x + cfg.nodeW / 2,
+        y2: to.y,
+      })
+    }
   }
 
   const width = laid.reduce((m, node) => Math.max(m, node.x + node.w), 0)

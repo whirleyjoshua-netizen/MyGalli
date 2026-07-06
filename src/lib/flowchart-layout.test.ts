@@ -12,6 +12,12 @@ describe('descendantIds', () => {
     expect(descendantIds(nodes, 'b')).toEqual(new Set(['c']))
     expect(descendantIds(nodes, 'c')).toEqual(new Set())
   })
+
+  it('never includes the queried node itself, even on a cycle', () => {
+    const nodes = [n('a', 'b'), n('b', 'a')]
+    expect(descendantIds(nodes, 'a').has('a')).toBe(false)
+    expect(descendantIds(nodes, 'b').has('b')).toBe(false)
+  })
 })
 
 describe('layoutFlow', () => {
@@ -44,6 +50,18 @@ describe('layoutFlow', () => {
 
   it('treats a parentId pointing at a missing node as a root (no crash)', () => {
     const { nodes, edges } = layoutFlow([n('x', 'ghost')])
+    expect(nodes).toHaveLength(1)
+    expect(edges).toHaveLength(0)
+  })
+
+  it('breaks a two-node cycle: both become roots, no edges, no crash', () => {
+    const { nodes, edges } = layoutFlow([n('a', 'b'), n('b', 'a')])
+    expect(nodes).toHaveLength(2)
+    expect(edges).toHaveLength(0)
+  })
+
+  it('treats a self-parent as a root with no edge', () => {
+    const { nodes, edges } = layoutFlow([n('a', 'a')])
     expect(nodes).toHaveLength(1)
     expect(edges).toHaveLength(0)
   })
