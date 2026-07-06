@@ -85,3 +85,4 @@ export { PublicTipJarElement } from './PublicTipJarElement'
 
 // Collection Boards
 export { PublicCollectionView } from './PublicCollectionView'
+export { CollectionViewElement } from './CollectionViewElement'

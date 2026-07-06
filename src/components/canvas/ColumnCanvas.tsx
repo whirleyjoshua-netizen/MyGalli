@@ -78,6 +78,7 @@ import {
   PublicLinkHubElement,
   GalleryElement,
   PublicGalleryElement,
+  CollectionViewElement,
   MapElement,
   PublicMapElement,
   CountdownElement,
@@ -1176,6 +1177,16 @@ export function ColumnCanvas({
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
             isSelected={commonProps.isSelected}
             onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'collection-view':
+        return (
+          <CollectionViewElement
+            {...commonProps}
+            element={element}
+            displayId={displayId || ''}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
           />
         )
 
