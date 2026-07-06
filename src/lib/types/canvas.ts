@@ -1,5 +1,6 @@
 // Canvas Types - Section/Column/Element Architecture
 import type { CSSProperties } from 'react'
+import type { CollectionMemberCard } from '@/lib/collections'
 
 // Text styling (applicable to text, heading, quote, callout, list)
 export interface TextStyle {
@@ -111,6 +112,8 @@ export type ElementType =
 
   // Batch 2: Map
   | 'map'                   // Interactive Leaflet map with photo-pins + directions
+  // Collection Boards
+  | 'collection-view'       // Gallery of a board's member pages
 
 export type MapPlace = {
   id: string
@@ -533,6 +536,12 @@ export interface CanvasElement {
   mapHeight?: number
   mapConnectLine?: boolean
   mapFitView?: boolean
+  // Collection View (board gallery)
+  collectionViewType?: 'gallery'          // slice-1 only; seam for later views
+  collectionColumns?: 2 | 3 | 4
+  collectionShowCategory?: boolean
+  collectionShowDescription?: boolean
+  collectionMembers?: CollectionMemberCard[]  // transient: hydrated at render, never persisted
   // Text styling (text, heading, quote, callout, list)
   fontFamily?: string
   fontSize?: number
@@ -1125,6 +1134,14 @@ export function createElement(type: ElementType): CanvasElement {
         mapHeight: 420,
         mapConnectLine: false,
         mapFitView: true,
+      }
+    case 'collection-view':
+      return {
+        ...base,
+        collectionViewType: 'gallery',
+        collectionColumns: 3,
+        collectionShowCategory: true,
+        collectionShowDescription: false,
       }
     default:
       return base
