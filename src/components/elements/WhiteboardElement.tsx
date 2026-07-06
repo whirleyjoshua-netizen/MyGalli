@@ -121,8 +121,63 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
       brush.width = tool === 'highlighter' ? strokeWidth * 4 : strokeWidth
       canvas.freeDrawingBrush = brush
     }
-    // Shape/text/sticky pointer handlers are added in Task 5.
   }, [tool, strokeColor, strokeWidth])
+
+  // Shape/text/sticky pointer handlers.
+  useEffect(() => {
+    const canvas = fabricRef.current
+    const fabric = fabricLibRef.current
+    if (!canvas || !fabric) return
+    if (['pen', 'highlighter', 'select'].includes(tool)) return
+
+    let obj: any = null
+    let start = { x: 0, y: 0 }
+    const fill = fillColor ?? 'transparent'
+
+    const onDown = (opt: any) => {
+      const p = canvas.getScenePoint(opt.e)
+      start = { x: p.x, y: p.y }
+      if (tool === 'rect') obj = new fabric.Rect({ left: p.x, top: p.y, width: 1, height: 1, fill, stroke: strokeColor, strokeWidth })
+      else if (tool === 'ellipse') obj = new fabric.Ellipse({ left: p.x, top: p.y, rx: 1, ry: 1, fill, stroke: strokeColor, strokeWidth })
+      else if (tool === 'line' || tool === 'arrow') obj = new fabric.Line([p.x, p.y, p.x, p.y], { stroke: strokeColor, strokeWidth })
+      else if (tool === 'text') {
+        obj = new fabric.Textbox('Text', { left: p.x, top: p.y, fontSize: 24, fill: strokeColor, width: 160 })
+        canvas.add(obj); canvas.setActiveObject(obj); obj.enterEditing?.(); setTool('select'); return
+      } else if (tool === 'sticky') {
+        const bg = new fabric.Rect({ width: 160, height: 160, rx: 8, ry: 8, fill: fillColor ?? '#FEF08A' })
+        const txt = new fabric.Textbox('Note', { width: 140, fontSize: 18, fill: '#111111', left: 10, top: 10 })
+        obj = new fabric.Group([bg, txt], { left: p.x, top: p.y })
+        canvas.add(obj); canvas.setActiveObject(obj); setTool('select'); snapshot(); return
+      }
+      if (obj) canvas.add(obj)
+    }
+    const onMove = (opt: any) => {
+      if (!obj) return
+      const p = canvas.getScenePoint(opt.e)
+      if (tool === 'rect') obj.set({ width: Math.abs(p.x - start.x), height: Math.abs(p.y - start.y), left: Math.min(p.x, start.x), top: Math.min(p.y, start.y) })
+      else if (tool === 'ellipse') obj.set({ rx: Math.abs(p.x - start.x) / 2, ry: Math.abs(p.y - start.y) / 2, left: Math.min(p.x, start.x), top: Math.min(p.y, start.y) })
+      else if (tool === 'line' || tool === 'arrow') obj.set({ x2: p.x, y2: p.y })
+      canvas.renderAll()
+    }
+    const onUp = () => {
+      if (obj && (tool === 'arrow')) {
+        // add a simple arrowhead as a triangle at the line end
+        const triangle = new fabric.Triangle({
+          left: obj.x2, top: obj.y2, width: strokeWidth * 4, height: strokeWidth * 4,
+          fill: strokeColor, angle: (Math.atan2(obj.y2 - obj.y1, obj.x2 - obj.x1) * 180) / Math.PI + 90,
+          originX: 'center', originY: 'center',
+        })
+        canvas.add(triangle)
+      }
+      obj = null
+      setTool('select')
+      snapshot()
+    }
+    canvas.on('mouse:down', onDown)
+    canvas.on('mouse:move', onMove)
+    canvas.on('mouse:up', onUp)
+    return () => { canvas.off('mouse:down', onDown); canvas.off('mouse:move', onMove); canvas.off('mouse:up', onUp) }
+  }, [tool, strokeColor, fillColor, strokeWidth, snapshot])
 
   const onStyleChange = (s: { strokeColor?: string; fillColor?: string | null; strokeWidth?: number }) => {
     if (s.strokeColor !== undefined) setStrokeColor(s.strokeColor)
