@@ -49,7 +49,8 @@ export function MobileNav() {
         >
           <Menu className="w-5 h-5" />
         </button>
-        <Link href="/dashboard" className="text-xl">
+        <Link href="/dashboard" className="flex items-center gap-2 text-xl">
+          <img src="/gallio-frog.svg" alt="" aria-hidden="true" className="w-6 h-6 shrink-0" />
           <Wordmark />
         </Link>
         <Link
@@ -68,7 +69,8 @@ export function MobileNav() {
           {/* Panel */}
           <div className="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-sidebar border-r border-border flex flex-col px-3 py-4 overflow-y-auto">
             <div className="flex items-center justify-between px-2 mb-5 h-9">
-              <Link href="/dashboard" className="text-2xl" onClick={() => setOpen(false)}>
+              <Link href="/dashboard" className="flex items-center gap-2 text-2xl" onClick={() => setOpen(false)}>
+                <img src="/gallio-frog.svg" alt="" aria-hidden="true" className="w-7 h-7 shrink-0" />
                 <Wordmark />
               </Link>
               <button
