@@ -1,5 +1,3 @@
-export type LiveFeedPreset = 'single' | 'versus' | 'goal'
-
 export interface LiveFeedState {
   isLive: boolean
   valueA: number
@@ -16,7 +14,10 @@ export type LiveAction =
 
 export const IDLE_STATE: LiveFeedState = { isLive: false, valueA: 0, valueB: 0, startedAt: null }
 
-const clamp = (n: number) => Math.max(0, Math.floor(n))
+const MAX_VALUE = 1_000_000_000
+
+const clamp = (n: number) =>
+  Number.isFinite(n) ? Math.min(MAX_VALUE, Math.max(0, Math.floor(n))) : 0
 
 export function applyLiveAction(state: LiveFeedState, action: LiveAction, now: string): LiveFeedState {
   switch (action.action) {
@@ -27,6 +28,7 @@ export function applyLiveAction(state: LiveFeedState, action: LiveAction, now: s
     case 'reset':
       return { ...IDLE_STATE }
     case 'bump': {
+      if (!Number.isFinite(action.delta)) return state
       const side = action.side ?? 'A'
       if (side === 'B') return { ...state, valueB: clamp(state.valueB + action.delta) }
       return { ...state, valueA: clamp(state.valueA + action.delta) }
@@ -34,8 +36,8 @@ export function applyLiveAction(state: LiveFeedState, action: LiveAction, now: s
     case 'set':
       return {
         ...state,
-        valueA: action.valueA != null ? clamp(action.valueA) : state.valueA,
-        valueB: action.valueB != null ? clamp(action.valueB) : state.valueB,
+        valueA: Number.isFinite(action.valueA as number) ? clamp(action.valueA as number) : state.valueA,
+        valueB: Number.isFinite(action.valueB as number) ? clamp(action.valueB as number) : state.valueB,
       }
     default:
       return state

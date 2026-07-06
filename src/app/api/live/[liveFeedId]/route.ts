@@ -20,10 +20,10 @@ function serialize(row: {
 
 // GET — public, numbers only, no caching so polling sees fresh values.
 export async function GET(request: NextRequest, { params }: Params) {
-  const limited = await rateLimit(request, { limit: 120, windowMs: 60_000, prefix: 'live-read' })
+  const { liveFeedId } = await params
+  const limited = await rateLimit(request, { limit: 600, windowMs: 60_000, prefix: `live-read:${liveFeedId}` })
   if (limited) return limited
 
-  const { liveFeedId } = await params
   const row = await db.liveFeed.findUnique({ where: { id: liveFeedId } })
 
   const body = row

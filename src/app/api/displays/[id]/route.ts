@@ -114,6 +114,7 @@ export async function PATCH(
       const liveIds = Array.from(new Set([
         ...findLiveFeedIds(updated.sections),
         ...findLiveFeedIds(updated.tabs),
+        ...findLiveFeedIds(updated.headerCard),
       ]))
       if (liveIds.length > 0) {
         await db.liveFeed.createMany({

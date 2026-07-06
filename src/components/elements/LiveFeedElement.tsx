@@ -22,7 +22,7 @@ export function LiveFeedElement({ element, onChange, onDelete, isSelected, onSel
   const preset = element.liveFeedPreset ?? 'single'
   const [copied, setCopied] = useState(false)
 
-  const controlPath = `/live/${element.id}`
+  const controlPath = `/live/${element.id}?step=${element.liveFeedStep ?? 1}`
   const controlUrl = typeof window !== 'undefined' ? `${window.location.origin}${controlPath}` : controlPath
 
   const copyLink = async () => {

@@ -37,6 +37,18 @@ describe('applyLiveAction', () => {
     expect(s.valueB).toBe(0)
   })
 
+  it('set caps at MAX_VALUE and ignores non-finite', () => {
+    const s = applyLiveAction(IDLE_STATE, { action: 'set', valueA: 5_000_000_000 }, NOW)
+    expect(s.valueA).toBe(1_000_000_000)
+    const s2 = applyLiveAction({ isLive: false, valueA: 7, valueB: 0, startedAt: null }, { action: 'set', valueA: NaN }, NOW)
+    expect(s2.valueA).toBe(7) // unchanged
+  })
+
+  it('bump ignores non-finite delta', () => {
+    const s = applyLiveAction({ isLive: false, valueA: 3, valueB: 0, startedAt: null }, { action: 'bump', delta: NaN as unknown as number }, NOW)
+    expect(s.valueA).toBe(3)
+  })
+
   it('reset zeroes everything and ends', () => {
     const live = { isLive: true, valueA: 9, valueB: 4, startedAt: NOW }
     expect(applyLiveAction(live, { action: 'reset' }, NOW)).toEqual(IDLE_STATE)

@@ -17,6 +17,11 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
   const [state, setState] = useState<LiveState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [step, setStep] = useState(1)
+  useEffect(() => {
+    const s = Number(new URLSearchParams(window.location.search).get('step'))
+    if (Number.isFinite(s) && s >= 1) setStep(Math.floor(s))
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -62,10 +67,10 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
       <div className="text-sm font-semibold text-slate-500 mb-2">{label}</div>
       <div className="text-6xl font-extrabold tabular-nums text-slate-900 mb-4">{value}</div>
       <div className="flex items-center justify-center gap-3">
-        <button onClick={() => send({ action: 'bump', side, delta: -1 })} className="w-16 h-16 rounded-full bg-slate-200 active:bg-slate-300 grid place-items-center" aria-label={`Decrease ${label}`}>
+        <button onClick={() => send({ action: 'bump', side, delta: -step })} className="w-16 h-16 rounded-full bg-slate-200 active:bg-slate-300 grid place-items-center" aria-label={`Decrease ${label}`}>
           <Minus className="w-7 h-7" />
         </button>
-        <button onClick={() => send({ action: 'bump', side, delta: 1 })} className="w-16 h-16 rounded-full bg-primary text-primary-foreground active:brightness-95 grid place-items-center" aria-label={`Increase ${label}`}>
+        <button onClick={() => send({ action: 'bump', side, delta: step })} className="w-16 h-16 rounded-full bg-primary text-primary-foreground active:brightness-95 grid place-items-center" aria-label={`Increase ${label}`}>
           <Plus className="w-7 h-7" />
         </button>
       </div>

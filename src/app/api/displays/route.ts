@@ -116,6 +116,10 @@ export async function POST(request: NextRequest) {
       if (template.pro && !isPro(user)) {
         return NextResponse.json({ error: 'Pro required' }, { status: 403 })
       }
+      // WARNING: template/kit seeds reuse deterministic element ids. Do NOT include a
+      // 'live-feed' element in any seed until element ids are regenerated on
+      // instantiation — LiveFeed rows are keyed by element id (a global PK), so a
+      // shared seed id would make two owners' feeds collide. See live-feed design spec.
       kitData = {
         sections: template.seed.sections,
         tabs: template.seed.tabs,
