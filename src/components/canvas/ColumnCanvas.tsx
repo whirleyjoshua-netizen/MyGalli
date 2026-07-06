@@ -101,6 +101,8 @@ import {
   BusinessPromoElement,
   AudioPlayerElement,
   PublicAudioPlayerElement,
+  WhiteboardElement,
+  PublicWhiteboardElement,
 } from '@/components/elements'
 import { PublicCommentSection } from '@/components/elements/PublicCommentSection'
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
@@ -1161,6 +1163,18 @@ export function ColumnCanvas({
         if (isPreviewMode) return <PublicAudioPlayerElement element={element} />
         return (
           <AudioPlayerElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'whiteboard':
+        if (isPreviewMode) return <PublicWhiteboardElement element={element} />
+        return (
+          <WhiteboardElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
