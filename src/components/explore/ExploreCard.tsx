@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Eye, Trophy, FileText, Layout } from 'lucide-react'
+import { Eye, Trophy, FileText, Layout, LayoutGrid } from 'lucide-react'
 import { FollowButton } from '@/components/social/FollowButton'
 
 const GRADIENTS = [
@@ -22,6 +22,7 @@ interface ExploreCardProps {
     description: string | null
     views: number
     createdAt: string
+    kind?: string
     kitConfig: unknown
     headerCard: unknown
     background: unknown
@@ -78,7 +79,10 @@ function getInitials(name: string | null, username: string): string {
 }
 
 export function ExploreCard({ display, index }: ExploreCardProps) {
-  const badge = getKitBadge(display.kitConfig)
+  const badge =
+    display.kind === 'collection'
+      ? { label: 'Board', icon: LayoutGrid, className: 'bg-galli-violet/15 text-violet-700 dark:text-violet-300 border border-galli-violet/20' }
+      : getKitBadge(display.kitConfig)
   const BadgeIcon = badge.icon
   const gradient = GRADIENTS[index % GRADIENTS.length]
   const headerCard = parseHeaderCard(display.headerCard)
