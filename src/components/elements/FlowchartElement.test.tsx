@@ -47,4 +47,17 @@ describe('FlowchartElement', () => {
       flowNodes: [expect.objectContaining({ id: 'a', title: 'Renamed' })],
     }))
   })
+
+  it('deleting a node clears that id from its children’s parentId', () => {
+    const onChange = vi.fn()
+    render(<FlowchartElement element={el([
+      { id: 'a', title: 'A' },
+      { id: 'b', title: 'B', parentId: 'a' },
+    ])} onChange={onChange} onDelete={noop} isSelected onSelect={noop} />)
+    fireEvent.click(screen.getByLabelText('delete-a'))
+    const arg = onChange.mock.calls[0][0]
+    expect(arg.flowNodes).toHaveLength(1)
+    expect(arg.flowNodes[0].id).toBe('b')
+    expect(arg.flowNodes[0].parentId).toBeUndefined()
+  })
 })

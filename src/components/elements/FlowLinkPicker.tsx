@@ -32,7 +32,10 @@ export function FlowLinkPicker({
   const pages = displays.filter((d) => d.kind !== 'collection')
   const boards = displays.filter((d) => d.kind === 'collection')
 
-  const pickDisplay = (d: Display) => onPick({ url: `/${username}/${d.slug}`, label: d.title })
+  const pickDisplay = (d: Display) => {
+    if (!username) return
+    onPick({ url: `/${username}/${d.slug}`, label: d.title })
+  }
   const setExternal = () => {
     const safe = safeHref(ext)
     if (!safe) return

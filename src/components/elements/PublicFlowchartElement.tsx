@@ -28,7 +28,7 @@ export function PublicFlowchartElement({ element }: { element: CanvasElement }) 
           {/* Arrow overlay */}
           <svg className="absolute inset-0 pointer-events-none" width={width} height={height}>
             <defs>
-              <marker id="flow-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <marker id={`flow-arrow-${element.id}`} markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
                 <path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8" />
               </marker>
             </defs>
@@ -37,7 +37,7 @@ export function PublicFlowchartElement({ element }: { element: CanvasElement }) 
               const midY = (e.y1 + e.y2) / 2
               return (
                 <g key={i}>
-                  <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke="#94a3b8" strokeWidth={1.5} markerEnd="url(#flow-arrow)" />
+                  <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke="#94a3b8" strokeWidth={1.5} markerEnd={`url(#flow-arrow-${element.id})`} />
                   {e.label && (
                     <text x={midX} y={midY} dy={-4} textAnchor="middle" className="fill-slate-500" fontSize={11}>{e.label}</text>
                   )}
