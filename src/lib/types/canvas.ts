@@ -68,6 +68,8 @@ export type ElementType =
   | 'workout-schedule'  // Weekly workout planner grid
   | 'meal-prep'    // Weekly meal planner grid
   | 'jersey'       // Interactive jersey card with signatures
+  // Batch 2: Live
+  | 'live-feed'    // Phone-controlled live counter/score (single/versus/goal)
   // Resume Kit elements
   | 'experience-entry'      // Job/role card
   | 'education-entry'       // School/degree card
@@ -246,6 +248,14 @@ export interface CanvasElement {
   trackerChartType?: 'line' | 'bar'
   trackerShowSummary?: boolean    // Show summary cards above chart
   trackerTimeRange?: '7d' | '30d' | '90d' | '1y' | 'all'
+  // Live Feed specific (phone-controlled live counter/score). Row key = element id.
+  liveFeedPreset?: 'single' | 'versus' | 'goal'
+  liveFeedTitle?: string
+  liveFeedLabelA?: string          // single/goal: value label; versus: home side label
+  liveFeedLabelB?: string          // versus: away side label
+  liveFeedTarget?: number          // goal: target value
+  liveFeedStep?: number            // control-page +/- increment
+  liveFeedColor?: string           // accent color
   // Kit Profile specific
   kitProfileKitId?: string
   kitProfileData?: Record<string, any>
@@ -824,6 +834,17 @@ export function createElement(type: ElementType): CanvasElement {
         jerseySecondaryColor: '#0F3D2E',
         jerseyStyle: 'classic',
         jerseySignaturesEnabled: true,
+      }
+    case 'live-feed':
+      return {
+        ...base,
+        liveFeedPreset: 'single',
+        liveFeedTitle: 'Live Count',
+        liveFeedLabelA: 'Home',
+        liveFeedLabelB: 'Away',
+        liveFeedTarget: 100,
+        liveFeedStep: 1,
+        liveFeedColor: '#39D98A',
       }
     case 'experience-entry':
       return {
