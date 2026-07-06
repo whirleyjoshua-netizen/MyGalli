@@ -1,11 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Plus, Home, FileText, Users, Compass, Library, BarChart3, Megaphone,
+  Plus, Home, FileText, Users, Compass, Library, BarChart3, Megaphone, ChevronRight,
 } from 'lucide-react'
 import { ProfileCard } from '@/components/dashboard/ProfileCard'
+import { PagesTree } from '@/components/dashboard/PagesTree'
 
 interface NavItem {
   label: string
@@ -45,6 +47,7 @@ export function SidebarContent({
     ? [...NAV.slice(0, 4), BULLETIN_NAV, ...NAV.slice(4)]
     : NAV
   const pathname = usePathname()
+  const [galleryOpen, setGalleryOpen] = useState(false)
 
   return (
     <>
@@ -78,6 +81,29 @@ export function SidebarContent({
                     <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Soon</span>
                   </>
                 )}
+              </div>
+            )
+          }
+          // Gallery: an expandable page tree (pages + their hubs) — desktop rail only.
+          if (item.href === '/my-pages' && !collapsed && !mobile) {
+            return (
+              <div key={item.label}>
+                <div
+                  className={`${base} cursor-pointer ${
+                    active ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  <Icon className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary' : ''}`} />
+                  <Link href={item.href!} onClick={onNavigate} className="flex-1 truncate">{item.label}</Link>
+                  <button
+                    onClick={() => setGalleryOpen((o) => !o)}
+                    aria-label={galleryOpen ? 'Collapse pages' : 'Expand pages'}
+                    className="p-0.5 rounded hover:bg-muted-foreground/10 shrink-0 cursor-pointer"
+                  >
+                    <ChevronRight className={`w-4 h-4 transition-transform ${galleryOpen ? 'rotate-90' : ''}`} />
+                  </button>
+                </div>
+                {galleryOpen && <PagesTree onNavigate={onNavigate} />}
               </div>
             )
           }

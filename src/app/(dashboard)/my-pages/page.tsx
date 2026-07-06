@@ -2,20 +2,10 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Plus, Globe, FileEdit, Folder } from 'lucide-react'
+import { Plus, Globe, FileEdit } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import type { DashboardPrefs } from '@/lib/types/dashboard'
 import { PageCard, type DashDisplay } from '@/components/dashboard/PageCard'
-
-interface DashHub {
-  id: string
-  title: string
-  slug: string
-  displayId: string
-  coverImage?: string | null
-  _count: { items: number; folders: number }
-}
 
 const GRADIENTS = [
   'from-galli/20 via-galli-aqua/10 to-galli-violet/10',
@@ -32,8 +22,7 @@ export default function MyPagesPage() {
   const [prefs, setPrefs] = useState<DashboardPrefs>({})
   const [loading, setLoading] = useState(true)
   const [cardMenuOpen, setCardMenuOpen] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'pages' | 'boards' | 'hubs'>('pages')
-  const [hubs, setHubs] = useState<DashHub[]>([])
+  const [activeTab, setActiveTab] = useState<'pages' | 'boards'>('pages')
 
   useEffect(() => {
     fetch('/api/displays')
@@ -44,10 +33,6 @@ export default function MyPagesPage() {
     fetch('/api/dashboard-prefs')
       .then((r) => (r.ok ? r.json() : {}))
       .then((d) => setPrefs(d || {}))
-      .catch(() => {})
-    fetch('/api/hubs')
-      .then((r) => (r.ok ? r.json() : { hubs: [] }))
-      .then((d) => setHubs(Array.isArray(d?.hubs) ? d.hubs : []))
       .catch(() => {})
   }, [])
 
@@ -129,7 +114,6 @@ export default function MyPagesPage() {
 
   const boardCount = useMemo(() => displays.filter((d) => d.kind === 'collection').length, [displays])
   const pageCount = displays.length - boardCount
-  const hubCount = hubs.length
   const activeList = useMemo(
     () => displays.filter((d) => (activeTab === 'boards' ? d.kind === 'collection' : d.kind !== 'collection')),
     [displays, activeTab],
@@ -170,7 +154,7 @@ export default function MyPagesPage() {
           >
             <Plus className="w-4 h-4" /> New board
           </button>
-        ) : activeTab === 'hubs' ? null : (
+        ) : (
           <button
             onClick={() => router.push('/editor')}
             className="inline-flex shrink-0 items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-semibold shadow-soft hover:brightness-105 transition-all cursor-pointer"
@@ -182,7 +166,7 @@ export default function MyPagesPage() {
 
       {/* Tabs */}
       <div className="flex items-center gap-1 mb-8 border-b border-border">
-        {([['pages', 'Pages', pageCount], ['boards', 'Boards', boardCount], ['hubs', 'Hubs', hubCount]] as const).map(([key, label, count]) => (
+        {([['pages', 'Pages', pageCount], ['boards', 'Boards', boardCount]] as const).map(([key, label, count]) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
@@ -195,40 +179,7 @@ export default function MyPagesPage() {
         ))}
       </div>
 
-      {activeTab === 'hubs' ? (
-        hubs.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-border rounded-2xl">
-            <p className="text-muted-foreground mb-4">
-              No hubs yet — add a Hub element while building a page.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {hubs.map((hub, i) => (
-              <Link
-                key={hub.id}
-                href={`/hubs/${hub.id}`}
-                className="group relative shrink-0 rounded-2xl border border-border bg-surface overflow-hidden shadow-soft hover:shadow-soft-lg hover:border-primary/30 transition-all cursor-pointer block"
-              >
-                <div className={`h-52 relative ${hub.coverImage ? '' : `bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]}`}`}>
-                  {hub.coverImage && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={hub.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                  )}
-                  <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-black/75 via-black/35 to-transparent pointer-events-none" />
-                  <div className="absolute bottom-0 inset-x-0 p-3">
-                    <h3 className="text-white font-semibold text-sm truncate drop-shadow">{hub.title}</h3>
-                    <div className="mt-1.5 flex items-center gap-1.5 text-xs text-white/90 drop-shadow">
-                      <Folder className="w-3.5 h-3.5" />
-                      {hub._count.items} files · {hub._count.folders} folders
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )
-      ) : loading ? (
+      {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : activeList.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-border rounded-2xl">
