@@ -26,3 +26,10 @@ export function folderPath(folders: FolderNode[], id: string): FolderNode[] {
   }
   return byId.has(id) ? path : []
 }
+
+export function descendantFolderIds(folders: FolderNode[], rootId: string): string[] {
+  const out = [rootId]
+  const kids = folders.filter((f) => f.parentId === rootId)
+  for (const k of kids) out.push(...descendantFolderIds(folders, k.id))
+  return out
+}

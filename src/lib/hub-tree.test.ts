@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildFolderTree, folderPath } from './hub-tree'
+import { buildFolderTree, folderPath, descendantFolderIds } from './hub-tree'
 
 const folders = [
   { id: 'a', parentId: null, name: 'A', order: 0 },
@@ -23,5 +23,15 @@ describe('folderPath', () => {
   })
   it('returns [] for unknown id', () => {
     expect(folderPath(folders, 'zzz')).toEqual([])
+  })
+})
+
+describe('descendantFolderIds', () => {
+  it('collects root + all descendants', () => {
+    const result = descendantFolderIds(folders, 'a')
+    expect(new Set(result)).toEqual(new Set(['a', 'b', 'd', 'c']))
+  })
+  it('returns just the leaf when no children', () => {
+    expect(descendantFolderIds(folders, 'd')).toEqual(['d'])
   })
 })
