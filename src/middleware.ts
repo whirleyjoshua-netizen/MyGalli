@@ -11,6 +11,7 @@ const PROTECTED_PATHS = [
   '/new-kit',
   '/editor',
   '/create',
+  '/live',
 ]
 
 export function middleware(request: NextRequest) {
@@ -41,5 +42,6 @@ export const config = {
     '/new-kit/:path*',
     '/editor/:path*',
     '/create/:path*',
+    '/live/:path*',
   ],
 }
