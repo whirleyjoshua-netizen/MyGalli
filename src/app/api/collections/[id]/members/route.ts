@@ -61,8 +61,11 @@ export async function POST(request: NextRequest, { params }: Ctx) {
   const count = await db.collectionMember.count({ where: { collectionId: id } })
   try {
     await db.collectionMember.create({ data: { collectionId: id, memberId, position: count } })
-  } catch {
-    return NextResponse.json({ error: 'Already added' }, { status: 409 })
+  } catch (err) {
+    if (err && typeof err === 'object' && 'code' in err && (err as { code?: string }).code === 'P2002') {
+      return NextResponse.json({ error: 'Already added' }, { status: 409 })
+    }
+    throw err
   }
   return NextResponse.json({ ok: true })
 }

@@ -4,6 +4,32 @@ import { getUser } from '@/lib/auth'
 import { canEdit, splitUpdate, COLLAB_FIELDS } from '@/lib/collab'
 import { isValidCategory } from '@/lib/categories'
 import { notifyFollowers } from '@/lib/notifications'
+import { isPro } from '@/lib/plan'
+
+type SectionsShape = Array<{ columns?: Array<{ elements?: Array<Record<string, unknown>> }> }>
+
+// The transient `collectionMembers` field (hydrated client-side for collection-view
+// elements) must never be persisted — strip it before writing sections to the DB.
+function stripCollectionMembers(sections: unknown): unknown {
+  if (!Array.isArray(sections)) return sections
+  return (sections as SectionsShape).map((section) => ({
+    ...section,
+    columns: Array.isArray(section.columns)
+      ? section.columns.map((column) => ({
+          ...column,
+          elements: Array.isArray(column.elements)
+            ? column.elements.map((el) => {
+                if (el && typeof el === 'object' && 'collectionMembers' in el) {
+                  const { collectionMembers: _omit, ...rest } = el
+                  return rest
+                }
+                return el
+              })
+            : column.elements,
+        }))
+      : section.columns,
+  }))
+}
 
 // GET /api/displays/[id] - Get a display
 export async function GET(
@@ -79,6 +105,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Display not found' }, { status: 404 })
     }
 
+    // Saving edits to a collection board is a Pro feature — blocks a lapsed-Pro
+    // owner and any free collaborator from persisting changes.
+    if (display.kind === 'collection' && !isPro(user)) {
+      return NextResponse.json({ error: 'Pro required' }, { status: 403 })
+    }
+
     const body = await request.json()
     const { version: clientVersion, ...updates } = body
 
@@ -90,6 +122,10 @@ export async function PATCH(
     const { data, rejected } = splitUpdate(known, isOwner)
     if (rejected.length > 0) {
       return NextResponse.json({ error: `Not allowed to edit: ${rejected.join(', ')}` }, { status: 403 })
+    }
+
+    if (data.sections !== undefined) {
+      data.sections = stripCollectionMembers(data.sections) as typeof data.sections
     }
 
     if (data.category !== undefined && data.category !== null && !isValidCategory(String(data.category))) {

@@ -136,6 +136,7 @@ import { PublicBusinessMenuElement } from '@/components/elements/PublicBusinessM
 import { PublicBusinessHoursElement } from '@/components/elements/PublicBusinessHoursElement'
 import { PublicBusinessReviewElement } from '@/components/elements/PublicBusinessReviewElement'
 import { PublicBusinessPromoElement } from '@/components/elements/PublicBusinessPromoElement'
+import { PublicCollectionView } from '@/components/elements/PublicCollectionView'
 
 interface ColumnCanvasProps {
   sections: Section[]
@@ -1181,6 +1182,9 @@ export function ColumnCanvas({
         )
 
       case 'collection-view':
+        if (isPreviewMode) {
+          return <PublicCollectionView element={element} />
+        }
         return (
           <CollectionViewElement
             {...commonProps}
