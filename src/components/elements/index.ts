@@ -91,3 +91,5 @@ export { PublicLiveFeedElement } from './PublicLiveFeedElement'
 // Collection Boards
 export { PublicCollectionView } from './PublicCollectionView'
 export { CollectionViewElement } from './CollectionViewElement'
+export { FlowchartElement } from './FlowchartElement'
+export { PublicFlowchartElement } from './PublicFlowchartElement'

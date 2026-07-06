@@ -106,6 +106,8 @@ import { PublicCommentSection } from '@/components/elements/PublicCommentSection
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
 import { LiveFeedElement } from '@/components/elements/LiveFeedElement'
 import { PublicLiveFeedElement } from '@/components/elements/PublicLiveFeedElement'
+import { FlowchartElement } from '@/components/elements/FlowchartElement'
+import { PublicFlowchartElement } from '@/components/elements/PublicFlowchartElement'
 import { PublicTrackerElement } from '@/components/elements/PublicTrackerElement'
 import { PublicKitProfileElement } from '@/components/elements/PublicKitProfileElement'
 import { PublicGameScheduleElement } from '@/components/elements/PublicGameScheduleElement'
@@ -799,6 +801,20 @@ export function ColumnCanvas({
         }
         return (
           <LiveFeedElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'flowchart':
+        if (isPreviewMode) {
+          return <PublicFlowchartElement element={element} />
+        }
+        return (
+          <FlowchartElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}

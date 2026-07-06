@@ -52,6 +52,7 @@ import {
   Blocks,
   MapPin,
   Radio,
+  Workflow,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -80,6 +81,7 @@ const commands: Command[] = [
   { id: 'table', label: 'Table', icon: Table, description: 'Rows and columns', category: 'Data & Visuals' },
   { id: 'kpi', label: 'KPI / Stat', icon: BarChart3, description: 'Metric with trend', category: 'Data & Visuals' },
   { id: 'chart', label: '3D Chart', icon: PieChart, description: 'Bar, line, or pie chart', category: 'Data & Visuals' },
+  { id: 'flowchart', label: 'Flowchart', icon: Workflow, description: 'Branching workflow of linked blocks', category: 'Data & Visuals' },
 
   // Media
   { id: 'image', label: 'Image', icon: Image, description: 'Add an image', category: 'Media' },

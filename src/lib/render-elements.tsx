@@ -54,6 +54,7 @@ import { PublicBusinessHoursElement } from '@/components/elements/PublicBusiness
 import { PublicBusinessReviewElement } from '@/components/elements/PublicBusinessReviewElement'
 import { PublicBusinessPromoElement } from '@/components/elements/PublicBusinessPromoElement'
 import { PublicAudioPlayerElement } from '@/components/elements/PublicAudioPlayerElement'
+import { PublicFlowchartElement } from '@/components/elements/PublicFlowchartElement'
 
 export function getGridClass(layout: string): string {
   switch (layout) {
@@ -424,6 +425,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'tracker':
       return <PublicTrackerElement element={element} displayId={displayId || ''} />
+
+    case 'flowchart':
+      return <PublicFlowchartElement element={element} />
 
     case 'kit-profile':
       return <PublicKitProfileElement element={element} />
