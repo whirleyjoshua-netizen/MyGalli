@@ -8,11 +8,12 @@ export interface ExploreRowItem {
   coverImage: string | null
   views: number
   category: string | null
+  kind: string
   user: { username: string; name: string | null; avatar: string | null }
 }
 
 const CARD_SELECT = {
-  id: true, slug: true, title: true, coverImage: true, views: true, category: true,
+  id: true, slug: true, title: true, coverImage: true, views: true, category: true, kind: true,
   user: { select: { username: true, name: true, avatar: true } },
 } as const
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { Eye, Globe } from 'lucide-react'
+import { Eye, Globe, LayoutGrid } from 'lucide-react'
 import type { ExploreRowItem } from '@/lib/explore'
 
 const GRADIENTS = [
@@ -20,6 +20,11 @@ export function ExploreRowCard({ item, index, size = 'row' }: { item: ExploreRow
         {item.coverImage && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+        )}
+        {item.kind === 'collection' && (
+          <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-black/50 text-white text-xs px-2 py-0.5 backdrop-blur-sm">
+            <LayoutGrid className="w-3 h-3" /> Board
+          </span>
         )}
         {item.views > 0 && (
           <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-full bg-black/50 text-white text-xs px-2 py-0.5 backdrop-blur-sm">
