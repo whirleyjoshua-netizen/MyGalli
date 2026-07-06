@@ -82,3 +82,6 @@ export { BeforeAfterElement } from './BeforeAfterElement'
 export { PublicBeforeAfterElement } from './PublicBeforeAfterElement'
 export { TipJarElement } from './TipJarElement'
 export { PublicTipJarElement } from './PublicTipJarElement'
+
+// Collection Boards
+export { PublicCollectionView } from './PublicCollectionView'
