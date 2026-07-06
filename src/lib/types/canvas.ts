@@ -116,6 +116,7 @@ export type ElementType =
   | 'map'                   // Interactive Leaflet map with photo-pins + directions
   // Batch 2: Audio
   | 'audio-player'          // Custom player (upload/URL) + Spotify/SoundCloud embeds
+  | 'whiteboard'            // fabric.js fixed-artboard drawing surface (Pro)
   // Collection Boards
   | 'collection-view'       // Gallery of a board's member pages
 
@@ -556,6 +557,12 @@ export interface CanvasElement {
   audioCoverUrl?: string
   audioAutoStart?: boolean
   audioLoop?: boolean
+  // Whiteboard specific
+  whiteboardScene?: string        // fabric.js canvas JSON (editable source of truth)
+  whiteboardWidth?: number
+  whiteboardHeight?: number
+  whiteboardBackground?: 'blank' | 'grid' | 'dots'
+  whiteboardPreviewUrl?: string   // rendered PNG (Blob URL) for the public page
   // Collection View (board gallery)
   collectionViewType?: 'gallery'          // slice-1 only; seam for later views
   collectionColumns?: 2 | 3 | 4
@@ -1175,6 +1182,15 @@ export function createElement(type: ElementType): CanvasElement {
         collectionColumns: 3,
         collectionShowCategory: true,
         collectionShowDescription: false,
+      }
+    case 'whiteboard':
+      return {
+        ...base,
+        whiteboardScene: '',
+        whiteboardWidth: 800,
+        whiteboardHeight: 450,
+        whiteboardBackground: 'blank',
+        whiteboardPreviewUrl: '',
       }
     default:
       return base
