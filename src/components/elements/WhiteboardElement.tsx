@@ -79,6 +79,11 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
     persist()
   }, [persist])
 
+  const styleRef = useRef({ strokeColor, fillColor, strokeWidth })
+  const snapshotRef = useRef(snapshot)
+  useEffect(() => { styleRef.current = { strokeColor, fillColor, strokeWidth } }, [strokeColor, fillColor, strokeWidth])
+  useEffect(() => { snapshotRef.current = snapshot }, [snapshot])
+
   // Mount fabric once.
   useEffect(() => {
     let disposed = false
@@ -94,7 +99,6 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
       }
       historyRef.current = [JSON.stringify(canvas.toJSON())]
       applyBackground(canvas, fabric, background, width, height)
-      canvas.on('object:added', snapshot)
       canvas.on('object:modified', snapshot)
       canvas.on('object:removed', snapshot)
       canvas.on('path:created', snapshot)
@@ -132,9 +136,10 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
 
     let obj: any = null
     let start = { x: 0, y: 0 }
-    const fill = fillColor ?? 'transparent'
 
     const onDown = (opt: any) => {
+      const { strokeColor, fillColor, strokeWidth } = styleRef.current
+      const fill = fillColor ?? 'transparent'
       const p = canvas.getScenePoint(opt.e)
       start = { x: p.x, y: p.y }
       if (tool === 'rect') obj = new fabric.Rect({ left: p.x, top: p.y, width: 1, height: 1, fill, stroke: strokeColor, strokeWidth })
@@ -142,12 +147,12 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
       else if (tool === 'line' || tool === 'arrow') obj = new fabric.Line([p.x, p.y, p.x, p.y], { stroke: strokeColor, strokeWidth })
       else if (tool === 'text') {
         obj = new fabric.Textbox('Text', { left: p.x, top: p.y, fontSize: 24, fill: strokeColor, width: 160 })
-        canvas.add(obj); canvas.setActiveObject(obj); obj.enterEditing?.(); setTool('select'); return
+        canvas.add(obj); canvas.setActiveObject(obj); obj.enterEditing?.(); setTool('select'); snapshotRef.current(); return
       } else if (tool === 'sticky') {
         const bg = new fabric.Rect({ width: 160, height: 160, rx: 8, ry: 8, fill: fillColor ?? '#FEF08A' })
         const txt = new fabric.Textbox('Note', { width: 140, fontSize: 18, fill: '#111111', left: 10, top: 10 })
         obj = new fabric.Group([bg, txt], { left: p.x, top: p.y })
-        canvas.add(obj); canvas.setActiveObject(obj); setTool('select'); snapshot(); return
+        canvas.add(obj); canvas.setActiveObject(obj); setTool('select'); snapshotRef.current(); return
       }
       if (obj) canvas.add(obj)
     }
@@ -160,6 +165,7 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
       canvas.renderAll()
     }
     const onUp = () => {
+      const { strokeColor, strokeWidth } = styleRef.current
       if (obj && (tool === 'arrow')) {
         // add a simple arrowhead as a triangle at the line end
         const triangle = new fabric.Triangle({
@@ -171,13 +177,13 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
       }
       obj = null
       setTool('select')
-      snapshot()
+      snapshotRef.current()
     }
     canvas.on('mouse:down', onDown)
     canvas.on('mouse:move', onMove)
     canvas.on('mouse:up', onUp)
     return () => { canvas.off('mouse:down', onDown); canvas.off('mouse:move', onMove); canvas.off('mouse:up', onUp) }
-  }, [tool, strokeColor, fillColor, strokeWidth, snapshot])
+  }, [tool])
 
   const onStyleChange = (s: { strokeColor?: string; fillColor?: string | null; strokeWidth?: number }) => {
     if (s.strokeColor !== undefined) setStrokeColor(s.strokeColor)
@@ -207,7 +213,7 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
     historyRef.current = historyRef.current.slice(0, -1)
     const target = historyRef.current[historyRef.current.length - 1]
     isRestoringRef.current = true
-    canvas.loadFromJSON(target).then(() => { canvas.renderAll(); isRestoringRef.current = false; persist() })
+    canvas.loadFromJSON(target).then(() => { canvas.renderAll(); persist() }).finally(() => { isRestoringRef.current = false })
   }
   const redo = () => {
     const canvas = fabricRef.current
@@ -216,7 +222,7 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
     redoRef.current = redoRef.current.slice(0, -1)
     historyRef.current = pushHistory(historyRef.current, scene)
     isRestoringRef.current = true
-    canvas.loadFromJSON(scene).then(() => { canvas.renderAll(); isRestoringRef.current = false; persist() })
+    canvas.loadFromJSON(scene).then(() => { canvas.renderAll(); persist() }).finally(() => { isRestoringRef.current = false })
   }
   const clear = () => {
     const canvas = fabricRef.current
@@ -245,7 +251,7 @@ export function WhiteboardElement({ element, onChange, onDelete, isSelected, onS
       const url = await uploadImageFile(file)
       const img = await fabric.FabricImage.fromURL(url, { crossOrigin: 'anonymous' })
       img.scaleToWidth(Math.min(300, width / 2))
-      canvas.add(img); canvas.setActiveObject(img); canvas.renderAll()
+      canvas.add(img); canvas.setActiveObject(img); canvas.renderAll(); snapshot()
     } catch { /* ignore */ }
   }
 
