@@ -128,6 +128,9 @@ model Display {
   // Jersey signatures
   jerseySignatures JerseySignature[]
 
+  // Bookings (appointment scheduling)
+  bookings    Booking[]
+
   // Collaborative editing
   version       Int      @default(0)
   kind          String   @default("page")
@@ -142,6 +145,25 @@ model Display {
   @@index([userId])
   @@index([published])
   @@index([category])
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  displayId   String
+  elementId   String
+  start       DateTime
+  end         DateTime
+  name        String
+  email       String
+  note        String?
+  cancelToken String   @unique @default(cuid())
+  createdAt   DateTime @default(now())
+
+  display     Display  @relation(fields: [displayId], references: [id], onDelete: Cascade)
+
+  @@unique([elementId, start])
+  @@index([displayId])
+  @@index([elementId, start])
 }
 
 model DisplayCollaborator {

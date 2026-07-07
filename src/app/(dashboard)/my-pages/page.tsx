@@ -8,6 +8,8 @@ import type { DashboardPrefs } from '@/lib/types/dashboard'
 import { PageCard, type DashDisplay } from '@/components/dashboard/PageCard'
 import { UpgradePrompt } from '@/components/pro/UpgradePrompt'
 
+type Community = { id: string; title: string; username: string; slug: string; coverImage: string | null; latestPost: { text: string | null; createdAt: string } | null }
+
 const GRADIENTS = [
   'from-galli/20 via-galli-aqua/10 to-galli-violet/10',
   'from-galli-aqua/20 via-galli-violet/10 to-galli/10',
@@ -23,7 +25,8 @@ export default function MyPagesPage() {
   const [prefs, setPrefs] = useState<DashboardPrefs>({})
   const [loading, setLoading] = useState(true)
   const [cardMenuOpen, setCardMenuOpen] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'pages' | 'boards'>('pages')
+  const [activeTab, setActiveTab] = useState<'pages' | 'boards' | 'communities'>('pages')
+  const [communities, setCommunities] = useState<Community[]>([])
   const [upgradeOpen, setUpgradeOpen] = useState(false)
 
   useEffect(() => {
@@ -35,6 +38,10 @@ export default function MyPagesPage() {
     fetch('/api/dashboard-prefs')
       .then((r) => (r.ok ? r.json() : {}))
       .then((d) => setPrefs(d || {}))
+      .catch(() => {})
+    fetch('/api/communities/joined')
+      .then((r) => (r.ok ? r.json() : { communities: [] }))
+      .then((d) => setCommunities(Array.isArray(d?.communities) ? d.communities : []))
       .catch(() => {})
   }, [])
 
@@ -149,7 +156,7 @@ export default function MyPagesPage() {
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">Gallery</h1>
           <p className="text-muted-foreground mt-1">Your pages and boards — live and in progress.</p>
         </div>
-        {activeTab === 'boards' ? (
+        {activeTab === 'communities' ? null : activeTab === 'boards' ? (
           <button
             onClick={createBoard}
             className="inline-flex shrink-0 items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-semibold shadow-soft hover:brightness-105 transition-all cursor-pointer"
@@ -168,7 +175,7 @@ export default function MyPagesPage() {
 
       {/* Tabs */}
       <div className="flex items-center gap-1 mb-8 border-b border-border">
-        {([['pages', 'Pages', pageCount], ['boards', 'Boards', boardCount]] as const).map(([key, label, count]) => (
+        {([['pages', 'Pages', pageCount], ['boards', 'Boards', boardCount], ['communities', 'Communities', communities.length]] as const).map(([key, label, count]) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
@@ -181,7 +188,20 @@ export default function MyPagesPage() {
         ))}
       </div>
 
-      {loading ? (
+      {activeTab === 'communities' ? (
+        communities.length === 0 ? (
+          <p className="text-sm text-muted-foreground">You haven&apos;t joined any communities yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {communities.map((c) => (
+              <a key={c.id} href={`/${c.username}/hub/${c.slug}`} className="rounded-xl border border-border bg-surface p-4 hover:shadow-soft transition">
+                <div className="font-semibold">{c.title}</div>
+                <div className="mt-1 text-xs text-muted-foreground truncate">{c.latestPost?.text || 'No posts yet'}</div>
+              </a>
+            ))}
+          </div>
+        )
+      ) : loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : activeList.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-border rounded-2xl">

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Folder, File, Link as LinkIcon, Code2, StickyNote, ChevronRight, ChevronDown, X, Lock, ExternalLink } from 'lucide-react'
 import { buildFolderTree, folderPath, type FolderNode } from '@/lib/hub-tree'
 import { safeHref } from '@/lib/editor/safe-href'
+import { HubCommunitySection } from './HubCommunitySection'
 import { resolveNoteLink } from '@/lib/hub-notes'
 
 export interface HubViewerHub {
@@ -42,6 +43,8 @@ interface HubViewerProps {
   notes: HubViewerNote[]
   username: string
   hubId?: string
+  community?: { isCommunity: boolean; joined: boolean; memberCount: number; canPost: boolean }
+  currentUserId?: string
 }
 
 const TYPE_ICON: Record<string, typeof File> = {
@@ -263,7 +266,7 @@ function NotesRail({ notes, items }: { notes: HubViewerNote[]; items: HubViewerI
   )
 }
 
-export function HubViewer({ hub, folders, items, notes, username, hubId }: HubViewerProps) {
+export function HubViewer({ hub, folders, items, notes, username, hubId, community, currentUserId }: HubViewerProps) {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [unlockFolderId, setUnlockFolderId] = useState<string | null>(null)
@@ -383,6 +386,16 @@ export function HubViewer({ hub, folders, items, notes, username, hubId }: HubVi
           <p className="text-sm text-muted-foreground">Nothing here yet.</p>
         </div>
       ) : null}
+
+      {community?.isCommunity && hubId && (
+        <HubCommunitySection
+          hubId={hubId}
+          initialJoined={community.joined}
+          memberCount={community.memberCount}
+          canPost={community.canPost}
+          currentUserId={currentUserId}
+        />
+      )}
       </div>
       <NotesRail notes={notes} items={items} />
     </div>

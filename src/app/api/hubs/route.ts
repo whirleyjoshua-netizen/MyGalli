@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const hubs = await db.hub.findMany({
     where: { userId: me.id },
     orderBy: { updatedAt: 'desc' },
-    select: { id: true, title: true, slug: true, displayId: true, coverImage: true,
+    select: { id: true, title: true, slug: true, displayId: true, coverImage: true, community: true,
       _count: { select: { items: true, folders: true } } },
   })
   return NextResponse.json({ hubs })
@@ -26,6 +26,6 @@ export async function POST(request: NextRequest) {
   }
   const title = typeof body.title === 'string' && body.title.trim() ? body.title.trim().slice(0, 120) : 'Untitled Hub'
   const slug = `${slugify(title)}-${Math.random().toString(36).slice(2, 7)}`
-  const hub = await db.hub.create({ data: { userId: me.id, displayId, title, slug } })
+  const hub = await db.hub.create({ data: { userId: me.id, displayId, title, slug, community: body.community === true } })
   return NextResponse.json(hub, { status: 201 })
 }

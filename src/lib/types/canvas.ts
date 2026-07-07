@@ -43,6 +43,22 @@ export interface FlowNode {
   branchLabel?: string   // optional label on the arrow from parent → this node
 }
 
+// Calendar element — events marked on a month calendar
+export interface CalendarEvent {
+  id: string
+  date: string           // 'YYYY-MM-DD'
+  title: string
+  note?: string
+  color?: string
+}
+
+// Appointments element — weekly availability rule (day of week, start/end times)
+export interface ApptRule {
+  day: number           // 0=Sun, 1=Mon, ..., 6=Sat (but we use 1-5 for Mon-Fri default)
+  start: string         // HH:MM format, e.g. '09:00'
+  end: string           // HH:MM format, e.g. '17:00'
+}
+
 // Layout modes for sections
 export type LayoutMode = 'full-width' | 'two-column' | 'three-column'
 
@@ -85,6 +101,8 @@ export type ElementType =
   // Batch 2: Live
   | 'live-feed'    // Phone-controlled live counter/score (single/versus/goal)
   | 'flowchart'    // Branching workflow/flowchart of linked blocks
+  | 'calendar'     // Owner-marked month calendar of events
+  | 'appointments' // Calendly-style bookable time slots (Pro)
   | 'mailbox'      // Private written/voice messages → owner inbox (not shown on page)
   // Resume Kit elements
   | 'experience-entry'      // Job/role card
@@ -280,6 +298,21 @@ export interface CanvasElement {
   // Flowchart specific (branching tree of linked blocks; all in element JSON)
   flowTitle?: string
   flowNodes?: FlowNode[]
+  // Calendar specific (month calendar of events)
+  calendarTitle?: string
+  calendarSubtitle?: string
+  calendarEvents?: CalendarEvent[]
+  // Appointments specific (Calendly-style bookable time slots)
+  apptTitle?: string
+  apptDuration?: number
+  apptTimezone?: string
+  apptWeeklyRules?: ApptRule[]
+  apptBuffer?: number
+  apptLeadTimeHours?: number
+  apptMaxDaysAhead?: number
+  apptLocationType?: 'video' | 'phone' | 'in-person' | 'custom'
+  apptLocationDetail?: string
+  apptNoteLabel?: string
   // Mailbox specific (private inbound messages; never rendered on the page)
   mailboxTitle?: string
   mailboxPrompt?: string
@@ -602,6 +635,7 @@ export interface CanvasElement {
   hubTitleOverride?: string
   hubSlug?: string
   hubUsername?: string
+  hubCommunity?: boolean
   // Text styling (text, heading, quote, callout, list)
   fontFamily?: string
   fontSize?: number
@@ -902,6 +936,33 @@ export function createElement(type: ElementType): CanvasElement {
         flowNodes: [
           { id: `fn-${Date.now()}-start`, title: 'Start' },
         ],
+      }
+    case 'calendar':
+      return {
+        ...base,
+        calendarTitle: 'Calendar',
+        calendarSubtitle: '',
+        calendarEvents: [],
+      }
+    case 'appointments':
+      return {
+        ...base,
+        apptTitle: '30-min intro call',
+        apptDuration: 30,
+        apptTimezone: typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC',
+        apptWeeklyRules: [
+          { day: 1, start: '09:00', end: '17:00' },
+          { day: 2, start: '09:00', end: '17:00' },
+          { day: 3, start: '09:00', end: '17:00' },
+          { day: 4, start: '09:00', end: '17:00' },
+          { day: 5, start: '09:00', end: '17:00' },
+        ],
+        apptBuffer: 0,
+        apptLeadTimeHours: 12,
+        apptMaxDaysAhead: 30,
+        apptLocationType: 'video',
+        apptLocationDetail: '',
+        apptNoteLabel: 'Anything I should know?',
       }
     case 'mailbox':
       return {
