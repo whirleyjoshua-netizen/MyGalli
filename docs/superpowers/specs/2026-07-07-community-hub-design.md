@@ -34,7 +34,8 @@ Keeping these separate is the whole point of the feature: **someone can follow *
 Broadcast-only. Owner + collaborators post; members read + react.
 
 **In:**
-1. A `community` toggle on a Hub (Pro-gated to enable). "Create a Community Hub" is a preset that flips it on; can also be enabled on an existing hub in hub settings.
+1. A `community` toggle on a Hub (Pro-gated to enable). "Create a Community Hub" is a preset that flips it on; can also be enabled on an existing hub in hub settings. **Reversible and non-destructive:** toggling `community` off hides the join button + posts feed from the public viewer and reverts the icon, but preserves all `HubMember` and `HubPost` rows — toggling back on restores the audience + post history intact. No confirmation-destroys-data trap.
+   - **Icon reflects the mode:** when `community` is on, the hub renders a distinct **people icon** (lucide `UsersRound`) instead of the default hub icon — everywhere the hub surfaces: the sidebar page tree hub branches (`PagesTree.tsx`), the `/hubs` listing, and the embed tile. Driven purely by the `community` boolean.
 2. `HubMember` — join / leave (account required, rate-limited). Member count.
 3. `HubPost` broadcast feed — reuses the Bulletin `blocks`/`settings` JSON shape and its rendering + composer components. Authored by owner or collaborators. Likes + interactive-block responses (mirrors `BulletinLike`/`BulletinResponse`).
 4. Public hub viewer gains a **Community section**: Join/Joined button, member count, the posts feed. Coexists with the existing files/folders content and respects existing access control.
@@ -154,6 +155,6 @@ Authorization helper (pure, tested): `canPostToHub(user, hub, collaborators)` �
 
 ## Open decision (flagged for the user)
 
-1. **Toggle vs. distinct type** — spec assumes a `community` *toggle* on any hub (one hub type; "Community Hub" is a create-time preset). Alternative: a strictly separate hub kind. *Recommendation: toggle.*
+1. ~~**Toggle vs. distinct type**~~ — **RESOLVED: toggle** on any hub (one hub type; "Community Hub" is a create-time preset). Reversible + non-destructive; icon switches to `UsersRound` when on.
 2. **Pro-gate enabling community?** — spec assumes yes (free to join). Veto if community hubs should be free to create.
 3. **`/communities` member feed in Phase 1** — included as a light list. Could defer to Phase 2 and rely on the hub sidebar tree + direct URLs. *Recommendation: keep the light list.*
