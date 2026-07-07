@@ -1,7 +1,8 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { File, Link as LinkIcon, Code2, StickyNote, Plus, Trash2, Pencil, Loader2, X } from 'lucide-react'
+import { File, Link as LinkIcon, Code2, StickyNote, Plus, Trash2, Pencil, Loader2, X, Lock } from 'lucide-react'
+import { HubPrivacyControl, type PrivacyApply } from './HubPrivacyControl'
 
 export interface HubItem {
   id: string
@@ -12,13 +13,17 @@ export interface HubItem {
   url: string | null
   content: string | null
   order: number
+  visibility?: string | null
+  hasPasscode?: boolean
 }
 
 interface HubItemListProps {
   items: HubItem[]
+  isPro: boolean
   onCreate: (data: { type: string; title: string; url?: string; content?: string }) => Promise<void>
   onUpdate: (id: string, data: { title?: string; url?: string | null; content?: string | null }) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  onSetPrivacy: (id: string, data: PrivacyApply) => Promise<void>
 }
 
 const TYPE_ICON: Record<string, typeof File> = {
@@ -167,12 +172,16 @@ function AddForm({
 
 function ItemRow({
   item,
+  isPro,
   onUpdate,
   onDelete,
+  onSetPrivacy,
 }: {
   item: HubItem
+  isPro: boolean
   onUpdate: (id: string, data: { title?: string; url?: string | null; content?: string | null }) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  onSetPrivacy: (id: string, data: PrivacyApply) => Promise<void>
 }) {
   const Icon = TYPE_ICON[item.type] ?? File
   const [editing, setEditing] = useState(false)
@@ -240,11 +249,25 @@ function ItemRow({
     <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5 group">
       <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium truncate">{item.title}</p>
+        <p className="flex items-center gap-1.5 text-sm font-medium truncate">
+          <span className="truncate">{item.title}</span>
+          {item.visibility === 'private' && (
+            <Lock className="w-3 h-3 shrink-0 text-galli-violet" aria-label="Private" />
+          )}
+        </p>
         <p className="text-xs text-muted-foreground truncate">
           {item.type}
           {item.url ? ` · ${item.url}` : ''}
         </p>
+      </div>
+      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+        <HubPrivacyControl
+          visibility={item.visibility}
+          hasPasscode={item.hasPasscode}
+          isPro={isPro}
+          label="Item privacy"
+          onApply={(data) => onSetPrivacy(item.id, data)}
+        />
       </div>
       <button
         type="button"
@@ -268,7 +291,7 @@ function ItemRow({
   )
 }
 
-export function HubItemList({ items, onCreate, onUpdate, onDelete }: HubItemListProps) {
+export function HubItemList({ items, isPro, onCreate, onUpdate, onDelete, onSetPrivacy }: HubItemListProps) {
   const [addType, setAddType] = useState<'file' | 'link' | 'embed' | 'note' | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -322,7 +345,14 @@ export function HubItemList({ items, onCreate, onUpdate, onDelete }: HubItemList
       ) : (
         <div className="space-y-2">
           {items.map((item) => (
-            <ItemRow key={item.id} item={item} onUpdate={onUpdate} onDelete={onDelete} />
+            <ItemRow
+              key={item.id}
+              item={item}
+              isPro={isPro}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              onSetPrivacy={onSetPrivacy}
+            />
           ))}
         </div>
       )}

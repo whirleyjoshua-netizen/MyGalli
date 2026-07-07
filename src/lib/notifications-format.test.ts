@@ -16,4 +16,8 @@ describe('formatNotification', () => {
     expect(formatNotification({ type: 'comment', actorName: 'Guest', contextText: 'My Trip' })).toBe('Guest commented on “My Trip”')
     expect(formatNotification({ type: 'comment', actorName: 'Guest' })).toBe('Guest commented on your page')
   })
+  it('message with and without a page title', () => {
+    expect(formatNotification({ type: 'message', actorName: 'Someone', contextText: 'My Page' })).toBe('Someone sent you a message on “My Page”')
+    expect(formatNotification({ type: 'message', actorName: 'Ann', contextText: null })).toBe('Ann sent you a message')
+  })
 })

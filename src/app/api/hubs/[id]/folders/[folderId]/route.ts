@@ -70,8 +70,8 @@ export async function PATCH(
   else if (typeof body.passcode === 'string') data.passcodeHash = await hash(body.passcode, 12)
 
   const folder = await db.hubFolder.update({ where: { id: folderId }, data })
-  const { passcodeHash: _passcodeHash, ...safeFolder } = folder
-  return NextResponse.json(safeFolder)
+  const { passcodeHash, ...safeFolder } = folder
+  return NextResponse.json({ ...safeFolder, hasPasscode: !!passcodeHash })
 }
 
 export async function DELETE(

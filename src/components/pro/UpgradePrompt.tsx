@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { X, Sparkles } from 'lucide-react'
 
 export function UpgradePrompt({
@@ -31,16 +30,16 @@ export function UpgradePrompt({
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-galli-violet/15">
             <Sparkles className="h-6 w-6 text-galli-violet" />
           </div>
-          <h3 className="text-lg font-bold">Upgrade to Pro</h3>
+          <h3 className="text-lg font-bold">A Pro feature</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            {feature} is part of My Galli Pro. Upgrade to unlock it.
+            {feature} is part of My Galli Pro.
           </p>
-          <Link
-            href="/enterprise"
+          <button
+            onClick={onClose}
             className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background transition hover:opacity-90"
           >
-            See Pro
-          </Link>
+            Got it
+          </button>
         </div>
       </div>
     </>

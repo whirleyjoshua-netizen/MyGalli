@@ -1,4 +1,4 @@
-export interface FolderNode { id: string; parentId: string | null; name: string; order: number }
+export interface FolderNode { id: string; parentId: string | null; name: string; order: number; visibility?: string | null; hasPasscode?: boolean }
 export interface TreeNode extends FolderNode { children: TreeNode[] }
 
 export function buildFolderTree(folders: FolderNode[]): TreeNode[] {

@@ -56,6 +56,7 @@ import {
   PenTool,
   Workflow,
   Boxes,
+  Inbox,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -99,6 +100,7 @@ const commands: Command[] = [
   { id: 'rating', label: 'Rating', icon: Star, description: 'Star or numeric rating', category: 'Forms' },
   { id: 'shortanswer', label: 'Short Answer', icon: MessageSquare, description: 'Text input field', category: 'Forms' },
   { id: 'rsvp', label: 'RSVP', icon: CalendarCheck, description: 'Event RSVP with optional potluck list', category: 'Forms' },
+  { id: 'mailbox', label: 'Mailbox', icon: Inbox, description: 'Collect private written/voice messages', category: 'Forms' },
 
   // Social
   { id: 'comment', label: 'Comments', icon: MessageSquare, description: 'Visitor comment section', category: 'Social' },

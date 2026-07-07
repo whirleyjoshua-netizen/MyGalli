@@ -103,6 +103,7 @@ export type ElementType =
   | 'flowchart'    // Branching workflow/flowchart of linked blocks
   | 'calendar'     // Owner-marked month calendar of events
   | 'appointments' // Calendly-style bookable time slots (Pro)
+  | 'mailbox'      // Private written/voice messages → owner inbox (not shown on page)
   // Resume Kit elements
   | 'experience-entry'      // Job/role card
   | 'education-entry'       // School/degree card
@@ -312,6 +313,13 @@ export interface CanvasElement {
   apptLocationType?: 'video' | 'phone' | 'in-person' | 'custom'
   apptLocationDetail?: string
   apptNoteLabel?: string
+  // Mailbox specific (private inbound messages; never rendered on the page)
+  mailboxTitle?: string
+  mailboxPrompt?: string
+  mailboxAllowAudio?: boolean
+  mailboxRequireName?: boolean
+  mailboxButtonLabel?: string
+  mailboxThankYou?: string
   // Kit Profile specific
   kitProfileKitId?: string
   kitProfileData?: Record<string, any>
@@ -954,6 +962,16 @@ export function createElement(type: ElementType): CanvasElement {
         apptLocationType: 'video',
         apptLocationDetail: '',
         apptNoteLabel: 'Anything I should know?',
+      }
+    case 'mailbox':
+      return {
+        ...base,
+        mailboxTitle: 'Send me a message',
+        mailboxPrompt: 'Leave a written or voice message — it comes straight to me, privately.',
+        mailboxAllowAudio: true,
+        mailboxRequireName: false,
+        mailboxButtonLabel: 'Send',
+        mailboxThankYou: 'Thanks — your message was sent!',
       }
     case 'experience-entry':
       return {

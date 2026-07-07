@@ -59,6 +59,7 @@ import { PublicWhiteboardElement } from '@/components/elements/PublicWhiteboardE
 import { PublicFlowchartElement } from '@/components/elements/PublicFlowchartElement'
 import { PublicCalendarElement } from '@/components/elements/PublicCalendarElement'
 import { PublicAppointmentsElement } from '@/components/elements/PublicAppointmentsElement'
+import { PublicMailboxElement } from '@/components/elements/PublicMailboxElement'
 
 export function getGridClass(layout: string): string {
   switch (layout) {
@@ -438,6 +439,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'appointments':
       return <PublicAppointmentsElement element={element} displayId={displayId || ''} />
+
+    case 'mailbox':
+      return <PublicMailboxElement element={{ ...element, displayId } as typeof element} />
 
     case 'kit-profile':
       return <PublicKitProfileElement element={element} />
