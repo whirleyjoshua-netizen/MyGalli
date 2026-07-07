@@ -28,12 +28,12 @@ export function HubCommunityConsole({ hubId, initialEnabled }: { hubId: string; 
     if (res.ok) setEnabled(next)
   }
   async function removeMember(userId: string) {
-    await fetch(`/api/hubs/${hubId}/members`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) })
-    setMembers((cur) => cur.filter((x) => x.userId !== userId))
+    const res = await fetch(`/api/hubs/${hubId}/members`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) })
+    if (res.ok) setMembers((cur) => cur.filter((x) => x.userId !== userId))
   }
   async function deletePost(id: string) {
-    await fetch(`/api/hubs/${hubId}/posts/${id}`, { method: 'DELETE' })
-    setPosts((cur) => cur.filter((x) => x.id !== id))
+    const res = await fetch(`/api/hubs/${hubId}/posts/${id}`, { method: 'DELETE' })
+    if (res.ok) setPosts((cur) => cur.filter((x) => x.id !== id))
   }
 
   return (
