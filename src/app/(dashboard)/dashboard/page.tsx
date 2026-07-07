@@ -11,6 +11,7 @@ import { PageCard, type DashDisplay } from '@/components/dashboard/PageCard'
 import { FeedCard, type FeedItem } from '@/components/dashboard/FeedCard'
 import { AnalyticsPanel } from '@/components/dashboard/AnalyticsPanel'
 import { NotificationBell } from '@/components/dashboard/NotificationBell'
+import { UpgradePrompt } from '@/components/pro/UpgradePrompt'
 
 const SELECTED_KEY = 'galli:dash:selectedDisplayId'
 
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const [cardMenuOpen, setCardMenuOpen] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [feedLabel, setFeedLabel] = useState<'follow' | 'discover'>('follow')
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
 
   useEffect(() => {
     fetch('/api/displays')
@@ -89,7 +91,7 @@ export default function DashboardPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: 'Untitled Board', kind: 'collection' }),
     })
-    if (res.status === 403) { router.push('/enterprise'); return }
+    if (res.status === 403) { setUpgradeOpen(true); return }
     if (!res.ok) return
     const board = await res.json()
     router.push(`/editor?id=${board.id}`)
@@ -265,6 +267,8 @@ export default function DashboardPage() {
 
       {/* Right analytics panel */}
       <AnalyticsPanel display={selected} username={user?.username} />
+
+      <UpgradePrompt isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} feature="Boards" />
     </div>
   )
 }
