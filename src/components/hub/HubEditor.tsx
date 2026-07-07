@@ -338,7 +338,7 @@ export function HubEditor({ hubId }: HubEditorProps) {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[240px_1fr_260px] gap-6">
+      <div className="grid md:grid-cols-[240px_1fr] lg:grid-cols-[240px_1fr_260px] gap-6">
         {/* Folder tree */}
         <div className="rounded-2xl border border-border bg-surface p-3 shadow-soft h-fit">
           <div className="flex items-center justify-between mb-2">

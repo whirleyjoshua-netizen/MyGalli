@@ -291,7 +291,7 @@ export function HubViewer({ hub, folders, items, notes, username, hubId }: HubVi
   void tree // reserved for future full-tree sidebar
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10 flex flex-col lg:flex-row gap-8 items-start">
+    <div className={`${notes.length > 0 ? 'max-w-5xl' : 'max-w-3xl'} mx-auto px-4 py-10 flex flex-col lg:flex-row gap-8 items-start`}>
       <div className="flex-1 min-w-0 w-full">
       <header className="mb-8 text-center">
         {hub.coverImage && (
