@@ -46,7 +46,7 @@ export function MessagesInbox() {
               <div className="flex items-center gap-2 text-sm">
                 {m.read ? <MailOpen className="w-4 h-4 text-muted-foreground" /> : <Mail className="w-4 h-4 text-primary" />}
                 <span className={`font-semibold ${m.read ? 'text-foreground' : 'text-foreground'}`}>{m.senderName || 'Anonymous'}</span>
-                {m.display?.title && <span className="text-xs text-muted-foreground">· {m.display.title}</span>}
+                <span className="text-xs text-muted-foreground">· {m.display?.title || 'Profile'}</span>
               </div>
               {m.body && <p className="mt-1 text-sm text-slate-700 whitespace-pre-wrap break-words">{m.body}</p>}
               {m.mediaUrl && <audio src={m.mediaUrl} controls className="mt-2 h-8" />}

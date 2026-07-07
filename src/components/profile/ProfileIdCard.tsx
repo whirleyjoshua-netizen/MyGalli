@@ -1,9 +1,11 @@
 'use client'
 
-import { MapPin, Pencil } from 'lucide-react'
+import { useState } from 'react'
+import { MapPin, Pencil, Mail } from 'lucide-react'
 import { FollowButton } from '@/components/social/FollowButton'
 import { ProfileFollowCounts } from '@/components/social/ProfileFollowCounts'
 import { ShareProfileButton } from '@/components/profile/ShareProfileButton'
+import { ProfileMailboxModal } from '@/components/profile/ProfileMailboxModal'
 
 export interface ProfileIdCardUser {
   username: string
@@ -30,6 +32,7 @@ export function ProfileIdCard({
   onEdit?: () => void
 }) {
   const initial = (user.name || user.username).charAt(0).toUpperCase()
+  const [mailboxOpen, setMailboxOpen] = useState(false)
 
   return (
     <div className="w-full lg:w-80 shrink-0 p-5 rounded-2xl border border-border bg-surface shadow-soft">
@@ -68,7 +71,17 @@ export function ProfileIdCard({
           <FollowButton username={user.username} initialIsFollowing={isFollowing} initialIsFriend={isFriend} />
         )}
         <ShareProfileButton username={user.username} />
+        <button
+          onClick={() => setMailboxOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold hover:bg-muted transition-all cursor-pointer"
+        >
+          <Mail className="w-4 h-4" /> Message
+        </button>
       </div>
+
+      {mailboxOpen && (
+        <ProfileMailboxModal username={user.username} name={user.name} onClose={() => setMailboxOpen(false)} />
+      )}
     </div>
   )
 }

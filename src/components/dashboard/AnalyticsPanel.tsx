@@ -106,7 +106,7 @@ export function AnalyticsPanel({ display, username }: { display: DashDisplay | n
       <div>
         <div className="flex items-center justify-between mb-2.5">
           <h4 className="text-sm font-bold text-foreground">Audience at a glance</h4>
-          <Link href="/analytics" className="text-xs text-primary hover:underline cursor-pointer">See analytics</Link>
+          <Link href="/data" className="text-xs text-primary hover:underline cursor-pointer">See analytics</Link>
         </div>
         <div className="flex gap-2">
           <StatTile label="Views" value={loading ? '—' : String(views)} spark={spark} />
@@ -136,7 +136,7 @@ export function AnalyticsPanel({ display, username }: { display: DashDisplay | n
 
       {/* CTA */}
       <Link
-        href="/analytics"
+        href="/data"
         className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow-soft hover:brightness-105 transition-all cursor-pointer"
       >
         View full analytics
