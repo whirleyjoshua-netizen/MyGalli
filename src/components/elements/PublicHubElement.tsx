@@ -1,9 +1,9 @@
 import Link from 'next/link'
-import { Boxes, ArrowRight } from 'lucide-react'
+import { Boxes, ArrowRight, UsersRound } from 'lucide-react'
 import type { CanvasElement } from '@/lib/types/canvas'
 
 export function PublicHubElement({ element }: { element: CanvasElement }) {
-  const { hubId, hubUsername, hubSlug, hubCoverImage, hubTitleOverride } = element
+  const { hubId, hubUsername, hubSlug, hubCoverImage, hubTitleOverride, hubCommunity } = element
   const title = hubTitleOverride?.trim() || 'Hub'
 
   if (!hubId || !hubUsername || !hubSlug) {
@@ -30,6 +30,14 @@ export function PublicHubElement({ element }: { element: CanvasElement }) {
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold truncate">{title}</p>
         <p className="text-xs text-muted-foreground">Open →</p>
+        {/* Denormalized at create-on-add time (PageEditor); if the hub is later
+            toggled to community, this label only updates when the element is
+            re-saved. */}
+        {hubCommunity && (
+          <span className="mt-1 inline-flex items-center gap-1 text-xs text-primary">
+            <UsersRound className="h-3 w-3" /> Community
+          </span>
+        )}
       </div>
       <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0 group-hover:translate-x-0.5 transition-transform" />
     </Link>

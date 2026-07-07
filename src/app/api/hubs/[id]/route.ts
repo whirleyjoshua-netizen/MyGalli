@@ -14,13 +14,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params
   const r = await ownHub(request, id)
   if ('error' in r) return r.error
-  const [folders, items] = await Promise.all([
+  const [folders, items, notes] = await Promise.all([
     db.hubFolder.findMany({ where: { hubId: id }, orderBy: { order: 'asc' } }),
     db.hubItem.findMany({ where: { hubId: id }, orderBy: { order: 'asc' } }),
+    db.hubNote.findMany({ where: { hubId: id }, orderBy: { order: 'asc' } }),
   ])
   const safeFolders = folders.map(({ passcodeHash, ...f }) => ({ ...f, hasPasscode: !!passcodeHash }))
   const safeItems = items.map(({ passcodeHash, ...i }) => ({ ...i, hasPasscode: !!passcodeHash }))
-  return NextResponse.json({ hub: r.hub, folders: safeFolders, items: safeItems })
+  return NextResponse.json({ hub: r.hub, folders: safeFolders, items: safeItems, notes })
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -32,6 +33,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (typeof body.title === 'string') data.title = body.title.trim().slice(0, 120)
   if (typeof body.description === 'string') data.description = body.description.slice(0, 1000)
   if (typeof body.coverImage === 'string') data.coverImage = body.coverImage
+  if (typeof body.community === 'boolean') data.community = body.community
   const hub = await db.hub.update({ where: { id }, data })
   return NextResponse.json(hub)
 }

@@ -635,6 +635,7 @@ export interface CanvasElement {
   hubTitleOverride?: string
   hubSlug?: string
   hubUsername?: string
+  hubCommunity?: boolean
   // Text styling (text, heading, quote, callout, list)
   fontFamily?: string
   fontSize?: number

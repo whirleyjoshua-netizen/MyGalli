@@ -1,9 +1,11 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Folder, File, Link as LinkIcon, Code2, StickyNote, ChevronRight, X, Lock } from 'lucide-react'
+import { Folder, File, Link as LinkIcon, Code2, StickyNote, ChevronRight, ChevronDown, X, Lock, ExternalLink } from 'lucide-react'
 import { buildFolderTree, folderPath, type FolderNode } from '@/lib/hub-tree'
 import { safeHref } from '@/lib/editor/safe-href'
+import { HubCommunitySection } from './HubCommunitySection'
+import { resolveNoteLink } from '@/lib/hub-notes'
 
 export interface HubViewerHub {
   id: string
@@ -26,12 +28,23 @@ export interface HubViewerItem {
 
 type HubViewerFolder = FolderNode & { locked?: boolean }
 
+export interface HubViewerNote {
+  id: string
+  title: string
+  content: string
+  linkedItemId: string | null
+  minimized: boolean
+}
+
 interface HubViewerProps {
   hub: HubViewerHub
   folders: HubViewerFolder[]
   items: HubViewerItem[]
+  notes: HubViewerNote[]
   username: string
   hubId?: string
+  community?: { isCommunity: boolean; joined: boolean; memberCount: number; canPost: boolean }
+  currentUserId?: string
 }
 
 const TYPE_ICON: Record<string, typeof File> = {
@@ -210,7 +223,50 @@ function ItemCard({ item, hubId }: { item: HubViewerItem; hubId?: string }) {
   )
 }
 
-export function HubViewer({ hub, folders, items, username, hubId }: HubViewerProps) {
+function NotesRail({ notes, items }: { notes: HubViewerNote[]; items: HubViewerItem[] }) {
+  const [open, setOpen] = useState<Record<string, boolean>>({})
+  if (notes.length === 0) return null
+  return (
+    <aside className="lg:w-64 shrink-0 space-y-2">
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+        <StickyNote className="w-3.5 h-3.5" /> Notes
+      </h2>
+      {notes.map((note) => {
+        const expanded = open[note.id] ?? !note.minimized
+        const href = resolveNoteLink(note, items)
+        return (
+          <div key={note.id} className="rounded-xl border border-border bg-surface p-3">
+            <button
+              type="button"
+              onClick={() => setOpen((s) => ({ ...s, [note.id]: !expanded }))}
+              className="flex items-center gap-1.5 w-full text-left"
+            >
+              {expanded ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
+              <span className="text-sm font-medium truncate">{note.title || 'Note'}</span>
+            </button>
+            {expanded && (
+              <div className="mt-2 space-y-2">
+                {note.content && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{note.content}</p>}
+                {href && (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  >
+                    Open <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </aside>
+  )
+}
+
+export function HubViewer({ hub, folders, items, notes, username, hubId, community, currentUserId }: HubViewerProps) {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [unlockFolderId, setUnlockFolderId] = useState<string | null>(null)
@@ -238,7 +294,8 @@ export function HubViewer({ hub, folders, items, username, hubId }: HubViewerPro
   void tree // reserved for future full-tree sidebar
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div className={`${notes.length > 0 ? 'max-w-5xl' : 'max-w-3xl'} mx-auto px-4 py-10 flex flex-col lg:flex-row gap-8 items-start`}>
+      <div className="flex-1 min-w-0 w-full">
       <header className="mb-8 text-center">
         {hub.coverImage && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -329,6 +386,18 @@ export function HubViewer({ hub, folders, items, username, hubId }: HubViewerPro
           <p className="text-sm text-muted-foreground">Nothing here yet.</p>
         </div>
       ) : null}
+
+      {community?.isCommunity && hubId && (
+        <HubCommunitySection
+          hubId={hubId}
+          initialJoined={community.joined}
+          memberCount={community.memberCount}
+          canPost={community.canPost}
+          currentUserId={currentUserId}
+        />
+      )}
+      </div>
+      <NotesRail notes={notes} items={items} />
     </div>
   )
 }
