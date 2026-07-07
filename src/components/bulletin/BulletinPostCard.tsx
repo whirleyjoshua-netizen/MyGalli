@@ -21,7 +21,17 @@ export interface FeedPost {
   results: ElementAggregate | null
 }
 
-export function BulletinPostCard({ post, currentUserId, onDeleted }: { post: FeedPost; currentUserId?: string; onDeleted: (id: string) => void }) {
+export function BulletinPostCard({
+  post,
+  currentUserId,
+  onDeleted,
+  basePath = '/api/bulletin',
+}: {
+  post: FeedPost
+  currentUserId?: string
+  onDeleted: (id: string) => void
+  basePath?: string
+}) {
   const [liked, setLiked] = useState(post.likedByMe)
   const [likeCount, setLikeCount] = useState(post.likeCount)
   const [results, setResults] = useState<ElementAggregate | null>(post.results)
@@ -32,7 +42,7 @@ export function BulletinPostCard({ post, currentUserId, onDeleted }: { post: Fee
     setLiked(next)
     setLikeCount((c) => c + (next ? 1 : -1))
     try {
-      const res = await fetch(`/api/bulletin/${post.id}/like`, { method: next ? 'POST' : 'DELETE' })
+      const res = await fetch(`${basePath}/${post.id}/like`, { method: next ? 'POST' : 'DELETE' })
       if (res.ok) {
         const data = await res.json()
         setLiked(data.likedByMe)
@@ -47,7 +57,7 @@ export function BulletinPostCard({ post, currentUserId, onDeleted }: { post: Fee
   const del = async () => {
     if (!window.confirm('Delete this post?')) return
     try {
-      const res = await fetch(`/api/bulletin/${post.id}`, { method: 'DELETE' })
+      const res = await fetch(`${basePath}/${post.id}`, { method: 'DELETE' })
       if (res.ok) onDeleted(post.id)
     } catch {
       /* ignore */
