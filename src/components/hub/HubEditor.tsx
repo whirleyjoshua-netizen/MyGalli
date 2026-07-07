@@ -2,10 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Image as ImageIcon, Loader2, Trash2, FolderPlus, ChevronRight } from 'lucide-react'
+import { Image as ImageIcon, Loader2, Trash2, FolderPlus, ChevronRight, ChevronDown, Users } from 'lucide-react'
 import { buildFolderTree, folderPath, type FolderNode } from '@/lib/hub-tree'
 import { HubFolderTree } from './HubFolderTree'
 import { HubItemList, type HubItem } from './HubItemList'
+import { HubCollaboratorsModal } from './HubCollaboratorsModal'
+import { HubPrivacyControl, type PrivacyApply } from './HubPrivacyControl'
+import { UpgradePrompt } from '@/components/pro/UpgradePrompt'
+import { useAuthStore } from '@/lib/store'
+import { isPro as checkPro } from '@/lib/plan'
 
 interface Hub {
   id: string
@@ -31,6 +36,12 @@ export function HubEditor({ hubId }: HubEditorProps) {
   const coverInputRef = useRef<HTMLInputElement>(null)
   const [newFolderName, setNewFolderName] = useState('')
   const [creatingFolder, setCreatingFolder] = useState(false)
+  const [showCollaborators, setShowCollaborators] = useState(false)
+  const [showUpgrade, setShowUpgrade] = useState(false)
+  const [toolsOpen, setToolsOpen] = useState(false)
+
+  const user = useAuthStore((s) => s.user)
+  const isPro = checkPro(user)
 
   useEffect(() => {
     let cancelled = false
@@ -69,6 +80,10 @@ export function HubEditor({ hubId }: HubEditorProps) {
   const visibleItems = useMemo(
     () => items.filter((it) => (it.folderId ?? null) === selectedFolderId),
     [items, selectedFolderId]
+  )
+  const selectedFolder = useMemo(
+    () => folders.find((f) => f.id === selectedFolderId) ?? null,
+    [folders, selectedFolderId]
   )
 
   const patchHub = useCallback(
@@ -190,6 +205,30 @@ export function HubEditor({ hubId }: HubEditorProps) {
     }
   }
 
+  const handleSetFolderPrivacy = async (id: string, data: PrivacyApply) => {
+    const res = await fetch(`/api/hubs/${hubId}/folders/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, ...updated } : f)))
+    }
+  }
+
+  const handleSetItemPrivacy = async (id: string, data: PrivacyApply) => {
+    const res = await fetch(`/api/hubs/${hubId}/items/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...updated } : it)))
+    }
+  }
+
   if (loading) {
     return (
       <div className="px-6 lg:px-8 py-7">
@@ -202,6 +241,34 @@ export function HubEditor({ hubId }: HubEditorProps) {
 
   return (
     <div className="px-6 lg:px-8 py-7">
+      {/* Toolbar */}
+      <div className="flex justify-end mb-4">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setToolsOpen((v) => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-lg bg-surface hover:bg-muted/60"
+          >
+            Tools <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+          {toolsOpen && (
+            <div className="absolute right-0 mt-1 w-44 rounded-lg border border-border bg-surface shadow-soft-lg z-10 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  setToolsOpen(false)
+                  if (isPro) setShowCollaborators(true)
+                  else setShowUpgrade(true)
+                }}
+                className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm hover:bg-muted/60"
+              >
+                <Users className="w-4 h-4" /> Collaborators
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Header */}
       <div className="mb-6 rounded-2xl border border-border bg-surface overflow-hidden shadow-soft">
         <div className="h-32 relative bg-gradient-to-br from-galli/20 to-galli-violet/20 group">
@@ -275,6 +342,20 @@ export function HubEditor({ hubId }: HubEditorProps) {
                 <FolderPlus className="w-4 h-4" />
               </button>
             </div>
+            {selectedFolder && (
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs text-muted-foreground">
+                  {selectedFolder.visibility === 'private' ? 'Private folder' : 'Public folder'}
+                </span>
+                <HubPrivacyControl
+                  visibility={selectedFolder.visibility}
+                  hasPasscode={selectedFolder.hasPasscode}
+                  isPro={isPro}
+                  label="Folder privacy"
+                  onApply={(data) => handleSetFolderPrivacy(selectedFolder.id, data)}
+                />
+              </div>
+            )}
             {selectedFolderId && (
               <div className="flex gap-1.5">
                 <button
@@ -317,12 +398,23 @@ export function HubEditor({ hubId }: HubEditorProps) {
           </div>
           <HubItemList
             items={visibleItems}
+            isPro={isPro}
             onCreate={handleCreateItem}
             onUpdate={handleUpdateItem}
             onDelete={handleDeleteItem}
+            onSetPrivacy={handleSetItemPrivacy}
           />
         </div>
       </div>
+
+      {showCollaborators && (
+        <HubCollaboratorsModal hubId={hubId} onClose={() => setShowCollaborators(false)} />
+      )}
+      <UpgradePrompt
+        isOpen={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        feature="Hub collaborators"
+      />
     </div>
   )
 }

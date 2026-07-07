@@ -1,6 +1,6 @@
 'use client'
 
-import { Folder, ChevronRight, ChevronDown } from 'lucide-react'
+import { Folder, ChevronRight, ChevronDown, Lock } from 'lucide-react'
 import { useState } from 'react'
 import type { TreeNode } from '@/lib/hub-tree'
 
@@ -52,6 +52,9 @@ function FolderRow({
         )}
         <Folder className="w-3.5 h-3.5 shrink-0" />
         <span className="truncate">{node.name}</span>
+        {node.visibility === 'private' && (
+          <Lock className="w-3 h-3 shrink-0 ml-auto text-galli-violet" aria-label="Private" />
+        )}
       </button>
       {hasChildren && expanded && (
         <div>

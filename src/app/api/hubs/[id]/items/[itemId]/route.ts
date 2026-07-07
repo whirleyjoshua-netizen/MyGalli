@@ -60,8 +60,8 @@ export async function PATCH(
   }
 
   const item = await db.hubItem.update({ where: { id: itemId }, data })
-  const { passcodeHash: _passcodeHash, ...safeItem } = item
-  return NextResponse.json(safeItem)
+  const { passcodeHash, ...safeItem } = item
+  return NextResponse.json({ ...safeItem, hasPasscode: !!passcodeHash })
 }
 
 export async function DELETE(
