@@ -43,6 +43,15 @@ export interface FlowNode {
   branchLabel?: string   // optional label on the arrow from parent → this node
 }
 
+// Calendar element — events marked on a month calendar
+export interface CalendarEvent {
+  id: string
+  date: string           // 'YYYY-MM-DD'
+  title: string
+  note?: string
+  color?: string
+}
+
 // Layout modes for sections
 export type LayoutMode = 'full-width' | 'two-column' | 'three-column'
 
@@ -85,6 +94,7 @@ export type ElementType =
   // Batch 2: Live
   | 'live-feed'    // Phone-controlled live counter/score (single/versus/goal)
   | 'flowchart'    // Branching workflow/flowchart of linked blocks
+  | 'calendar'     // Owner-marked month calendar of events
   // Resume Kit elements
   | 'experience-entry'      // Job/role card
   | 'education-entry'       // School/degree card
@@ -279,6 +289,10 @@ export interface CanvasElement {
   // Flowchart specific (branching tree of linked blocks; all in element JSON)
   flowTitle?: string
   flowNodes?: FlowNode[]
+  // Calendar specific (month calendar of events)
+  calendarTitle?: string
+  calendarSubtitle?: string
+  calendarEvents?: CalendarEvent[]
   // Kit Profile specific
   kitProfileKitId?: string
   kitProfileData?: Record<string, any>
@@ -894,6 +908,13 @@ export function createElement(type: ElementType): CanvasElement {
         flowNodes: [
           { id: `fn-${Date.now()}-start`, title: 'Start' },
         ],
+      }
+    case 'calendar':
+      return {
+        ...base,
+        calendarTitle: 'Calendar',
+        calendarSubtitle: '',
+        calendarEvents: [],
       }
     case 'experience-entry':
       return {
