@@ -438,6 +438,7 @@ model Hub {
   updatedAt   DateTime    @updatedAt
   folders     HubFolder[]
   items       HubItem[]
+  notes         HubNote[]
   collaborators HubCollaborator[]
   members     HubMember[]
   posts       HubPost[]
@@ -475,6 +476,21 @@ model HubItem {
   passcodeHash String?
   @@index([hubId])
   @@index([folderId])
+}
+
+model HubNote {
+  id           String   @id @default(cuid())
+  hubId        String
+  hub          Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  title        String   @default("")
+  content      String   @default("")
+  linkedItemId String?
+  visibility   String   @default("public")
+  minimized    Boolean  @default(false)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([hubId])
 }
 
 model HubCollaborator {

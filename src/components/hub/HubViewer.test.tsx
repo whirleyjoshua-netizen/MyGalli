@@ -22,13 +22,13 @@ const items = [
 
 describe('HubViewer', () => {
   it('renders root items', () => {
-    render(<HubViewer hub={hub} folders={folders} items={items} username="alice" hubId="hub1" />)
+    render(<HubViewer hub={hub} folders={folders} items={items} notes={[]} username="alice" hubId="hub1" />)
     expect(screen.getByText('Root Note')).toBeInTheDocument()
     expect(screen.queryByText('A Link')).not.toBeInTheDocument()
   })
 
   it('clicking a folder shows its children', () => {
-    render(<HubViewer hub={hub} folders={folders} items={items} username="alice" hubId="hub1" />)
+    render(<HubViewer hub={hub} folders={folders} items={items} notes={[]} username="alice" hubId="hub1" />)
     fireEvent.click(screen.getByText('Docs'))
     expect(screen.getByText('A Link')).toBeInTheDocument()
     expect(screen.getByText('A File')).toBeInTheDocument()
@@ -36,7 +36,7 @@ describe('HubViewer', () => {
   })
 
   it('renders an item with an Open link with the correct href', () => {
-    render(<HubViewer hub={hub} folders={folders} items={items} username="alice" hubId="hub1" />)
+    render(<HubViewer hub={hub} folders={folders} items={items} notes={[]} username="alice" hubId="hub1" />)
     fireEvent.click(screen.getByText('Docs'))
     const link = screen.getAllByRole('link', { name: /open/i })[0] as HTMLAnchorElement
     // there may be more than one Open link; just check the first matches one of the hrefs
@@ -65,12 +65,12 @@ describe('HubViewer locked nodes', () => {
   })
 
   it('renders a lock affordance for a locked folder', () => {
-    render(<HubViewer hub={hub} folders={lockedFolders} items={lockedItems} username="alice" hubId="hub1" />)
+    render(<HubViewer hub={hub} folders={lockedFolders} items={lockedItems} notes={[]} username="alice" hubId="hub1" />)
     expect(screen.getByText('Private Stuff')).toBeInTheDocument()
   })
 
   it('clicking a locked folder shows a passcode input, and submitting POSTs to the unlock URL', async () => {
-    render(<HubViewer hub={hub} folders={lockedFolders} items={lockedItems} username="alice" hubId="hub1" />)
+    render(<HubViewer hub={hub} folders={lockedFolders} items={lockedItems} notes={[]} username="alice" hubId="hub1" />)
     fireEvent.click(screen.getByText('Private Stuff'))
 
     const input = screen.getByPlaceholderText(/passcode/i)
@@ -87,7 +87,7 @@ describe('HubViewer locked nodes', () => {
   })
 
   it('renders a lock affordance for a locked item', () => {
-    render(<HubViewer hub={hub} folders={lockedFolders} items={lockedItems} username="alice" hubId="hub1" />)
+    render(<HubViewer hub={hub} folders={lockedFolders} items={lockedItems} notes={[]} username="alice" hubId="hub1" />)
     fireEvent.click(screen.getByText('Docs'))
     expect(screen.getByText('Secret Link')).toBeInTheDocument()
   })
