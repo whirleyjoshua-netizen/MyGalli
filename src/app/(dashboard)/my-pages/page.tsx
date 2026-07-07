@@ -6,6 +6,7 @@ import { Plus, Globe, FileEdit } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import type { DashboardPrefs } from '@/lib/types/dashboard'
 import { PageCard, type DashDisplay } from '@/components/dashboard/PageCard'
+import { UpgradePrompt } from '@/components/pro/UpgradePrompt'
 
 const GRADIENTS = [
   'from-galli/20 via-galli-aqua/10 to-galli-violet/10',
@@ -23,6 +24,7 @@ export default function MyPagesPage() {
   const [loading, setLoading] = useState(true)
   const [cardMenuOpen, setCardMenuOpen] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'pages' | 'boards'>('pages')
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
 
   useEffect(() => {
     fetch('/api/displays')
@@ -99,7 +101,7 @@ export default function MyPagesPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: 'Untitled Board', kind: 'collection' }),
     })
-    if (res.status === 403) { router.push('/enterprise'); return }
+    if (res.status === 403) { setUpgradeOpen(true); return }
     if (!res.ok) return
     const board = await res.json()
     router.push(`/editor?id=${board.id}`)
@@ -224,6 +226,8 @@ export default function MyPagesPage() {
           </section>
         </div>
       )}
+
+      <UpgradePrompt isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} feature="Boards" />
     </div>
   )
 }
