@@ -40,7 +40,7 @@ export function HubFileViewer({ file, onClose, initialPage }: HubFileViewerProps
   const kind = fileKind(file)
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex flex-col" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/80 flex flex-col">
       <div
         className="flex items-center justify-between px-4 py-3 text-white shrink-0"
         onClick={(e) => e.stopPropagation()}

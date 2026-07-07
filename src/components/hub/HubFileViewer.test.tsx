@@ -46,7 +46,18 @@ describe('HubFileViewer', () => {
       />
     )
     fireEvent.click(screen.getByTestId('viewer-backdrop'))
-    // click bubbles to the outer overlay too, so onClose fires from both handlers
-    expect(onClose).toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('does NOT close when clicking a child of the backdrop (e.g. the image)', () => {
+    const onClose = vi.fn()
+    render(
+      <HubFileViewer
+        file={{ id: '1', type: 'file', title: 'Pic', url: 'https://x.blob/pic.png' }}
+        onClose={onClose}
+      />
+    )
+    fireEvent.click(screen.getByAltText('Pic'))
+    expect(onClose).not.toHaveBeenCalled()
   })
 })
