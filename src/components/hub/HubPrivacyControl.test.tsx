@@ -11,7 +11,7 @@ describe('HubPrivacyControl', () => {
     fireEvent.click(screen.getByText('Private'))
     fireEvent.click(screen.getByText('Save'))
 
-    await waitFor(() => expect(screen.getByText('Upgrade to Pro')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('A Pro feature')).toBeInTheDocument())
     expect(onApply).not.toHaveBeenCalled()
   })
 
