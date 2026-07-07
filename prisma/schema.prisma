@@ -119,6 +119,7 @@ model Display {
   kitConfig       Json?
   trackerEntries  TrackerEntry[]
   liveFeeds       LiveFeed[]
+  messages        Message[]
 
   // Jersey signatures
   jerseySignatures JerseySignature[]
@@ -255,6 +256,26 @@ model Comment {
 
   @@index([displayId])
   @@index([displayId, createdAt])
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  displayId   String
+  display     Display  @relation(fields: [displayId], references: [id], onDelete: Cascade)
+  ownerId     String   // = display.userId, denormalized for the cross-page inbox
+  elementId   String
+  kind        String   // 'text' | 'audio' (future 'video')
+  body        String?
+  mediaUrl    String?
+  senderName  String?
+  senderEmail String?
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  ipHash      String?
+
+  @@index([ownerId, read])
+  @@index([ownerId, createdAt])
+  @@index([displayId])
 }
 
 model ShareLink {
