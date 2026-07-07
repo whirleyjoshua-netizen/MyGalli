@@ -35,3 +35,39 @@ export function resetEmail(link: string) {
     html: shell('Reset your password', 'Click below to choose a new password. This link expires in 1 hour.', { href: link, label: 'Reset password' }),
   }
 }
+
+interface BookingArgs { name: string; when: string; meetingTitle: string; location?: string; cancelUrl?: string }
+
+export function bookingConfirmedEmail(a: BookingArgs) {
+  const loc = a.location ? `<br/>Location: ${a.location}` : ''
+  return {
+    subject: `Confirmed: ${a.meetingTitle} — ${a.when}`,
+    html: shell(
+      'Your booking is confirmed',
+      `Hi ${a.name}, you're booked for <strong>${a.meetingTitle}</strong> on <strong>${a.when}</strong>.${loc}`,
+      { href: a.cancelUrl || '#', label: a.cancelUrl ? 'Cancel booking' : 'View' }
+    ),
+  }
+}
+
+export function bookingReceivedEmail(a: BookingArgs) {
+  return {
+    subject: `New booking: ${a.meetingTitle} — ${a.when}`,
+    html: shell(
+      'You have a new booking',
+      `${a.name} booked <strong>${a.meetingTitle}</strong> on <strong>${a.when}</strong>.`,
+      { href: a.cancelUrl || '#', label: 'Manage' }
+    ),
+  }
+}
+
+export function bookingCancelledEmail(a: BookingArgs) {
+  return {
+    subject: `Cancelled: ${a.meetingTitle} — ${a.when}`,
+    html: shell(
+      'Booking cancelled',
+      `The booking for <strong>${a.meetingTitle}</strong> on <strong>${a.when}</strong> has been cancelled.`,
+      { href: '#', label: 'OK' }
+    ),
+  }
+}
