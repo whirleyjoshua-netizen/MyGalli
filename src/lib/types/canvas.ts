@@ -85,6 +85,7 @@ export type ElementType =
   // Batch 2: Live
   | 'live-feed'    // Phone-controlled live counter/score (single/versus/goal)
   | 'flowchart'    // Branching workflow/flowchart of linked blocks
+  | 'mailbox'      // Private written/voice messages → owner inbox (not shown on page)
   // Resume Kit elements
   | 'experience-entry'      // Job/role card
   | 'education-entry'       // School/degree card
@@ -279,6 +280,13 @@ export interface CanvasElement {
   // Flowchart specific (branching tree of linked blocks; all in element JSON)
   flowTitle?: string
   flowNodes?: FlowNode[]
+  // Mailbox specific (private inbound messages; never rendered on the page)
+  mailboxTitle?: string
+  mailboxPrompt?: string
+  mailboxAllowAudio?: boolean
+  mailboxRequireName?: boolean
+  mailboxButtonLabel?: string
+  mailboxThankYou?: string
   // Kit Profile specific
   kitProfileKitId?: string
   kitProfileData?: Record<string, any>
@@ -894,6 +902,16 @@ export function createElement(type: ElementType): CanvasElement {
         flowNodes: [
           { id: `fn-${Date.now()}-start`, title: 'Start' },
         ],
+      }
+    case 'mailbox':
+      return {
+        ...base,
+        mailboxTitle: 'Send me a message',
+        mailboxPrompt: 'Leave a written or voice message — it comes straight to me, privately.',
+        mailboxAllowAudio: true,
+        mailboxRequireName: false,
+        mailboxButtonLabel: 'Send',
+        mailboxThankYou: 'Thanks — your message was sent!',
       }
     case 'experience-entry':
       return {

@@ -95,6 +95,8 @@ export { PublicCollectionView } from './PublicCollectionView'
 export { CollectionViewElement } from './CollectionViewElement'
 export { FlowchartElement } from './FlowchartElement'
 export { PublicFlowchartElement } from './PublicFlowchartElement'
+export { MailboxElement } from './MailboxElement'
+export { PublicMailboxElement } from './PublicMailboxElement'
 
 // Hub
 export { HubElement } from './HubElement'
