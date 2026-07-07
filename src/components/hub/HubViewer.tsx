@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Folder, File, Link as LinkIcon, Code2, StickyNote, ChevronRight, X, Lock } from 'lucide-react'
 import { buildFolderTree, folderPath, type FolderNode } from '@/lib/hub-tree'
 import { safeHref } from '@/lib/editor/safe-href'
+import { HubCommunitySection } from './HubCommunitySection'
 
 export interface HubViewerHub {
   id: string
@@ -32,6 +33,8 @@ interface HubViewerProps {
   items: HubViewerItem[]
   username: string
   hubId?: string
+  community?: { isCommunity: boolean; joined: boolean; memberCount: number; canPost: boolean }
+  currentUserId?: string
 }
 
 const TYPE_ICON: Record<string, typeof File> = {
@@ -210,7 +213,7 @@ function ItemCard({ item, hubId }: { item: HubViewerItem; hubId?: string }) {
   )
 }
 
-export function HubViewer({ hub, folders, items, username, hubId }: HubViewerProps) {
+export function HubViewer({ hub, folders, items, username, hubId, community, currentUserId }: HubViewerProps) {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [unlockFolderId, setUnlockFolderId] = useState<string | null>(null)
@@ -329,6 +332,16 @@ export function HubViewer({ hub, folders, items, username, hubId }: HubViewerPro
           <p className="text-sm text-muted-foreground">Nothing here yet.</p>
         </div>
       ) : null}
+
+      {community?.isCommunity && hubId && (
+        <HubCommunitySection
+          hubId={hubId}
+          initialJoined={community.joined}
+          memberCount={community.memberCount}
+          canPost={community.canPost}
+          currentUserId={currentUserId}
+        />
+      )}
     </div>
   )
 }

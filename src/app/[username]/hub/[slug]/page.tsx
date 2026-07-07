@@ -64,6 +64,17 @@ export default async function PublicHubPage({ params }: Props) {
     if (collab) viewer = 'collaborator'
   }
 
+  let communityProps: { isCommunity: boolean; joined: boolean; memberCount: number; canPost: boolean } = {
+    isCommunity: hub.community, joined: false, memberCount: 0, canPost: viewer === 'owner' || viewer === 'collaborator',
+  }
+  if (hub.community) {
+    const [memberCount, mine] = await Promise.all([
+      db.hubMember.count({ where: { hubId: hub.id } }),
+      viewerUser ? db.hubMember.findUnique({ where: { hubId_userId: { hubId: hub.id, userId: viewerUser.id } }, select: { id: true } }) : Promise.resolve(null),
+    ])
+    communityProps = { ...communityProps, joined: !!mine, memberCount }
+  }
+
   const unlockedIds = new Set(readUnlockToken(cookieStore.get(`hub_unlock_${hub.id}`)?.value, hub.id))
   const status = resolveHubVisibility({
     folders: folders.map((f) => ({ id: f.id, parentId: f.parentId, visibility: f.visibility, hasPasscode: !!f.passcodeHash })),
@@ -111,6 +122,8 @@ export default async function PublicHubPage({ params }: Props) {
       items={safeItems}
       username={user.username}
       hubId={hub.id}
+      community={communityProps}
+      currentUserId={viewerUser?.id}
     />
   )
 }
