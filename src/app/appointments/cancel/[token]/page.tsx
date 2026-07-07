@@ -8,8 +8,12 @@ export default function CancelPage({ params }: { params: Promise<{ token: string
 
   const cancel = async () => {
     setState('loading')
-    const res = await fetch(`/api/appointments/cancel/${token}`, { method: 'POST' })
-    setState(res.ok ? 'done' : 'error')
+    try {
+      const res = await fetch(`/api/appointments/cancel/${token}`, { method: 'POST' })
+      setState(res.ok ? 'done' : 'error')
+    } catch {
+      setState('error')
+    }
   }
 
   return (

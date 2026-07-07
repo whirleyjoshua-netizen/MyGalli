@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Clock, MapPin, Phone, Mail, Globe, ExternalLink } from 'lucide-react'
 import type { CanvasElement } from '@/lib/types/canvas'
 import { isOpenNow } from '@/lib/business-hours'
@@ -10,7 +11,10 @@ interface Props {
 
 export function PublicBusinessHoursElement({ element }: Props) {
   const schedule = element.bizHoursSchedule ?? []
-  const status = schedule.length > 0 ? isOpenNow(schedule, new Date()) : null
+  const [status, setStatus] = useState<{ open: boolean; label: string } | null>(null)
+  useEffect(() => {
+    setStatus(schedule.length > 0 ? isOpenNow(schedule, new Date()) : null)
+  }, [schedule])
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' })
 
   const hasContact = element.bizHoursAddress || element.bizHoursPhone || element.bizHoursEmail || element.bizHoursWebsite

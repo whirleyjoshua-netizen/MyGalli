@@ -27,7 +27,7 @@ export async function GET(request: NextRequest, { params }: Params) {
   const slots = generateSlots(config, now, to, now)
 
   const taken = await db.booking.findMany({
-    where: { elementId, start: { gte: now } },
+    where: { displayId, elementId, start: { gte: now } },
     select: { start: true },
   })
   const takenSet = new Set(taken.map((b) => b.start.toISOString()))
