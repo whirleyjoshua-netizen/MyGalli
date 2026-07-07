@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { hash } from 'bcryptjs'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
+import { isPro } from '@/lib/plan'
 import { descendantFolderIds } from '@/lib/hub-tree'
 
 async function ownHub(request: NextRequest, id: string) {
@@ -60,8 +62,16 @@ export async function PATCH(
 
   if (typeof body.order === 'number') data.order = body.order
 
+  if (body.visibility === 'private' || (typeof body.passcode === 'string' && body.passcode)) {
+    if (!isPro(r.me)) return NextResponse.json({ error: 'Pro required to make items private' }, { status: 403 })
+  }
+  if (body.visibility === 'public' || body.visibility === 'private') data.visibility = body.visibility
+  if (body.passcode === null || body.passcode === '') data.passcodeHash = null
+  else if (typeof body.passcode === 'string') data.passcodeHash = await hash(body.passcode, 12)
+
   const folder = await db.hubFolder.update({ where: { id: folderId }, data })
-  return NextResponse.json(folder)
+  const { passcodeHash: _passcodeHash, ...safeFolder } = folder
+  return NextResponse.json(safeFolder)
 }
 
 export async function DELETE(

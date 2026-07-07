@@ -18,7 +18,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     db.hubFolder.findMany({ where: { hubId: id }, orderBy: { order: 'asc' } }),
     db.hubItem.findMany({ where: { hubId: id }, orderBy: { order: 'asc' } }),
   ])
-  return NextResponse.json({ hub: r.hub, folders, items })
+  const safeFolders = folders.map(({ passcodeHash, ...f }) => ({ ...f, hasPasscode: !!passcodeHash }))
+  const safeItems = items.map(({ passcodeHash, ...i }) => ({ ...i, hasPasscode: !!passcodeHash }))
+  return NextResponse.json({ hub: r.hub, folders: safeFolders, items: safeItems })
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
