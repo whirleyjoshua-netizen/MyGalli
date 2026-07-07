@@ -33,8 +33,20 @@ describe('HubFileViewer', () => {
     )
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(1)
-    // backdrop is the Close button's reliable proxy here:
     fireEvent.click(screen.getByLabelText('Close'))
     expect(onClose).toHaveBeenCalledTimes(2)
+  })
+
+  it('closes when clicking the backdrop content area', () => {
+    const onClose = vi.fn()
+    render(
+      <HubFileViewer
+        file={{ id: '1', type: 'file', title: 'Pic', url: 'https://x.blob/pic.png' }}
+        onClose={onClose}
+      />
+    )
+    fireEvent.click(screen.getByTestId('viewer-backdrop'))
+    // click bubbles to the outer overlay too, so onClose fires from both handlers
+    expect(onClose).toHaveBeenCalled()
   })
 })

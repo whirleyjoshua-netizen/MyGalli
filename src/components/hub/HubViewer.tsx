@@ -202,7 +202,7 @@ function ItemCard({ item, hubId, onView }: { item: HubViewerItem; hubId?: string
             <Eye className="w-3.5 h-3.5" /> View
           </button>
           {href && (
-            <a href={href} download className="px-2 py-1.5 text-xs font-medium bg-muted rounded-lg hover:bg-muted/80">
+            <a href={href} download target="_blank" rel="noopener noreferrer" className="px-2 py-1.5 text-xs font-medium bg-muted rounded-lg hover:bg-muted/80">
               Download
             </a>
           )}
