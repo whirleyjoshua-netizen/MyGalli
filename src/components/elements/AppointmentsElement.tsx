@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { Trash2, CalendarClock, Lock } from 'lucide-react'
 import type { CanvasElement, ApptRule } from '@/lib/types/canvas'
 import { isPro } from '@/lib/plan'
@@ -32,7 +33,7 @@ export function AppointmentsElement({ element, onChange, onDelete, isSelected, o
         <Lock className="w-6 h-6 text-[#6C63FF] mx-auto mb-2" />
         <p className="text-sm font-semibold text-foreground">Appointments is a Pro feature</p>
         <p className="text-xs text-muted-foreground mt-1">Upgrade to let visitors book time with you.</p>
-        <a href="/enterprise" className="inline-block mt-3 text-xs font-semibold text-[#6C63FF] underline">Upgrade to Pro</a>
+        <Link href="/enterprise" className="inline-block mt-3 text-xs font-semibold text-[#6C63FF] underline">Upgrade to Pro</Link>
         {isSelected && (
           <button onClick={(e) => { e.stopPropagation(); onDelete() }} className="absolute -top-3 -right-3 p-1.5 bg-background border border-border rounded-md shadow-sm hover:bg-destructive hover:text-destructive-foreground">
             <Trash2 className="w-3.5 h-3.5" />
