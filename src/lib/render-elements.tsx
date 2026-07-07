@@ -57,6 +57,8 @@ import { PublicBusinessPromoElement } from '@/components/elements/PublicBusiness
 import { PublicAudioPlayerElement } from '@/components/elements/PublicAudioPlayerElement'
 import { PublicWhiteboardElement } from '@/components/elements/PublicWhiteboardElement'
 import { PublicFlowchartElement } from '@/components/elements/PublicFlowchartElement'
+import { PublicCalendarElement } from '@/components/elements/PublicCalendarElement'
+import { PublicAppointmentsElement } from '@/components/elements/PublicAppointmentsElement'
 import { PublicMailboxElement } from '@/components/elements/PublicMailboxElement'
 
 export function getGridClass(layout: string): string {
@@ -431,6 +433,12 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'flowchart':
       return <PublicFlowchartElement element={element} />
+
+    case 'calendar':
+      return <PublicCalendarElement element={element} />
+
+    case 'appointments':
+      return <PublicAppointmentsElement element={element} displayId={displayId || ''} />
 
     case 'mailbox':
       return <PublicMailboxElement element={{ ...element, displayId } as typeof element} />
