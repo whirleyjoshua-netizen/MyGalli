@@ -21,7 +21,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { label: 'Home', icon: Home, href: '/dashboard', match: (p) => p === '/dashboard' },
   { label: 'Gallery', icon: FileText, href: '/my-pages', match: (p) => p.startsWith('/my-pages') },
-  { label: 'Collaborations', icon: Users, href: '/shared', match: (p) => p.startsWith('/shared') },
+  { label: 'My Pond', icon: Users, href: '/shared', match: (p) => p.startsWith('/shared') },
   { label: 'Explore', icon: Compass, href: '/explore', match: (p) => p.startsWith('/explore') },
   { label: 'Data', icon: BarChart3, href: '/data', match: (p) => p.startsWith('/data') },
   { label: 'Library', icon: Library, href: '/library', match: (p) => p.startsWith('/library') },
