@@ -18,13 +18,13 @@ describe('MobileNav', () => {
     render(<MobileNav />)
     expect(screen.getByLabelText('Open menu')).toBeTruthy()
     expect(screen.getByRole('link', { name: /create/i })).toBeTruthy()
-    expect(screen.queryByText('Analytics')).toBeNull()
+    expect(screen.queryByText('Data')).toBeNull()
   })
 
   it('opens the drawer on menu click, showing all nav destinations + profile', () => {
     render(<MobileNav />)
     fireEvent.click(screen.getByLabelText('Open menu'))
-    for (const label of ['Home', 'Gallery', 'Collaborations', 'Explore', 'Analytics', 'Library', 'Create New']) {
+    for (const label of ['Home', 'Gallery', 'Collaborations', 'Explore', 'Data', 'Library', 'Create New']) {
       expect(screen.getByText(label)).toBeTruthy()
     }
     expect(document.body.style.overflow).toBe('hidden')
@@ -41,7 +41,7 @@ describe('MobileNav', () => {
     render(<MobileNav />)
     fireEvent.click(screen.getByLabelText('Open menu'))
     fireEvent.click(screen.getByText('Explore'))
-    expect(screen.queryByText('Analytics')).toBeNull()
+    expect(screen.queryByText('Data')).toBeNull()
     expect(document.body.style.overflow).toBe('')
   })
 })
