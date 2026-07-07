@@ -3,9 +3,10 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, BarChart3, Eye, Users, Monitor, Smartphone, Tablet, Globe, Calendar, Inbox, Megaphone } from 'lucide-react'
+import { ArrowLeft, BarChart3, Eye, Users, Monitor, Smartphone, Tablet, Globe, Calendar, Inbox, Megaphone, Mail } from 'lucide-react'
 import { ElementsTab } from '@/components/analytics/ElementsTab'
 import { BulletinAnalyticsTab } from '@/components/analytics/BulletinAnalyticsTab'
+import { MessagesInbox } from '@/components/dashboard/MessagesInbox'
 
 interface AnalyticsData {
   display: {
@@ -68,8 +69,11 @@ function AnalyticsContent() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(30)
-  const [activeTab, setActiveTab] = useState<'overview' | 'elements' | 'bulletin'>(
-    searchParams.get('tab') === 'elements' ? 'elements' : searchParams.get('tab') === 'bulletin' ? 'bulletin' : 'overview'
+  const [activeTab, setActiveTab] = useState<'overview' | 'elements' | 'bulletin' | 'messages'>(
+    (() => {
+      const t = searchParams.get('tab')
+      return t === 'elements' || t === 'bulletin' || t === 'messages' ? t : 'overview'
+    })()
   )
 
   // Fetch user's displays
@@ -145,7 +149,7 @@ function AnalyticsContent() {
             </Link>
             <div className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-primary" />
-              <h1 className="text-xl font-bold">Analytics</h1>
+              <h1 className="text-xl font-bold">Data</h1>
             </div>
           </div>
 
@@ -201,12 +205,25 @@ function AnalyticsContent() {
               <Megaphone className="w-4 h-4" />
               Bulletin
             </button>
+            <button
+              onClick={() => setActiveTab('messages')}
+              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+                activeTab === 'messages'
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              Messages
+            </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        {activeTab === 'bulletin' ? (
+        {activeTab === 'messages' ? (
+          <MessagesInbox />
+        ) : activeTab === 'bulletin' ? (
           <BulletinAnalyticsTab />
         ) : activeTab === 'elements' ? (
           <ElementsTab displayId={selectedDisplayId} />
