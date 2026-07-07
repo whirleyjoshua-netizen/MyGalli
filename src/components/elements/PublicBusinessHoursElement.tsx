@@ -2,6 +2,7 @@
 
 import { Clock, MapPin, Phone, Mail, Globe, ExternalLink } from 'lucide-react'
 import type { CanvasElement } from '@/lib/types/canvas'
+import { isOpenNow } from '@/lib/business-hours'
 
 interface Props {
   element: CanvasElement
@@ -9,16 +10,29 @@ interface Props {
 
 export function PublicBusinessHoursElement({ element }: Props) {
   const schedule = element.bizHoursSchedule ?? []
+  const status = schedule.length > 0 ? isOpenNow(schedule, new Date()) : null
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' })
 
   const hasContact = element.bizHoursAddress || element.bizHoursPhone || element.bizHoursEmail || element.bizHoursWebsite
 
   return (
     <div className="space-y-5">
-      {element.bizHoursTitle && (
-        <div className="flex items-center gap-2 text-lg font-bold text-foreground">
-          <Clock className="w-5 h-5 text-amber-500" />
-          {element.bizHoursTitle}
+      {(element.bizHoursTitle || status) && (
+        <div className="flex items-center gap-3 flex-wrap">
+          {element.bizHoursTitle && (
+            <div className="flex items-center gap-2 text-lg font-bold text-foreground">
+              <Clock className="w-5 h-5 text-amber-500" />
+              {element.bizHoursTitle}
+            </div>
+          )}
+          {status && (
+            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+              status.open ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${status.open ? 'bg-green-500' : 'bg-gray-400'}`} />
+              {status.label}
+            </span>
+          )}
         </div>
       )}
 
