@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Image as ImageIcon, Loader2, Trash2, FolderPlus, ChevronRight, ChevronDown, Users } from 'lucide-react'
+import { Image as ImageIcon, Loader2, Trash2, FolderPlus, ChevronRight, Users, UsersRound, StickyNote } from 'lucide-react'
 import { buildFolderTree, folderPath, type FolderNode } from '@/lib/hub-tree'
 import { HubFolderTree } from './HubFolderTree'
 import { HubItemList, type HubItem } from './HubItemList'
+import { HubNotesPanel, type HubNote } from './HubNotesPanel'
 import { HubCollaboratorsModal } from './HubCollaboratorsModal'
 import { HubPrivacyControl, type PrivacyApply } from './HubPrivacyControl'
 import { HubCommunityConsole } from './HubCommunityConsole'
@@ -30,6 +31,7 @@ export function HubEditor({ hubId }: HubEditorProps) {
   const [hub, setHub] = useState<Hub | null>(null)
   const [folders, setFolders] = useState<FolderNode[]>([])
   const [items, setItems] = useState<HubItem[]>([])
+  const [notes, setNotes] = useState<HubNote[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [title, setTitle] = useState('')
@@ -40,7 +42,6 @@ export function HubEditor({ hubId }: HubEditorProps) {
   const [creatingFolder, setCreatingFolder] = useState(false)
   const [showCollaborators, setShowCollaborators] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
-  const [toolsOpen, setToolsOpen] = useState(false)
   const [showCommunity, setShowCommunity] = useState(false)
 
   const user = useAuthStore((s) => s.user)
@@ -63,6 +64,7 @@ export function HubEditor({ hubId }: HubEditorProps) {
         setDescription(data.hub.description ?? '')
         setFolders(data.folders)
         setItems(data.items)
+        setNotes(data.notes ?? [])
       })
       .catch(() => {
         if (!cancelled) router.replace('/dashboard')
@@ -208,6 +210,34 @@ export function HubEditor({ hubId }: HubEditorProps) {
     }
   }
 
+  const handleAddNote = async () => {
+    const res = await fetch(`/api/hubs/${hubId}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    if (res.ok) {
+      const note = await res.json()
+      setNotes((prev) => [...prev, note])
+    }
+  }
+
+  const handleUpdateNote = async (
+    id: string,
+    data: Partial<Pick<HubNote, 'title' | 'content' | 'linkedItemId' | 'visibility' | 'minimized'>>
+  ) => {
+    const res = await fetch(`/api/hubs/${hubId}/notes/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      setNotes((prev) => prev.map((n) => (n.id === id ? updated : n)))
+    }
+  }
+
+  const handleDeleteNote = async (id: string) => {
+    const res = await fetch(`/api/hubs/${hubId}/notes/${id}`, { method: 'DELETE' })
+    if (res.ok) setNotes((prev) => prev.filter((n) => n.id !== id))
+  }
+
   const handleSetFolderPrivacy = async (id: string, data: PrivacyApply) => {
     const res = await fetch(`/api/hubs/${hubId}/folders/${id}`, {
       method: 'PATCH',
@@ -245,41 +275,31 @@ export function HubEditor({ hubId }: HubEditorProps) {
   return (
     <div className="px-6 lg:px-8 py-7">
       {/* Toolbar */}
-      <div className="flex justify-end mb-4">
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setToolsOpen((v) => !v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-lg bg-surface hover:bg-muted/60"
-          >
-            Tools <ChevronDown className="w-3.5 h-3.5" />
-          </button>
-          {toolsOpen && (
-            <div className="absolute right-0 mt-1 w-44 rounded-lg border border-border bg-surface shadow-soft-lg z-10 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => {
-                  setToolsOpen(false)
-                  if (isPro) setShowCollaborators(true)
-                  else setShowUpgrade(true)
-                }}
-                className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm hover:bg-muted/60"
-              >
-                <Users className="w-4 h-4" /> Collaborators
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setToolsOpen(false)
-                  setShowCommunity((v) => !v)
-                }}
-                className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm hover:bg-muted/60"
-              >
-                <Users className="w-4 h-4" /> Community
-              </button>
-            </div>
-          )}
-        </div>
+      <div className="flex items-center gap-2 mb-4 rounded-xl border border-border bg-surface px-2 py-1.5 shadow-soft">
+        <button
+          type="button"
+          onClick={handleAddNote}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-muted/60"
+        >
+          <StickyNote className="w-4 h-4" /> Note
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (isPro) setShowCollaborators(true)
+            else setShowUpgrade(true)
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-muted/60"
+        >
+          <Users className="w-4 h-4" /> Collaborators
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowCommunity((v) => !v)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-muted/60"
+        >
+          <UsersRound className="w-4 h-4" /> Community
+        </button>
       </div>
 
       {/* Header */}
@@ -335,7 +355,7 @@ export function HubEditor({ hubId }: HubEditorProps) {
         </div>
       )}
 
-      <div className="grid md:grid-cols-[240px_1fr] gap-6">
+      <div className="grid md:grid-cols-[240px_1fr] lg:grid-cols-[240px_1fr_260px] gap-6">
         {/* Folder tree */}
         <div className="rounded-2xl border border-border bg-surface p-3 shadow-soft h-fit">
           <div className="flex items-center justify-between mb-2">
@@ -425,6 +445,9 @@ export function HubEditor({ hubId }: HubEditorProps) {
             onSetPrivacy={handleSetItemPrivacy}
           />
         </div>
+
+        {/* Notes panel */}
+        <HubNotesPanel notes={notes} items={items} onUpdate={handleUpdateNote} onDelete={handleDeleteNote} />
       </div>
 
       {showCollaborators && (
