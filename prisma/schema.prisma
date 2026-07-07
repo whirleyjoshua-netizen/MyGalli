@@ -264,8 +264,8 @@ model Comment {
 
 model Message {
   id          String   @id @default(cuid())
-  displayId   String
-  display     Display  @relation(fields: [displayId], references: [id], onDelete: Cascade)
+  displayId   String?
+  display     Display? @relation(fields: [displayId], references: [id], onDelete: Cascade)
   ownerId     String   // = display.userId, denormalized for the cross-page inbox
   elementId   String
   kind        String   // 'text' | 'audio' (future 'video')
