@@ -52,6 +52,13 @@ export interface CalendarEvent {
   color?: string
 }
 
+// Appointments element — weekly availability rule (day of week, start/end times)
+export interface ApptRule {
+  day: number           // 0=Sun, 1=Mon, ..., 6=Sat (but we use 1-5 for Mon-Fri default)
+  start: string         // HH:MM format, e.g. '09:00'
+  end: string           // HH:MM format, e.g. '17:00'
+}
+
 // Layout modes for sections
 export type LayoutMode = 'full-width' | 'two-column' | 'three-column'
 
@@ -95,6 +102,7 @@ export type ElementType =
   | 'live-feed'    // Phone-controlled live counter/score (single/versus/goal)
   | 'flowchart'    // Branching workflow/flowchart of linked blocks
   | 'calendar'     // Owner-marked month calendar of events
+  | 'appointments' // Calendly-style bookable time slots (Pro)
   // Resume Kit elements
   | 'experience-entry'      // Job/role card
   | 'education-entry'       // School/degree card
@@ -293,6 +301,17 @@ export interface CanvasElement {
   calendarTitle?: string
   calendarSubtitle?: string
   calendarEvents?: CalendarEvent[]
+  // Appointments specific (Calendly-style bookable time slots)
+  apptTitle?: string
+  apptDuration?: number
+  apptTimezone?: string
+  apptWeeklyRules?: ApptRule[]
+  apptBuffer?: number
+  apptLeadTimeHours?: number
+  apptMaxDaysAhead?: number
+  apptLocationType?: 'video' | 'phone' | 'in-person' | 'custom'
+  apptLocationDetail?: string
+  apptNoteLabel?: string
   // Kit Profile specific
   kitProfileKitId?: string
   kitProfileData?: Record<string, any>
@@ -915,6 +934,26 @@ export function createElement(type: ElementType): CanvasElement {
         calendarTitle: 'Calendar',
         calendarSubtitle: '',
         calendarEvents: [],
+      }
+    case 'appointments':
+      return {
+        ...base,
+        apptTitle: '30-min intro call',
+        apptDuration: 30,
+        apptTimezone: typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC',
+        apptWeeklyRules: [
+          { day: 1, start: '09:00', end: '17:00' },
+          { day: 2, start: '09:00', end: '17:00' },
+          { day: 3, start: '09:00', end: '17:00' },
+          { day: 4, start: '09:00', end: '17:00' },
+          { day: 5, start: '09:00', end: '17:00' },
+        ],
+        apptBuffer: 0,
+        apptLeadTimeHours: 12,
+        apptMaxDaysAhead: 30,
+        apptLocationType: 'video',
+        apptLocationDetail: '',
+        apptNoteLabel: 'Anything I should know?',
       }
     case 'experience-entry':
       return {
