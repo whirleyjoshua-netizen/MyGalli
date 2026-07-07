@@ -42,6 +42,7 @@ model User {
   verificationTokens VerificationToken[]
   notifications Notification[] @relation("UserNotifications")
   hubs Hub[] @relation("UserHubs")
+  hubCollaborations HubCollaborator[] @relation("UserHubCollaborations")
 }
 
 model VerificationToken {
@@ -412,34 +413,51 @@ model Hub {
   updatedAt   DateTime    @updatedAt
   folders     HubFolder[]
   items       HubItem[]
+  collaborators HubCollaborator[]
   @@unique([userId, slug])
   @@index([userId])
   @@index([displayId])
 }
 
 model HubFolder {
-  id        String   @id @default(cuid())
-  hubId     String
-  hub       Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
-  parentId  String?
-  name      String
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  hubId        String
+  hub          Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  parentId     String?
+  name         String
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  visibility   String   @default("public")
+  passcodeHash String?
   @@index([hubId])
   @@index([parentId])
 }
 
 model HubItem {
+  id           String   @id @default(cuid())
+  hubId        String
+  hub          Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  folderId     String?
+  type         String
+  title        String
+  url          String?
+  content      String?
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  visibility   String   @default("public")
+  passcodeHash String?
+  @@index([hubId])
+  @@index([folderId])
+}
+
+model HubCollaborator {
   id        String   @id @default(cuid())
   hubId     String
   hub       Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
-  folderId  String?
-  type      String
-  title     String
-  url       String?
-  content   String?
-  order     Int      @default(0)
+  userId    String
+  user      User     @relation("UserHubCollaborations", fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  @@unique([hubId, userId])
   @@index([hubId])
-  @@index([folderId])
+  @@index([userId])
 }
