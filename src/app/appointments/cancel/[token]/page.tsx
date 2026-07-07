@@ -32,7 +32,7 @@ export default function CancelPage({ params }: { params: Promise<{ token: string
         ) : (
           <>
             <h1 className="text-xl font-bold text-foreground">Cancel this booking?</h1>
-            <p className="text-sm text-muted-foreground">This frees the time slot for others. This can't be undone.</p>
+            <p className="text-sm text-muted-foreground">This frees the time slot for others. This cannot be undone.</p>
             <button onClick={cancel} disabled={state === 'loading'}
               className="w-full py-2.5 rounded-full bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50">
               {state === 'loading' ? 'Cancelling…' : 'Cancel booking'}
