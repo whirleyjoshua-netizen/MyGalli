@@ -153,9 +153,10 @@ const commands: Command[] = [
   { id: 'audio-player', label: 'Music Player', icon: Music, description: 'Play a track — upload, URL, Spotify, or SoundCloud', category: 'Media' },
   { id: 'live-feed', label: 'Live Feed', icon: Radio, description: 'Live counter/score you control from your phone', category: 'Live' },
   { id: 'hub', label: 'Hub', icon: Boxes, description: 'A deep-linked collection of files, links & demos', category: 'Media' },
+  { id: 'calendar', label: 'Calendar', icon: Calendar, description: 'Mark events on a monthly calendar', category: 'Scheduling' },
 ]
 
-const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Live', 'Forms', 'Social', 'Apps', 'Kit']
+const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Scheduling', 'Live', 'Forms', 'Social', 'Apps', 'Kit']
 
 interface Column {
   category: string

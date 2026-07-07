@@ -99,3 +99,7 @@ export { PublicFlowchartElement } from './PublicFlowchartElement'
 // Hub
 export { HubElement } from './HubElement'
 export { PublicHubElement } from './PublicHubElement'
+
+// Scheduling
+export { CalendarElement } from './CalendarElement'
+export { PublicCalendarElement } from './PublicCalendarElement'

@@ -57,6 +57,7 @@ import { PublicBusinessPromoElement } from '@/components/elements/PublicBusiness
 import { PublicAudioPlayerElement } from '@/components/elements/PublicAudioPlayerElement'
 import { PublicWhiteboardElement } from '@/components/elements/PublicWhiteboardElement'
 import { PublicFlowchartElement } from '@/components/elements/PublicFlowchartElement'
+import { PublicCalendarElement } from '@/components/elements/PublicCalendarElement'
 
 export function getGridClass(layout: string): string {
   switch (layout) {
@@ -430,6 +431,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'flowchart':
       return <PublicFlowchartElement element={element} />
+
+    case 'calendar':
+      return <PublicCalendarElement element={element} />
 
     case 'kit-profile':
       return <PublicKitProfileElement element={element} />
