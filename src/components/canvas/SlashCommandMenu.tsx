@@ -26,6 +26,7 @@ import {
   UserCircle,
   Calendar,
   CalendarCheck,
+  CalendarClock,
   Dumbbell,
   UtensilsCrossed,
   Shirt,
@@ -154,6 +155,7 @@ const commands: Command[] = [
   { id: 'live-feed', label: 'Live Feed', icon: Radio, description: 'Live counter/score you control from your phone', category: 'Live' },
   { id: 'hub', label: 'Hub', icon: Boxes, description: 'A deep-linked collection of files, links & demos', category: 'Media' },
   { id: 'calendar', label: 'Calendar', icon: Calendar, description: 'Mark events on a monthly calendar', category: 'Scheduling' },
+  { id: 'appointments', label: 'Appointments', icon: CalendarClock, description: 'Let visitors book a time with you', category: 'Scheduling', pro: true },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Scheduling', 'Live', 'Forms', 'Social', 'Apps', 'Kit']
