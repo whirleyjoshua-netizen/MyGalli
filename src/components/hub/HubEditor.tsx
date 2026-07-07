@@ -8,6 +8,7 @@ import { HubFolderTree } from './HubFolderTree'
 import { HubItemList, type HubItem } from './HubItemList'
 import { HubCollaboratorsModal } from './HubCollaboratorsModal'
 import { HubPrivacyControl, type PrivacyApply } from './HubPrivacyControl'
+import { HubCommunityConsole } from './HubCommunityConsole'
 import { UpgradePrompt } from '@/components/pro/UpgradePrompt'
 import { useAuthStore } from '@/lib/store'
 import { isPro as checkPro } from '@/lib/plan'
@@ -17,6 +18,7 @@ interface Hub {
   title: string
   description: string | null
   coverImage: string | null
+  community: boolean
 }
 
 interface HubEditorProps {
@@ -39,6 +41,7 @@ export function HubEditor({ hubId }: HubEditorProps) {
   const [showCollaborators, setShowCollaborators] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [toolsOpen, setToolsOpen] = useState(false)
+  const [showCommunity, setShowCommunity] = useState(false)
 
   const user = useAuthStore((s) => s.user)
   const isPro = checkPro(user)
@@ -264,6 +267,16 @@ export function HubEditor({ hubId }: HubEditorProps) {
               >
                 <Users className="w-4 h-4" /> Collaborators
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setToolsOpen(false)
+                  setShowCommunity((v) => !v)
+                }}
+                className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm hover:bg-muted/60"
+              >
+                <Users className="w-4 h-4" /> Community
+              </button>
             </div>
           )}
         </div>
@@ -314,6 +327,13 @@ export function HubEditor({ hubId }: HubEditorProps) {
           />
         </div>
       </div>
+
+      {showCommunity && (
+        <div className="mb-6 rounded-2xl border border-border bg-surface p-4 shadow-soft">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Community</h2>
+          <HubCommunityConsole hubId={hub.id} initialEnabled={hub.community} />
+        </div>
+      )}
 
       <div className="grid md:grid-cols-[240px_1fr] gap-6">
         {/* Folder tree */}
