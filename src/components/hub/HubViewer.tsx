@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Folder, File, Link as LinkIcon, Code2, StickyNote, ChevronRight, X } from 'lucide-react'
+import { Folder, File, Link as LinkIcon, Code2, StickyNote, ChevronRight, X, Lock } from 'lucide-react'
 import { buildFolderTree, folderPath, type FolderNode } from '@/lib/hub-tree'
 import { safeHref } from '@/lib/editor/safe-href'
 
@@ -21,13 +21,17 @@ export interface HubViewerItem {
   url: string | null
   content?: string | null
   order: number
+  locked?: boolean
 }
+
+type HubViewerFolder = FolderNode & { locked?: boolean }
 
 interface HubViewerProps {
   hub: HubViewerHub
-  folders: FolderNode[]
+  folders: HubViewerFolder[]
   items: HubViewerItem[]
   username: string
+  hubId?: string
 }
 
 const TYPE_ICON: Record<string, typeof File> = {
@@ -41,8 +45,82 @@ const TYPE_ICON: Record<string, typeof File> = {
   pdf: File,
 }
 
-function ItemCard({ item }: { item: HubViewerItem }) {
+function UnlockPrompt({ hubId, nodeId }: { hubId: string; nodeId: string }) {
+  const [passcode, setPasscode] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleUnlock = async () => {
+    setSubmitting(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/hubs/${hubId}/unlock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodeId, passcode }),
+      })
+      if (res.status === 401) {
+        setError('Incorrect passcode')
+        setSubmitting(false)
+        return
+      }
+      const data = await res.json().catch(() => null)
+      if (res.ok && data?.ok) {
+        location.reload()
+      } else {
+        setError('Incorrect passcode')
+        setSubmitting(false)
+      }
+    } catch {
+      setError('Something went wrong')
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-2">
+      <input
+        type="password"
+        value={passcode}
+        onChange={(e) => setPasscode(e.target.value)}
+        placeholder="Enter passcode"
+        className="flex-1 px-2 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+      />
+      <button
+        type="button"
+        onClick={handleUnlock}
+        disabled={submitting}
+        className="shrink-0 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50"
+      >
+        Unlock
+      </button>
+      {error && <p className="text-xs text-red-500 shrink-0">{error}</p>}
+    </div>
+  )
+}
+
+function ItemCard({ item, hubId }: { item: HubViewerItem; hubId?: string }) {
+  const [unlockOpen, setUnlockOpen] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+
+  if (item.locked) {
+    return (
+      <div className="rounded-xl border border-border bg-surface px-3 py-2.5">
+        <button
+          type="button"
+          onClick={() => setUnlockOpen((v) => !v)}
+          className="flex items-center gap-3 w-full text-left"
+        >
+          <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium truncate">{item.title}</p>
+          </div>
+        </button>
+        {unlockOpen && hubId && <UnlockPrompt hubId={hubId} nodeId={item.id} />}
+      </div>
+    )
+  }
+
   const Icon = TYPE_ICON[item.type] ?? File
   const href = safeHref(item.url ?? undefined)
 
@@ -132,9 +210,10 @@ function ItemCard({ item }: { item: HubViewerItem }) {
   )
 }
 
-export function HubViewer({ hub, folders, items, username }: HubViewerProps) {
+export function HubViewer({ hub, folders, items, username, hubId }: HubViewerProps) {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [unlockFolderId, setUnlockFolderId] = useState<string | null>(null)
 
   const tree = useMemo(() => buildFolderTree(folders), [folders])
   const breadcrumb = useMemo(
@@ -211,24 +290,38 @@ export function HubViewer({ hub, folders, items, username }: HubViewerProps) {
 
       {filteredSubfolders.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
-          {filteredSubfolders.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setCurrentFolderId(f.id)}
-              className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 hover:border-galli/50 transition text-left"
-            >
-              <Folder className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span className="text-sm font-medium truncate">{f.name}</span>
-            </button>
-          ))}
+          {filteredSubfolders.map((f) =>
+            f.locked ? (
+              <div key={f.id} className="rounded-xl border border-border bg-surface px-3 py-2.5">
+                <button
+                  type="button"
+                  onClick={() => setUnlockFolderId((cur) => (cur === f.id ? null : f.id))}
+                  className="flex items-center gap-2 w-full text-left"
+                >
+                  <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-medium truncate">{f.name}</span>
+                </button>
+                {unlockFolderId === f.id && hubId && <UnlockPrompt hubId={hubId} nodeId={f.id} />}
+              </div>
+            ) : (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setCurrentFolderId(f.id)}
+                className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 hover:border-galli/50 transition text-left"
+              >
+                <Folder className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="text-sm font-medium truncate">{f.name}</span>
+              </button>
+            )
+          )}
         </div>
       )}
 
       {filteredItems.length > 0 ? (
         <div className="space-y-2">
           {filteredItems.map((item) => (
-            <ItemCard key={item.id} item={item} />
+            <ItemCard key={item.id} item={item} hubId={hubId} />
           ))}
         </div>
       ) : filteredSubfolders.length === 0 ? (
