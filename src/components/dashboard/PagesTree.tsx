@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { FileText, Boxes } from 'lucide-react'
+import { FileText, Boxes, UsersRound } from 'lucide-react'
 
 interface PageRow { id: string; title: string }
-interface HubRow { id: string; title: string; displayId: string | null }
+interface HubRow { id: string; title: string; displayId: string | null; community?: boolean }
 
 /**
  * The page tree shown under the "Gallery" nav item in the desktop rail: every
@@ -59,7 +59,9 @@ export function PagesTree({ onNavigate }: { onNavigate?: () => void }) {
                 onClick={onNavigate}
                 className="flex items-center gap-2 pl-7 pr-2 py-1.5 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
-                <Boxes className="w-3.5 h-3.5 shrink-0 text-primary" />
+                {hub.community
+                  ? <UsersRound className="w-3.5 h-3.5 shrink-0 text-primary" />
+                  : <Boxes className="w-3.5 h-3.5 shrink-0 text-primary" />}
                 <span className="truncate">{hub.title || 'Hub'}</span>
               </Link>
             ))}

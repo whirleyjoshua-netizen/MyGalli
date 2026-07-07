@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const hubs = await db.hub.findMany({
     where: { userId: me.id },
     orderBy: { updatedAt: 'desc' },
-    select: { id: true, title: true, slug: true, displayId: true, coverImage: true,
+    select: { id: true, title: true, slug: true, displayId: true, coverImage: true, community: true,
       _count: { select: { items: true, folders: true } } },
   })
   return NextResponse.json({ hubs })
