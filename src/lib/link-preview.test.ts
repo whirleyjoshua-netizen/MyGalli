@@ -17,6 +17,16 @@ describe('isBlockedIp', () => {
     expect(isBlockedIp('172.32.0.1')).toBe(false)
     expect(isBlockedIp('172.20.0.1')).toBe(true)
   })
+  it('blocks the full fe80::/10 link-local range and expanded/compressed IPv4-mapped addrs', () => {
+    for (const ip of ['fe80::1', 'fe90::1', 'fea0::1', 'febf::1', '::ffff:127.0.0.1', '::ffff:10.0.0.1', '0:0:0:0:0:ffff:192.168.1.1', '100.64.0.1', '224.0.0.1']) {
+      expect(isBlockedIp(ip), ip).toBe(true)
+    }
+  })
+  it('allows public IPv4-mapped and public IPv6 addresses', () => {
+    for (const ip of ['::ffff:8.8.8.8', '2001:4860:4860::8888']) {
+      expect(isBlockedIp(ip), ip).toBe(false)
+    }
+  })
 })
 
 describe('parseMetadata', () => {

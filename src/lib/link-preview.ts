@@ -8,10 +8,10 @@ export function isBlockedIp(ip: string): boolean {
 
   // IPv6 (incl. IPv4-mapped ::ffff:a.b.c.d)
   if (addr.includes(':')) {
-    const mapped = addr.match(/::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/)
+    const mapped = addr.match(/(?:::ffff:|(?:^|:)0*:0*:0*:0*:0*:ffff:)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/)
     if (mapped) return isBlockedIp(mapped[1])
     if (addr === '::' || addr === '::1') return true
-    if (addr.startsWith('fe80') || addr.startsWith('fc') || addr.startsWith('fd')) return true // link-local + unique-local
+    if (/^fe[89ab]/i.test(addr) || addr.startsWith('fc') || addr.startsWith('fd')) return true // link-local/10 + unique-local
     if (addr.startsWith('ff')) return true // multicast
     return false
   }
