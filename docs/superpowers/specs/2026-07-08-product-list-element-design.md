@@ -106,8 +106,8 @@ export interface Product {
 - Affiliate-tag handling; price parsing/currency; per-store adapters (Amazon PA-API).
 - Bulk import (paste multiple URLs).
 
-## Open items for review
+## Resolved decisions
 
-1. **Element name/label** — type `product-list`; slash-menu label "Product List" (alt: "Registry" / "Wishlist" / "Shop"). Which label?
-2. **Slash-menu category** — reuse `tip-jar`'s category vs. a new "Commerce/Shop" category. (Will confirm against `CATEGORY_ORDER` in the plan.)
-3. **Image re-host on every fetch** creates a Blob object even if the owner discards the card (minor orphan). Acceptable for v1? (Alternative: only re-host on save — more flow.)
+1. **Label:** type `product-list`, slash-menu label **"Product List"**.
+2. **Category:** a **new "Commerce" category** — add `'Commerce'` to `CATEGORY_ORDER` in `SlashCommandMenu.tsx`; the `product-list` entry uses `category: 'Commerce'`.
+3. **Image re-host on fetch** (v1) — the `/api/link-preview` route re-hosts the OG image to Blob at fetch time; a discarded card may leave an unused Blob object (acceptable minor orphan for v1).
