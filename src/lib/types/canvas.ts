@@ -43,6 +43,16 @@ export interface FlowNode {
   branchLabel?: string   // optional label on the arrow from parent → this node
 }
 
+// Product List element — Amazon-registry-style showcase (all in element JSON)
+export interface Product {
+  id: string                  // pl-<ts>-<rand>, stable per card
+  title: string
+  price?: string              // free text, e.g. "$49.99"
+  description?: string        // 1–2 line blurb
+  imageUrl?: string           // Blob URL (re-hosted) or uploaded; empty → placeholder
+  buyUrl: string              // external product link (validated via safeHref; may be '')
+}
+
 // Calendar element — events marked on a month calendar
 export interface CalendarEvent {
   id: string
@@ -144,6 +154,7 @@ export type ElementType =
   | 'countdown'              // Batch 1: countdown timer
   | 'before-after'           // Batch 1: before/after image slider
   | 'tip-jar'                // Batch 1: tip jar / support button
+  | 'product-list'
 
   // Batch 2: Map
   | 'map'                   // Interactive Leaflet map with photo-pins + directions
@@ -298,6 +309,9 @@ export interface CanvasElement {
   // Flowchart specific (branching tree of linked blocks; all in element JSON)
   flowTitle?: string
   flowNodes?: FlowNode[]
+  // Product List specific (showcase of products; all in element JSON)
+  productListTitle?: string
+  products?: Product[]
   // Calendar specific (month calendar of events)
   calendarTitle?: string
   calendarSubtitle?: string
@@ -1274,6 +1288,8 @@ export function createElement(type: ElementType): CanvasElement {
       return { ...base, beforeAfterBefore: '', beforeAfterAfter: '', beforeAfterBeforeLabel: 'Before', beforeAfterAfterLabel: 'After', beforeAfterHeight: 400 }
     case 'tip-jar':
       return { ...base, tipJarTitle: 'Support my work', tipJarMessage: 'If you enjoy what I do, consider leaving a tip 💚', tipJarPlatform: 'custom', tipJarUrl: '', tipJarButtonText: 'Leave a tip', tipJarAmounts: ['$3', '$5', '$10'] }
+    case 'product-list':
+      return { ...base, productListTitle: 'Products', products: [] }
     case 'map':
       return {
         ...base,
