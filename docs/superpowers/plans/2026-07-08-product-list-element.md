@@ -277,14 +277,14 @@ async function readCapped(res: Response, cap: number): Promise<Buffer> {
   return Buffer.concat(chunks)
 }
 
-async function fetchGuarded(rawUrl: string, cap: number): Promise<{ url: URL; res: Response } | null> {
+async function fetchGuarded(rawUrl: string): Promise<{ url: URL; res: Response } | null> {
   let url: URL
   try { url = await assertPublicUrl(rawUrl) } catch { return null }
   try {
     const res = await fetch(url.href, {
       redirect: 'manual',
       headers: { 'User-Agent': UA },
-      signal: AbortSignal.timeout(cap === MAX_HTML_BYTES ? FETCH_TIMEOUT_MS : FETCH_TIMEOUT_MS),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     })
     // One manual redirect hop, re-guarded
     if (res.status >= 300 && res.status < 400) {
@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
     const rawUrl = typeof body.url === 'string' ? body.url.trim() : ''
     if (!rawUrl) return NextResponse.json({ error: 'url required' }, { status: 400 })
 
-    const page = await fetchGuarded(rawUrl, MAX_HTML_BYTES)
+    const page = await fetchGuarded(rawUrl)
     if (!page) return NextResponse.json({ error: 'Could not fetch that link' }, { status: 400 })
 
     const html = (await readCapped(page.res, MAX_HTML_BYTES)).toString('utf8')
@@ -322,7 +322,7 @@ export async function POST(request: NextRequest) {
     // Re-host the image to Blob (CSP only allows Blob-hosted images)
     const token = blobReadWriteToken()
     if (meta.image && token) {
-      const img = await fetchGuarded(meta.image, MAX_IMAGE_BYTES)
+      const img = await fetchGuarded(meta.image)
       const ctype = img?.res.headers.get('content-type') ?? ''
       if (img && ctype.startsWith('image/')) {
         const buf = await readCapped(img.res, MAX_IMAGE_BYTES)
