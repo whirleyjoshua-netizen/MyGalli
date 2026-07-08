@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/Page/TextLayer.css'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
@@ -31,6 +31,9 @@ export default function PdfView({ url, initialPage = 1, itemId, editable, notes 
   const [error, setError] = useState(false)
   const pageWrapRef = useRef<HTMLDivElement>(null)
   const [draft, setDraft] = useState<{ rects: Rect[]; text: string; left: number; top: number } | null>(null)
+  const [draftSeq, setDraftSeq] = useState(0)
+
+  useEffect(() => { setDraft(null) }, [page])
 
   const btn = 'p-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-40 text-white'
   const pageBookmarks = bookmarks.filter((b) => b.page === page)
@@ -50,6 +53,7 @@ export default function PdfView({ url, initialPage = 1, itemId, editable, notes 
     const rects = selectionRectsToPdf(clientRects, { left: wrapRect.left, top: wrapRect.top }, scale)
     const last = clientRects[clientRects.length - 1]
     setDraft({ rects, text, left: last.left - wrapRect.left, top: last.top - wrapRect.top + last.height + 4 })
+    setDraftSeq((n) => n + 1)
   }
 
   return (
@@ -80,23 +84,27 @@ export default function PdfView({ url, initialPage = 1, itemId, editable, notes 
               {/* selection popover */}
               {draft && editable && (
                 <SelectionPopover
+                  key={draftSeq}
                   left={draft.left}
                   top={draft.top}
                   notes={notes}
                   defaultTitle={draft.text}
                   onCancel={() => setDraft(null)}
                   onSave={async (noteChoice, title) => {
-                    let noteId = noteChoice
-                    if (noteChoice === '__new__') {
-                      const created = onCreateNote ? await onCreateNote() : null
-                      if (!created) { setDraft(null); return }
-                      noteId = created
+                    try {
+                      let noteId = noteChoice
+                      if (noteChoice === '__new__') {
+                        const created = onCreateNote ? await onCreateNote() : null
+                        if (!created) return
+                        noteId = created
+                      }
+                      if (itemId && onCreateBookmark) {
+                        await onCreateBookmark({ noteId, itemId, page, rects: draft.rects, text: draft.text, title })
+                      }
+                    } finally {
+                      setDraft(null)
+                      window.getSelection()?.removeAllRanges()
                     }
-                    if (itemId && onCreateBookmark) {
-                      await onCreateBookmark({ noteId, itemId, page, rects: draft.rects, text: draft.text, title })
-                    }
-                    setDraft(null)
-                    window.getSelection()?.removeAllRanges()
                   }}
                 />
               )}
@@ -125,7 +133,7 @@ function SelectionPopover({ left, top, notes, defaultTitle, onCancel, onSave }: 
       <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Bookmark title" className="w-full text-sm bg-background border border-border rounded-lg px-2 py-1.5" autoFocus />
       <div className="flex gap-2">
         <button type="button" disabled={saving} onClick={async () => { setSaving(true); await onSave(noteId, title.trim() || defaultTitle.slice(0, 80) || 'Bookmark') }} className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50">Save</button>
-        <button type="button" onClick={onCancel} className="px-3 py-1.5 text-xs bg-muted rounded-lg hover:bg-muted/80">Cancel</button>
+        <button type="button" onClick={() => { window.getSelection()?.removeAllRanges(); onCancel() }} className="px-3 py-1.5 text-xs bg-muted rounded-lg hover:bg-muted/80">Cancel</button>
       </div>
     </div>
   )
