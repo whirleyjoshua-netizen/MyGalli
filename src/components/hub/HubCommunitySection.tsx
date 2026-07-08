@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { UsersRound } from 'lucide-react'
 import { BulletinPostCard, type FeedPost } from '@/components/bulletin/BulletinPostCard'
 import { HubPostComposer } from './HubPostComposer'
+import { HubPostComments } from './HubPostComments'
 
 export function HubCommunitySection({
   hubId,
@@ -56,7 +57,17 @@ export function HubCommunitySection({
           <p className="text-sm text-muted-foreground">No posts yet.</p>
         ) : (
           posts.map((p) => (
-            <BulletinPostCard key={p.id} post={p} currentUserId={currentUserId} basePath={`/api/hubs/${hubId}/posts`} onDeleted={(delId) => setPosts((cur) => cur.filter((x) => x.id !== delId))} />
+            <div key={p.id}>
+              <BulletinPostCard post={p} currentUserId={currentUserId} basePath={`/api/hubs/${hubId}/posts`} onDeleted={(delId) => setPosts((cur) => cur.filter((x) => x.id !== delId))} />
+              <HubPostComments
+                hubId={hubId}
+                postId={p.id}
+                initialCount={(p as { commentCount?: number }).commentCount ?? 0}
+                canComment={canPost}
+                canModerate={isPrivileged}
+                currentUserId={currentUserId}
+              />
+            </div>
           ))
         )}
       </div>
