@@ -10,9 +10,15 @@ async function collaboratorIds(hubId: string): Promise<string[]> {
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const hub = await db.hub.findUnique({ where: { id }, select: { id: true, community: true } })
+  const hub = await db.hub.findUnique({ where: { id }, select: { id: true, community: true, displayId: true, userId: true } })
   if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const me = await getUser(request)
+  // Draft (unpublished) community posts stay private — only the owner + collaborators can read them.
+  const display = hub.displayId ? await db.display.findUnique({ where: { id: hub.displayId }, select: { published: true } }) : null
+  if (!display?.published) {
+    const canView = !!me && (me.id === hub.userId || (await collaboratorIds(id)).includes(me.id))
+    if (!canView) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
   const posts = await db.hubPost.findMany({
     where: { hubId: id },
     orderBy: { createdAt: 'desc' },
