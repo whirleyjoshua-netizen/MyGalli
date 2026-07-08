@@ -14,14 +14,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params
   const r = await ownHub(request, id)
   if ('error' in r) return r.error
-  const [folders, items, notes] = await Promise.all([
+  const [folders, items, notes, bookmarks] = await Promise.all([
     db.hubFolder.findMany({ where: { hubId: id }, orderBy: { order: 'asc' } }),
     db.hubItem.findMany({ where: { hubId: id }, orderBy: { order: 'asc' } }),
     db.hubNote.findMany({ where: { hubId: id }, orderBy: { order: 'asc' } }),
+    db.hubNoteBookmark.findMany({ where: { hubId: id }, orderBy: { order: 'asc' } }),
   ])
   const safeFolders = folders.map(({ passcodeHash, ...f }) => ({ ...f, hasPasscode: !!passcodeHash }))
   const safeItems = items.map(({ passcodeHash, ...i }) => ({ ...i, hasPasscode: !!passcodeHash }))
-  return NextResponse.json({ hub: r.hub, folders: safeFolders, items: safeItems, notes })
+  return NextResponse.json({ hub: r.hub, folders: safeFolders, items: safeItems, notes, bookmarks })
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
