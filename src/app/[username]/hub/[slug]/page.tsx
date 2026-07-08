@@ -6,6 +6,7 @@ import { HubViewer } from '@/components/hub/HubViewer'
 import { resolveHubVisibility, readUnlockToken } from '@/lib/hub-access'
 import { getUserFromCookies } from '@/lib/get-user-from-cookies'
 import { visibleNotes } from '@/lib/hub-notes'
+import { visibleBookmarks } from '@/lib/hub-highlight'
 
 interface Props {
   params: Promise<{ username: string; slug: string }>
@@ -47,10 +48,11 @@ export default async function PublicHubPage({ params }: Props) {
     notFound()
   }
 
-  const [folders, items, notes] = await Promise.all([
+  const [folders, items, notes, bookmarks] = await Promise.all([
     db.hubFolder.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
     db.hubItem.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
     db.hubNote.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
+    db.hubNoteBookmark.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
   ])
 
   const cookieStore = await cookies()
@@ -118,6 +120,14 @@ export default async function PublicHubPage({ params }: Props) {
     content: n.content,
     linkedItemId: n.linkedItemId,
     minimized: n.minimized,
+    color: n.color,
+  }))
+
+  const noteVisibility = Object.fromEntries(notes.map((n) => [n.id, n.visibility]))
+  const safeBookmarks = visibleBookmarks(bookmarks, noteVisibility, viewer === 'owner').map((b) => ({
+    id: b.id, noteId: b.noteId, itemId: b.itemId, page: b.page,
+    rects: b.rects as unknown as { x: number; y: number; w: number; h: number }[],
+    title: b.title,
   }))
 
   return (
@@ -131,6 +141,7 @@ export default async function PublicHubPage({ params }: Props) {
       folders={safeFolders}
       items={safeItems}
       notes={safeNotes}
+      bookmarks={safeBookmarks}
       username={user.username}
       hubId={hub.id}
       community={communityProps}
