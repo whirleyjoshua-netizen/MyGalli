@@ -11,6 +11,11 @@ const MAX_IMAGE_BYTES = 5_000_000
 const UA = 'Mozilla/5.0 (compatible; GalliBot/1.0; +https://mygalli.com)'
 
 // Validate scheme + resolve host, rejecting any address that is loopback/private/etc.
+// Known limitation (accepted for v1): this DNS lookup and the DNS resolution that `fetch`
+// performs when it actually connects are independent (TOCTOU), so a DNS-rebinding attacker
+// who resolves this hostname to a public IP now and a private/internal IP moments later
+// could bypass this check. Full mitigation would require pinning the resolved IP for the
+// actual connection (e.g. custom dispatcher/agent); out of scope for v1.
 async function assertPublicUrl(raw: string): Promise<URL> {
   const u = new URL(raw) // throws on garbage
   if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error('scheme')
@@ -23,7 +28,10 @@ async function assertPublicUrl(raw: string): Promise<URL> {
 // Read a response body but stop past a byte cap (defends against huge payloads).
 async function readCapped(res: Response, cap: number): Promise<Buffer> {
   const reader = res.body?.getReader()
-  if (!reader) return Buffer.from(await res.arrayBuffer())
+  if (!reader) {
+    const buf = Buffer.from(await res.arrayBuffer())
+    return buf.length > cap ? buf.subarray(0, cap) : buf
+  }
   const chunks: Uint8Array[] = []
   let total = 0
   while (true) {
@@ -35,24 +43,23 @@ async function readCapped(res: Response, cap: number): Promise<Buffer> {
 }
 
 async function fetchGuarded(rawUrl: string): Promise<{ url: URL; res: Response } | null> {
-  let url: URL
-  try { url = await assertPublicUrl(rawUrl) } catch { return null }
-  try {
-    const res = await fetch(url.href, {
-      redirect: 'manual',
-      headers: { 'User-Agent': UA },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    })
-    // One manual redirect hop, re-guarded
+  let target = rawUrl
+  for (let hop = 0; hop < 4; hop++) {
+    let url: URL
+    try { url = await assertPublicUrl(target) } catch { return null }
+    let res: Response
+    try {
+      res = await fetch(url.href, { redirect: 'manual', headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+    } catch { return null }
     if (res.status >= 300 && res.status < 400) {
       const loc = res.headers.get('location')
       if (!loc) return null
-      const next = await assertPublicUrl(new URL(loc, url.href).href)
-      const res2 = await fetch(next.href, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
-      return res2.ok ? { url: next, res: res2 } : null
+      try { target = new URL(loc, url.href).href } catch { return null }
+      continue // re-guard the next hop
     }
     return res.ok ? { url, res } : null
-  } catch { return null }
+  }
+  return null // too many redirects
 }
 
 export async function POST(request: NextRequest) {
