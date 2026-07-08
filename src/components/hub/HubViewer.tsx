@@ -45,7 +45,7 @@ interface HubViewerProps {
   notes: HubViewerNote[]
   username: string
   hubId?: string
-  community?: { isCommunity: boolean; joined: boolean; memberCount: number; canPost: boolean }
+  community?: { isCommunity: boolean; joined: boolean; memberCount: number; isPrivileged: boolean }
   currentUserId?: string
 }
 
@@ -393,7 +393,7 @@ export function HubViewer({ hub, folders, items, notes, username, hubId, communi
           hubId={hubId}
           initialJoined={community.joined}
           memberCount={community.memberCount}
-          canPost={community.canPost}
+          isPrivileged={community.isPrivileged}
           currentUserId={currentUserId}
         />
       )}

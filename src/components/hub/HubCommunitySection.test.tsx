@@ -11,7 +11,7 @@ beforeEach(() => {
 
 describe('HubCommunitySection', () => {
   it('shows Join and posts to the join endpoint', async () => {
-    render(<HubCommunitySection hubId="h1" initialJoined={false} memberCount={0} canPost={false} />)
+    render(<HubCommunitySection hubId="h1" initialJoined={false} memberCount={0} isPrivileged={false} />)
     const btn = await screen.findByText('Join')
     fireEvent.click(btn)
     await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/hubs/h1/join', { method: 'POST' }))

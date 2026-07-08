@@ -8,18 +8,19 @@ export function HubCommunitySection({
   hubId,
   initialJoined,
   memberCount: initialCount,
-  canPost,
+  isPrivileged,
   currentUserId,
 }: {
   hubId: string
   initialJoined: boolean
   memberCount: number
-  canPost: boolean
+  isPrivileged: boolean
   currentUserId?: string
 }) {
   const [joined, setJoined] = useState(initialJoined)
   const [count, setCount] = useState(initialCount)
   const [posts, setPosts] = useState<FeedPost[]>([])
+  const canPost = isPrivileged || joined
 
   async function load() {
     const res = await fetch(`/api/hubs/${hubId}/posts`)
@@ -40,7 +41,7 @@ export function HubCommunitySection({
           <UsersRound className="h-5 w-5 text-primary" /> Community
           <span className="text-sm font-normal text-muted-foreground">({count} member{count === 1 ? '' : 's'})</span>
         </h2>
-        {!canPost && (
+        {!isPrivileged && (
           <button
             onClick={toggleJoin}
             className={`rounded-full px-4 py-2 text-sm font-semibold ${joined ? 'border border-border text-foreground' : 'bg-foreground text-background'}`}

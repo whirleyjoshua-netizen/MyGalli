@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { canPostToHub } from '@/lib/community'
+import { canParticipate } from '@/lib/community'
 
 async function collaboratorIds(hubId: string): Promise<string[]> {
   const rows = await db.hubCollaborator.findMany({ where: { hubId }, select: { userId: true } })
@@ -50,7 +50,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const hub = await db.hub.findUnique({ where: { id }, select: { id: true, userId: true, community: true } })
   if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (!canPostToHub(me.id, hub, await collaboratorIds(id))) {
+  const isMember = !!(await db.hubMember.findUnique({ where: { hubId_userId: { hubId: id, userId: me.id } }, select: { id: true } }))
+  if (!canParticipate(me.id, hub, await collaboratorIds(id), isMember)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   const body = await request.json().catch(() => ({}))

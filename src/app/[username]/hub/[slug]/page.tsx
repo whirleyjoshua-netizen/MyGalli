@@ -66,8 +66,8 @@ export default async function PublicHubPage({ params }: Props) {
     if (collab) viewer = 'collaborator'
   }
 
-  let communityProps: { isCommunity: boolean; joined: boolean; memberCount: number; canPost: boolean } = {
-    isCommunity: hub.community, joined: false, memberCount: 0, canPost: viewer === 'owner' || viewer === 'collaborator',
+  let communityProps: { isCommunity: boolean; joined: boolean; memberCount: number; isPrivileged: boolean } = {
+    isCommunity: hub.community, joined: false, memberCount: 0, isPrivileged: viewer === 'owner' || viewer === 'collaborator',
   }
   if (hub.community) {
     const [memberCount, mine] = await Promise.all([
