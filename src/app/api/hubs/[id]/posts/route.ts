@@ -14,6 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const me = await getUser(request)
   // Draft (unpublished) community posts stay private — only the owner + collaborators can read them.
+  // KEEP IN SYNC with readableCommunityHub() in [postId]/comments/route.ts GET.
   const display = hub.displayId ? await db.display.findUnique({ where: { id: hub.displayId }, select: { published: true } }) : null
   if (!display?.published) {
     const canView = !!me && (me.id === hub.userId || (await collaboratorIds(id)).includes(me.id))
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     include: {
       author: { select: { id: true, name: true, username: true, avatar: true } },
       likes: { select: { userId: true } },
+      _count: { select: { comments: true } },
     },
   })
   const feed = posts.map((p) => ({
@@ -40,6 +42,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     likedByMe: me ? p.likes.some((l) => l.userId === me.id) : false,
     myResponse: null,
     results: null,
+    commentCount: p._count.comments,
   }))
   return NextResponse.json({ posts: feed })
 }
