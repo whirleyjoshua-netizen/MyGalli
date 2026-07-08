@@ -355,7 +355,7 @@ export function HubEditor({ hubId }: HubEditorProps) {
         </div>
       )}
 
-      <div className="grid md:grid-cols-[240px_1fr] lg:grid-cols-[240px_1fr_260px] gap-6">
+      <div className="grid md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)_260px] gap-6">
         {/* Folder tree */}
         <div className="rounded-2xl border border-border bg-surface p-3 shadow-soft h-fit">
           <div className="flex items-center justify-between mb-2">
@@ -418,7 +418,7 @@ export function HubEditor({ hubId }: HubEditorProps) {
         </div>
 
         {/* Item list */}
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
             <button type="button" onClick={() => setSelectedFolderId(null)} className="hover:text-foreground">
               Root
