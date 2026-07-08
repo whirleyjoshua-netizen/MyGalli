@@ -64,7 +64,7 @@ export function ControlPanel({
           <PanelRightClose className="w-4 h-4" />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
         {activeTab === 'elements' ? elementsSlot : pageSlot}
       </div>
     </div>

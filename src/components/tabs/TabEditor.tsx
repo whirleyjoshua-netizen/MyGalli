@@ -129,7 +129,7 @@ export function TabEditorBody({
                         type="text"
                         value={tab.label}
                         onChange={(e) => renameTab(tab.id, e.target.value)}
-                        className="flex-1 px-2 py-1 border border-border rounded text-sm bg-background"
+                        className="flex-1 min-w-0 px-2 py-1 border border-border rounded text-sm bg-background"
                       />
                       <span className="text-xs text-muted-foreground">
                         {tab.sections.reduce((count, s) =>
