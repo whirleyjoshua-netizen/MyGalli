@@ -57,6 +57,7 @@ import {
   Workflow,
   Boxes,
   Inbox,
+  ShoppingBag,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -158,9 +159,10 @@ const commands: Command[] = [
   { id: 'hub', label: 'Hub', icon: Boxes, description: 'A deep-linked collection of files, links & demos', category: 'Media' },
   { id: 'calendar', label: 'Calendar', icon: Calendar, description: 'Mark events on a monthly calendar', category: 'Scheduling' },
   { id: 'appointments', label: 'Appointments', icon: CalendarClock, description: 'Let visitors book a time with you', category: 'Scheduling', pro: true },
+  { id: 'product-list', label: 'Product List', icon: ShoppingBag, description: 'A shoppable list of products with images & buy links', category: 'Commerce' },
 ]
 
-const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Scheduling', 'Live', 'Forms', 'Social', 'Apps', 'Kit']
+const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Commerce', 'Scheduling', 'Live', 'Forms', 'Social', 'Apps', 'Kit']
 
 interface Column {
   category: string
