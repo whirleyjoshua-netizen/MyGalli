@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { getJwtSecret } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { createNotification } from '@/lib/notifications'
+import { isAllowedMessageMedia } from '@/lib/media-url'
 
 // POST — public submit to a user's profile mailbox (no owning page)
 export async function POST(request: NextRequest) {
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
 
   if (!username) return NextResponse.json({ error: 'Missing target' }, { status: 400 })
   if (!body && !mediaUrl) return NextResponse.json({ error: 'Empty message' }, { status: 400 })
+  if (!isAllowedMessageMedia(mediaUrl)) return NextResponse.json({ error: 'Invalid media' }, { status: 400 })
 
   const user = await db.user.findUnique({ where: { username }, select: { id: true } })
   if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 })
