@@ -27,6 +27,7 @@ export async function PATCH(
   if (typeof body.content === 'string') data.content = body.content.slice(0, 5000)
   if (body.visibility === 'public' || body.visibility === 'private') data.visibility = body.visibility
   if (typeof body.minimized === 'boolean') data.minimized = body.minimized
+  if (typeof body.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(body.color)) data.color = body.color
   if ('linkedItemId' in body) {
     if (body.linkedItemId === null) {
       data.linkedItemId = null

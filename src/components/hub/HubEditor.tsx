@@ -6,7 +6,8 @@ import { Image as ImageIcon, Loader2, Trash2, FolderPlus, ChevronRight, Users, U
 import { buildFolderTree, folderPath, type FolderNode } from '@/lib/hub-tree'
 import { HubFolderTree } from './HubFolderTree'
 import { HubItemList, type HubItem } from './HubItemList'
-import { HubNotesPanel, type HubNote } from './HubNotesPanel'
+import { HubNotesPanel, type HubNote, type BookmarkLite } from './HubNotesPanel'
+import { HubFileViewer } from './HubFileViewer'
 import { HubCollaboratorsModal } from './HubCollaboratorsModal'
 import { HubPrivacyControl, type PrivacyApply } from './HubPrivacyControl'
 import { HubCommunityConsole } from './HubCommunityConsole'
@@ -32,6 +33,9 @@ export function HubEditor({ hubId }: HubEditorProps) {
   const [folders, setFolders] = useState<FolderNode[]>([])
   const [items, setItems] = useState<HubItem[]>([])
   const [notes, setNotes] = useState<HubNote[]>([])
+  const [bookmarks, setBookmarks] = useState<BookmarkLite[]>([])
+  const [viewerFile, setViewerFile] = useState<HubItem | null>(null)
+  const [viewerPage, setViewerPage] = useState<number | undefined>(undefined)
   const [loading, setLoading] = useState(true)
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [title, setTitle] = useState('')
@@ -65,6 +69,7 @@ export function HubEditor({ hubId }: HubEditorProps) {
         setFolders(data.folders)
         setItems(data.items)
         setNotes(data.notes ?? [])
+        setBookmarks(data.bookmarks ?? [])
       })
       .catch(() => {
         if (!cancelled) router.replace('/dashboard')
@@ -220,7 +225,7 @@ export function HubEditor({ hubId }: HubEditorProps) {
 
   const handleUpdateNote = async (
     id: string,
-    data: Partial<Pick<HubNote, 'title' | 'content' | 'linkedItemId' | 'visibility' | 'minimized'>>
+    data: Partial<Pick<HubNote, 'title' | 'content' | 'linkedItemId' | 'visibility' | 'minimized' | 'color'>>
   ) => {
     const res = await fetch(`/api/hubs/${hubId}/notes/${id}`, {
       method: 'PATCH',
@@ -236,6 +241,31 @@ export function HubEditor({ hubId }: HubEditorProps) {
   const handleDeleteNote = async (id: string) => {
     const res = await fetch(`/api/hubs/${hubId}/notes/${id}`, { method: 'DELETE' })
     if (res.ok) setNotes((prev) => prev.filter((n) => n.id !== id))
+  }
+
+  const handleCreateNoteReturnId = async (): Promise<string | null> => {
+    const res = await fetch(`/api/hubs/${hubId}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    if (!res.ok) return null
+    const note = await res.json()
+    setNotes((prev) => [...prev, note])
+    return note.id
+  }
+  const handleCreateBookmark = async (input: { noteId: string; itemId: string; page: number; rects: unknown; text: string; title: string }) => {
+    const res = await fetch(`/api/hubs/${hubId}/notes/${input.noteId}/bookmarks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) })
+    if (res.ok) { const bm = await res.json(); setBookmarks((prev) => [...prev, bm]) }
+  }
+  const handleRenameBookmark = async (noteId: string, bookmarkId: string, title: string) => {
+    const res = await fetch(`/api/hubs/${hubId}/notes/${noteId}/bookmarks/${bookmarkId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title }) })
+    if (res.ok) { const bm = await res.json(); setBookmarks((prev) => prev.map((b) => (b.id === bookmarkId ? bm : b))) }
+  }
+  const handleDeleteBookmark = async (noteId: string, bookmarkId: string) => {
+    const res = await fetch(`/api/hubs/${hubId}/notes/${noteId}/bookmarks/${bookmarkId}`, { method: 'DELETE' })
+    if (res.ok) setBookmarks((prev) => prev.filter((b) => b.id !== bookmarkId))
+  }
+  const openViewer = (item: HubItem, pageNum?: number) => { setViewerFile(item); setViewerPage(pageNum) }
+  const openBookmark = (itemId: string, pageNum: number) => {
+    const it = items.find((i) => i.id === itemId)
+    if (it) openViewer(it, pageNum)
   }
 
   const handleSetFolderPrivacy = async (id: string, data: PrivacyApply) => {
@@ -443,11 +473,21 @@ export function HubEditor({ hubId }: HubEditorProps) {
             onUpdate={handleUpdateItem}
             onDelete={handleDeleteItem}
             onSetPrivacy={handleSetItemPrivacy}
+            onView={(item) => openViewer(item)}
           />
         </div>
 
         {/* Notes panel */}
-        <HubNotesPanel notes={notes} items={items} onUpdate={handleUpdateNote} onDelete={handleDeleteNote} />
+        <HubNotesPanel
+          notes={notes}
+          items={items}
+          onUpdate={handleUpdateNote}
+          onDelete={handleDeleteNote}
+          bookmarks={bookmarks}
+          onOpenBookmark={openBookmark}
+          onRenameBookmark={handleRenameBookmark}
+          onDeleteBookmark={handleDeleteBookmark}
+        />
       </div>
 
       {showCollaborators && (
@@ -457,6 +497,17 @@ export function HubEditor({ hubId }: HubEditorProps) {
         isOpen={showUpgrade}
         onClose={() => setShowUpgrade(false)}
         feature="Hub collaborators"
+      />
+      <HubFileViewer
+        file={viewerFile}
+        initialPage={viewerPage}
+        onClose={() => { setViewerFile(null); setViewerPage(undefined) }}
+        editable
+        itemId={viewerFile?.id}
+        notes={notes.map((n) => ({ id: n.id, title: n.title, color: n.color }))}
+        bookmarks={bookmarks}
+        onCreateBookmark={handleCreateBookmark}
+        onCreateNote={handleCreateNoteReturnId}
       />
     </div>
   )

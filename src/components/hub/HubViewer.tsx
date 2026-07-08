@@ -36,6 +36,7 @@ export interface HubViewerNote {
   content: string
   linkedItemId: string | null
   minimized: boolean
+  color: string
 }
 
 interface HubViewerProps {
@@ -43,9 +44,10 @@ interface HubViewerProps {
   folders: HubViewerFolder[]
   items: HubViewerItem[]
   notes: HubViewerNote[]
+  bookmarks: { id: string; noteId: string; itemId: string; page: number; rects: { x: number; y: number; w: number; h: number }[]; title: string }[]
   username: string
   hubId?: string
-  community?: { isCommunity: boolean; joined: boolean; memberCount: number; canPost: boolean }
+  community?: { isCommunity: boolean; joined: boolean; memberCount: number; isPrivileged: boolean }
   currentUserId?: string
 }
 
@@ -223,7 +225,17 @@ function ItemCard({ item, hubId, onView }: { item: HubViewerItem; hubId?: string
   )
 }
 
-function NotesRail({ notes, items }: { notes: HubViewerNote[]; items: HubViewerItem[] }) {
+function NotesRail({
+  notes,
+  items,
+  bookmarks,
+  onOpenBookmark,
+}: {
+  notes: HubViewerNote[]
+  items: HubViewerItem[]
+  bookmarks: HubViewerProps['bookmarks']
+  onOpenBookmark: (itemId: string, page: number) => void
+}) {
   const [open, setOpen] = useState<Record<string, boolean>>({})
   if (notes.length === 0) return null
   return (
@@ -234,6 +246,7 @@ function NotesRail({ notes, items }: { notes: HubViewerNote[]; items: HubViewerI
       {notes.map((note) => {
         const expanded = open[note.id] ?? !note.minimized
         const href = resolveNoteLink(note, items)
+        const noteBookmarks = bookmarks.filter((b) => b.noteId === note.id)
         return (
           <div key={note.id} className="rounded-xl border border-border bg-surface p-3">
             <button
@@ -257,6 +270,16 @@ function NotesRail({ notes, items }: { notes: HubViewerNote[]; items: HubViewerI
                     Open <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
+                {noteBookmarks.map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => onOpenBookmark(b.itemId, b.page)}
+                    className="block text-xs font-medium text-primary hover:underline text-left"
+                  >
+                    {b.title || `Page ${b.page}`}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -266,11 +289,17 @@ function NotesRail({ notes, items }: { notes: HubViewerNote[]; items: HubViewerI
   )
 }
 
-export function HubViewer({ hub, folders, items, notes, username, hubId, community, currentUserId }: HubViewerProps) {
+export function HubViewer({ hub, folders, items, notes, bookmarks, username, hubId, community, currentUserId }: HubViewerProps) {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [unlockFolderId, setUnlockFolderId] = useState<string | null>(null)
   const [viewerFile, setViewerFile] = useState<HubViewerItem | null>(null)
+  const [viewerPage, setViewerPage] = useState<number | undefined>(undefined)
+
+  const openBookmark = (itemId: string, pageNum: number) => {
+    const it = items.find((i) => i.id === itemId)
+    if (it) { setViewerFile(it); setViewerPage(pageNum) }
+  }
 
   const tree = useMemo(() => buildFolderTree(folders), [folders])
   const breadcrumb = useMemo(
@@ -393,13 +422,19 @@ export function HubViewer({ hub, folders, items, notes, username, hubId, communi
           hubId={hubId}
           initialJoined={community.joined}
           memberCount={community.memberCount}
-          canPost={community.canPost}
+          isPrivileged={community.isPrivileged}
           currentUserId={currentUserId}
         />
       )}
       </div>
-      <NotesRail notes={notes} items={items} />
-      <HubFileViewer file={viewerFile} onClose={() => setViewerFile(null)} />
+      <NotesRail notes={notes} items={items} bookmarks={bookmarks} onOpenBookmark={openBookmark} />
+      <HubFileViewer
+        file={viewerFile}
+        initialPage={viewerPage}
+        onClose={() => { setViewerFile(null); setViewerPage(undefined) }}
+        notes={notes.map((n) => ({ id: n.id, title: n.title, color: n.color }))}
+        bookmarks={bookmarks}
+      />
     </div>
   )
 }

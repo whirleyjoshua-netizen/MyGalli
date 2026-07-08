@@ -3,7 +3,6 @@
 import { useRef, useState } from 'react'
 import { File, Link as LinkIcon, Code2, StickyNote, Plus, Trash2, Pencil, Loader2, X, Lock, Eye } from 'lucide-react'
 import { HubPrivacyControl, type PrivacyApply } from './HubPrivacyControl'
-import { HubFileViewer } from './HubFileViewer'
 import { fileKind } from '@/lib/hub-file-kind'
 
 export interface HubItem {
@@ -26,6 +25,7 @@ interface HubItemListProps {
   onUpdate: (id: string, data: { title?: string; url?: string | null; content?: string | null }) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onSetPrivacy: (id: string, data: PrivacyApply) => Promise<void>
+  onView: (item: HubItem) => void
 }
 
 const TYPE_ICON: Record<string, typeof File> = {
@@ -305,10 +305,9 @@ function ItemRow({
   )
 }
 
-export function HubItemList({ items, isPro, onCreate, onUpdate, onDelete, onSetPrivacy }: HubItemListProps) {
+export function HubItemList({ items, isPro, onCreate, onUpdate, onDelete, onSetPrivacy, onView }: HubItemListProps) {
   const [addType, setAddType] = useState<'file' | 'link' | 'embed' | 'note' | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [viewerFile, setViewerFile] = useState<HubItem | null>(null)
 
   return (
     <div>
@@ -367,12 +366,11 @@ export function HubItemList({ items, isPro, onCreate, onUpdate, onDelete, onSetP
               onUpdate={onUpdate}
               onDelete={onDelete}
               onSetPrivacy={onSetPrivacy}
-              onView={setViewerFile}
+              onView={onView}
             />
           ))}
         </div>
       )}
-      <HubFileViewer file={viewerFile} onClose={() => setViewerFile(null)} />
     </div>
   )
 }
