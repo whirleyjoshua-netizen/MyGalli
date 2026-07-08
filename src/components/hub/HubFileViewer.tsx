@@ -19,13 +19,24 @@ export interface HubFileViewerFile {
   url: string | null
 }
 
+interface Rect { x: number; y: number; w: number; h: number }
+type BookmarkLite = { id: string; noteId: string; itemId: string; page: number; rects: Rect[]; title: string }
+type NoteLite = { id: string; title: string; color: string }
+type NewBookmark = { noteId: string; itemId: string; page: number; rects: Rect[]; text: string; title: string }
+
 interface HubFileViewerProps {
   file: HubFileViewerFile | null
   onClose: () => void
   initialPage?: number
+  itemId?: string
+  editable?: boolean
+  notes?: NoteLite[]
+  bookmarks?: BookmarkLite[]
+  onCreateBookmark?: (input: NewBookmark) => Promise<void>
+  onCreateNote?: () => Promise<string | null>
 }
 
-export function HubFileViewer({ file, onClose, initialPage }: HubFileViewerProps) {
+export function HubFileViewer({ file, onClose, initialPage, editable, notes, bookmarks, onCreateBookmark, onCreateNote }: HubFileViewerProps) {
   useEffect(() => {
     if (!file) return
     const onKey = (e: KeyboardEvent) => {
@@ -66,7 +77,17 @@ export function HubFileViewer({ file, onClose, initialPage }: HubFileViewerProps
         {!href ? (
           <p className="text-white/80 text-sm mt-8">This file has no URL.</p>
         ) : kind === 'pdf' ? (
-          <PdfView url={href} initialPage={initialPage} />
+          <PdfView
+            url={href}
+            initialPage={initialPage}
+            itemId={file.id}
+            editable={editable}
+            notes={notes}
+            noteColors={Object.fromEntries((notes ?? []).map((n) => [n.id, n.color]))}
+            bookmarks={(bookmarks ?? []).filter((b) => b.itemId === file.id)}
+            onCreateBookmark={onCreateBookmark}
+            onCreateNote={onCreateNote}
+          />
         ) : kind === 'image' ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={href} alt={file.title} className="max-w-full max-h-full rounded-lg object-contain" />
