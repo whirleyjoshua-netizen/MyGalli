@@ -58,7 +58,7 @@ export function HubCommunitySection({
         ) : (
           posts.map((p) => (
             <div key={p.id}>
-              <BulletinPostCard post={p} currentUserId={currentUserId} basePath={`/api/hubs/${hubId}/posts`} onDeleted={(delId) => setPosts((cur) => cur.filter((x) => x.id !== delId))} />
+              <BulletinPostCard post={p} currentUserId={currentUserId} basePath={`/api/hubs/${hubId}/posts`} canModerate={isPrivileged} onDeleted={(delId) => setPosts((cur) => cur.filter((x) => x.id !== delId))} />
               <HubPostComments
                 hubId={hubId}
                 postId={p.id}

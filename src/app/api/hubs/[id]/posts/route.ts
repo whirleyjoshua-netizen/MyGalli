@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { canParticipate } from '@/lib/community'
+import { rateLimit } from '@/lib/rate-limit'
 
 async function collaboratorIds(hubId: string): Promise<string[]> {
   const rows = await db.hubCollaborator.findMany({ where: { hubId }, select: { userId: true } })
@@ -49,6 +50,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const limited = await rateLimit(request, { limit: 20, windowMs: 60_000, prefix: 'hub-post-create' })
+  if (limited) return limited
   const me = await getUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const hub = await db.hub.findUnique({ where: { id }, select: { id: true, userId: true, community: true } })
