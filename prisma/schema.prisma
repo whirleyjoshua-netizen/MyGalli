@@ -513,7 +513,25 @@ model HubNote {
   order        Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  color       String            @default("#FDE047")
+  bookmarks   HubNoteBookmark[]
   @@index([hubId])
+}
+
+model HubNoteBookmark {
+  id        String   @id @default(cuid())
+  noteId    String
+  note      HubNote  @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  hubId     String
+  itemId    String
+  page      Int
+  rects     Json
+  text      String
+  title     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  @@index([hubId, itemId])
+  @@index([noteId])
 }
 
 model HubCollaborator {
