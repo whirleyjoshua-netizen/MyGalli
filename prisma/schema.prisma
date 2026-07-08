@@ -46,6 +46,7 @@ model User {
   hubMemberships HubMember[] @relation("UserHubMemberships")
   hubPosts HubPost[] @relation("HubPostAuthor")
   hubPostLikes HubPostLike[]
+  hubPostComments HubPostComment[] @relation("HubPostCommentAuthor")
 }
 
 model VerificationToken {
@@ -551,6 +552,7 @@ model HubPost {
   settings  Json          @default("{}")
   createdAt DateTime      @default(now())
   likes     HubPostLike[]
+  comments  HubPostComment[]
   @@index([hubId, createdAt])
 }
 
@@ -563,4 +565,15 @@ model HubPostLike {
   createdAt DateTime @default(now())
   @@unique([postId, userId])
   @@index([postId])
+}
+
+model HubPostComment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      HubPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("HubPostCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now())
+  @@index([postId, createdAt])
 }

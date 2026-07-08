@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { canPostToHub } from '@/lib/community'
+import { canParticipate } from '@/lib/community'
+import { rateLimit } from '@/lib/rate-limit'
 
 async function collaboratorIds(hubId: string): Promise<string[]> {
   const rows = await db.hubCollaborator.findMany({ where: { hubId }, select: { userId: true } })
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const me = await getUser(request)
   // Draft (unpublished) community posts stay private — only the owner + collaborators can read them.
+  // KEEP IN SYNC with readableCommunityHub() in [postId]/comments/route.ts GET.
   const display = hub.displayId ? await db.display.findUnique({ where: { id: hub.displayId }, select: { published: true } }) : null
   if (!display?.published) {
     const canView = !!me && (me.id === hub.userId || (await collaboratorIds(id)).includes(me.id))
@@ -26,6 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     include: {
       author: { select: { id: true, name: true, username: true, avatar: true } },
       likes: { select: { userId: true } },
+      _count: { select: { comments: true } },
     },
   })
   const feed = posts.map((p) => ({
@@ -40,17 +43,21 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     likedByMe: me ? p.likes.some((l) => l.userId === me.id) : false,
     myResponse: null,
     results: null,
+    commentCount: p._count.comments,
   }))
   return NextResponse.json({ posts: feed })
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const limited = await rateLimit(request, { limit: 20, windowMs: 60_000, prefix: 'hub-post-create' })
+  if (limited) return limited
   const me = await getUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const hub = await db.hub.findUnique({ where: { id }, select: { id: true, userId: true, community: true } })
   if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (!canPostToHub(me.id, hub, await collaboratorIds(id))) {
+  const isMember = !!(await db.hubMember.findUnique({ where: { hubId_userId: { hubId: id, userId: me.id } }, select: { id: true } }))
+  if (!canParticipate(me.id, hub, await collaboratorIds(id), isMember)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   const body = await request.json().catch(() => ({}))
