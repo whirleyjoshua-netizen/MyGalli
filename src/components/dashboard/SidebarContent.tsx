@@ -85,8 +85,9 @@ export function SidebarContent({
               </div>
             )
           }
-          // Gallery: an expandable page tree (pages + their hubs) — desktop rail only.
-          if (item.href === '/my-pages' && !collapsed && !mobile) {
+          // Gallery: an expandable page tree (pages + their hubs). Shown whenever the
+          // sidebar is expanded — desktop rail (not collapsed) AND the mobile drawer.
+          if (item.href === '/my-pages' && !collapsed) {
             return (
               <div key={item.label}>
                 <div
