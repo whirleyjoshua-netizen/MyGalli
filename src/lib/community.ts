@@ -24,3 +24,20 @@ export function toMemberDTO(row: {
     avatar: row.user.avatar,
   }
 }
+
+export function canParticipate(
+  userId: string,
+  hub: { userId: string },
+  collaboratorIds: string[],
+  isMember: boolean,
+): boolean {
+  return userId === hub.userId || collaboratorIds.includes(userId) || isMember
+}
+
+export function canModerate(
+  userId: string,
+  hub: { userId: string },
+  collaboratorIds: string[],
+): boolean {
+  return userId === hub.userId || collaboratorIds.includes(userId)
+}

@@ -1,8 +1,9 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { File, Link as LinkIcon, Code2, StickyNote, Plus, Trash2, Pencil, Loader2, X, Lock } from 'lucide-react'
+import { File, Link as LinkIcon, Code2, StickyNote, Plus, Trash2, Pencil, Loader2, X, Lock, Eye } from 'lucide-react'
 import { HubPrivacyControl, type PrivacyApply } from './HubPrivacyControl'
+import { fileKind } from '@/lib/hub-file-kind'
 
 export interface HubItem {
   id: string
@@ -24,6 +25,7 @@ interface HubItemListProps {
   onUpdate: (id: string, data: { title?: string; url?: string | null; content?: string | null }) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onSetPrivacy: (id: string, data: PrivacyApply) => Promise<void>
+  onView: (item: HubItem) => void
 }
 
 const TYPE_ICON: Record<string, typeof File> = {
@@ -176,12 +178,14 @@ function ItemRow({
   onUpdate,
   onDelete,
   onSetPrivacy,
+  onView,
 }: {
   item: HubItem
   isPro: boolean
   onUpdate: (id: string, data: { title?: string; url?: string | null; content?: string | null }) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onSetPrivacy: (id: string, data: PrivacyApply) => Promise<void>
+  onView: (item: HubItem) => void
 }) {
   const Icon = TYPE_ICON[item.type] ?? File
   const [editing, setEditing] = useState(false)
@@ -269,6 +273,16 @@ function ItemRow({
           onApply={(data) => onSetPrivacy(item.id, data)}
         />
       </div>
+      {fileKind(item) !== 'other' && (
+        <button
+          type="button"
+          onClick={() => onView(item)}
+          className="p-1.5 rounded-lg hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
+          title="View"
+        >
+          <Eye className="w-3.5 h-3.5" />
+        </button>
+      )}
       <button
         type="button"
         onClick={() => setEditing(true)}
@@ -291,7 +305,7 @@ function ItemRow({
   )
 }
 
-export function HubItemList({ items, isPro, onCreate, onUpdate, onDelete, onSetPrivacy }: HubItemListProps) {
+export function HubItemList({ items, isPro, onCreate, onUpdate, onDelete, onSetPrivacy, onView }: HubItemListProps) {
   const [addType, setAddType] = useState<'file' | 'link' | 'embed' | 'note' | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -352,6 +366,7 @@ export function HubItemList({ items, isPro, onCreate, onUpdate, onDelete, onSetP
               onUpdate={onUpdate}
               onDelete={onDelete}
               onSetPrivacy={onSetPrivacy}
+              onView={onView}
             />
           ))}
         </div>

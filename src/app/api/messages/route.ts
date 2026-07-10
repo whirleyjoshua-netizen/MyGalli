@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { getUser, getJwtSecret } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { createNotification } from '@/lib/notifications'
+import { isAllowedMessageMedia } from '@/lib/media-url'
 
 interface MailboxNode { id: string; type: string; mailboxRequireName?: boolean }
 
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
 
   if (!displayId || !elementId) return NextResponse.json({ error: 'Missing target' }, { status: 400 })
   if (!body && !mediaUrl) return NextResponse.json({ error: 'Empty message' }, { status: 400 })
+  if (!isAllowedMessageMedia(mediaUrl)) return NextResponse.json({ error: 'Invalid media' }, { status: 400 })
 
   const display = await db.display.findUnique({
     where: { id: displayId },
@@ -69,7 +71,7 @@ export async function POST(request: NextRequest) {
   await createNotification({
     userId: display.userId, type: 'message',
     actor: { id: null, name: senderName || 'Someone' },
-    entityUrl: '/messages', contextText: display.title,
+    entityUrl: '/data?tab=messages', contextText: display.title,
   })
 
   return NextResponse.json({ ok: true }, { status: 201 })

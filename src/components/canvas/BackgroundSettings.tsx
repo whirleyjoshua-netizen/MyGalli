@@ -34,52 +34,27 @@ export function BackgroundSettingsBody({
 
   return (
     <>
-        {/* Tabs */}
-        <div className="flex border-b border-border">
-          <button
-            onClick={() => handleTypeChange('solid')}
-            className={`flex-1 px-4 py-3 font-medium transition-colors flex items-center justify-center gap-2 ${
-              activeTab === 'solid'
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Palette className="w-4 h-4" />
-            Solid
-          </button>
-          <button
-            onClick={() => handleTypeChange('gradient')}
-            className={`flex-1 px-4 py-3 font-medium transition-colors flex items-center justify-center gap-2 ${
-              activeTab === 'gradient'
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Sparkles className="w-4 h-4" />
-            Gradient
-          </button>
-          <button
-            onClick={() => handleTypeChange('pattern')}
-            className={`flex-1 px-4 py-3 font-medium transition-colors flex items-center justify-center gap-2 ${
-              activeTab === 'pattern'
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Grid3X3 className="w-4 h-4" />
-            Pattern
-          </button>
-          <button
-            onClick={() => handleTypeChange('image')}
-            className={`flex-1 px-4 py-3 font-medium transition-colors flex items-center justify-center gap-2 ${
-              activeTab === 'image'
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Image className="w-4 h-4" />
-            Image
-          </button>
+        {/* Tabs — 2×2 grid of segmented pills so all modes fit the fixed-width panel */}
+        <div className="grid grid-cols-2 gap-1 p-2 border-b border-border">
+          {([
+            ['solid', Palette, 'Solid'],
+            ['gradient', Sparkles, 'Gradient'],
+            ['pattern', Grid3X3, 'Pattern'],
+            ['image', Image, 'Image'],
+          ] as const).map(([type, Icon, label]) => (
+            <button
+              key={type}
+              onClick={() => handleTypeChange(type)}
+              className={`flex items-center justify-center gap-1.5 min-w-0 px-2 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activeTab === type
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              {label}
+            </button>
+          ))}
         </div>
 
         {/* Content */}

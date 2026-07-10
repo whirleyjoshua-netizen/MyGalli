@@ -112,8 +112,14 @@ import { LiveFeedElement } from '@/components/elements/LiveFeedElement'
 import { PublicLiveFeedElement } from '@/components/elements/PublicLiveFeedElement'
 import { FlowchartElement } from '@/components/elements/FlowchartElement'
 import { PublicFlowchartElement } from '@/components/elements/PublicFlowchartElement'
+import { CalendarElement } from '@/components/elements/CalendarElement'
+import { PublicCalendarElement } from '@/components/elements/PublicCalendarElement'
+import { AppointmentsElement } from '@/components/elements/AppointmentsElement'
+import { PublicAppointmentsElement } from '@/components/elements/PublicAppointmentsElement'
 import { MailboxElement } from '@/components/elements/MailboxElement'
 import { PublicMailboxElement } from '@/components/elements/PublicMailboxElement'
+import { ProductListElement } from '@/components/elements/ProductListElement'
+import { PublicProductListElement } from '@/components/elements/PublicProductListElement'
 import { PublicTrackerElement } from '@/components/elements/PublicTrackerElement'
 import { PublicKitProfileElement } from '@/components/elements/PublicKitProfileElement'
 import { PublicGameScheduleElement } from '@/components/elements/PublicGameScheduleElement'
@@ -821,6 +827,48 @@ export function ColumnCanvas({
         }
         return (
           <FlowchartElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'product-list':
+        if (isPreviewMode) {
+          return <PublicProductListElement element={element} />
+        }
+        return (
+          <ProductListElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'calendar':
+        if (isPreviewMode) {
+          return <PublicCalendarElement element={element} />
+        }
+        return (
+          <CalendarElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'appointments':
+        if (isPreviewMode && displayId) {
+          return <PublicAppointmentsElement element={element} displayId={displayId} />
+        }
+        return (
+          <AppointmentsElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}

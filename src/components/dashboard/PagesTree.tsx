@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { FileText, Boxes, UsersRound } from 'lucide-react'
+import { FileText, Boxes, UsersRound, ChevronRight } from 'lucide-react'
 
 interface PageRow { id: string; title: string }
 interface HubRow { id: string; title: string; displayId: string | null; community?: boolean }
@@ -15,6 +15,7 @@ interface HubRow { id: string; title: string; displayId: string | null; communit
 export function PagesTree({ onNavigate }: { onNavigate?: () => void }) {
   const [pages, setPages] = useState<PageRow[]>([])
   const [hubsByPage, setHubsByPage] = useState<Record<string, HubRow[]>>({})
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -42,17 +43,33 @@ export function PagesTree({ onNavigate }: { onNavigate?: () => void }) {
     <div className="mt-0.5 ml-4 pl-2 border-l border-border flex flex-col gap-0.5">
       {pages.map((page) => {
         const hubs = hubsByPage[page.id] || []
+        const hasHubs = hubs.length > 0
+        const isOpen = hasHubs && !collapsed[page.id]
         return (
           <div key={page.id}>
-            <Link
-              href={`/editor?id=${page.id}`}
-              onClick={onNavigate}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              <FileText className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">{page.title || 'Untitled'}</span>
-            </Link>
-            {hubs.map((hub) => (
+            <div className="flex items-center rounded-lg text-sm text-muted-foreground hover:bg-muted transition-colors">
+              {hasHubs ? (
+                <button
+                  type="button"
+                  onClick={() => setCollapsed((c) => ({ ...c, [page.id]: !collapsed[page.id] }))}
+                  aria-label={isOpen ? 'Collapse hubs' : 'Expand hubs'}
+                  className="p-1 shrink-0 rounded hover:text-foreground cursor-pointer"
+                >
+                  <ChevronRight className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                </button>
+              ) : (
+                <span className="w-[22px] shrink-0" aria-hidden="true" />
+              )}
+              <Link
+                href={`/editor?id=${page.id}`}
+                onClick={onNavigate}
+                className="flex flex-1 min-w-0 items-center gap-2 py-1.5 pr-2 hover:text-foreground"
+              >
+                <FileText className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{page.title || 'Untitled'}</span>
+              </Link>
+            </div>
+            {isOpen && hubs.map((hub) => (
               <Link
                 key={hub.id}
                 href={`/hubs/${hub.id}`}

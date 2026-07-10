@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Plus, Home, FileText, Users, Compass, Library, BarChart3, Megaphone, ChevronRight, Inbox,
+  Plus, Home, FileText, Users, Compass, Library, BarChart3, Megaphone, ChevronRight,
 } from 'lucide-react'
 import { ProfileCard } from '@/components/dashboard/ProfileCard'
 import { PagesTree } from '@/components/dashboard/PagesTree'
@@ -21,10 +21,9 @@ interface NavItem {
 const NAV: NavItem[] = [
   { label: 'Home', icon: Home, href: '/dashboard', match: (p) => p === '/dashboard' },
   { label: 'Gallery', icon: FileText, href: '/my-pages', match: (p) => p.startsWith('/my-pages') },
-  { label: 'Collaborations', icon: Users, href: '/shared', match: (p) => p.startsWith('/shared') },
+  { label: 'My Pond', icon: Users, href: '/shared', match: (p) => p.startsWith('/shared') },
   { label: 'Explore', icon: Compass, href: '/explore', match: (p) => p.startsWith('/explore') },
-  { label: 'Analytics', icon: BarChart3, href: '/analytics', match: (p) => p.startsWith('/analytics') },
-  { label: 'Messages', icon: Inbox, href: '/messages', match: (p) => p.startsWith('/messages') },
+  { label: 'Data', icon: BarChart3, href: '/data', match: (p) => p.startsWith('/data') },
   { label: 'Library', icon: Library, href: '/library', match: (p) => p.startsWith('/library') },
 ]
 
@@ -86,8 +85,9 @@ export function SidebarContent({
               </div>
             )
           }
-          // Gallery: an expandable page tree (pages + their hubs) — desktop rail only.
-          if (item.href === '/my-pages' && !collapsed && !mobile) {
+          // Gallery: an expandable page tree (pages + their hubs). Shown whenever the
+          // sidebar is expanded — desktop rail (not collapsed) AND the mobile drawer.
+          if (item.href === '/my-pages' && !collapsed) {
             return (
               <div key={item.label}>
                 <div
@@ -120,7 +120,7 @@ export function SidebarContent({
             >
               <Icon className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary' : ''}`} />
               {!collapsed && <span>{item.label}</span>}
-              {item.href === '/messages' && !collapsed && <MessagesNavBadge />}
+              {item.href === '/data' && !collapsed && <MessagesNavBadge />}
             </Link>
           )
         })}

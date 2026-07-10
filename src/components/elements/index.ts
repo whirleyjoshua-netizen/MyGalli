@@ -101,3 +101,13 @@ export { PublicMailboxElement } from './PublicMailboxElement'
 // Hub
 export { HubElement } from './HubElement'
 export { PublicHubElement } from './PublicHubElement'
+
+// Scheduling
+export { CalendarElement } from './CalendarElement'
+export { PublicCalendarElement } from './PublicCalendarElement'
+export { AppointmentsElement } from './AppointmentsElement'
+export { PublicAppointmentsElement } from './PublicAppointmentsElement'
+
+// Commerce
+export { ProductListElement } from './ProductListElement'
+export { PublicProductListElement } from './PublicProductListElement'

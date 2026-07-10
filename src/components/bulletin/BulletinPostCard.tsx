@@ -26,11 +26,13 @@ export function BulletinPostCard({
   currentUserId,
   onDeleted,
   basePath = '/api/bulletin',
+  canModerate,
 }: {
   post: FeedPost
   currentUserId?: string
   onDeleted: (id: string) => void
   basePath?: string
+  canModerate?: boolean
 }) {
   const [liked, setLiked] = useState(post.likedByMe)
   const [likeCount, setLikeCount] = useState(post.likeCount)
@@ -79,7 +81,7 @@ export function BulletinPostCard({
           <p className="truncate text-sm font-semibold text-foreground">{name}</p>
           <p className="text-xs text-muted-foreground">@{post.author.username} · {timeAgo(post.createdAt)}</p>
         </div>
-        {currentUserId === post.author.id && (
+        {(currentUserId === post.author.id || canModerate) && (
           <button onClick={del} title="Delete" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
         )}
       </div>

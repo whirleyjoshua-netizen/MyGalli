@@ -3,23 +3,25 @@ import { useEffect, useState } from 'react'
 import { UsersRound } from 'lucide-react'
 import { BulletinPostCard, type FeedPost } from '@/components/bulletin/BulletinPostCard'
 import { HubPostComposer } from './HubPostComposer'
+import { HubPostComments } from './HubPostComments'
 
 export function HubCommunitySection({
   hubId,
   initialJoined,
   memberCount: initialCount,
-  canPost,
+  isPrivileged,
   currentUserId,
 }: {
   hubId: string
   initialJoined: boolean
   memberCount: number
-  canPost: boolean
+  isPrivileged: boolean
   currentUserId?: string
 }) {
   const [joined, setJoined] = useState(initialJoined)
   const [count, setCount] = useState(initialCount)
   const [posts, setPosts] = useState<FeedPost[]>([])
+  const canPost = isPrivileged || joined
 
   async function load() {
     const res = await fetch(`/api/hubs/${hubId}/posts`)
@@ -40,7 +42,7 @@ export function HubCommunitySection({
           <UsersRound className="h-5 w-5 text-primary" /> Community
           <span className="text-sm font-normal text-muted-foreground">({count} member{count === 1 ? '' : 's'})</span>
         </h2>
-        {!canPost && (
+        {!isPrivileged && (
           <button
             onClick={toggleJoin}
             className={`rounded-full px-4 py-2 text-sm font-semibold ${joined ? 'border border-border text-foreground' : 'bg-foreground text-background'}`}
@@ -55,7 +57,17 @@ export function HubCommunitySection({
           <p className="text-sm text-muted-foreground">No posts yet.</p>
         ) : (
           posts.map((p) => (
-            <BulletinPostCard key={p.id} post={p} currentUserId={currentUserId} basePath={`/api/hubs/${hubId}/posts`} onDeleted={(delId) => setPosts((cur) => cur.filter((x) => x.id !== delId))} />
+            <div key={p.id}>
+              <BulletinPostCard post={p} currentUserId={currentUserId} basePath={`/api/hubs/${hubId}/posts`} canModerate={isPrivileged} onDeleted={(delId) => setPosts((cur) => cur.filter((x) => x.id !== delId))} />
+              <HubPostComments
+                hubId={hubId}
+                postId={p.id}
+                initialCount={(p as { commentCount?: number }).commentCount ?? 0}
+                canComment={canPost}
+                canModerate={isPrivileged}
+                currentUserId={currentUserId}
+              />
+            </div>
           ))
         )}
       </div>

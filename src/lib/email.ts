@@ -1,5 +1,14 @@
 import { Resend } from 'resend'
 
+export function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 const FROM = process.env.EMAIL_FROM || 'My Galli <onboarding@resend.dev>'
 
 export async function sendEmail(opts: { to: string; subject: string; html: string }): Promise<void> {
@@ -33,5 +42,41 @@ export function resetEmail(link: string) {
   return {
     subject: 'Reset your My Galli password',
     html: shell('Reset your password', 'Click below to choose a new password. This link expires in 1 hour.', { href: link, label: 'Reset password' }),
+  }
+}
+
+interface BookingArgs { name: string; when: string; meetingTitle: string; location?: string; cancelUrl?: string }
+
+export function bookingConfirmedEmail(a: BookingArgs) {
+  const loc = a.location ? `<br/>Location: ${escapeHtml(a.location)}` : ''
+  return {
+    subject: `Confirmed: ${a.meetingTitle} — ${a.when}`,
+    html: shell(
+      'Your booking is confirmed',
+      `Hi ${escapeHtml(a.name)}, you're booked for <strong>${escapeHtml(a.meetingTitle)}</strong> on <strong>${a.when}</strong>.${loc}`,
+      { href: a.cancelUrl || '#', label: a.cancelUrl ? 'Cancel booking' : 'View' }
+    ),
+  }
+}
+
+export function bookingReceivedEmail(a: BookingArgs) {
+  return {
+    subject: `New booking: ${a.meetingTitle} — ${a.when}`,
+    html: shell(
+      'You have a new booking',
+      `${escapeHtml(a.name)} booked <strong>${escapeHtml(a.meetingTitle)}</strong> on <strong>${a.when}</strong>.`,
+      { href: a.cancelUrl || '#', label: 'Manage' }
+    ),
+  }
+}
+
+export function bookingCancelledEmail(a: BookingArgs) {
+  return {
+    subject: `Cancelled: ${a.meetingTitle} — ${a.when}`,
+    html: shell(
+      'Booking cancelled',
+      `The booking for <strong>${escapeHtml(a.meetingTitle)}</strong> on <strong>${a.when}</strong> has been cancelled.`,
+      { href: '#', label: 'OK' }
+    ),
   }
 }

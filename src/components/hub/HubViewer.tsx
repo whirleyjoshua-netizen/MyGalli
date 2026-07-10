@@ -1,11 +1,13 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Folder, File, Link as LinkIcon, Code2, StickyNote, ChevronRight, ChevronDown, X, Lock, ExternalLink } from 'lucide-react'
+import { Folder, File, Link as LinkIcon, Code2, StickyNote, ChevronRight, ChevronDown, Eye, Lock, ExternalLink } from 'lucide-react'
 import { buildFolderTree, folderPath, type FolderNode } from '@/lib/hub-tree'
 import { safeHref } from '@/lib/editor/safe-href'
 import { HubCommunitySection } from './HubCommunitySection'
 import { resolveNoteLink } from '@/lib/hub-notes'
+import { HubFileViewer } from './HubFileViewer'
+import { fileKind } from '@/lib/hub-file-kind'
 
 export interface HubViewerHub {
   id: string
@@ -34,6 +36,7 @@ export interface HubViewerNote {
   content: string
   linkedItemId: string | null
   minimized: boolean
+  color: string
 }
 
 interface HubViewerProps {
@@ -41,9 +44,10 @@ interface HubViewerProps {
   folders: HubViewerFolder[]
   items: HubViewerItem[]
   notes: HubViewerNote[]
+  bookmarks: { id: string; noteId: string; itemId: string; page: number; rects: { x: number; y: number; w: number; h: number }[]; title: string }[]
   username: string
   hubId?: string
-  community?: { isCommunity: boolean; joined: boolean; memberCount: number; canPost: boolean }
+  community?: { isCommunity: boolean; joined: boolean; memberCount: number; isPrivileged: boolean }
   currentUserId?: string
 }
 
@@ -112,9 +116,8 @@ function UnlockPrompt({ hubId, nodeId }: { hubId: string; nodeId: string }) {
   )
 }
 
-function ItemCard({ item, hubId }: { item: HubViewerItem; hubId?: string }) {
+function ItemCard({ item, hubId, onView }: { item: HubViewerItem; hubId?: string; onView: (item: HubViewerItem) => void }) {
   const [unlockOpen, setUnlockOpen] = useState(false)
-  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   if (item.locked) {
     return (
@@ -136,43 +139,25 @@ function ItemCard({ item, hubId }: { item: HubViewerItem; hubId?: string }) {
 
   const Icon = TYPE_ICON[item.type] ?? File
   const href = safeHref(item.url ?? undefined)
+  const kind = fileKind(item)
 
-  if (item.type === 'image') {
+  if (kind === 'image') {
     return (
-      <>
-        <button
-          type="button"
-          onClick={() => setLightboxOpen(true)}
-          className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5 text-left w-full hover:border-galli/50 transition"
-        >
-          {href ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={href} alt={item.title} className="w-10 h-10 rounded-lg object-cover shrink-0" />
-          ) : (
-            <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">{item.title}</p>
-          </div>
-        </button>
-        {lightboxOpen && href && (
-          <div
-            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-            onClick={() => setLightboxOpen(false)}
-          >
-            <button
-              type="button"
-              onClick={() => setLightboxOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"
-              aria-label="Close"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={href} alt={item.title} className="max-w-full max-h-full rounded-lg" />
-          </div>
+      <button
+        type="button"
+        onClick={() => onView(item)}
+        className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5 text-left w-full hover:border-galli/50 transition"
+      >
+        {href ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={href} alt={item.title} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+        ) : (
+          <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
         )}
-      </>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium truncate">{item.title}</p>
+        </div>
+      </button>
     )
   }
 
@@ -202,28 +187,55 @@ function ItemCard({ item, hubId }: { item: HubViewerItem; hubId?: string }) {
     )
   }
 
-  // audio / video / file / pdf / link → Open link
+  // pdf → View in-app; audio / video / other file / link → Open
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
       <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium truncate">{item.title}</p>
       </div>
-      {href && (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="shrink-0 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90"
-        >
-          Open
-        </a>
+      {kind === 'pdf' ? (
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => onView(item)}
+            className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 inline-flex items-center gap-1"
+          >
+            <Eye className="w-3.5 h-3.5" /> View
+          </button>
+          {href && (
+            <a href={href} download target="_blank" rel="noopener noreferrer" className="px-2 py-1.5 text-xs font-medium bg-muted rounded-lg hover:bg-muted/80">
+              Download
+            </a>
+          )}
+        </div>
+      ) : (
+        href && (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90"
+          >
+            Open
+          </a>
+        )
       )}
     </div>
   )
 }
 
-function NotesRail({ notes, items }: { notes: HubViewerNote[]; items: HubViewerItem[] }) {
+function NotesRail({
+  notes,
+  items,
+  bookmarks,
+  onOpenBookmark,
+}: {
+  notes: HubViewerNote[]
+  items: HubViewerItem[]
+  bookmarks: HubViewerProps['bookmarks']
+  onOpenBookmark: (itemId: string, page: number) => void
+}) {
   const [open, setOpen] = useState<Record<string, boolean>>({})
   if (notes.length === 0) return null
   return (
@@ -234,6 +246,7 @@ function NotesRail({ notes, items }: { notes: HubViewerNote[]; items: HubViewerI
       {notes.map((note) => {
         const expanded = open[note.id] ?? !note.minimized
         const href = resolveNoteLink(note, items)
+        const noteBookmarks = bookmarks.filter((b) => b.noteId === note.id)
         return (
           <div key={note.id} className="rounded-xl border border-border bg-surface p-3">
             <button
@@ -257,6 +270,16 @@ function NotesRail({ notes, items }: { notes: HubViewerNote[]; items: HubViewerI
                     Open <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
+                {noteBookmarks.map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => onOpenBookmark(b.itemId, b.page)}
+                    className="block text-xs font-medium text-primary hover:underline text-left"
+                  >
+                    {b.title || `Page ${b.page}`}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -266,10 +289,17 @@ function NotesRail({ notes, items }: { notes: HubViewerNote[]; items: HubViewerI
   )
 }
 
-export function HubViewer({ hub, folders, items, notes, username, hubId, community, currentUserId }: HubViewerProps) {
+export function HubViewer({ hub, folders, items, notes, bookmarks, username, hubId, community, currentUserId }: HubViewerProps) {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [unlockFolderId, setUnlockFolderId] = useState<string | null>(null)
+  const [viewerFile, setViewerFile] = useState<HubViewerItem | null>(null)
+  const [viewerPage, setViewerPage] = useState<number | undefined>(undefined)
+
+  const openBookmark = (itemId: string, pageNum: number) => {
+    const it = items.find((i) => i.id === itemId)
+    if (it) { setViewerFile(it); setViewerPage(pageNum) }
+  }
 
   const tree = useMemo(() => buildFolderTree(folders), [folders])
   const breadcrumb = useMemo(
@@ -378,7 +408,7 @@ export function HubViewer({ hub, folders, items, notes, username, hubId, communi
       {filteredItems.length > 0 ? (
         <div className="space-y-2">
           {filteredItems.map((item) => (
-            <ItemCard key={item.id} item={item} hubId={hubId} />
+            <ItemCard key={item.id} item={item} hubId={hubId} onView={setViewerFile} />
           ))}
         </div>
       ) : filteredSubfolders.length === 0 ? (
@@ -392,12 +422,19 @@ export function HubViewer({ hub, folders, items, notes, username, hubId, communi
           hubId={hubId}
           initialJoined={community.joined}
           memberCount={community.memberCount}
-          canPost={community.canPost}
+          isPrivileged={community.isPrivileged}
           currentUserId={currentUserId}
         />
       )}
       </div>
-      <NotesRail notes={notes} items={items} />
+      <NotesRail notes={notes} items={items} bookmarks={bookmarks} onOpenBookmark={openBookmark} />
+      <HubFileViewer
+        file={viewerFile}
+        initialPage={viewerPage}
+        onClose={() => { setViewerFile(null); setViewerPage(undefined) }}
+        notes={notes.map((n) => ({ id: n.id, title: n.title, color: n.color }))}
+        bookmarks={bookmarks}
+      />
     </div>
   )
 }

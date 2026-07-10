@@ -46,6 +46,7 @@ model User {
   hubMemberships HubMember[] @relation("UserHubMemberships")
   hubPosts HubPost[] @relation("HubPostAuthor")
   hubPostLikes HubPostLike[]
+  hubPostComments HubPostComment[] @relation("HubPostCommentAuthor")
 }
 
 model VerificationToken {
@@ -128,6 +129,9 @@ model Display {
   // Jersey signatures
   jerseySignatures JerseySignature[]
 
+  // Bookings (appointment scheduling)
+  bookings    Booking[]
+
   // Collaborative editing
   version       Int      @default(0)
   kind          String   @default("page")
@@ -142,6 +146,25 @@ model Display {
   @@index([userId])
   @@index([published])
   @@index([category])
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  displayId   String
+  elementId   String
+  start       DateTime
+  end         DateTime
+  name        String
+  email       String
+  note        String?
+  cancelToken String   @unique @default(cuid())
+  createdAt   DateTime @default(now())
+
+  display     Display  @relation(fields: [displayId], references: [id], onDelete: Cascade)
+
+  @@unique([elementId, start])
+  @@index([displayId])
+  @@index([elementId, start])
 }
 
 model DisplayCollaborator {
@@ -264,8 +287,8 @@ model Comment {
 
 model Message {
   id          String   @id @default(cuid())
-  displayId   String
-  display     Display  @relation(fields: [displayId], references: [id], onDelete: Cascade)
+  displayId   String?
+  display     Display? @relation(fields: [displayId], references: [id], onDelete: Cascade)
   ownerId     String   // = display.userId, denormalized for the cross-page inbox
   elementId   String
   kind        String   // 'text' | 'audio' (future 'video')
@@ -490,7 +513,25 @@ model HubNote {
   order        Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  color       String            @default("#FDE047")
+  bookmarks   HubNoteBookmark[]
   @@index([hubId])
+}
+
+model HubNoteBookmark {
+  id        String   @id @default(cuid())
+  noteId    String
+  note      HubNote  @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  hubId     String
+  itemId    String
+  page      Int
+  rects     Json
+  text      String
+  title     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  @@index([hubId, itemId])
+  @@index([noteId])
 }
 
 model HubCollaborator {
@@ -529,6 +570,7 @@ model HubPost {
   settings  Json          @default("{}")
   createdAt DateTime      @default(now())
   likes     HubPostLike[]
+  comments  HubPostComment[]
   @@index([hubId, createdAt])
 }
 
@@ -541,4 +583,15 @@ model HubPostLike {
   createdAt DateTime @default(now())
   @@unique([postId, userId])
   @@index([postId])
+}
+
+model HubPostComment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      HubPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("HubPostCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now())
+  @@index([postId, createdAt])
 }
