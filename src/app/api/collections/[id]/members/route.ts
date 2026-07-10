@@ -11,7 +11,7 @@ type Ctx = { params: Promise<{ id: string }> }
 async function guard(request: NextRequest, id: string) {
   const me = await getUser(request)
   if (!me) return { res: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), me: null }
-  if (!isPro(me)) return { res: NextResponse.json({ error: 'Pro required' }, { status: 403 }), me: null }
+  // if (!isPro(me)) return { res: NextResponse.json({ error: 'Pro required' }, { status: 403 }), me: null }
   const board = await db.display.findUnique({ where: { id }, select: { userId: true, kind: true } })
   if (!board || board.kind !== 'collection') return { res: NextResponse.json({ error: 'Not found' }, { status: 404 }), me: null }
   if (board.userId !== me.id) return { res: NextResponse.json({ error: 'Not your board' }, { status: 403 }), me: null }

@@ -91,7 +91,7 @@ export default function DashboardPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: 'Untitled Board', kind: 'collection' }),
     })
-    if (res.status === 403) { setUpgradeOpen(true); return }
+    // if (res.status === 403) { setUpgradeOpen(true); return }
     if (!res.ok) return
     const board = await res.json()
     router.push(`/editor?id=${board.id}`)

@@ -108,9 +108,9 @@ export async function PATCH(
 
     // Saving edits to a collection board is a Pro feature — blocks a lapsed-Pro
     // owner and any free collaborator from persisting changes.
-    if (display.kind === 'collection' && !isPro(user)) {
-      return NextResponse.json({ error: 'Pro required' }, { status: 403 })
-    }
+    // if (display.kind === 'collection' && !isPro(user)) {
+    //   return NextResponse.json({ error: 'Pro required' }, { status: 403 })
+    // }
 
     const body = await request.json()
     const { version: clientVersion, ...updates } = body
