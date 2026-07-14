@@ -7,30 +7,35 @@ vi.mock('@/lib/auth', () => ({ getUser: vi.fn() }))
 vi.mock('@/lib/db', () => ({
   db: {
     workspace: { findUnique: vi.fn() },
-    workspaceField: { create: vi.fn(), count: vi.fn() },
+    workspaceField: { findMany: vi.fn(), count: vi.fn(), create: vi.fn() },
   },
 }))
 
 describe('POST /api/workspaces/[id]/fields', () => {
   beforeEach(() => vi.clearAllMocks())
-
   const ctx = { params: Promise.resolve({ id: 'w1' }) }
 
-  it('adds a field', async () => {
+  it('derives a stable key from the label', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'u1' })
     ;(db.workspace.findUnique as any).mockResolvedValue({ ownerId: 'u1' })
-    ;(db.workspaceField.count as any).mockResolvedValue(0)
-    ;(db.workspaceField.create as any).mockResolvedValue({ id: 'f1' })
-    
-    const req = new Request('http://localhost/api/workspaces/w1/fields', {
-      method: 'POST',
-      body: JSON.stringify({ key: 'age', label: 'Age', type: 'number' }),
-    })
-    
+    ;(db.workspaceField.findMany as any).mockResolvedValue([{ key: 'final_grade' }])
+    ;(db.workspaceField.count as any).mockResolvedValue(1)
+    ;(db.workspaceField.create as any).mockImplementation(({ data }: any) => ({ id: 'f2', ...data }))
+
+    const req = new Request('http://localhost', { method: 'POST', body: JSON.stringify({ label: 'Final Grade', type: 'number' }) })
     const res = await POST(req as any, ctx)
     expect(res.status).toBe(201)
-    expect(db.workspaceField.create).toHaveBeenCalledWith({
-      data: { workspaceId: 'w1', key: 'age', label: 'Age', type: 'number', required: false, position: 0 }
-    })
+    const body = await res.json()
+    expect(body.key).toBe('final_grade_2') // de-duped against existing
+    expect(body.label).toBe('Final Grade')
+    expect(body.position).toBe(1)
+  })
+
+  it('400 when label or type missing', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    ;(db.workspace.findUnique as any).mockResolvedValue({ ownerId: 'u1' })
+    const req = new Request('http://localhost', { method: 'POST', body: JSON.stringify({ type: 'text' }) })
+    const res = await POST(req as any, ctx)
+    expect(res.status).toBe(400)
   })
 })

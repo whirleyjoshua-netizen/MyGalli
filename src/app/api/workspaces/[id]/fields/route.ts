@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
+import { deriveFieldKey } from '@/lib/workspaces/field-key'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -43,10 +44,13 @@ export async function POST(request: NextRequest, { params }: Ctx) {
   }
 
   try {
-    const { key, label, type, required } = await request.json()
-    if (!key || !label || !type) {
+    const { label, type, required, config } = await request.json()
+    if (!label || !type) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+
+    const existing = await db.workspaceField.findMany({ where: { workspaceId: id }, select: { key: true } })
+    const key = deriveFieldKey(label, existing.map((f) => f.key))
 
     // Get current count for position
     const count = await db.workspaceField.count({ where: { workspaceId: id } })
@@ -59,6 +63,7 @@ export async function POST(request: NextRequest, { params }: Ctx) {
         type,
         required: !!required,
         position: count,
+        config: config ?? undefined,
       },
     })
     return NextResponse.json(field, { status: 201 })
