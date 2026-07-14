@@ -14,6 +14,7 @@ import { ProfileCanvas } from '@/components/profile/ProfileCanvas'
 import { ProfileCanvasBar } from '@/components/profile/ProfileCanvasBar'
 import type { Section } from '@/lib/types/canvas'
 import type { BackgroundConfig } from '@/lib/types/background'
+import { hydrateWorkspaceKpis } from '@/lib/workspaces/kpi-hydrate'
 
 async function getMeId(): Promise<string | null> {
   const token = (await cookies()).get(AUTH_COOKIE)?.value
@@ -56,8 +57,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const canvas = user.profileDisplayId
     ? await db.display.findUnique({ where: { id: user.profileDisplayId }, select: { id: true, sections: true, background: true } })
     : null
-  const canvasSections = (canvas ? (typeof canvas.sections === 'string' ? JSON.parse(canvas.sections) : canvas.sections) : []) as Section[]
+  const rawCanvasSections = (canvas ? (typeof canvas.sections === 'string' ? JSON.parse(canvas.sections) : canvas.sections) : []) as Section[]
   const canvasBackground = (canvas ? (typeof canvas.background === 'string' ? JSON.parse(canvas.background) : canvas.background) : null) as BackgroundConfig | null
+
+  const kpiDeps = {
+    getWorkspaceOwnerId: async (id: string) =>
+      (await db.workspace.findUnique({ where: { id }, select: { ownerId: true } }))?.ownerId ?? null,
+    getActiveRecords: async (id: string) =>
+      db.workspaceRecord.findMany({ where: { workspaceId: id, status: 'active' }, select: { data: true } }) as any,
+  }
+  const canvasSections: Section[] = canvas
+    ? ((await hydrateWorkspaceKpis(rawCanvasSections, user.id, kpiDeps)) as Section[])
+    : rawCanvasSections
 
   const ownerUser: User = {
     id: user.id,
