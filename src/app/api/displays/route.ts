@@ -77,11 +77,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Boards are a Pro-only Display kind, seeded with a single gallery element.
-    // if (kind === 'collection' && !isPro(user)) {
-    //   return NextResponse.json({ error: 'Pro required' }, { status: 403 })
-    // }
-
     // Generate unique slug
     let slug = slugify(title)
     let counter = 1
