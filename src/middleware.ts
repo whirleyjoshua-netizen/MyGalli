@@ -13,6 +13,7 @@ const PROTECTED_PATHS = [
   '/editor',
   '/create',
   '/live',
+  '/workspaces',
 ]
 
 export function middleware(request: NextRequest) {
@@ -45,5 +46,6 @@ export const config = {
     '/editor/:path*',
     '/create/:path*',
     '/live/:path*',
+    '/workspaces/:path*',
   ],
 }

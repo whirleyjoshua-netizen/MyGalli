@@ -22,4 +22,12 @@ describe('GridCell', () => {
     fireEvent.click(screen.getByRole('checkbox'))
     expect(onCommit).toHaveBeenCalledWith(true)
   })
+
+  it('normalizes an ISO date value to yyyy-MM-dd when entering edit mode', () => {
+    const onCommit = vi.fn()
+    render(<GridCell field={field('date') as any} value="2026-07-14T00:00:00.000Z" onCommit={onCommit} />)
+    fireEvent.click(screen.getByTestId('cell-display'))
+    const input = screen.getByDisplayValue('2026-07-14') as HTMLInputElement
+    expect(input.value).toBe('2026-07-14')
+  })
 })

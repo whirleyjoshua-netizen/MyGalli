@@ -20,8 +20,10 @@ export async function GET(request: NextRequest, { params }: Ctx) {
   if (g.res) return g.res
 
   const searchParams = request.nextUrl.searchParams
-  const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
-  const pageSize = Math.min(200, Math.max(1, parseInt(searchParams.get('pageSize') || '100')))
+  const parsedPage = parseInt(searchParams.get('page') || '1')
+  const page = Number.isFinite(parsedPage) ? Math.max(1, parsedPage) : 1
+  const parsedPageSize = parseInt(searchParams.get('pageSize') || '100')
+  const pageSize = Number.isFinite(parsedPageSize) ? Math.min(200, Math.max(1, parsedPageSize)) : 100
 
   const [fields, records, total] = await Promise.all([
     db.workspaceField.findMany({ where: { workspaceId: id }, orderBy: { position: 'asc' } }),

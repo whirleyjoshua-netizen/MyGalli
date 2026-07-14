@@ -42,7 +42,7 @@ export function GridCell({ field, value, onCommit }: Props) {
     return (
       <div
         data-testid="cell-display"
-        onClick={() => { setDraft(value ?? ''); setEditing(true) }}
+        onClick={() => { setDraft(field.type === 'date' ? toInputDate(value) : (value ?? '')); setEditing(true) }}
         className="min-h-[1.5rem] cursor-text"
       >
         {formatDisplay(field, value)}
@@ -72,13 +72,21 @@ export function GridCell({ field, value, onCommit }: Props) {
     <input
       autoFocus
       type={inputType}
-      value={draft ?? ''}
+      value={field.type === 'date' ? toInputDate(draft) : (draft ?? '')}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
       onKeyDown={keyDown}
       className="w-full bg-transparent outline-none"
     />
   )
+}
+
+function toInputDate(value: any): string {
+  if (value === null || value === undefined || value === '') return ''
+  const s = String(value)
+  // ISO datetime strings (e.g. 2026-07-14T00:00:00.000Z) -> yyyy-MM-dd
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10)
+  return s
 }
 
 function formatDisplay(field: GridField, value: any) {
