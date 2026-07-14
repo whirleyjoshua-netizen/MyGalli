@@ -58,6 +58,7 @@ import {
   Boxes,
   Inbox,
   ShoppingBag,
+  Gauge,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -88,6 +89,7 @@ const commands: Command[] = [
   { id: 'kpi', label: 'KPI / Stat', icon: BarChart3, description: 'Metric with trend', category: 'Data & Visuals' },
   { id: 'chart', label: '3D Chart', icon: PieChart, description: 'Bar, line, or pie chart', category: 'Data & Visuals' },
   { id: 'flowchart', label: 'Flowchart', icon: Workflow, description: 'Branching workflow of linked blocks', category: 'Data & Visuals' },
+  { id: 'workspace-kpi', label: 'Workspace Metric', icon: Gauge, description: 'Live count/sum/avg from a Workspace', category: 'Data & Visuals' },
 
   // Media
   { id: 'image', label: 'Image', icon: Image, description: 'Add an image', category: 'Media' },

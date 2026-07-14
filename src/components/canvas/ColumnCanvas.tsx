@@ -120,6 +120,8 @@ import { MailboxElement } from '@/components/elements/MailboxElement'
 import { PublicMailboxElement } from '@/components/elements/PublicMailboxElement'
 import { ProductListElement } from '@/components/elements/ProductListElement'
 import { PublicProductListElement } from '@/components/elements/PublicProductListElement'
+import { WorkspaceKpiElement } from '@/components/elements/WorkspaceKpiElement'
+import { PublicWorkspaceKpiElement } from '@/components/elements/PublicWorkspaceKpiElement'
 import { PublicTrackerElement } from '@/components/elements/PublicTrackerElement'
 import { PublicKitProfileElement } from '@/components/elements/PublicKitProfileElement'
 import { PublicGameScheduleElement } from '@/components/elements/PublicGameScheduleElement'
@@ -813,6 +815,18 @@ export function ColumnCanvas({
         }
         return (
           <LiveFeedElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'workspace-kpi':
+        if (isPreviewMode) return <PublicWorkspaceKpiElement element={element} />
+        return (
+          <WorkspaceKpiElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
