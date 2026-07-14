@@ -29,10 +29,11 @@ describe('POST members guards', () => {
     expect(res.status).toBe(401)
   })
 
-  it('403 when authenticated but not Pro', async () => {
+  it('lets a free user past the (removed) Pro gate — 404 when the board is missing, not 403', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'u1', plan: 'free' })
+    ;(db.display.findUnique as any).mockResolvedValueOnce(null)
     const res = await POST(req({ memberId: 'm1' }), ctx)
-    expect(res.status).toBe(403)
+    expect(res.status).toBe(404)
   })
 
   it('404 when the board does not exist', async () => {

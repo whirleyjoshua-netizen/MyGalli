@@ -33,13 +33,13 @@ const board = {
 
 beforeEach(() => vi.clearAllMocks())
 
-describe('PATCH /api/displays/[id] Pro-gates board edits', () => {
-  it('403s a FREE owner saving edits to a collection board', async () => {
+describe('PATCH /api/displays/[id] board edits (boards no longer Pro-gated)', () => {
+  it('allows a FREE owner to save edits to a collection board', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'u1', username: 'coach', plan: 'free' })
     ;(db.display.findUnique as any).mockResolvedValue(board)
+    ;(db.display.update as any).mockResolvedValue({ ...board, title: 'New title' })
     const res = await PATCH(req({ title: 'New title' }), ctx)
-    expect(res.status).toBe(403)
-    expect(db.display.update as any).not.toHaveBeenCalled()
+    expect(res.status).not.toBe(403)
   })
 
   it('does not 403 a PRO owner on the Pro gate', async () => {
