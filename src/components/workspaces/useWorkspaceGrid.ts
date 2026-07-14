@@ -12,8 +12,15 @@ export function useWorkspaceGrid(workspaceId: string) {
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [fields, setFields] = useState<GridField[]>([])
   const [records, setRecords] = useState<GridRecord[]>([])
+  // recordsRef is the synchronously-maintained source of truth for the records
+  // array. Every path that changes records goes through commitRecords(), which
+  // updates the ref and React state together — so back-to-back mutators in the
+  // same tick read a fresh snapshot rather than a stale post-commit value.
   const recordsRef = useRef<GridRecord[]>(records)
-  useEffect(() => { recordsRef.current = records }, [records])
+  const commitRecords = useCallback((next: GridRecord[]) => {
+    recordsRef.current = next
+    setRecords(next)
+  }, [])
 
   const reload = useCallback(async () => {
     setLoading(true)
@@ -23,20 +30,20 @@ export function useWorkspaceGrid(workspaceId: string) {
       const body = await res.json()
       setWorkspace(body.workspace)
       setFields(body.fields)
-      setRecords(body.records)
+      commitRecords(body.records)
       setError(null)
     } catch (e: any) {
       setError(e.message || 'Failed to load')
     } finally {
       setLoading(false)
     }
-  }, [workspaceId])
+  }, [workspaceId, commitRecords])
 
   useEffect(() => { reload() }, [reload])
 
   const updateCell = useCallback(async (recordId: string, key: string, value: any) => {
-    const prev = recordsRef.current.find((r) => r.id === recordId)
-    setRecords((rs) => rs.map((r) => (r.id === recordId ? { ...r, data: { ...r.data, [key]: value } } : r)))
+    const snapshot = recordsRef.current
+    commitRecords(snapshot.map((r) => (r.id === recordId ? { ...r, data: { ...r.data, [key]: value } } : r)))
     try {
       const res = await fetch(`/api/workspaces/${workspaceId}/records/${recordId}`, {
         method: 'PATCH',
@@ -46,10 +53,13 @@ export function useWorkspaceGrid(workspaceId: string) {
       if (!res.ok) throw new Error('Save failed')
       setError(null)
     } catch (e: any) {
-      if (prev) setRecords((rs) => rs.map((r) => (r.id === recordId ? prev! : r)))
+      // Revert only this record to its value at call time, preserving any
+      // concurrent successful edits to OTHER records made in the interim.
+      const prev = snapshot.find((r) => r.id === recordId)
+      if (prev) commitRecords(recordsRef.current.map((r) => (r.id === recordId ? prev : r)))
       setError(e.message || 'Save failed')
     }
-  }, [workspaceId])
+  }, [workspaceId, commitRecords])
 
   const addRow = useCallback(async () => {
     try {
@@ -60,19 +70,30 @@ export function useWorkspaceGrid(workspaceId: string) {
       })
       if (!res.ok) throw new Error('Add row failed')
       const rec = await res.json()
-      setRecords((rs) => [...rs, { id: rec.id, data: rec.data ?? {}, updatedAt: rec.updatedAt }])
+      commitRecords([...recordsRef.current, { id: rec.id, data: rec.data ?? {}, updatedAt: rec.updatedAt }])
       setError(null)
     } catch (e: any) { setError(e.message || 'Add row failed') }
-  }, [workspaceId])
+  }, [workspaceId, commitRecords])
 
   const deleteRow = useCallback(async (recordId: string) => {
-    const snapshot = records
-    setRecords((rs) => rs.filter((r) => r.id !== recordId))
+    const snapshot = recordsRef.current
+    commitRecords(snapshot.filter((r) => r.id !== recordId))
     try {
       const res = await fetch(`/api/workspaces/${workspaceId}/records/${recordId}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Delete failed')
-    } catch (e: any) { setRecords(snapshot); setError(e.message || 'Delete failed') }
-  }, [workspaceId, records])
+    } catch (e: any) {
+      // Restore the deleted record at its original index without clobbering
+      // concurrent edits/additions made to the current array in the interim.
+      const removed = snapshot.find((r) => r.id === recordId)
+      const idx = snapshot.findIndex((r) => r.id === recordId)
+      if (removed && !recordsRef.current.some((r) => r.id === recordId)) {
+        const next = [...recordsRef.current]
+        next.splice(Math.min(idx, next.length), 0, removed)
+        commitRecords(next)
+      }
+      setError(e.message || 'Delete failed')
+    }
+  }, [workspaceId, commitRecords])
 
   const addField = useCallback(async (label: string, type: string, config?: any) => {
     try {
