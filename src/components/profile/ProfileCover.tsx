@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { ImagePlus } from 'lucide-react'
 
 export function ProfileCover({
@@ -36,8 +37,7 @@ export function ProfileCover({
   return (
     <div className="relative h-44 sm:h-56 w-full rounded-b-3xl overflow-hidden bg-galli-gradient">
       {coverImage && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={coverImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <Image src={coverImage} alt="" fill priority sizes="100vw" className="object-cover" />
       )}
       {isOwner && (
         <label className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-surface/85 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-galli-dark cursor-pointer hover:bg-surface transition">

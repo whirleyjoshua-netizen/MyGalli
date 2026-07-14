@@ -65,6 +65,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           <ProfileBioBar bio={user.bio} />
           <ProfileProjectsSection
             username={user.username}
+            name={user.name}
             displays={displays}
             featuredId={user.featuredDisplayId}
             isOwner={isMe}
