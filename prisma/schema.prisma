@@ -47,7 +47,95 @@ model User {
   hubPosts HubPost[] @relation("HubPostAuthor")
   hubPostLikes HubPostLike[]
   hubPostComments HubPostComment[] @relation("HubPostCommentAuthor")
+  ownedWorkspaces          Workspace[]       @relation("OwnedWorkspaces")
+  workspaceRecordsCreated  WorkspaceRecord[] @relation("WorkspaceRecordsCreated")
+  workspaceRecordsUpdated  WorkspaceRecord[] @relation("WorkspaceRecordsUpdated")
 }
+
+model Workspace {
+  id            String            @id @default(cuid())
+  ownerId       String
+  owner         User              @relation("OwnedWorkspaces", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  name          String
+  description   String?
+  icon          String?
+  schemaVersion Int               @default(1)
+
+  fields        WorkspaceField[]
+  records       WorkspaceRecord[]
+  views         WorkspaceView[]
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  
+  @@unique([ownerId, name])
+  @@index([ownerId])
+}
+
+model WorkspaceField {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  key           String
+  label         String
+  type          String
+  required      Boolean   @default(false)
+  position      Int       @default(0)
+
+  config        Json?
+  validation    Json?
+  defaultValue  Json?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  @@unique([workspaceId, key])
+  @@index([workspaceId, position])
+}
+
+model WorkspaceRecord {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  displayId     String?   @unique
+  display       Display?  @relation(fields: [displayId], references: [id], onDelete: SetNull)
+
+  data          Json
+  schemaVersion Int
+  status        String    @default("active")
+
+  createdById   String
+  createdBy     User      @relation("WorkspaceRecordsCreated", fields: [createdById], references: [id], onDelete: Restrict)
+
+  updatedById   String?
+  updatedBy     User?     @relation("WorkspaceRecordsUpdated", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@index([createdById])
+}
+
+model WorkspaceView {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  name        String
+  type        String    @default("table")
+  config      Json      // View-specific settings (filters, sort, etc.)
+  position    Int       @default(0)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, position])
+}
+
 
 model VerificationToken {
   id        String   @id @default(cuid())
@@ -141,6 +229,8 @@ model Display {
 
   // Discovery category (set on publish)
   category      String?
+
+  workspaceRecord WorkspaceRecord?
 
   @@unique([userId, slug])
   @@index([userId])
