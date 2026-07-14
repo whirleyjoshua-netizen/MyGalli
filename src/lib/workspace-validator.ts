@@ -8,58 +8,62 @@ export interface ValidationResult {
   errors?: FieldError
 }
 
-/**
- * Shared service to validate and coerce incoming workspace record data
- * against a workspace's schema definitions.
- */
+export interface ValidateOptions {
+  strict?: boolean // reject unknown keys (default true)
+  partial?: boolean // only process keys present in input; never null-fill (default false)
+}
+
 export function validateWorkspaceRecord(
   fields: WorkspaceField[],
   input: Record<string, any>,
-  strict: boolean = true
+  opts: ValidateOptions = {}
 ): ValidationResult {
+  const { strict = true, partial = false } = opts
   const data: Record<string, any> = {}
   const errors: FieldError = {}
 
   for (const field of fields) {
+    const has = Object.prototype.hasOwnProperty.call(input, field.key)
     const rawValue = input[field.key]
     const isMissing = rawValue === undefined || rawValue === null
 
-    // 1. Required field check
-    if (field.required && isMissing) {
-      errors[field.key] = `${field.label} is required`
-      continue
-    }
+    // In partial mode, skip fields the caller didn't send.
+    if (partial && !has) continue
 
-    // Skip coercion if missing and not required
+    // Required is SOFT: missing -> null, no error.
     if (isMissing) {
       data[field.key] = null
       continue
     }
 
-    // 2. Type Coercion & Validation
     try {
       switch (field.type) {
-        case 'number':
+        case 'number': {
           const num = Number(rawValue)
           if (isNaN(num)) throw new Error('Must be a number')
           data[field.key] = num
           break
+        }
         case 'text':
           data[field.key] = String(rawValue)
           break
-        case 'date':
+        case 'date': {
           const date = new Date(rawValue)
           if (isNaN(date.getTime())) throw new Error('Invalid date')
           data[field.key] = date.toISOString()
           break
-        case 'choice':
-          // Assume config contains 'options' array
+        }
+        case 'checkbox':
+          data[field.key] = Boolean(rawValue) && rawValue !== 'false'
+          break
+        case 'choice': {
           const config = field.config as { options?: string[] }
           if (config?.options && !config.options.includes(rawValue)) {
             throw new Error(`Must be one of: ${config.options.join(', ')}`)
           }
           data[field.key] = String(rawValue)
           break
+        }
         default:
           data[field.key] = rawValue
       }
@@ -68,7 +72,6 @@ export function validateWorkspaceRecord(
     }
   }
 
-  // 3. Strict mode: Reject unknown fields
   if (strict) {
     for (const key in input) {
       if (!fields.find((f) => f.key === key)) {

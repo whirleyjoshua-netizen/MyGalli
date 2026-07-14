@@ -1,6 +1,5 @@
-import { WorkspaceField } from '@prisma/client'
 import { db } from '@/lib/db'
-import { validateWorkspaceRecord as validate } from '../workspace-validator'
+import { validateWorkspaceRecord as validate, ValidateOptions } from '../workspace-validator'
 
 /**
  * Validates record data against the workspace schema.
@@ -9,12 +8,12 @@ import { validateWorkspaceRecord as validate } from '../workspace-validator'
 export async function validateWorkspaceRecord(
   workspaceId: string,
   input: Record<string, any>,
-  strict: boolean = true
+  opts: ValidateOptions = {}
 ) {
   // Fetch fields once for validation
   const fields = await db.workspaceField.findMany({
     where: { workspaceId },
   })
-  
-  return validate(fields, input, strict)
+
+  return validate(fields, input, opts)
 }

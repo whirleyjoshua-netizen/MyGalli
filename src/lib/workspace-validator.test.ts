@@ -15,13 +15,6 @@ describe('validateWorkspaceRecord', () => {
     expect(result.data).toEqual({ name: 'Jordan', grade: 95 })
   })
 
-  it('fails on missing required field', () => {
-    const input = { name: 'Jordan' }
-    const result = validateWorkspaceRecord(fields, input)
-    expect(result.success).toBe(false)
-    expect(result.errors).toEqual({ grade: 'Grade is required' })
-  })
-
   it('fails on wrong type', () => {
     const input = { name: 'Jordan', grade: 'A' }
     const result = validateWorkspaceRecord(fields, input)
@@ -34,5 +27,31 @@ describe('validateWorkspaceRecord', () => {
     const result = validateWorkspaceRecord(fields, input)
     expect(result.success).toBe(false)
     expect(result.errors).toEqual({ extra: 'Unknown field' })
+  })
+
+  it('coerces checkbox to boolean', () => {
+    const f: WorkspaceField[] = [
+      { id: '3', workspaceId: 'w1', key: 'active', label: 'Active', type: 'checkbox', required: false, position: 0, config: null, validation: null, defaultValue: null, createdAt: new Date(), updatedAt: new Date() },
+    ]
+    expect(validateWorkspaceRecord(f, { active: 'true' }).data).toEqual({ active: true })
+    expect(validateWorkspaceRecord(f, { active: '' }).data).toEqual({ active: false })
+  })
+
+  it('does NOT block on missing required (soft required)', () => {
+    const result = validateWorkspaceRecord(fields, { name: 'Jordan' })
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({ name: 'Jordan', grade: null })
+  })
+
+  it('partial mode validates only provided keys and does not null-fill', () => {
+    const result = validateWorkspaceRecord(fields, { grade: 90 }, { partial: true })
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({ grade: 90 })
+  })
+
+  it('partial mode still rejects unknown keys', () => {
+    const result = validateWorkspaceRecord(fields, { nope: 1 }, { partial: true })
+    expect(result.success).toBe(false)
+    expect(result.errors).toEqual({ nope: 'Unknown field' })
   })
 })
