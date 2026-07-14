@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Plus, Home, FileText, Users, Compass, Library, BarChart3, Megaphone, ChevronRight,
+  Plus, Home, FileText, Users, Compass, Library, BarChart3, Megaphone, ChevronRight, Database,
 } from 'lucide-react'
 import { ProfileCard } from '@/components/dashboard/ProfileCard'
 import { PagesTree } from '@/components/dashboard/PagesTree'
@@ -21,6 +21,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { label: 'Home', icon: Home, href: '/dashboard', match: (p) => p === '/dashboard' },
   { label: 'Gallery', icon: FileText, href: '/my-pages', match: (p) => p.startsWith('/my-pages') },
+  { label: 'Workspaces', icon: Database, href: '/workspaces', match: (p) => p.startsWith('/workspaces') },
   { label: 'My Pond', icon: Users, href: '/shared', match: (p) => p.startsWith('/shared') },
   { label: 'Explore', icon: Compass, href: '/explore', match: (p) => p.startsWith('/explore') },
   { label: 'Data', icon: BarChart3, href: '/data', match: (p) => p.startsWith('/data') },
