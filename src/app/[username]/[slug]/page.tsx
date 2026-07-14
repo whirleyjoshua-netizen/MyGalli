@@ -13,6 +13,7 @@ import { PageViewTracker } from '@/components/analytics/PageViewTracker'
 import { renderElement, getGridClass, getColumnStyles } from '@/lib/render-elements'
 import { selectVisibleMembers } from '@/lib/collections'
 import { hydrateCollectionElements } from '@/lib/collections-hydrate'
+import { hydrateWorkspaceKpis } from '@/lib/workspaces/kpi-hydrate'
 import { PublicHeaderCard } from '@/components/header/PublicHeaderCard'
 import { PublicTabView } from '@/components/tabs/PublicTabView'
 import { FontLoader } from '@/components/FontLoader'
@@ -131,10 +132,19 @@ export default async function PublicDisplayPage({ params }: Props) {
   ) : null
 
   // Parse sections
-  const sections: Section[] =
+  const rawSections: Section[] =
     typeof display.sections === 'string'
       ? JSON.parse(display.sections)
       : (display.sections as unknown as Section[]) || []
+
+  const kpiDeps = {
+    getWorkspaceOwnerId: async (id: string) =>
+      (await db.workspace.findUnique({ where: { id }, select: { ownerId: true } }))?.ownerId ?? null,
+    getActiveRecords: async (id: string) =>
+      db.workspaceRecord.findMany({ where: { workspaceId: id, status: 'active' }, select: { data: true } }) as any,
+  }
+
+  const sections: Section[] = (await hydrateWorkspaceKpis(rawSections, user.id, kpiDeps)) as Section[]
 
   // Boards: resolve member cards and inject into their gallery element(s).
   if (display.kind === 'collection') {
@@ -186,12 +196,18 @@ export default async function PublicDisplayPage({ params }: Props) {
 
   // When tabs are enabled, PublicTabView is the entire page
   if (tabsConfig?.enabled && tabsConfig.tabs.length > 0) {
+    const hydratedTabs = await Promise.all(
+      tabsConfig.tabs.map(async (tab) => ({
+        ...tab,
+        sections: (await hydrateWorkspaceKpis(tab.sections, user.id, kpiDeps)) as Section[],
+      }))
+    )
     return (
       <>
         <PageViewTracker displayId={display.id} />
         <BackButton />
         <PublicTabView
-          tabs={tabsConfig.tabs}
+          tabs={hydratedTabs}
           style={tabsConfig.style}
           alignment={tabsConfig.alignment}
           displayId={display.id}

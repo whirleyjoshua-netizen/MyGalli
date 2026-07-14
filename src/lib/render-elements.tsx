@@ -8,6 +8,7 @@ import { PublicCodeElement } from '@/components/elements/PublicCodeElement'
 import { PublicCommentSection } from '@/components/elements/PublicCommentSection'
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
 import { PublicLiveFeedElement } from '@/components/elements/PublicLiveFeedElement'
+import { PublicWorkspaceKpiElement } from '@/components/elements/PublicWorkspaceKpiElement'
 import { PublicMCQElement } from '@/components/elements/PublicMCQElement'
 import { PublicRatingElement } from '@/components/elements/PublicRatingElement'
 import { PublicShortAnswerElement } from '@/components/elements/PublicShortAnswerElement'
@@ -575,6 +576,8 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'live-feed':
       return <PublicLiveFeedElement element={element} />
+    case 'workspace-kpi':
+      return <PublicWorkspaceKpiElement element={element} />
 
     default:
       return null

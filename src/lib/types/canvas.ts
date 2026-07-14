@@ -165,6 +165,8 @@ export type ElementType =
   | 'collection-view'       // Gallery of a board's member pages
   // Hub
   | 'hub'                   // Page-level cover tile doorway into a Hub
+  // Workspaces
+  | 'workspace-kpi'   // Live aggregate (count/sum/avg/min/max) of a Workspace field
 
 export type MapPlace = {
   id: string
@@ -222,6 +224,16 @@ export interface CanvasElement {
   kpiTrend?: 'up' | 'down' | 'neutral'
   kpiTrendValue?: string
   kpiColor?: 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'slate'
+
+  // workspace-kpi (live aggregate bound to a Workspace field)
+  workspaceKpiWorkspaceId?: string
+  workspaceKpiWorkspaceName?: string
+  workspaceKpiFieldKey?: string
+  workspaceKpiFieldLabel?: string
+  workspaceKpiAgg?: 'count' | 'sum' | 'avg' | 'min' | 'max'
+  workspaceKpiLabel?: string
+  workspaceKpiSuffix?: string
+  workspaceKpiValue?: number | null
   // Table specific
   tableHeaders?: string[]
   tableRows?: string[][]
@@ -754,6 +766,14 @@ export function createElement(type: ElementType): CanvasElement {
         kpiTrend: 'neutral',
         kpiTrendValue: '',
         kpiColor: 'blue',
+      }
+    case 'workspace-kpi':
+      return {
+        ...base,
+        workspaceKpiAgg: 'avg',
+        workspaceKpiLabel: '',
+        workspaceKpiSuffix: '',
+        workspaceKpiValue: null,
       }
     case 'table':
       return {

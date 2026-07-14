@@ -14,6 +14,7 @@ import { renderElement, getGridClass, getColumnStyles } from '@/lib/render-eleme
 import { PublicHeaderCard } from '@/components/header/PublicHeaderCard'
 import { PublicTabView } from '@/components/tabs/PublicTabView'
 import { FontLoader } from '@/components/FontLoader'
+import { hydrateWorkspaceKpis } from '@/lib/workspaces/kpi-hydrate'
 
 interface Props {
   params: Promise<{ code: string }>
@@ -85,10 +86,19 @@ export default async function ShareLinkPage({ params }: Props) {
   const user = display.user
 
   // Parse sections
-  const sections: Section[] =
+  const rawSections: Section[] =
     typeof display.sections === 'string'
       ? JSON.parse(display.sections)
       : (display.sections as unknown as Section[]) || []
+
+  const kpiDeps = {
+    getWorkspaceOwnerId: async (id: string) =>
+      (await db.workspace.findUnique({ where: { id }, select: { ownerId: true } }))?.ownerId ?? null,
+    getActiveRecords: async (id: string) =>
+      db.workspaceRecord.findMany({ where: { workspaceId: id, status: 'active' }, select: { data: true } }) as any,
+  }
+
+  const sections: Section[] = (await hydrateWorkspaceKpis(rawSections, user.id, kpiDeps)) as Section[]
 
   // Parse background
   const background: BackgroundConfig =
@@ -122,11 +132,17 @@ export default async function ShareLinkPage({ params }: Props) {
 
   // When tabs are enabled, PublicTabView is the entire page
   if (tabsConfig?.enabled && tabsConfig.tabs.length > 0) {
+    const hydratedTabs = await Promise.all(
+      tabsConfig.tabs.map(async (tab) => ({
+        ...tab,
+        sections: (await hydrateWorkspaceKpis(tab.sections, user.id, kpiDeps)) as Section[],
+      }))
+    )
     return (
       <>
         <PageViewTracker displayId={display.id} />
         <PublicTabView
-          tabs={tabsConfig.tabs}
+          tabs={hydratedTabs}
           style={tabsConfig.style}
           alignment={tabsConfig.alignment}
           displayId={display.id}
