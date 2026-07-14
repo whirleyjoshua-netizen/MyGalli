@@ -13,11 +13,13 @@ const GRADIENTS = [
 
 export function ProfileProjectsSection({
   username,
+  name,
   displays,
   featuredId,
   isOwner,
 }: {
   username: string
+  name?: string | null
   displays: ProjectDisplay[]
   featuredId?: string | null
   isOwner: boolean
@@ -45,7 +47,7 @@ export function ProfileProjectsSection({
     <section>
       <div className="flex items-center gap-2">
         <Leaf className="w-4 h-4 text-primary" />
-        <h2 className="text-lg font-extrabold text-galli-dark">My Galli</h2>
+        <h2 className="text-lg font-extrabold text-galli-dark">{isOwner ? 'My Galli' : `${name || username}'s Galli`}</h2>
       </div>
       <p className="mt-0.5 mb-3 text-sm text-muted-foreground">Projects, pages, boards &amp; more.</p>
 
@@ -54,13 +56,13 @@ export function ProfileProjectsSection({
           Nothing published yet.
         </div>
       ) : (
-        <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x pb-1">
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x pb-1 lg:grid lg:grid-cols-3 lg:overflow-visible">
           {cards.map((p, i) => {
             const isFeatured = p.id === featuredId
             return (
               <div
                 key={p.id}
-                className="group relative shrink-0 w-60 snap-start rounded-2xl border border-border bg-surface overflow-hidden shadow-soft hover:shadow-soft-lg hover:border-primary/30 transition-all"
+                className="group relative shrink-0 w-60 lg:w-auto snap-start rounded-2xl border border-border bg-surface overflow-hidden shadow-soft hover:shadow-soft-lg hover:border-primary/30 transition-all"
               >
                 <a href={`/${username}/${p.slug}`} className="block cursor-pointer">
                   <div className={`h-36 relative ${p.coverImage ? '' : `bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]}`}`}>
