@@ -73,6 +73,7 @@ export interface User {
   username: string
   name?: string
   avatar?: string
+  coverImage?: string | null
   bio?: string
   emailVerified?: string | Date | null
   location?: string | null
