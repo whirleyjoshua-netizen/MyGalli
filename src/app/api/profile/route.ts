@@ -14,6 +14,7 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.bio === 'string') data.bio = body.bio.slice(0, 500)
     if (typeof body.location === 'string') data.location = body.location.trim().slice(0, 120)
     if (typeof body.avatar === 'string') data.avatar = body.avatar
+    if (typeof body.coverImage === 'string') data.coverImage = body.coverImage
     if (body.interests !== undefined) data.interests = sanitizeInterests(body.interests)
     if (body.links !== undefined) data.links = sanitizeLinks(body.links)
 
@@ -33,7 +34,7 @@ export async function PATCH(request: NextRequest) {
       where: { id: me.id },
       data,
       select: {
-        id: true, username: true, name: true, avatar: true, bio: true,
+        id: true, username: true, name: true, avatar: true, coverImage: true, bio: true,
         location: true, interests: true, links: true, emailVerified: true, featuredDisplayId: true,
       },
     })
