@@ -222,6 +222,87 @@ describe('useWorkspaceGrid', () => {
     await waitFor(() => expect(result.current.records.map((r) => r.id)).toEqual(['r1']))
   })
 
+  it('never reports records as belonging to the new view mid-switch (Finding: view-switch mismatch)', async () => {
+    const withTwoViews = {
+      ...initial,
+      views: [
+        { id: 'v1', name: 'Grid', type: 'grid', config: {}, position: 0 },
+        { id: 'v2', name: 'Gallery', type: 'gallery', config: {}, position: 1 },
+      ],
+    }
+    let resolveV2!: (v: any) => void
+    const v2Promise = new Promise((resolve) => { resolveV2 = resolve })
+
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => withTwoViews }) // main GET
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initialViewRecords }) // per-view GET v1
+    ;(globalThis as any).fetch = fetchMock
+
+    const { result } = renderHook(() => useWorkspaceGrid('w1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await waitFor(() => expect(result.current.recordsViewId).toBe('v1'))
+    expect(result.current.records.map((r) => r.id)).toEqual(['r1'])
+
+    // Switch to v2 — its records fetch is held open (not yet resolved).
+    fetchMock.mockImplementationOnce(() => v2Promise)
+    act(() => { result.current.setActiveViewId('v2') })
+
+    // Mid-switch: activeViewId is now v2, but records are still v1's.
+    // recordsViewId must NOT claim to match the new active view while the
+    // committed records are still the old view's — that mismatch is exactly
+    // the bug (chips would describe v2's filter over v1's rows).
+    await waitFor(() => expect(result.current.activeViewId).toBe('v2'))
+    expect(result.current.recordsViewId).not.toBe('v2')
+    expect(result.current.records.map((r) => r.id)).toEqual(['r1']) // still old records, but not claimed to match
+
+    // Let v2's fetch resolve; now it's legitimately safe to say they match.
+    await act(async () => {
+      resolveV2({ ok: true, json: async () => ({ view: { id: 'v2' }, fields: initial.fields, records: [{ id: 'r9', data: { grade: 1 }, updatedAt: '2026-07-14' }], filterError: null, pagination: initial.pagination }) })
+    })
+    await waitFor(() => expect(result.current.recordsViewId).toBe('v2'))
+    expect(result.current.records.map((r) => r.id)).toEqual(['r9'])
+  })
+
+  it('keeps the user\'s chosen active view across a mutator-driven reload (Minor: reload must not revert to the initialViewId seed)', async () => {
+    const withTwoViews = {
+      ...initial,
+      views: [
+        { id: 'v1', name: 'Grid', type: 'grid', config: {}, position: 0 },
+        { id: 'v2', name: 'Gallery', type: 'gallery', config: {}, position: 1 },
+      ],
+    }
+    const v2Records = { view: { id: 'v2' }, fields: initial.fields, records: [{ id: 'r9', data: { grade: 1 }, updatedAt: '2026-07-14' }], filterError: null, pagination: initial.pagination }
+    // After addField, the reload's main GET still lists both views (v1 first)
+    // — if the hook wrongly re-seeded from initialViewId, it would matter;
+    // here we assert it simply doesn't revert away from the user's v2 choice.
+    const afterAddFieldMainGet = { ...withTwoViews }
+
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => withTwoViews }) // initial main GET (seed=v1)
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initialViewRecords }) // per-view GET v1
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => v2Records }) // per-view GET v2 (after user switch)
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({}) }) // addField POST
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => afterAddFieldMainGet }) // reload() main GET after addField
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => v2Records }) // re-fetched per-view GET v2
+    ;(globalThis as any).fetch = fetchMock
+
+    // Seed with initialViewId 'v1' (simulating a deep link), then the user
+    // explicitly picks v2.
+    const { result } = renderHook(() => useWorkspaceGrid('w1', 'v1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.activeViewId).toBe('v1')
+
+    act(() => { result.current.setActiveViewId('v2') })
+    await waitFor(() => expect(result.current.activeViewId).toBe('v2'))
+    await waitFor(() => expect(result.current.records.map((r) => r.id)).toEqual(['r9']))
+
+    await act(async () => { await result.current.addField('New', 'text') })
+
+    // The user's explicit choice (v2) must survive the reload — not revert
+    // to the initialViewId seed (v1).
+    expect(result.current.activeViewId).toBe('v2')
+  })
+
   it('clears records when there is no active view', async () => {
     const noViews = { ...initial, views: [] }
     const fetchMock = vi.fn()

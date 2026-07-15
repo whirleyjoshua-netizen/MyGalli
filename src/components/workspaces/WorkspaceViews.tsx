@@ -59,24 +59,30 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
         </button>
       </div>
 
-      <FilterChips
-        filter={active?.config?.filter ?? null}
-        fields={grid.fields}
-        count={grid.records.length}
-      />
-      {grid.filterError && (
-        <p className="mb-3 text-sm text-amber-600">
-          This view&apos;s filter no longer matches the columns ({grid.filterError}) — showing all records.
-        </p>
-      )}
+      {active && grid.recordsViewId === active.id ? (
+        <>
+          <FilterChips
+            filter={active?.config?.filter ?? null}
+            fields={grid.fields}
+            count={grid.records.length}
+          />
+          {grid.filterError && (
+            <p className="mb-3 text-sm text-amber-600">
+              This view&apos;s filter no longer matches the columns ({grid.filterError}) — showing all records.
+            </p>
+          )}
 
-      {/* Active view */}
-      {active?.type === 'gallery' ? (
-        <GalleryView fields={grid.fields} records={grid.records} config={active.config} />
-      ) : active?.type === 'kanban' ? (
-        <KanbanView fields={grid.fields} records={grid.records} config={active.config} />
+          {/* Active view */}
+          {active?.type === 'gallery' ? (
+            <GalleryView fields={grid.fields} records={grid.records} config={active.config} />
+          ) : active?.type === 'kanban' ? (
+            <KanbanView fields={grid.fields} records={grid.records} config={active.config} />
+          ) : (
+            <GridView grid={grid} />
+          )}
+        </>
       ) : (
-        <GridView grid={grid} />
+        <div className="p-8 text-muted-foreground">Loading…</div>
       )}
 
       {addingView && (

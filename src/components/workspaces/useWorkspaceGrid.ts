@@ -21,6 +21,12 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
   const [records, setRecords] = useState<GridRecord[]>([])
   const [activeViewId, setActiveViewId] = useState<string | null>(null)
   const [filterError, setFilterError] = useState<string | null>(null)
+  // Which view the currently-committed `records` belong to. Set atomically
+  // with each successful commitRecords in loadViewRecords, and cleared to
+  // null whenever a fetch for a (possibly different) view starts, so
+  // consumers can tell — without a race — whether `records` actually
+  // describes `activeViewId` right now, or a fetch is still in flight.
+  const [recordsViewId, setRecordsViewId] = useState<string | null>(null)
   // Bumped by mutators that change a field/column without changing activeViewId,
   // so the per-view records effect (keyed on activeViewId) re-fires and picks up
   // e.g. a filterError caused by deleting a field the active view's filter used.
@@ -182,6 +188,12 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
 
   const loadViewRecords = useCallback(async (viewId: string) => {
     const requestId = ++viewRecordsRequestRef.current
+    // A new fetch is starting: the committed records no longer provably
+    // belong to any particular view until this (or a newer) request commits.
+    // Clearing this synchronously with the request bump means there is never
+    // a render where recordsViewId claims to match a view whose records
+    // haven't actually arrived yet.
+    setRecordsViewId(null)
     try {
       const res = await fetch(`/api/workspaces/${workspaceId}/views/${viewId}/records`)
       if (!res.ok) throw new Error('Failed to load records')
@@ -192,6 +204,7 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
       // the currently-active view's records.
       if (requestId !== viewRecordsRequestRef.current) return
       commitRecords(body.records ?? [])
+      setRecordsViewId(viewId)
       setFilterError(body.filterError ?? null)
     } catch (e: any) {
       if (requestId !== viewRecordsRequestRef.current) return
@@ -201,9 +214,9 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
 
   useEffect(() => {
     if (activeViewId) loadViewRecords(activeViewId)
-    else commitRecords([])
+    else { commitRecords([]); setRecordsViewId(null) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeViewId, loadViewRecords, viewRecordsNonce])
 
-  return { loading, error, workspace, fields, views, records, activeViewId, setActiveViewId, filterError, loadViewRecords, addRow, updateCell, deleteRow, addField, updateField, deleteField, addView, deleteView, reload }
+  return { loading, error, workspace, fields, views, records, activeViewId, setActiveViewId, filterError, recordsViewId, loadViewRecords, addRow, updateCell, deleteRow, addField, updateField, deleteField, addView, deleteView, reload }
 }
