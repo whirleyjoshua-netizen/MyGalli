@@ -1,14 +1,14 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Search, X, Compass, Loader2, Users, Home, User as UserIcon } from 'lucide-react'
-import Link from 'next/link'
-import { useAuthStore } from '@/lib/store'
+import { Compass, Loader2, Users } from 'lucide-react'
 import { ScrollRow } from '@/components/dashboard/ScrollRow'
 import { ExploreRowCard } from './ExploreRowCard'
 import { ExploreCategoryChips } from './ExploreCategoryChips'
 import { categoryLabel } from '@/lib/categories'
 import type { ExploreRowItem } from '@/lib/explore'
+import { GalliTopBar } from '@/components/nav/GalliTopBar'
+import { SearchBox } from '@/components/nav/SearchBox'
 
 interface Rows {
   trending: ExploreRowItem[]
@@ -17,8 +17,6 @@ interface Rows {
 }
 
 export function ExploreClient({ initialRows }: { initialRows: Rows }) {
-  const { user } = useAuthStore()
-  const initial = (user?.name || user?.username || '?').charAt(0).toUpperCase()
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [grid, setGrid] = useState<ExploreRowItem[]>([])
@@ -61,83 +59,17 @@ export function ExploreClient({ initialRows }: { initialRows: Rows }) {
       />
 
       {/* Sticky header */}
-      <div className="sticky top-0 z-20">
-        {/* Gradient bar */}
-        <div className="bg-gradient-to-r from-galli via-galli-aqua to-galli-violet text-white shadow-soft-lg">
-          <div className="flex items-center px-4 py-3 sm:px-8">
-            {/* Left — home */}
-            <div className="flex flex-1 justify-start">
-              <Link
-                href="/dashboard"
-                aria-label="Home"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
-              >
-                <Home className="h-5 w-5" />
-              </Link>
-            </div>
-
-            {/* Center — brand + search */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 shadow-soft">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/gallio-frog.svg" alt="" aria-hidden className="h-7 w-7" />
-              </span>
-              <span className="hidden text-xl font-extrabold tracking-tight text-white drop-shadow-sm sm:inline">
-                My Galli
-              </span>
-              <div className="flex h-10 w-44 items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3.5 backdrop-blur-sm sm:w-72 md:w-80">
-                <Search className="h-4 w-4 shrink-0 text-white/80" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search My Galli pages…"
-                  aria-label="Search"
-                  className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/70"
-                />
-                {search && (
-                  <button onClick={() => setSearch('')} aria-label="Clear search">
-                    <X className="h-4 w-4 text-white/80" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Right — profile avatar */}
-            <div className="flex flex-1 justify-end">
-              {user ? (
-                <a href={`/${user.username}`} aria-label="Your profile" className="shrink-0">
-                  {user.avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={user.avatar}
-                      alt=""
-                      className="h-9 w-9 rounded-full border-2 border-white/60 object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-galli-dark">
-                      {initial}
-                    </span>
-                  )}
-                </a>
-              ) : (
-                <Link
-                  href="/login"
-                  aria-label="Log in"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
-                >
-                  <UserIcon className="h-5 w-5" />
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-        {/* Category chips sub-bar */}
-        <div className="border-b border-border bg-surface/80 backdrop-blur">
-          <div className="px-4 py-2 sm:px-8">
-            <ExploreCategoryChips active={activeCategory} onSelect={(id) => { setActiveCategory(id); setSearch('') }} />
-          </div>
-        </div>
-      </div>
+      <GalliTopBar
+        search={
+          <SearchBox
+            value={search}
+            onChange={setSearch}
+            onClear={() => setSearch('')}
+          />
+        }
+      >
+        <ExploreCategoryChips active={activeCategory} onSelect={(id) => { setActiveCategory(id); setSearch('') }} />
+      </GalliTopBar>
 
       {/* Body — full-bleed to the page edges */}
       <div className="relative z-10 px-4 py-6 sm:px-8">
