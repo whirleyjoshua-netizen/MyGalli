@@ -9,6 +9,7 @@ import { BackgroundSettingsBody } from '@/components/canvas/BackgroundSettings'
 import { SpacingSettingsBody } from '@/components/canvas/SpacingSettings'
 import { HeaderCardEditorBody } from '@/components/header/HeaderCardEditor'
 import { TabEditorBody } from '@/components/tabs/TabEditor'
+import { LastUpdatedSettingsBody } from './LastUpdatedSettings'
 
 interface PageTabProps {
   background: BackgroundConfig; onBackgroundChange: (c: BackgroundConfig) => void
@@ -16,6 +17,7 @@ interface PageTabProps {
   headerCard: HeaderCardConfig; onHeaderCardChange: (c: HeaderCardConfig) => void
   tabsConfig: TabsConfig; onTabsChange: (c: TabsConfig) => void
   currentSections: Section[]
+  showLastUpdated: boolean; onShowLastUpdatedChange: (next: boolean) => void
 }
 
 function Section_({ title, defaultOpen, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
@@ -44,6 +46,12 @@ export function PageTab(props: PageTabProps) {
       </Section_>
       <Section_ title="Tabs">
         <TabEditorBody config={props.tabsConfig} onChange={props.onTabsChange} currentSections={props.currentSections} />
+      </Section_>
+      <Section_ title="Last updated">
+        <LastUpdatedSettingsBody
+          value={props.showLastUpdated}
+          onChange={props.onShowLastUpdatedChange}
+        />
       </Section_>
     </div>
   )

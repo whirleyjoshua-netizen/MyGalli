@@ -60,6 +60,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
   const [tabsConfig, setTabsConfig] = useState<TabsConfig>(DEFAULT_TABS_CONFIG)
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [kitConfig, setKitConfig] = useState<KitPageConfig | null>(null)
+  const [showLastUpdated, setShowLastUpdated] = useState(false)
 
   // UI state
   const [loading, setLoading] = useState(true)
@@ -222,6 +223,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
         setPublished(data.published)
         setCategory(data.category ?? null)
         setCoverImage(data.coverImage ?? null)
+        setShowLastUpdated(!!data.showLastUpdated)
         setVersion(typeof data.version === 'number' ? data.version : 0)
         versionRef.current = typeof data.version === 'number' ? data.version : 0
         setIsOwner(data.isOwner !== false)
@@ -978,6 +980,26 @@ export function PageEditor({ pageId }: PageEditorProps) {
     )
   }
 
+  // Deliberately its own PATCH rather than joining the autosave: the autosave
+  // always ships sections/background/etc, which count as visible edits, so
+  // riding along would stamp contentUpdatedAt and reset the page's real edit
+  // date every time the owner flipped this. Same narrow-payload pattern as
+  // PublishDialog.
+  const changeShowLastUpdated = async (next: boolean) => {
+    const previous = showLastUpdated
+    setShowLastUpdated(next) // optimistic
+    try {
+      const res = await fetch(`/api/displays/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showLastUpdated: next }),
+      })
+      if (!res.ok) setShowLastUpdated(previous)
+    } catch {
+      setShowLastUpdated(previous)
+    }
+  }
+
   // Section ⚙ opens the section settings modal (layout/column-count + column style).
   const openSectionSettings = (sectionId: string) => {
     setEditingSectionId(sectionId)
@@ -1332,6 +1354,8 @@ export function PageEditor({ pageId }: PageEditorProps) {
                   }
                 }}
                 currentSections={sections}
+                showLastUpdated={showLastUpdated}
+                onShowLastUpdatedChange={changeShowLastUpdated}
               />
             }
           />

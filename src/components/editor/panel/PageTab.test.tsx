@@ -12,6 +12,7 @@ const base = {
   headerCard: DEFAULT_HEADER_CARD, onHeaderCardChange: () => {},
   tabsConfig: DEFAULT_TABS_CONFIG, onTabsChange: () => {},
   currentSections: [],
+  showLastUpdated: false, onShowLastUpdatedChange: () => {},
 }
 
 describe('PageTab', () => {
