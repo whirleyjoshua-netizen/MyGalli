@@ -106,8 +106,16 @@ It also avoids a dead toggle that appears to do nothing until the next edit.
 
 ## Read path
 
-`src/app/[username]/[slug]/page.tsx` selects both new fields and renders the
-badge only when `showLastUpdated && contentUpdatedAt`.
+`src/app/[username]/[slug]/page.tsx` renders the badge only when
+`showLastUpdated && contentUpdatedAt`. (It already loads the full row — the PATCH
+route's `findUnique` uses `include`, not a narrow `select` — so no query change is
+needed.)
+
+**The page has two render branches and the badge belongs in both.** When tabs are
+enabled, `PublicTabView` is the entire page and there is no footer (line ~198);
+otherwise the page renders its own footer (line ~283). This mirrors `creatorChip`,
+which the file already computes once and renders in both branches for exactly this
+reason. The badge follows that precedent rather than inventing a new one.
 
 The page is a server component and already dynamic (it reads the auth cookie),
 so a server-rendered relative time is computed per request. No staleness, and no
@@ -165,8 +173,17 @@ A `LastUpdatedSettingsBody` inside a new `Section_` in
 `src/components/editor/panel/PageTab.tsx`, following that file's existing
 one-body-per-section pattern.
 
-Unlike `PageTab`'s other bodies (which edit JSON config blobs), this flag is a DB
-column, so it persists via the same PATCH the editor already issues.
+**The toggle must PATCH on its own, not via the editor's autosave.** The autosave
+(`PageEditor.tsx:335`) always sends `sections`, `background`, `spacing`,
+`headerCard` and `tabs` in one payload. If the flag rode along, every toggle
+would carry visible fields, so `touchesVisible` would be true and the flag itself
+would stamp `contentUpdatedAt` — silently resetting a page's real edit date to
+now each time the owner flipped it. The API rule ("toggling alone does not
+stamp") is only meaningful if the client can actually send the flag alone.
+
+So the toggle issues its own `PATCH { showLastUpdated }`, following the existing
+precedent in `PublishDialog.tsx`, which likewise PATCHes its own narrow payload
+rather than joining the autosave.
 
 Copy must state the consequence plainly: the date becomes public.
 
