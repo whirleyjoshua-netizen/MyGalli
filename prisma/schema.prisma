@@ -197,6 +197,14 @@ model Display {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Public "last updated" indicator.
+  // NOTE: updatedAt is unusable for this — the view counter writes to this row
+  // on every page view, so @updatedAt restamps it. contentUpdatedAt is set only
+  // by the PATCH route, and only when an edit touches something a visitor sees.
+  // Null means "no visible edit observed yet" — the badge stays hidden.
+  showLastUpdated  Boolean   @default(false)
+  contentUpdatedAt DateTime?
+
   // Analytics events
   analytics   AnalyticsEvent[]
 
