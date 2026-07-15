@@ -24,6 +24,7 @@ import { AUTH_COOKIE } from '@/lib/constants'
 import { deriveFriend } from '@/lib/social'
 import { CreatorChip } from '@/components/social/CreatorChip'
 import { BackButton } from '@/components/ui/BackButton'
+import { LastUpdatedBadge } from '@/components/ui/LastUpdatedBadge'
 
 interface Props {
   params: Promise<{ username: string; slug: string }>
@@ -131,6 +132,14 @@ export default async function PublicDisplayPage({ params }: Props) {
     />
   ) : null
 
+  // Opt-in freshness stamp. Computed once and rendered in both layout branches,
+  // exactly like creatorChip above — when tabs are on, PublicTabView is the whole
+  // page and there is no footer to hang it in.
+  const lastUpdatedBadge =
+    display.showLastUpdated && display.contentUpdatedAt ? (
+      <LastUpdatedBadge date={display.contentUpdatedAt} />
+    ) : null
+
   // Parse sections
   const rawSections: Section[] =
     typeof display.sections === 'string'
@@ -215,6 +224,9 @@ export default async function PublicDisplayPage({ params }: Props) {
           defaultBackground={background}
           spacing={spacing}
         />
+        {lastUpdatedBadge && (
+          <footer className="pb-8 text-center">{lastUpdatedBadge}</footer>
+        )}
         {creatorChip}
       </>
     )
@@ -281,6 +293,7 @@ export default async function PublicDisplayPage({ params }: Props) {
 
           {/* Footer */}
           <footer className="mt-16 pt-8 border-t border-current/10 text-center">
+            {lastUpdatedBadge && <p className="mb-1">{lastUpdatedBadge}</p>}
             <p className="text-sm opacity-50">
               Made with{' '}
               <Link href="/" className="underline hover:opacity-80">
