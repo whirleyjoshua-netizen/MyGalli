@@ -75,3 +75,24 @@ describe('rankTrending', () => {
     expect(rankTrending(items, 3, 2).pageItems).toEqual([])
   })
 })
+
+import { firstBlock } from './bulletin'
+
+describe('firstBlock', () => {
+  it('returns the single block from a blocks array', () => {
+    const b = { id: 'b1', type: 'poll' }
+    expect(firstBlock([b])).toEqual(b)
+  })
+  it('returns null for an empty array', () => {
+    expect(firstBlock([])).toBeNull()
+  })
+  it('returns null for a non-array (null, undefined, object, string)', () => {
+    expect(firstBlock(null)).toBeNull()
+    expect(firstBlock(undefined)).toBeNull()
+    expect(firstBlock({})).toBeNull()
+    expect(firstBlock('nope')).toBeNull()
+  })
+  it('ignores extra blocks — v1 allows at most one', () => {
+    expect(firstBlock([{ id: 'a' }, { id: 'b' }])).toEqual({ id: 'a' })
+  })
+})

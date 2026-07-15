@@ -41,3 +41,21 @@ export function canModerate(
 ): boolean {
   return userId === hub.userId || collaboratorIds.includes(userId)
 }
+
+/**
+ * Who hears about a new community post.
+ * Owner/collaborator posts are the broadcast members joined for -> notify every member.
+ * Member posts are chatter -> notify owner + collaborators only (moderation awareness).
+ * The author never notifies themselves.
+ */
+export function postNotifyTargets(input: {
+  authorId: string
+  ownerId: string
+  collabIds: string[]
+  memberIds: string[]
+}): string[] {
+  const { authorId, ownerId, collabIds, memberIds } = input
+  const isPrivileged = authorId === ownerId || collabIds.includes(authorId)
+  const targets = isPrivileged ? memberIds : [ownerId, ...collabIds]
+  return [...new Set(targets)].filter((id) => id !== authorId)
+}
