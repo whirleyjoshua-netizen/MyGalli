@@ -59,14 +59,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ExploreClient } from './ExploreClient'
 
-vi.mock('@/lib/store', () => ({
-  useAuthStore: () => ({ user: { username: 'josh', name: 'Josh', avatar: null } }),
-}))
+type MockUser = { username: string; name: string | null; avatar: string | null }
+const mockUser = vi.hoisted(() => ({ current: null as MockUser | null }))
+vi.mock('@/lib/store', () => ({ useAuthStore: () => ({ user: mockUser.current }) }))
 
 const emptyRows = { trending: [], following: [], categories: [] }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockUser.current = { username: 'josh', name: 'Josh', avatar: null }
   vi.stubGlobal(
     'fetch',
     vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ displays: [] }) } as Response))
@@ -116,13 +117,24 @@ describe('ExploreClient header', () => {
     const { container } = render(<ExploreClient initialRows={emptyRows} />)
     expect(container.querySelector('.sticky.top-0.z-20')).toBeInTheDocument()
   })
+
+  // Logged-out characterization, scoped to what the refactor must NOT change.
+  // Deliberately does NOT assert the Home href: Task 4 intentionally changes it
+  // from /dashboard to / for logged-out visitors (see Global Constraints), so
+  // asserting today's value here would be a test built to be broken.
+  it('shows the Log in link and no avatar when logged out', () => {
+    mockUser.current = null
+    render(<ExploreClient initialRows={emptyRows} />)
+    expect(screen.getByLabelText('Log in')).toHaveAttribute('href', '/login')
+    expect(screen.queryByLabelText('Your profile')).not.toBeInTheDocument()
+  })
 })
 ```
 
 - [ ] **Step 2: Run the tests to verify they pass against current code**
 
 Run: `pnpm test src/components/explore/ExploreClient.test.tsx`
-Expected: **PASS** (6 tests). These characterize existing behavior, so they must be green now.
+Expected: **PASS** (7 tests). These characterize existing behavior, so they must be green now.
 
 A failure here means the test is wrong, not the component — fix the test until it describes what Explore actually does today. Do not touch `ExploreClient.tsx` in this task.
 
@@ -543,7 +555,7 @@ Remove whichever are no longer referenced. Note `Compass`, `Loader2`, and `Users
 - [ ] **Step 3: Run Task 1's tests to prove behavior is preserved**
 
 Run: `pnpm test src/components/explore/ExploreClient.test.tsx`
-Expected: PASS (6 tests), **unmodified**. If any fail, the refactor changed behavior — fix the component, not the test.
+Expected: PASS (7 tests), **unmodified**. If any fail, the refactor changed behavior — fix the component, not the test.
 
 - [ ] **Step 4: Verify no unused imports**
 
@@ -638,7 +650,7 @@ This is lazy initial state — it seeds on first render only, so typing afterwar
 - [ ] **Step 4: Run tests to verify all pass**
 
 Run: `pnpm test src/components/explore/ExploreClient.test.tsx`
-Expected: PASS (9 tests — 6 from Task 1 plus 3 new)
+Expected: PASS (10 tests — 7 from Task 1 plus 3 new)
 
 - [ ] **Step 5: Commit**
 
@@ -782,7 +794,7 @@ with:
 - [ ] **Step 6: Verify the whole suite and lint**
 
 Run: `pnpm test`
-Expected: PASS — full suite green (main was 505/505; this branch adds 29).
+Expected: PASS — full suite green (main was 505/505; this branch adds 30).
 
 Run: `pnpm exec next lint`
 Expected: no errors.
