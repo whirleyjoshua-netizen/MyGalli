@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isBulletinBlockType, normalizeSettings, isEmptyPost, isInScope, resultsVisible, scoreTrending, rankTrending } from './bulletin'
+import { isBulletinBlockType, normalizeSettings, isEmptyPost, isInScope, resultsVisible, scoreTrending, rankTrending, firstBlock } from './bulletin'
 
 describe('isBulletinBlockType', () => {
   it('accepts the three v1 types and rejects everything else', () => {
@@ -75,8 +75,6 @@ describe('rankTrending', () => {
     expect(rankTrending(items, 3, 2).pageItems).toEqual([])
   })
 })
-
-import { firstBlock } from './bulletin'
 
 describe('firstBlock', () => {
   it('returns the single block from a blocks array', () => {

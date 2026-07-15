@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canPostToHub, toMemberDTO, canParticipate, canModerate } from './community'
+import { canPostToHub, toMemberDTO, canParticipate, canModerate, postNotifyTargets } from './community'
 
 describe('canPostToHub', () => {
   const hub = { userId: 'owner1' }
@@ -35,8 +35,6 @@ describe('canModerate', () => {
   })
   it('member does not moderate', () => expect(canModerate('m1', hub, [])).toBe(false))
 })
-
-import { postNotifyTargets } from './community'
 
 describe('postNotifyTargets', () => {
   const base = { ownerId: 'owner', collabIds: ['collab'], memberIds: ['m1', 'm2'] }
