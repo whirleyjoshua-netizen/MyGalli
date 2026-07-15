@@ -52,6 +52,22 @@ describe('POST /api/hubs/[id]/posts — notifications', () => {
     expect([...targets].sort()).toEqual(['owner'])
   })
 
+  it('collaborator posting notifies all members', async () => {
+    ;(db.hubCollaborator.findMany as any).mockResolvedValue([{ userId: 'collab' }])
+    ;(getUser as any).mockResolvedValue({ id: 'collab', name: 'Collab', username: 'collab', avatar: null })
+    await POST(req({ text: 'hi' }), ctx)
+    const [targets] = (notifyHubMembers as any).mock.calls[0]
+    expect([...targets].sort()).toEqual(['m1', 'm2'])
+  })
+
+  it('member posting notifies the owner and collaborators', async () => {
+    ;(db.hubCollaborator.findMany as any).mockResolvedValue([{ userId: 'collab' }])
+    ;(getUser as any).mockResolvedValue({ id: 'm1', name: 'M1', username: 'm1', avatar: null })
+    await POST(req({ text: 'hi' }), ctx)
+    const [targets] = (notifyHubMembers as any).mock.calls[0]
+    expect([...targets].sort()).toEqual(['collab', 'owner'])
+  })
+
   it('creates the post before notifying (notification is not a precondition)', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'Owner', username: 'hubowner', avatar: null })
     await POST(req({ text: 'hello' }), ctx)
