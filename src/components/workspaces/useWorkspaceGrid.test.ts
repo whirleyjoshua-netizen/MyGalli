@@ -2,18 +2,27 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useWorkspaceGrid } from './useWorkspaceGrid'
 
+const initialRecords = [{ id: 'r1', data: { grade: 80 }, updatedAt: '2026-07-14' }]
+
 const initial = {
   workspace: { id: 'w1', name: 'S', description: null, icon: null },
   fields: [{ id: 'f1', key: 'grade', label: 'Grade', type: 'number', position: 0 }],
-  records: [{ id: 'r1', data: { grade: 80 }, updatedAt: '2026-07-14' }],
+  views: [{ id: 'v1', name: 'Grid', type: 'grid', config: {}, position: 0 }],
+  // Retained for shape-compatibility with the real GET /api/workspaces/[id]
+  // response, but the hook no longer reads this field for its records state —
+  // records come solely from GET /api/workspaces/[id]/views/[viewId]/records.
+  records: initialRecords,
   pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
 }
+
+const initialViewRecords = { view: { id: 'v1' }, fields: initial.fields, records: initialRecords, filterError: null, pagination: initial.pagination }
 
 beforeEach(() => vi.restoreAllMocks())
 
 function mockFetchOnceThen(loadBody: any, mutationOk = true) {
   const fetchMock = vi.fn()
   fetchMock.mockResolvedValueOnce({ ok: true, json: async () => loadBody }) // initial GET
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initialViewRecords }) // per-view records GET
   fetchMock.mockResolvedValue({ ok: mutationOk, json: async () => ({}) }) // subsequent
   ;(globalThis as any).fetch = fetchMock
   return fetchMock
@@ -33,6 +42,7 @@ describe('useWorkspaceGrid', () => {
   it('rolls back only to the last successful value on rapid edits', async () => {
     const fetchMock = vi.fn()
     fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initial }) // initial GET
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initialViewRecords }) // per-view records GET
     fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({}) })     // 1st PATCH (95) OK
     fetchMock.mockResolvedValueOnce({ ok: false, json: async () => ({}) })     // 2nd PATCH (110) FAIL
     ;(globalThis as any).fetch = fetchMock
@@ -51,6 +61,7 @@ describe('useWorkspaceGrid', () => {
   it('handles two same-tick edits without a render between them (sync ref)', async () => {
     const fetchMock = vi.fn()
     fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initial }) // initial GET
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initialViewRecords }) // per-view records GET
     fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({}) })     // 1st PATCH (95) OK
     fetchMock.mockResolvedValueOnce({ ok: false, json: async () => ({}) })     // 2nd PATCH (110) FAIL
     ;(globalThis as any).fetch = fetchMock
@@ -78,5 +89,107 @@ describe('useWorkspaceGrid', () => {
     await act(async () => { await result.current.updateCell('r1', 'grade', 95) })
     expect(result.current.records[0].data.grade).toBe(80) // reverted
     expect(result.current.error).toBeTruthy()
+  })
+
+  it('does not clobber filtered records with the unfiltered main-GET records after a field mutation (Finding 1)', async () => {
+    const filteredRecords = [{ id: 'r1', data: { grade: 95 }, updatedAt: '2026-07-14' }] // filter excluded r2
+    const unfilteredMainGet = {
+      ...initial,
+      // Main GET always returns ALL records, unfiltered — the hook must never
+      // read this into its records state.
+      records: [...initialRecords, { id: 'r2', data: { grade: 40 }, updatedAt: '2026-07-14' }],
+    }
+    const filteredViewRecords = { view: { id: 'v1' }, fields: initial.fields, records: filteredRecords, filterError: null, pagination: initial.pagination }
+
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initial }) // initial main GET
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => filteredViewRecords }) // initial per-view GET (filtered)
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({}) }) // addField POST
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => unfilteredMainGet }) // reload() main GET after addField
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => filteredViewRecords }) // re-fetched per-view GET (still filtered)
+    ;(globalThis as any).fetch = fetchMock
+
+    const { result } = renderHook(() => useWorkspaceGrid('w1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.records).toHaveLength(1)
+
+    await act(async () => { await result.current.addField('New', 'text') })
+    await waitFor(() => expect(result.current.records).toHaveLength(1))
+    // Must still reflect the view's filtered set, not the unfiltered main GET.
+    expect(result.current.records.map((r) => r.id)).toEqual(['r1'])
+  })
+
+  it('lands on a real remaining view (with its records) after deleting the active view (Finding 2)', async () => {
+    const withTwoViews = {
+      ...initial,
+      views: [
+        { id: 'v1', name: 'Grid', type: 'grid', config: {}, position: 0 },
+        { id: 'v2', name: 'Gallery', type: 'gallery', config: {}, position: 1 },
+      ],
+    }
+    const v2Records = { view: { id: 'v2' }, fields: initial.fields, records: [{ id: 'r9', data: { grade: 1 }, updatedAt: '2026-07-14' }], filterError: null, pagination: initial.pagination }
+    const afterDeleteMainGet = { ...withTwoViews, views: [{ id: 'v2', name: 'Gallery', type: 'gallery', config: {}, position: 1 }] }
+
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => withTwoViews }) // initial main GET
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initialViewRecords }) // initial per-view GET (v1)
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({}) }) // DELETE v1
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => afterDeleteMainGet }) // reload() main GET (v1 gone)
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => v2Records }) // per-view GET for v2
+    ;(globalThis as any).fetch = fetchMock
+
+    const { result } = renderHook(() => useWorkspaceGrid('w1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.activeViewId).toBe('v1')
+
+    await act(async () => { await result.current.deleteView('v1') })
+    await waitFor(() => expect(result.current.activeViewId).toBe('v2'))
+    await waitFor(() => expect(result.current.records.map((r) => r.id)).toEqual(['r9']))
+  })
+
+  it('ignores a stale view-records response that resolves after a newer one (Finding 3)', async () => {
+    let resolveStale!: (v: any) => void
+    const stalePromise = new Promise((resolve) => { resolveStale = resolve })
+
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initial }) // initial main GET
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initialViewRecords }) // mount's per-view GET (v1) — resolves normally
+    ;(globalThis as any).fetch = fetchMock
+
+    const { result } = renderHook(() => useWorkspaceGrid('w1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await waitFor(() => expect(result.current.records.map((r) => r.id)).toEqual(['r1']))
+
+    // Issue a slow ("stale") request, then a fast one that resolves first.
+    fetchMock.mockImplementationOnce(() => stalePromise) // stale request — held open
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ view: { id: 'v1' }, fields: initial.fields, records: [{ id: 'r-fast', data: { grade: 2 }, updatedAt: '2026-07-14' }], filterError: null, pagination: initial.pagination }) }) // newer request — resolves first
+
+    let stalePending: Promise<void>
+    await act(async () => {
+      stalePending = result.current.loadViewRecords('v1') // stale, held open
+      await result.current.loadViewRecords('v1') // newer, resolves immediately
+    })
+    expect(result.current.records.map((r) => r.id)).toEqual(['r-fast'])
+
+    // Now let the stale request resolve — it must be discarded, not overwrite the newer result.
+    await act(async () => {
+      resolveStale({ ok: true, json: async () => ({ view: { id: 'v1' }, fields: initial.fields, records: [{ id: 'r-stale' }], filterError: 'stale filter error', pagination: initial.pagination }) })
+      await stalePending
+    })
+    expect(result.current.records.map((r) => r.id)).toEqual(['r-fast'])
+    expect(result.current.filterError).not.toBe('stale filter error')
+  })
+
+  it('fetches the main GET once and the per-view records once on mount (Finding 4)', async () => {
+    const fetchMock = mockFetchOnceThen(initial)
+    const { result } = renderHook(() => useWorkspaceGrid('w1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await waitFor(() => expect(result.current.records).toHaveLength(1))
+
+    const calls = fetchMock.mock.calls.map((c: any[]) => c[0] as string)
+    const mainGetCalls = calls.filter((u) => u === '/api/workspaces/w1')
+    const viewRecordsCalls = calls.filter((u) => u === '/api/workspaces/w1/views/v1/records')
+    expect(mainGetCalls).toHaveLength(1)
+    expect(viewRecordsCalls).toHaveLength(1)
   })
 })

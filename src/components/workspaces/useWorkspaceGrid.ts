@@ -16,6 +16,13 @@ export function useWorkspaceGrid(workspaceId: string) {
   const [records, setRecords] = useState<GridRecord[]>([])
   const [activeViewId, setActiveViewId] = useState<string | null>(null)
   const [filterError, setFilterError] = useState<string | null>(null)
+  // Bumped by mutators that change a field/column without changing activeViewId,
+  // so the per-view records effect (keyed on activeViewId) re-fires and picks up
+  // e.g. a filterError caused by deleting a field the active view's filter used.
+  const [viewRecordsNonce, setViewRecordsNonce] = useState(0)
+  // Guards against out-of-order responses: only the latest-issued request for
+  // view records is allowed to commit its result.
+  const viewRecordsRequestRef = useRef(0)
   // recordsRef is the synchronously-maintained source of truth for the records
   // array. Every path that changes records goes through commitRecords(), which
   // updates the ref and React state together — so back-to-back mutators in the
@@ -36,15 +43,22 @@ export function useWorkspaceGrid(workspaceId: string) {
       setFields(body.fields)
       const viewList = body.views ?? []
       setViews(viewList)
-      setActiveViewId((cur) => cur ?? viewList[0]?.id ?? null)
-      commitRecords(body.records)
+      // Records are owned exclusively by the per-view fetch (loadViewRecords) so
+      // that what's on screen always matches the active view's saved filter.
+      // Resolve activeViewId against the *fresh* view list: keep the current id
+      // only if it still exists (e.g. it wasn't just deleted), else fall back to
+      // the first view.
+      setActiveViewId((cur) => {
+        if (cur && viewList.some((v: WorkspaceView) => v.id === cur)) return cur
+        return viewList[0]?.id ?? null
+      })
       setError(null)
     } catch (e: any) {
       setError(e.message || 'Failed to load')
     } finally {
       setLoading(false)
     }
-  }, [workspaceId, commitRecords])
+  }, [workspaceId])
 
   useEffect(() => { reload() }, [reload])
 
@@ -111,6 +125,7 @@ export function useWorkspaceGrid(workspaceId: string) {
       })
       if (!res.ok) throw new Error('Add column failed')
       await reload()
+      setViewRecordsNonce((n) => n + 1)
     } catch (e: any) { setError(e.message || 'Add column failed') }
   }, [workspaceId, reload])
 
@@ -123,6 +138,7 @@ export function useWorkspaceGrid(workspaceId: string) {
       })
       if (!res.ok) throw new Error('Update column failed')
       await reload()
+      setViewRecordsNonce((n) => n + 1)
     } catch (e: any) { setError(e.message || 'Update column failed') }
   }, [workspaceId, reload])
 
@@ -131,6 +147,7 @@ export function useWorkspaceGrid(workspaceId: string) {
       const res = await fetch(`/api/workspaces/${workspaceId}/fields/${fieldId}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Delete column failed')
       await reload()
+      setViewRecordsNonce((n) => n + 1)
     } catch (e: any) { setError(e.message || 'Delete column failed') }
   }, [workspaceId, reload])
 
@@ -157,20 +174,28 @@ export function useWorkspaceGrid(workspaceId: string) {
   }, [workspaceId, reload])
 
   const loadViewRecords = useCallback(async (viewId: string) => {
+    const requestId = ++viewRecordsRequestRef.current
     try {
       const res = await fetch(`/api/workspaces/${workspaceId}/views/${viewId}/records`)
       if (!res.ok) throw new Error('Failed to load records')
       const body = await res.json()
+      // Ignore stale responses: if a newer request has been issued since this
+      // one started (e.g. the user switched views again before this resolved),
+      // discard this result — including its filterError — so it can't overwrite
+      // the currently-active view's records.
+      if (requestId !== viewRecordsRequestRef.current) return
       commitRecords(body.records ?? [])
       setFilterError(body.filterError ?? null)
     } catch (e: any) {
+      if (requestId !== viewRecordsRequestRef.current) return
       setError(e.message || 'Failed to load records')
     }
   }, [workspaceId, commitRecords])
 
   useEffect(() => {
     if (activeViewId) loadViewRecords(activeViewId)
-  }, [activeViewId, loadViewRecords])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeViewId, loadViewRecords, viewRecordsNonce])
 
   return { loading, error, workspace, fields, views, records, activeViewId, setActiveViewId, filterError, loadViewRecords, addRow, updateCell, deleteRow, addField, updateField, deleteField, addView, deleteView, reload }
 }
