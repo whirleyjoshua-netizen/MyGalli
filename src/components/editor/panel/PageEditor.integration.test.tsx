@@ -28,6 +28,80 @@ beforeEach(() => {
   }))
 })
 
+describe('PageEditor "show last updated" toggle', () => {
+  it('PATCHes only { showLastUpdated: true } (no sections/version) when flipped on', async () => {
+    render(<PageEditor pageId="p1" />)
+    await waitFor(() => expect(screen.getByText('Heading — Hi')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /^page$/i }))
+    const toggle = await screen.findByRole('switch', { name: /show when this page was last updated/i })
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+
+    fireEvent.click(toggle)
+
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'))
+
+    const fetchMock = global.fetch as unknown as ReturnType<typeof vi.fn>
+    const toggleCall = fetchMock.mock.calls.find(
+      (call: any[]) =>
+        call[0] === '/api/displays/p1' &&
+        call[1]?.method === 'PATCH' &&
+        JSON.parse(call[1].body).showLastUpdated !== undefined
+    )
+    expect(toggleCall).toBeDefined()
+    const body = JSON.parse(toggleCall![1].body)
+    expect(body).toEqual({ showLastUpdated: true })
+  })
+
+  it('rolls back the switch when the PATCH responds !ok', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string, opts?: any) => {
+      if (url === '/api/displays/p1' && (!opts || opts.method === undefined)) {
+        return { ok: true, status: 200, json: async () => page } as any
+      }
+      if (opts?.method === 'PATCH' && JSON.parse(opts.body).showLastUpdated !== undefined) {
+        return { ok: false, status: 500, json: async () => ({ error: 'boom' }) } as any
+      }
+      return { ok: true, status: 200, json: async () => ({ version: 2 }) } as any
+    }))
+
+    render(<PageEditor pageId="p1" />)
+    await waitFor(() => expect(screen.getByText('Heading — Hi')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /^page$/i }))
+    const toggle = await screen.findByRole('switch', { name: /show when this page was last updated/i })
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+
+    fireEvent.click(toggle)
+    // Optimistic flip happens synchronously with state update
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'))
+    // Then rolls back once the failed PATCH resolves
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'false'))
+  })
+
+  it('rolls back the switch when the PATCH throws', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string, opts?: any) => {
+      if (url === '/api/displays/p1' && (!opts || opts.method === undefined)) {
+        return { ok: true, status: 200, json: async () => page } as any
+      }
+      if (opts?.method === 'PATCH' && JSON.parse(opts.body).showLastUpdated !== undefined) {
+        throw new Error('network down')
+      }
+      return { ok: true, status: 200, json: async () => ({ version: 2 }) } as any
+    }))
+
+    render(<PageEditor pageId="p1" />)
+    await waitFor(() => expect(screen.getByText('Heading — Hi')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /^page$/i }))
+    const toggle = await screen.findByRole('switch', { name: /show when this page was last updated/i })
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+
+    fireEvent.click(toggle)
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'))
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'false'))
+  })
+})
+
 describe('PageEditor renders the control panel', () => {
   it('shows the Elements list with the page element and hides old top-bar buttons', async () => {
     render(<PageEditor pageId="p1" />)
