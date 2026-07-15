@@ -109,6 +109,21 @@ describe('POST filter-suggest', () => {
     expect((await POST(req({ question: 'soccer' }), ctx)).status).toBe(429)
   })
 
+  it('surfaces an invalid/expired Anthropic API key as a config error, not a rephrase prompt', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    const authErr: any = new Error('401 {"type":"error","error":{"type":"authentication_error","message":"API key is invalid."}}')
+    authErr.status = 401
+    createMock.mockRejectedValue(authErr)
+
+    const res = await POST(req({ question: 'soccer players' }), ctx)
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body.error).not.toMatch(/rephrasing/i)
+    expect(body.error).toMatch(/not configured/i)
+    expect(body.error).not.toContain('API key is invalid')
+  })
+
   it('rate limits by user id, not just IP (Finding: per-IP limiter let one account spend from several networks)', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'u-42' })
     modelReturns({ op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }] })

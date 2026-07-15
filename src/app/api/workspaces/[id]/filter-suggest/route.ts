@@ -109,6 +109,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (error?.status >= 500) {
       return NextResponse.json({ error: 'AI service is temporarily unavailable.' }, { status: 502 })
     }
+    if (error?.status === 401 || error?.status === 403) {
+      console.error('Filter suggest error: Anthropic credentials rejected (status', error.status, ')', error?.message)
+      return NextResponse.json(
+        { error: 'AI filtering is not configured. Set ANTHROPIC_API_KEY.' },
+        { status: 500 }
+      )
+    }
     console.error('Filter suggest error:', error)
     return NextResponse.json({ error: 'Could not build that filter. Try rephrasing.' }, { status: 500 })
   }
