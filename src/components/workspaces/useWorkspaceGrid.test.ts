@@ -180,16 +180,57 @@ describe('useWorkspaceGrid', () => {
     expect(result.current.filterError).not.toBe('stale filter error')
   })
 
-  it('fetches the main GET once and the per-view records once on mount (Finding 4)', async () => {
-    const fetchMock = mockFetchOnceThen(initial)
-    const { result } = renderHook(() => useWorkspaceGrid('w1'))
+  // NOTE: the previous "Finding 4 / double fetch" test here asserted one
+  // main-GET call + one per-view-GET call on mount. That assertion also
+  // passes against the pre-fix buggy code (the old bug was a double
+  // *commit* of records — main-GET's records briefly overwriting the
+  // per-view fetch's — not a double *fetch*; the old code issued exactly
+  // the same one-call-per-URL pattern). Since it can't fail against the
+  // bug it was meant to catch, it was removed as tautological rather than
+  // kept for false confidence.
+
+  it('seeds the active view from an initialViewId naming a non-first view, and fetches that view\'s records (Finding: deep link)', async () => {
+    const withTwoViews = {
+      ...initial,
+      views: [
+        { id: 'v1', name: 'Grid', type: 'grid', config: {}, position: 0 },
+        { id: 'v2', name: 'Gallery', type: 'gallery', config: {}, position: 1 },
+      ],
+    }
+    const v2Records = { view: { id: 'v2' }, fields: initial.fields, records: [{ id: 'r9', data: { grade: 1 }, updatedAt: '2026-07-14' }], filterError: null, pagination: initial.pagination }
+
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => withTwoViews }) // main GET
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => v2Records }) // per-view GET — must be for v2, not v1
+    ;(globalThis as any).fetch = fetchMock
+
+    const { result } = renderHook(() => useWorkspaceGrid('w1', 'v2'))
     await waitFor(() => expect(result.current.loading).toBe(false))
-    await waitFor(() => expect(result.current.records).toHaveLength(1))
+    await waitFor(() => expect(result.current.activeViewId).toBe('v2'))
+    await waitFor(() => expect(result.current.records.map((r) => r.id)).toEqual(['r9']))
 
     const calls = fetchMock.mock.calls.map((c: any[]) => c[0] as string)
-    const mainGetCalls = calls.filter((u) => u === '/api/workspaces/w1')
-    const viewRecordsCalls = calls.filter((u) => u === '/api/workspaces/w1/views/v1/records')
-    expect(mainGetCalls).toHaveLength(1)
-    expect(viewRecordsCalls).toHaveLength(1)
+    expect(calls).toContain('/api/workspaces/w1/views/v2/records')
+    expect(calls).not.toContain('/api/workspaces/w1/views/v1/records')
+  })
+
+  it('falls back to the first view when initialViewId is unknown/garbage', async () => {
+    const fetchMock = mockFetchOnceThen(initial)
+    const { result } = renderHook(() => useWorkspaceGrid('w1', 'does-not-exist'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.activeViewId).toBe('v1')
+    await waitFor(() => expect(result.current.records.map((r) => r.id)).toEqual(['r1']))
+  })
+
+  it('clears records when there is no active view', async () => {
+    const noViews = { ...initial, views: [] }
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => noViews }) // main GET, no views
+    ;(globalThis as any).fetch = fetchMock
+
+    const { result } = renderHook(() => useWorkspaceGrid('w1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.activeViewId).toBeNull()
+    expect(result.current.records).toEqual([])
   })
 })

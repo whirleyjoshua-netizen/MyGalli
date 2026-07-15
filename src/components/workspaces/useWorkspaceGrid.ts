@@ -7,7 +7,12 @@ export type GridField = { id: string; key: string; label: string; type: string; 
 type Workspace = { id: string; name: string; description: string | null; icon: string | null }
 export type WorkspaceView = { id: string; name: string; type: string; config: any; position: number }
 
-export function useWorkspaceGrid(workspaceId: string) {
+export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | null) {
+  // Seed for the very first reload only (deep-link support for ?view=<id>).
+  // Captured once — once the user picks a view via setActiveViewId, that
+  // becomes `cur` on subsequent reloads and always wins (see reload() below),
+  // so this seed can never re-assert itself over a later user choice.
+  const initialViewIdRef = useRef(initialViewId ?? null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
@@ -50,6 +55,8 @@ export function useWorkspaceGrid(workspaceId: string) {
       // the first view.
       setActiveViewId((cur) => {
         if (cur && viewList.some((v: WorkspaceView) => v.id === cur)) return cur
+        const seed = initialViewIdRef.current
+        if (seed && viewList.some((v: WorkspaceView) => v.id === seed)) return seed
         return viewList[0]?.id ?? null
       })
       setError(null)
@@ -194,6 +201,7 @@ export function useWorkspaceGrid(workspaceId: string) {
 
   useEffect(() => {
     if (activeViewId) loadViewRecords(activeViewId)
+    else commitRecords([])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeViewId, loadViewRecords, viewRecordsNonce])
 

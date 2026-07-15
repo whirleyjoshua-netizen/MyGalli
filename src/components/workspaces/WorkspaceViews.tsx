@@ -11,9 +11,9 @@ import { AddViewModal } from './AddViewModal'
 import { FilterChips } from './FilterChips'
 
 export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
-  const grid = useWorkspaceGrid(workspaceId)
   const router = useRouter()
   const params = useSearchParams()
+  const grid = useWorkspaceGrid(workspaceId, params.get('view'))
   const [addingView, setAddingView] = useState(false)
 
   if (grid.loading) return <div className="p-8 text-muted-foreground">Loading…</div>
@@ -27,8 +27,7 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
   }
 
   const views = grid.views
-  const activeId = grid.activeViewId ?? params.get('view')
-  const active = views.find((v) => v.id === activeId) ?? views[0]
+  const active = views.find((v) => v.id === grid.activeViewId) ?? views[0]
 
   function switchTo(id: string) {
     grid.setActiveViewId(id)
