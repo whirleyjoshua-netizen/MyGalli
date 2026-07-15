@@ -88,16 +88,19 @@ so it carries the most regression risk and gets explicit test coverage.
 - **Unit (`GalliTopBar`):** renders logged-in (avatar, Home → `/dashboard`) and logged-out
   (login icon, Home → `/`); renders with and without the `search` and `children` slots.
 - **Unit (`ProfileSearchInput`):** submit routes to `/explore?search=…`; empty submit is a no-op.
-- **Regression (Explore):** existing tests guard the refactor; add coverage that `?search=foo`
-  seeds the input and that absent `?search=` still starts empty.
+- **Regression (Explore):** `src/components/explore/` currently has **no tests** — the refactor
+  is therefore unguarded and must bring its own. Add `ExploreClient.test.tsx` covering: the bar
+  still renders inside the page, category chips still render in the sub-bar, typing in search
+  still drives the `/api/explore` fetch, `?search=foo` seeds the input, and absent `?search=`
+  starts empty.
 - **Browser:** via the `browsing` skill — a logged-out visitor on a public profile sees the bar,
   and the search box lands on Explore with the query applied.
 
 ## Risks
 
-- **Explore regression.** Explore is live and stable on main. The refactor moves markup, and
-  the `useSearchParams` change touches state seeding. Mitigated by keeping filtering logic
-  untouched, existing tests, and the browser check.
+- **Explore regression.** Explore is live and stable on main but has **zero test coverage**, so
+  the refactor starts unguarded. Mitigated by writing characterization tests against the current
+  behavior *before* moving any markup, keeping filtering logic untouched, and the browser check.
 - **Lint before deploy.** Per project history, `tsc` does not run ESLint and prod builds have
   failed on it. `pnpm exec next lint` must pass — this work adds `<img>` usage (needs the
   existing eslint-disable pattern) and `<Link>` for static routes.
