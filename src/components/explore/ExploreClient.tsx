@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Compass, Loader2, Users } from 'lucide-react'
 import { ScrollRow } from '@/components/dashboard/ScrollRow'
 import { ExploreRowCard } from './ExploreRowCard'
@@ -18,7 +19,8 @@ interface Rows {
 
 export function ExploreClient({ initialRows }: { initialRows: Rows }) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
+  const searchParams = useSearchParams()
+  const [search, setSearch] = useState(searchParams.get('search') ?? '')
   const [grid, setGrid] = useState<ExploreRowItem[]>([])
   const [loading, setLoading] = useState(false)
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)

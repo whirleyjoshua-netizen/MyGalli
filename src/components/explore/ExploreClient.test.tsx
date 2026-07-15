@@ -6,11 +6,15 @@ type MockUser = { username: string; name: string | null; avatar: string | null }
 const mockUser = vi.hoisted(() => ({ current: null as MockUser | null }))
 vi.mock('@/lib/store', () => ({ useAuthStore: () => ({ user: mockUser.current }) }))
 
+const mockParams = vi.hoisted(() => ({ current: new URLSearchParams() }))
+vi.mock('next/navigation', () => ({ useSearchParams: () => mockParams.current }))
+
 const emptyRows = { trending: [], following: [], categories: [] }
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockUser.current = { username: 'josh', name: 'Josh', avatar: null }
+  mockParams.current = new URLSearchParams()
   vi.stubGlobal(
     'fetch',
     vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ displays: [] }) } as Response))
@@ -70,5 +74,27 @@ describe('ExploreClient header', () => {
     render(<ExploreClient initialRows={emptyRows} />)
     expect(screen.getByLabelText('Log in')).toHaveAttribute('href', '/login')
     expect(screen.queryByLabelText('Your profile')).not.toBeInTheDocument()
+  })
+})
+
+describe('ExploreClient URL search seeding', () => {
+  it('seeds the search box from ?search=', () => {
+    mockParams.current = new URLSearchParams('search=surfing')
+    render(<ExploreClient initialRows={emptyRows} />)
+    expect((screen.getByLabelText('Search') as HTMLInputElement).value).toBe('surfing')
+  })
+
+  it('starts empty when ?search= is absent', () => {
+    mockParams.current = new URLSearchParams()
+    render(<ExploreClient initialRows={emptyRows} />)
+    expect((screen.getByLabelText('Search') as HTMLInputElement).value).toBe('')
+  })
+
+  it('fetches immediately for a seeded query', async () => {
+    mockParams.current = new URLSearchParams('search=surfing')
+    render(<ExploreClient initialRows={emptyRows} />)
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('search=surfing'))
+    })
   })
 })
