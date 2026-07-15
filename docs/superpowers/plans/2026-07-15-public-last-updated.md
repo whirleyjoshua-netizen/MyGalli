@@ -951,6 +951,172 @@ git commit -m "feat(editor): add the last-updated toggle to page settings"
 
 ---
 
+### Task 6: Skip identical autosaves
+
+Added after Task 3's review, by user decision. **This task is what makes the
+feature's promise true**; without it an idle editor stamps the date every 5s.
+
+**Why:** `PageEditor.tsx:206` autosaves on an unconditional 5s `setInterval`, and
+`savePage` (line 325) bails only on `!id || saving || conflict` — there is no dirty
+check, so it always ships `sections`/`background`/`spacing`/`headerCard`/`tabs`.
+Task 3 stamps `contentUpdatedAt` when a visible field is *present* in the payload,
+not *changed*. So an open editor with no edits stamps ~60 times in 5 minutes, and
+the badge reports when the editor was last **open** rather than last **changed** —
+the same class of bug the whole feature exists to prevent.
+
+Server-side value comparison was considered and rejected: `sections`/`background`
+are JSONB and Postgres does not preserve key order, so a `JSON.stringify` compare
+against the stored row would differ every time and stamp anyway.
+
+Comparing the client's own payload to the client's own last-saved payload avoids
+that entirely — same serializer, same key order, both sides.
+
+**Files:**
+- Modify: `src/components/editor/PageEditor.tsx` (`savePage`, ~line 325-360)
+- Test: `src/components/editor/panel/PageEditor.integration.test.tsx` (add to the existing file)
+
+**Interfaces:**
+- Consumes: nothing new. This is internal to `savePage`.
+- Produces: no new exports. Behaviour change only: an autosave whose payload is
+  byte-identical to the last successful save issues no PATCH.
+
+- [ ] **Step 1: Write the failing test**
+
+Append to `src/components/editor/panel/PageEditor.integration.test.tsx`, inside the
+existing top-level `describe`:
+
+```tsx
+  // An idle editor must not PATCH. Task 3 stamps contentUpdatedAt whenever a
+  // visible field is present in the payload, so a redundant autosave would make
+  // the public "last updated" badge report when the editor was last OPEN rather
+  // than when the page last CHANGED.
+  it('does not PATCH when an autosave would send an unchanged payload', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      render(<PageEditor pageId="p1" />)
+
+      // Let the initial load settle.
+      await waitFor(() => expect(screen.getByDisplayValue('My Page')).toBeInTheDocument())
+
+      const patchCount = () =>
+        (fetch as any).mock.calls.filter((c: any[]) => c[1]?.method === 'PATCH').length
+
+      // First autosave tick: the editor may legitimately save once.
+      await vi.advanceTimersByTimeAsync(5000)
+      await waitFor(() => expect(patchCount()).toBeLessThanOrEqual(1))
+      const afterFirst = patchCount()
+
+      // Nothing was edited, so further ticks must issue no further PATCHes.
+      await vi.advanceTimersByTimeAsync(15000)
+      expect(patchCount()).toBe(afterFirst)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+```
+
+If `PageEditor`'s prop is not `pageId`, match the existing tests in this file —
+they already render the component correctly; copy their invocation exactly.
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `pnpm test src/components/editor/panel/PageEditor.integration.test.tsx`
+
+Expected: FAIL — the PATCH count keeps climbing (roughly one per 5s tick) because
+every tick sends the same payload again.
+
+- [ ] **Step 3: Skip identical payloads in `savePage`**
+
+In `src/components/editor/PageEditor.tsx`, add a ref beside the other refs
+(near `versionRef`):
+
+```ts
+  // Serialised payload of the last PATCH that succeeded. An autosave that would
+  // resend exactly this is a no-op, so we skip the request entirely.
+  const lastSavedPayloadRef = useRef<string | null>(null)
+```
+
+In `savePage`, build the payload once, compare, then send. Change:
+
+```ts
+      const res = await fetch(`/api/displays/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // title is owner-only; collaborators omit it to avoid a 403
+          ...(isOwner ? { title } : {}),
+          sections: sectionsToSave,
+          background,
+          spacing,
+          headerCard: headerCard.enabled ? headerCard : null,
+          tabs: tabsConfig.enabled ? tabsConfig : null,
+          version: versionRef.current,
+        }),
+      })
+```
+
+to:
+
+```ts
+      const payload = {
+        // title is owner-only; collaborators omit it to avoid a 403
+        ...(isOwner ? { title } : {}),
+        sections: sectionsToSave,
+        background,
+        spacing,
+        headerCard: headerCard.enabled ? headerCard : null,
+        tabs: tabsConfig.enabled ? tabsConfig : null,
+      }
+
+      // `version` is excluded from the identity check: it is bookkeeping, not
+      // content, and it changes on every successful save — including it would
+      // make every payload look different and defeat the skip.
+      const payloadKey = JSON.stringify(payload)
+      if (payloadKey === lastSavedPayloadRef.current) {
+        setSaving(false)
+        return
+      }
+
+      const res = await fetch(`/api/displays/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, version: versionRef.current }),
+      })
+```
+
+Then record the payload **only after a successful save**, so a failed request
+retries rather than being skipped. In the existing `if (res.ok) { ... }` block,
+add as its first line:
+
+```ts
+        lastSavedPayloadRef.current = payloadKey
+```
+
+Do not set it on the 409/conflict path or on error — a save that did not land must
+be retried.
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `pnpm test src/components/editor/panel/PageEditor.integration.test.tsx`
+
+Expected: PASS — all tests in the file, including the pre-existing ones. The
+pre-existing tests still passing matters: they prove real edits still save.
+
+- [ ] **Step 5: Verify the whole suite**
+
+Run: `pnpm test` and `pnpm exec tsc --noEmit`
+
+Expected: green. Report observed totals.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/components/editor/PageEditor.tsx src/components/editor/panel/PageEditor.integration.test.tsx
+git commit -m "fix(editor): skip autosaves that would resend an identical payload"
+```
+
+---
+
 ## Manual verification (after Task 5)
 
 The automated tests cannot see a browser. Verify by hand:
