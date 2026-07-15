@@ -54,6 +54,15 @@ describe('PATCH /api/displays/[id] — contentUpdatedAt stamping', () => {
     expect(updateData().contentUpdatedAt).toBeInstanceOf(Date)
   })
 
+  it('stamps when the description changes', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1', username: 'josh' })
+    ;(db.display.findUnique as any).mockResolvedValue(page)
+
+    await PATCH(req({ description: 'New description' }), ctx)
+
+    expect(updateData().contentUpdatedAt).toBeInstanceOf(Date)
+  })
+
   it('stamps when the canvas changes', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'u1', username: 'josh' })
     ;(db.display.findUnique as any).mockResolvedValue(page)
@@ -63,12 +72,24 @@ describe('PATCH /api/displays/[id] — contentUpdatedAt stamping', () => {
     expect(updateData().contentUpdatedAt).toBeInstanceOf(Date)
   })
 
-  // Publishing changes nothing a visitor can see on the page itself.
+  // Publishing changes nothing a visitor can see on the page itself. This models
+  // the real PublishDialog client, which always sends `coverImage` (often null)
+  // alongside published/category — a cover swap alone must not count as an edit.
   it('does not stamp on publish alone', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'u1', username: 'josh' })
     ;(db.display.findUnique as any).mockResolvedValue({ ...page, published: false })
 
-    await PATCH(req({ published: true, category: 'creative' }), ctx)
+    await PATCH(req({ published: true, category: 'creative', coverImage: null }), ctx)
+
+    expect(updateData().contentUpdatedAt).toBeUndefined()
+  })
+
+  // The dashboard/my-pages thumbnail swap path: cover-only PATCH.
+  it('does not stamp on a cover-image-only change', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1', username: 'josh' })
+    ;(db.display.findUnique as any).mockResolvedValue(page)
+
+    await PATCH(req({ coverImage: 'https://example.com/x.png' }), ctx)
 
     expect(updateData().contentUpdatedAt).toBeUndefined()
   })
