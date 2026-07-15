@@ -5,12 +5,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 export type GridRecord = { id: string; data: Record<string, any>; updatedAt: string }
 export type GridField = { id: string; key: string; label: string; type: string; position: number; required?: boolean; config?: any }
 type Workspace = { id: string; name: string; description: string | null; icon: string | null }
+export type WorkspaceView = { id: string; name: string; type: string; config: any; position: number }
 
 export function useWorkspaceGrid(workspaceId: string) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [fields, setFields] = useState<GridField[]>([])
+  const [views, setViews] = useState<WorkspaceView[]>([])
   const [records, setRecords] = useState<GridRecord[]>([])
   // recordsRef is the synchronously-maintained source of truth for the records
   // array. Every path that changes records goes through commitRecords(), which
@@ -30,6 +32,7 @@ export function useWorkspaceGrid(workspaceId: string) {
       const body = await res.json()
       setWorkspace(body.workspace)
       setFields(body.fields)
+      setViews(body.views ?? [])
       commitRecords(body.records)
       setError(null)
     } catch (e: any) {
@@ -127,5 +130,27 @@ export function useWorkspaceGrid(workspaceId: string) {
     } catch (e: any) { setError(e.message || 'Delete column failed') }
   }, [workspaceId, reload])
 
-  return { loading, error, workspace, fields, records, addRow, updateCell, deleteRow, addField, updateField, deleteField, reload }
+  const addView = useCallback(async (name: string, type: string, config?: any): Promise<WorkspaceView | null> => {
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/views`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, type, config: config ?? {} }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Add view failed')
+      const view = await res.json()
+      await reload()
+      return view
+    } catch (e: any) { setError(e.message || 'Add view failed'); return null }
+  }, [workspaceId, reload])
+
+  const deleteView = useCallback(async (viewId: string) => {
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/views/${viewId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Delete view failed')
+      await reload()
+    } catch (e: any) { setError(e.message || 'Delete view failed') }
+  }, [workspaceId, reload])
+
+  return { loading, error, workspace, fields, views, records, addRow, updateCell, deleteRow, addField, updateField, deleteField, addView, deleteView, reload }
 }
