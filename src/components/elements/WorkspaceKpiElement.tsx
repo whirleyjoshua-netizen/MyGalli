@@ -92,7 +92,7 @@ export function WorkspaceKpiElement({ element, onChange, onDelete, isSelected, o
               disabled={!wsId}
               className="mb-3 w-full rounded-lg border border-border bg-transparent px-2 py-1.5 text-sm">
               <option value="">Select…</option>
-              {fields.filter((f) => f.type === 'number').map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+              {fields.filter((f) => ['number', 'currency', 'percent', 'rating'].includes(f.type)).map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
             </select>
           </>
         )}

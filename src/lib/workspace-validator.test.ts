@@ -54,4 +54,21 @@ describe('validateWorkspaceRecord', () => {
     expect(result.success).toBe(false)
     expect(result.errors).toEqual({ nope: 'Unknown field' })
   })
+
+  it('coerces currency and percent to numbers', () => {
+    const f = (type: string): any => [{ id: '1', workspaceId: 'w', key: 'v', label: 'V', type, required: false, position: 0, config: null, validation: null, defaultValue: null, createdAt: new Date(), updatedAt: new Date() }]
+    expect(validateWorkspaceRecord(f('currency'), { v: '12.5' }).data).toEqual({ v: 12.5 })
+    expect(validateWorkspaceRecord(f('percent'), { v: 95 }).data).toEqual({ v: 95 })
+  })
+  it('clamps + rounds rating to 0..max', () => {
+    const f: any = [{ id: '1', workspaceId: 'w', key: 'r', label: 'R', type: 'rating', required: false, position: 0, config: { max: 5 }, validation: null, defaultValue: null, createdAt: new Date(), updatedAt: new Date() }]
+    expect(validateWorkspaceRecord(f, { r: 9 }).data).toEqual({ r: 5 })
+    expect(validateWorkspaceRecord(f, { r: -2 }).data).toEqual({ r: 0 })
+    expect(validateWorkspaceRecord(f, { r: 3.7 }).data).toEqual({ r: 4 })
+  })
+  it('stores url/email as strings', () => {
+    const f = (type: string): any => [{ id: '1', workspaceId: 'w', key: 'v', label: 'V', type, required: false, position: 0, config: null, validation: null, defaultValue: null, createdAt: new Date(), updatedAt: new Date() }]
+    expect(validateWorkspaceRecord(f('url'), { v: 'example.com' }).data).toEqual({ v: 'example.com' })
+    expect(validateWorkspaceRecord(f('email'), { v: 'a@b.com' }).data).toEqual({ v: 'a@b.com' })
+  })
 })

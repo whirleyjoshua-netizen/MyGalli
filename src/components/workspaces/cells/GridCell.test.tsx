@@ -30,4 +30,23 @@ describe('GridCell', () => {
     const input = screen.getByDisplayValue('2026-07-14') as HTMLInputElement
     expect(input.value).toBe('2026-07-14')
   })
+
+  it('renders a url as a safe new-tab link', () => {
+    const onCommit = vi.fn()
+    render(<GridCell field={field('url') as any} value="https://example.com" onCommit={onCommit} />)
+    const a = screen.getByRole('link') as HTMLAnchorElement
+    expect(a.href).toContain('example.com')
+    expect(a.target).toBe('_blank')
+  })
+  it('rating commits the clicked star value', () => {
+    const onCommit = vi.fn()
+    render(<GridCell field={{ id: 'f', key: 'k', label: 'L', type: 'rating', position: 0, config: { max: 5 } } as any} value={0} onCommit={onCommit} />)
+    const stars = screen.getAllByRole('button')
+    fireEvent.click(stars[2]) // 3rd star
+    expect(onCommit).toHaveBeenCalledWith(3)
+  })
+  it('formats currency in display', () => {
+    render(<GridCell field={{ id: 'f', key: 'k', label: 'L', type: 'currency', position: 0, config: { symbol: '$' } } as any} value={1200} onCommit={vi.fn()} />)
+    expect(screen.getByText('$1,200')).toBeInTheDocument()
+  })
 })

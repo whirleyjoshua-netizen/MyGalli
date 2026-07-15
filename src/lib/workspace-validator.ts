@@ -64,6 +64,24 @@ export function validateWorkspaceRecord(
           data[field.key] = String(rawValue)
           break
         }
+        case 'currency':
+        case 'percent': {
+          const n = Number(rawValue)
+          if (isNaN(n)) throw new Error('Must be a number')
+          data[field.key] = n
+          break
+        }
+        case 'rating': {
+          const n = Number(rawValue)
+          if (isNaN(n)) throw new Error('Must be a number')
+          const max = (field.config as { max?: number })?.max ?? 5
+          data[field.key] = Math.max(0, Math.min(max, Math.round(n)))
+          break
+        }
+        case 'url':
+        case 'email':
+          data[field.key] = String(rawValue)
+          break
         default:
           data[field.key] = rawValue
       }
