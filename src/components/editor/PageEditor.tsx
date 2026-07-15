@@ -236,12 +236,12 @@ export function PageEditor({ pageId }: PageEditorProps) {
           ? JSON.parse(data.sections)
           : data.sections || []
 
-        // If no sections, initialize with one
-        if (loadedSections.length === 0) {
-          setSections([createInitialSection()])
-        } else {
-          setSections(loadedSections)
-        }
+        // If no sections, initialize with one. Generated once and reused for
+        // both setSections and the lastSavedPayloadRef seed below, since
+        // createInitialSection() mints fresh ids off Date.now() — calling it
+        // twice would make the seeded key diverge from actual state.
+        const seedSections = loadedSections.length === 0 ? [createInitialSection()] : loadedSections
+        setSections(seedSections)
 
         // Parse background
         const loadedBackground = typeof data.background === 'string'
@@ -276,6 +276,25 @@ export function PageEditor({ pageId }: PageEditorProps) {
           ? (typeof data.kitConfig === 'string' ? JSON.parse(data.kitConfig) : data.kitConfig)
           : null
         setKitConfig(loadedKitConfig)
+
+        // Seed the "last saved" identity from the same normalised values just
+        // set into state (not the raw response) so an untouched editor's
+        // first autosave tick sees an identical payload and skips the PATCH
+        // entirely, instead of stamping the public "updated" date once per
+        // open. Note: for a legacy page with no sections, this seeds with
+        // the fabricated createInitialSection() output, so that fabrication
+        // itself won't be persisted until a real edit is made — intentional,
+        // since opening a legacy page shouldn't stamp an "updated" date.
+        const loadedIsOwner = data.isOwner !== false
+        lastSavedPayloadRef.current = JSON.stringify(buildPayload({
+          isOwner: loadedIsOwner,
+          title: data.title,
+          sections: seedSections,
+          tabsConfig: loadedTabs,
+          background: loadedBackground,
+          spacing: { ...DEFAULT_SPACING_CONFIG, ...loadedSpacing },
+          headerCard: loadedHeaderCard,
+        }))
       } else if (res.status === 403 || res.status === 404) {
         // No access to this page (not owner/collaborator) — back to dashboard
         router.push('/dashboard')
@@ -327,25 +346,41 @@ export function PageEditor({ pageId }: PageEditorProps) {
     columns: [{ id: `col-${Date.now()}`, elements: [] }],
   })
 
+  // Builds the exact save payload shape from a given (normalised) state.
+  // Shared by savePage (to compute what it's about to send) and loadPage
+  // (to seed lastSavedPayloadRef with the same key, from the same
+  // post-normalisation values that end up in state) so the two never drift.
+  const buildPayload = (args: {
+    isOwner: boolean
+    title: string
+    sections: Section[]
+    tabsConfig: TabsConfig
+    background: BackgroundConfig
+    spacing: SpacingConfig
+    headerCard: HeaderCardConfig
+  }) => {
+    // When tabs are enabled, keep top-level sections synced with first tab for backward compat
+    const sectionsToSave = args.tabsConfig.enabled && args.tabsConfig.tabs.length > 0
+      ? args.tabsConfig.tabs[0].sections
+      : args.sections
+
+    return {
+      // title is owner-only; collaborators omit it to avoid a 403
+      ...(args.isOwner ? { title: args.title } : {}),
+      sections: sectionsToSave,
+      background: args.background,
+      spacing: args.spacing,
+      headerCard: args.headerCard.enabled ? args.headerCard : null,
+      tabs: args.tabsConfig.enabled ? args.tabsConfig : null,
+    }
+  }
+
   const savePage = useCallback(async () => {
     if (!id || saving || conflict) return
 
     setSaving(true)
     try {
-      // When tabs are enabled, keep top-level sections synced with first tab for backward compat
-      const sectionsToSave = tabsConfig.enabled && tabsConfig.tabs.length > 0
-        ? tabsConfig.tabs[0].sections
-        : sections
-
-      const payload = {
-        // title is owner-only; collaborators omit it to avoid a 403
-        ...(isOwner ? { title } : {}),
-        sections: sectionsToSave,
-        background,
-        spacing,
-        headerCard: headerCard.enabled ? headerCard : null,
-        tabs: tabsConfig.enabled ? tabsConfig : null,
-      }
+      const payload = buildPayload({ isOwner, title, sections, tabsConfig, background, spacing, headerCard })
 
       // `version` is excluded from the identity check: it is bookkeeping, not
       // content, and it changes on every successful save — including it would

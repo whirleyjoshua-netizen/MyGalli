@@ -141,10 +141,22 @@ describe('PageEditor renders the control panel', () => {
 })
 
 describe('PageEditor autosave', () => {
-  // An idle editor must not PATCH. Task 3 stamps contentUpdatedAt whenever a
-  // visible field is present in the payload, so a redundant autosave would make
-  // the public "last updated" badge report when the editor was last OPEN rather
-  // than when the page last CHANGED.
+  // An autosave PATCH carries `sections`/`background`/etc; the toggle's own
+  // PATCH carries only `{ showLastUpdated }`. Filter on the payload shape,
+  // not just the method, so the toggle test above can't contaminate counts
+  // and vice versa.
+  const autosavePatchCount = (fetchMock: any) =>
+    fetchMock.mock.calls.filter(
+      (c: any[]) => c[1]?.method === 'PATCH' && JSON.parse(c[1].body).sections !== undefined
+    ).length
+
+  // An idle editor must not PATCH at all. Task 3 stamps contentUpdatedAt
+  // whenever a visible field is present in the payload, so even a single
+  // redundant autosave would make the public "last updated" badge report
+  // when the editor was last OPEN rather than when the page last CHANGED.
+  // lastSavedPayloadRef is now seeded from loadPage's own normalised state,
+  // so the very first tick already matches and is skipped — zero PATCHes,
+  // not "at most one".
   it('does not PATCH when an autosave would send an unchanged payload', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
@@ -153,17 +165,43 @@ describe('PageEditor autosave', () => {
       // Let the initial load settle.
       await waitFor(() => expect(screen.getByDisplayValue('My Page')).toBeInTheDocument())
 
-      const patchCount = () =>
-        (fetch as any).mock.calls.filter((c: any[]) => c[1]?.method === 'PATCH').length
-
-      // First autosave tick: the editor may legitimately save once.
+      // Nothing was edited across multiple ticks: no autosave PATCH ever fires.
       await vi.advanceTimersByTimeAsync(5000)
-      await waitFor(() => expect(patchCount()).toBeLessThanOrEqual(1))
-      const afterFirst = patchCount()
-
-      // Nothing was edited, so further ticks must issue no further PATCHes.
       await vi.advanceTimersByTimeAsync(15000)
-      expect(patchCount()).toBe(afterFirst)
+      expect(autosavePatchCount(fetch as any)).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // Lower bound: a real content edit MUST still autosave. Without this test,
+  // a regression that wedges savePage into always skipping would pass every
+  // other test in this file (the toggle tests bypass savePage entirely; the
+  // idle test above only proves the *unchanged* case is skipped).
+  it('PATCHes with the edited content after a real change', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      render(<PageEditor pageId="p1" />)
+      await waitFor(() => expect(screen.getByDisplayValue('My Page')).toBeInTheDocument())
+
+      // Make a real content edit: change the page title.
+      const titleInput = screen.getByDisplayValue('My Page')
+      fireEvent.change(titleInput, { target: { value: 'Edited Title' } })
+      await waitFor(() => expect(screen.getByDisplayValue('Edited Title')).toBeInTheDocument())
+
+      await vi.advanceTimersByTimeAsync(5000)
+
+      await vi.waitFor(() => {
+        expect(autosavePatchCount(fetch as any)).toBeGreaterThan(0)
+      })
+
+      const fetchMock = fetch as any
+      const autosaveCall = fetchMock.mock.calls.find(
+        (c: any[]) => c[1]?.method === 'PATCH' && JSON.parse(c[1].body).sections !== undefined
+      )
+      expect(autosaveCall).toBeDefined()
+      const body = JSON.parse(autosaveCall![1].body)
+      expect(body.title).toBe('Edited Title')
     } finally {
       vi.useRealTimers()
     }
