@@ -113,4 +113,51 @@ describe('POST /api/workspaces/[id]/views', () => {
     const res = await POST(req as any, ctx)
     expect(res.status).toBe(201)
   })
+
+  it('accepts a valid config.filter and stores the normalized spec', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    ;(db.workspace.findUnique as any).mockResolvedValue({ ownerId: 'u1' })
+    ;(db.workspaceField.findMany as any).mockResolvedValue([
+      { id: 'f1', key: 'fee', label: 'Fee', type: 'currency', config: { symbol: '$' } },
+    ])
+    ;(db.workspaceView.count as any).mockResolvedValue(1)
+    ;(db.workspaceView.create as any).mockResolvedValue({ id: 'v9' })
+
+    const req = new Request('http://localhost/api/workspaces/w1/views', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Big Fees',
+        type: 'grid',
+        // "1200" arrives as a string; it must be stored coerced to a number
+        config: { filter: { op: 'and', conditions: [{ field: 'fee', cmp: 'gt', value: '1200' }] } },
+      }),
+    })
+
+    const res = await POST(req as any, ctx)
+    expect(res.status).toBe(201)
+
+    const stored = (db.workspaceView.create as any).mock.calls[0][0].data.config
+    expect(stored.filter.conditions[0].value).toBe(1200)
+  })
+
+  it('400s on a filter naming an unknown field', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    ;(db.workspace.findUnique as any).mockResolvedValue({ ownerId: 'u1' })
+    ;(db.workspaceField.findMany as any).mockResolvedValue([
+      { id: 'f1', key: 'fee', label: 'Fee', type: 'currency', config: {} },
+    ])
+
+    const req = new Request('http://localhost/api/workspaces/w1/views', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Bad',
+        type: 'grid',
+        config: { filter: { op: 'and', conditions: [{ field: 'ghost', cmp: 'eq', value: 'x' }] } },
+      }),
+    })
+
+    const res = await POST(req as any, ctx)
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toMatch(/Unknown field/)
+  })
 })

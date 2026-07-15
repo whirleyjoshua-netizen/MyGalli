@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { authorizeWorkspace } from '@/lib/workspaces/authorize'
+import { validateFilter, FilterError, type FilterField } from '@/lib/workspaces/filter'
 
 // POST /api/workspaces/[id]/views - Create a new view
 export async function POST(
@@ -46,6 +47,23 @@ export async function POST(
       }
     }
 
+    // Validate + normalize any saved filter against the real schema. A filter
+    // is only ever persisted in its coerced form.
+    let storedConfig = config || {}
+    if (storedConfig.filter) {
+      try {
+        storedConfig = {
+          ...storedConfig,
+          filter: validateFilter(storedConfig.filter, fields as unknown as FilterField[]),
+        }
+      } catch (e: any) {
+        if (e instanceof FilterError) {
+          return NextResponse.json({ error: e.message }, { status: 400 })
+        }
+        throw e
+      }
+    }
+
     // 4. Determine position
     const count = await db.workspaceView.count({ where: { workspaceId } })
 
@@ -55,7 +73,7 @@ export async function POST(
         workspaceId,
         name,
         type,
-        config: config || {},
+        config: storedConfig,
         position: count,
       },
     })
