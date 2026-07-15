@@ -14,6 +14,8 @@ export function useWorkspaceGrid(workspaceId: string) {
   const [fields, setFields] = useState<GridField[]>([])
   const [views, setViews] = useState<WorkspaceView[]>([])
   const [records, setRecords] = useState<GridRecord[]>([])
+  const [activeViewId, setActiveViewId] = useState<string | null>(null)
+  const [filterError, setFilterError] = useState<string | null>(null)
   // recordsRef is the synchronously-maintained source of truth for the records
   // array. Every path that changes records goes through commitRecords(), which
   // updates the ref and React state together — so back-to-back mutators in the
@@ -32,7 +34,9 @@ export function useWorkspaceGrid(workspaceId: string) {
       const body = await res.json()
       setWorkspace(body.workspace)
       setFields(body.fields)
-      setViews(body.views ?? [])
+      const viewList = body.views ?? []
+      setViews(viewList)
+      setActiveViewId((cur) => cur ?? viewList[0]?.id ?? null)
       commitRecords(body.records)
       setError(null)
     } catch (e: any) {
@@ -152,5 +156,21 @@ export function useWorkspaceGrid(workspaceId: string) {
     } catch (e: any) { setError(e.message || 'Delete view failed') }
   }, [workspaceId, reload])
 
-  return { loading, error, workspace, fields, views, records, addRow, updateCell, deleteRow, addField, updateField, deleteField, addView, deleteView, reload }
+  const loadViewRecords = useCallback(async (viewId: string) => {
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/views/${viewId}/records`)
+      if (!res.ok) throw new Error('Failed to load records')
+      const body = await res.json()
+      commitRecords(body.records ?? [])
+      setFilterError(body.filterError ?? null)
+    } catch (e: any) {
+      setError(e.message || 'Failed to load records')
+    }
+  }, [workspaceId, commitRecords])
+
+  useEffect(() => {
+    if (activeViewId) loadViewRecords(activeViewId)
+  }, [activeViewId, loadViewRecords])
+
+  return { loading, error, workspace, fields, views, records, activeViewId, setActiveViewId, filterError, loadViewRecords, addRow, updateCell, deleteRow, addField, updateField, deleteField, addView, deleteView, reload }
 }

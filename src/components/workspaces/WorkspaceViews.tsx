@@ -8,6 +8,7 @@ import { GridView } from './views/GridView'
 import { GalleryView } from './views/GalleryView'
 import { KanbanView } from './views/KanbanView'
 import { AddViewModal } from './AddViewModal'
+import { FilterChips } from './FilterChips'
 
 export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
   const grid = useWorkspaceGrid(workspaceId)
@@ -26,10 +27,11 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
   }
 
   const views = grid.views
-  const activeId = params.get('view')
+  const activeId = grid.activeViewId ?? params.get('view')
   const active = views.find((v) => v.id === activeId) ?? views[0]
 
   function switchTo(id: string) {
+    grid.setActiveViewId(id)
     router.replace(`/workspaces/${workspaceId}?view=${id}`)
   }
 
@@ -58,6 +60,17 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
         </button>
       </div>
 
+      <FilterChips
+        filter={active?.config?.filter ?? null}
+        fields={grid.fields}
+        count={grid.records.length}
+      />
+      {grid.filterError && (
+        <p className="mb-3 text-sm text-amber-600">
+          This view&apos;s filter no longer matches the columns ({grid.filterError}) — showing all records.
+        </p>
+      )}
+
       {/* Active view */}
       {active?.type === 'gallery' ? (
         <GalleryView fields={grid.fields} records={grid.records} config={active.config} />
@@ -68,7 +81,7 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
       )}
 
       {addingView && (
-        <AddViewModal fields={grid.fields} onClose={() => setAddingView(false)}
+        <AddViewModal fields={grid.fields} workspaceId={workspaceId} onClose={() => setAddingView(false)}
           onSubmit={async (name, type, config) => {
             setAddingView(false)
             const v = await grid.addView(name, type, config)

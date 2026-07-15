@@ -5,8 +5,9 @@ import type { GridField } from './useWorkspaceGrid'
 
 const VIEW_TYPES = [{ value: 'grid', label: 'Grid' }, { value: 'gallery', label: 'Gallery' }, { value: 'kanban', label: 'Kanban' }]
 
-export function AddViewModal({ fields, onSubmit, onClose }: {
+export function AddViewModal({ fields, workspaceId, onSubmit, onClose }: {
   fields: GridField[]
+  workspaceId: string
   onSubmit: (name: string, type: string, config: any) => void
   onClose: () => void
 }) {
@@ -16,10 +17,40 @@ export function AddViewModal({ fields, onSubmit, onClose }: {
   const [groupByField, setGroupByField] = useState('')
   const choiceFields = fields.filter((f) => f.type === 'choice')
 
+  const [ask, setAsk] = useState('')
+  const [filter, setFilter] = useState<any>(null)
+  const [summary, setSummary] = useState('')
+  const [asking, setAsking] = useState(false)
+  const [askError, setAskError] = useState('')
+
+  async function suggest() {
+    if (ask.trim().length < 3) return
+    setAsking(true)
+    setAskError('')
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/filter-suggest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: ask.trim() }),
+      })
+      const body = await res.json()
+      if (!res.ok) throw new Error(body.error || 'Could not build that filter')
+      setFilter(body.filter)
+      setSummary(body.summary)
+    } catch (e: any) {
+      setAskError(e.message)
+      setFilter(null)
+      setSummary('')
+    } finally {
+      setAsking(false)
+    }
+  }
+
   function submit() {
     if (!name.trim()) return
     if (type === 'kanban' && !groupByField) return
-    const config = type === 'kanban' ? { groupByField } : type === 'gallery' ? { titleField: titleField || undefined } : {}
+    const base = type === 'kanban' ? { groupByField } : type === 'gallery' ? { titleField: titleField || undefined } : {}
+    const config = filter ? { ...base, filter } : base
     onSubmit(name.trim(), type, config)
   }
 
@@ -47,6 +78,33 @@ export function AddViewModal({ fields, onSubmit, onClose }: {
         {type === 'kanban' && choiceFields.length === 0 && (
           <p className="mb-3 text-xs text-muted-foreground">Add a single-select column first to use Kanban.</p>
         )}
+        <div className="mb-3 rounded-lg border border-border p-3">
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            Describe what you want to see (optional)
+          </label>
+          <div className="flex gap-2">
+            <input
+              value={ask}
+              onChange={(e) => setAsk(e.target.value)}
+              placeholder="soccer players with a fee over 1200"
+              className="flex-1 rounded-lg border border-border bg-transparent px-3 py-2 text-sm"
+            />
+            <button
+              onClick={suggest}
+              disabled={asking || ask.trim().length < 3}
+              className="rounded-lg border border-border px-3 py-2 text-sm disabled:opacity-50"
+            >
+              {asking ? '…' : 'Build'}
+            </button>
+          </div>
+          {summary && (
+            <p className="mt-2 text-xs">
+              <span className="text-muted-foreground">Filter: </span>
+              <span className="font-medium text-galli">{summary}</span>
+            </p>
+          )}
+          {askError && <p className="mt-2 text-xs text-red-500">{askError}</p>}
+        </div>
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="rounded-lg px-4 py-2 text-muted-foreground">Cancel</button>
           <button onClick={submit} disabled={!name.trim() || (type === 'kanban' && !groupByField)}
