@@ -713,7 +713,13 @@ import { db } from '@/lib/db'
 vi.mock('@/lib/auth', () => ({ getUser: vi.fn() }))
 vi.mock('@/lib/workspaces/authorize', () => ({ authorizeWorkspace: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: vi.fn() }))
-vi.mock('@/lib/db', () => ({ db: { workspaceField: { findMany: vi.fn() } } }))
+vi.mock('@/lib/db', () => ({
+  db: {
+    workspaceField: { findMany: vi.fn() },
+    // Mocked so the "no records sent" test can assert this was never touched.
+    workspaceRecord: { findMany: vi.fn(), count: vi.fn() },
+  },
+}))
 
 const createMock = vi.fn()
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -780,14 +786,26 @@ describe('POST filter-suggest', () => {
     expect((await res.json()).error).toMatch(/Unknown field/)
   })
 
-  it('never sends record data to the model — only the schema', async () => {
+  it('never reads records at all — the route is structurally incapable of leaking them', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'u1' })
     modelReturns({ op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }] })
     await POST(req({ question: 'soccer' }), ctx)
-    const sent = JSON.stringify(createMock.mock.calls[0][0])
-    expect(sent).toContain('sport')      // schema: yes
-    expect(sent).not.toContain('Jordan') // records: never
-    expect(createMock.mock.calls[0][0].model).toBe('claude-opus-4-8')
+
+    // The real guarantee: this route never queries the record table, so there
+    // is no record data in the process to send. Asserting the absence of a
+    // sample name would pass vacuously — assert the query never happens.
+    expect(db.workspaceRecord.findMany).not.toHaveBeenCalled()
+    expect(db.workspaceRecord.count).not.toHaveBeenCalled()
+  })
+
+  it('sends the field schema and the right model', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    modelReturns({ op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }] })
+    await POST(req({ question: 'soccer' }), ctx)
+
+    const sentArgs = createMock.mock.calls[0][0]
+    expect(sentArgs.model).toBe('claude-opus-4-8')
+    expect(JSON.stringify(sentArgs)).toContain('sport')
   })
 
   it('429 passthrough when rate limited', async () => {
@@ -925,7 +943,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run "src/app/api/workspaces/[id]/filter-suggest"`
-Expected: PASS — 7 tests.
+Expected: PASS — 8 tests.
 
 - [ ] **Step 5: Commit**
 
