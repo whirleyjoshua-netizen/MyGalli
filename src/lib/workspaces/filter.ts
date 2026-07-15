@@ -1,3 +1,5 @@
+import { formatFieldValue } from './format-value'
+
 export type Cmp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains'
 export type Condition = { field: string; cmp: Cmp; value: string | number | boolean }
 export type FilterSpec = { op: 'and' | 'or'; conditions: Condition[] }
@@ -83,4 +85,55 @@ function coerce(field: FilterField, value: unknown): string | number | boolean {
     return match
   }
   return String(value)
+}
+
+/**
+ * Translates a VALIDATED spec into a Prisma where-fragment over the JSONB
+ * `data` column. Only ever call this with the output of validateFilter — it
+ * trusts field keys and value types to have been checked already.
+ */
+export function filterToPrismaWhere(spec: FilterSpec): Record<string, any> {
+  const clauses = spec.conditions.map((c) => conditionToPrisma(c))
+  return spec.op === 'or' ? { OR: clauses } : { AND: clauses }
+}
+
+function conditionToPrisma(c: Condition): Record<string, any> {
+  const path = [c.field]
+  switch (c.cmp) {
+    case 'eq':
+      return { data: { path, equals: c.value } }
+    case 'neq':
+      return { NOT: { data: { path, equals: c.value } } }
+    case 'contains':
+      return { data: { path, string_contains: c.value } }
+    case 'gt':
+      return { data: { path, gt: c.value } }
+    case 'gte':
+      return { data: { path, gte: c.value } }
+    case 'lt':
+      return { data: { path, lt: c.value } }
+    case 'lte':
+      return { data: { path, lte: c.value } }
+  }
+}
+
+const CMP_WORDS: Record<Cmp, string> = {
+  eq: 'is',
+  neq: 'is not',
+  contains: 'contains',
+  gt: '>',
+  gte: '≥',
+  lt: '<',
+  lte: '≤',
+}
+
+/** Plain-language rendering of a filter, for the confirmation chips. */
+export function describeFilter(spec: FilterSpec, fields: FilterField[]): string {
+  const parts = spec.conditions.map((c) => {
+    const field = fields.find((f) => f.key === c.field)
+    const label = field?.label ?? c.field
+    const shown = field ? formatFieldValue(field.type, c.value, field.config) : String(c.value)
+    return `${label} ${CMP_WORDS[c.cmp]} ${shown || String(c.value)}`
+  })
+  return parts.join(spec.op === 'or' ? ' or ' : ' and ')
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateFilter, FilterError, type FilterField } from './filter'
+import { validateFilter, FilterError, filterToPrismaWhere, describeFilter, type FilterField } from './filter'
 
 const fields: FilterField[] = [
   { key: 'name', label: 'Name', type: 'text' },
@@ -73,5 +73,73 @@ describe('validateFilter', () => {
   it('accepts a valid date string for a date field and returns it unchanged', () => {
     const spec = { op: 'and', conditions: [{ field: 'startDate', cmp: 'gt', value: '2026-01-15' }] }
     expect(validateFilter(spec, fields).conditions[0].value).toBe('2026-01-15')
+  })
+})
+
+describe('filterToPrismaWhere', () => {
+  it('maps an and-filter to Prisma JSONB path conditions', () => {
+    const spec = validateFilter(
+      { op: 'and', conditions: [
+        { field: 'sport', cmp: 'eq', value: 'Soccer' },
+        { field: 'fee', cmp: 'gt', value: 1200 },
+      ] },
+      fields
+    )
+    expect(filterToPrismaWhere(spec)).toEqual({
+      AND: [
+        { data: { path: ['sport'], equals: 'Soccer' } },
+        { data: { path: ['fee'], gt: 1200 } },
+      ],
+    })
+  })
+
+  it('maps an or-filter to OR', () => {
+    const spec = validateFilter(
+      { op: 'or', conditions: [{ field: 'sport', cmp: 'eq', value: 'Tennis' }] },
+      fields
+    )
+    expect(filterToPrismaWhere(spec)).toEqual({
+      OR: [{ data: { path: ['sport'], equals: 'Tennis' } }],
+    })
+  })
+
+  it('maps neq to a negated equals and contains to string_contains', () => {
+    const spec = validateFilter(
+      { op: 'and', conditions: [
+        { field: 'sport', cmp: 'neq', value: 'Soccer' },
+        { field: 'name', cmp: 'contains', value: 'jord' },
+      ] },
+      fields
+    )
+    expect(filterToPrismaWhere(spec)).toEqual({
+      AND: [
+        { NOT: { data: { path: ['sport'], equals: 'Soccer' } } },
+        { data: { path: ['name'], string_contains: 'jord' } },
+      ],
+    })
+  })
+})
+
+describe('describeFilter', () => {
+  it('renders labels and formatted values, not raw keys', () => {
+    const spec = validateFilter(
+      { op: 'and', conditions: [
+        { field: 'sport', cmp: 'eq', value: 'Soccer' },
+        { field: 'fee', cmp: 'gt', value: 1200 },
+      ] },
+      fields
+    )
+    expect(describeFilter(spec, fields)).toBe('Sport is Soccer and Fee > $1,200')
+  })
+
+  it('joins or-conditions with "or"', () => {
+    const spec = validateFilter(
+      { op: 'or', conditions: [
+        { field: 'sport', cmp: 'eq', value: 'Soccer' },
+        { field: 'sport', cmp: 'eq', value: 'Tennis' },
+      ] },
+      fields
+    )
+    expect(describeFilter(spec, fields)).toBe('Sport is Soccer or Sport is Tennis')
   })
 })
