@@ -303,6 +303,68 @@ describe('useWorkspaceGrid', () => {
     expect(result.current.activeViewId).toBe('v2')
   })
 
+  it('exposes pagination.total from the per-view response, not the page length (Finding: "N matching" was page length not total)', async () => {
+    const manyRecords = { ...initialViewRecords, records: initialRecords, pagination: { page: 1, pageSize: 100, total: 137, totalPages: 2 } }
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initial }) // main GET
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => manyRecords }) // per-view GET
+    ;(globalThis as any).fetch = fetchMock
+
+    const { result } = renderHook(() => useWorkspaceGrid('w1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await waitFor(() => expect(result.current.total).toBe(137))
+    // Page length is only 1 record, but total must reflect the real count.
+    expect(result.current.records).toHaveLength(1)
+  })
+
+  it('never commits total from a stale (superseded) view-records response', async () => {
+    let resolveStale!: (v: any) => void
+    const stalePromise = new Promise((resolve) => { resolveStale = resolve })
+
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initial }) // main GET
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initialViewRecords }) // mount's per-view GET
+    ;(globalThis as any).fetch = fetchMock
+
+    const { result } = renderHook(() => useWorkspaceGrid('w1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    fetchMock.mockImplementationOnce(() => stalePromise) // stale — held open
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ view: { id: 'v1' }, fields: initial.fields, records: [{ id: 'r-fast' }], filterError: null, pagination: { page: 1, pageSize: 100, total: 5, totalPages: 1 } }) }) // newer — resolves first
+
+    let stalePending: Promise<void>
+    await act(async () => {
+      stalePending = result.current.loadViewRecords('v1')
+      await result.current.loadViewRecords('v1')
+    })
+    expect(result.current.total).toBe(5)
+
+    await act(async () => {
+      resolveStale({ ok: true, json: async () => ({ view: { id: 'v1' }, fields: initial.fields, records: [{ id: 'r-stale' }], filterError: null, pagination: { page: 1, pageSize: 100, total: 999, totalPages: 1 } }) })
+      await stalePending
+    })
+    expect(result.current.total).toBe(5) // stale total (999) must never win
+  })
+
+  it('updateView PATCHes the view config and refreshes (Finding: remove-filter action needed a mutator)', async () => {
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initial }) // main GET
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initialViewRecords }) // per-view GET
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'v1' }) }) // PATCH
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initial }) // reload() main GET
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => initialViewRecords }) // re-fetched per-view GET
+    ;(globalThis as any).fetch = fetchMock
+
+    const { result } = renderHook(() => useWorkspaceGrid('w1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => { await result.current.updateView('v1', { visibleFields: ['grade'] }) })
+
+    const patchCall = fetchMock.mock.calls.find((c: any[]) => c[0] === '/api/workspaces/w1/views/v1' && c[1]?.method === 'PATCH')
+    expect(patchCall).toBeTruthy()
+    expect(JSON.parse(patchCall![1].body)).toEqual({ config: { visibleFields: ['grade'] } })
+  })
+
   it('clears records when there is no active view', async () => {
     const noViews = { ...initial, views: [] }
     const fetchMock = vi.fn()

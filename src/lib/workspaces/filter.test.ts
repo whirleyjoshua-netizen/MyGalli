@@ -67,12 +67,31 @@ describe('validateFilter', () => {
 
   it('rejects a non-date string for a date field', () => {
     const spec = { op: 'and', conditions: [{ field: 'startDate', cmp: 'gt', value: 'banana' }] }
-    expect(() => validateFilter(spec, fields)).toThrow(/not a date/)
+    expect(() => validateFilter(spec, fields)).toThrow(/YYYY-MM-DD/)
   })
 
   it('accepts a valid date string for a date field and returns it unchanged', () => {
     const spec = { op: 'and', conditions: [{ field: 'startDate', cmp: 'gt', value: '2026-01-15' }] }
     expect(validateFilter(spec, fields).conditions[0].value).toBe('2026-01-15')
+  })
+
+  it('rejects a non-ISO date format like MM/DD/YYYY (Finding: ambiguous date format matches every row)', () => {
+    // Dates compare lexicographically as raw JSONB strings, so a format like
+    // "07/01/2026" would be lexicographically greater than every "2026-…"
+    // stored value — silently matching every row for a "gt" filter.
+    const spec = { op: 'and', conditions: [{ field: 'startDate', cmp: 'gt', value: '07/01/2026' }] }
+    expect(() => validateFilter(spec, fields)).toThrow(FilterError)
+    expect(() => validateFilter(spec, fields)).toThrow(/YYYY-MM-DD/)
+  })
+
+  it('accepts a well-formed ISO date and returns it unchanged', () => {
+    const spec = { op: 'and', conditions: [{ field: 'startDate', cmp: 'gt', value: '2026-07-01' }] }
+    expect(validateFilter(spec, fields).conditions[0].value).toBe('2026-07-01')
+  })
+
+  it('rejects an ISO-shaped but invalid calendar date', () => {
+    const spec = { op: 'and', conditions: [{ field: 'startDate', cmp: 'gt', value: '2026-13-45' }] }
+    expect(() => validateFilter(spec, fields)).toThrow(FilterError)
   })
 })
 

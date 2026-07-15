@@ -27,6 +27,10 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
   // consumers can tell — without a race — whether `records` actually
   // describes `activeViewId` right now, or a fetch is still in flight.
   const [recordsViewId, setRecordsViewId] = useState<string | null>(null)
+  // The view's true total record count (from pagination.total), not just the
+  // current page length — committed on the exact same path/gate as records so
+  // it can never describe a different (or stale) view than what's on screen.
+  const [total, setTotal] = useState<number | null>(null)
   // Bumped by mutators that change a field/column without changing activeViewId,
   // so the per-view records effect (keyed on activeViewId) re-fires and picks up
   // e.g. a filterError caused by deleting a field the active view's filter used.
@@ -178,6 +182,21 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
     } catch (e: any) { setError(e.message || 'Add view failed'); return null }
   }, [workspaceId, reload])
 
+  const updateView = useCallback(async (viewId: string, config: Record<string, any>) => {
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/views/${viewId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Update view failed')
+      await reload()
+      // The view's own records (e.g. after clearing its filter) need
+      // re-fetching even though activeViewId hasn't changed.
+      setViewRecordsNonce((n) => n + 1)
+    } catch (e: any) { setError(e.message || 'Update view failed') }
+  }, [workspaceId, reload])
+
   const deleteView = useCallback(async (viewId: string) => {
     try {
       const res = await fetch(`/api/workspaces/${workspaceId}/views/${viewId}`, { method: 'DELETE' })
@@ -200,12 +219,13 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
       const body = await res.json()
       // Ignore stale responses: if a newer request has been issued since this
       // one started (e.g. the user switched views again before this resolved),
-      // discard this result — including its filterError — so it can't overwrite
-      // the currently-active view's records.
+      // discard this result — including its filterError and total — so it
+      // can't overwrite the currently-active view's records.
       if (requestId !== viewRecordsRequestRef.current) return
       commitRecords(body.records ?? [])
       setRecordsViewId(viewId)
       setFilterError(body.filterError ?? null)
+      setTotal(typeof body.pagination?.total === 'number' ? body.pagination.total : null)
     } catch (e: any) {
       if (requestId !== viewRecordsRequestRef.current) return
       setError(e.message || 'Failed to load records')
@@ -218,5 +238,5 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeViewId, loadViewRecords, viewRecordsNonce])
 
-  return { loading, error, workspace, fields, views, records, activeViewId, setActiveViewId, filterError, recordsViewId, loadViewRecords, addRow, updateCell, deleteRow, addField, updateField, deleteField, addView, deleteView, reload }
+  return { loading, error, workspace, fields, views, records, activeViewId, setActiveViewId, filterError, recordsViewId, total, loadViewRecords, addRow, updateCell, deleteRow, addField, updateField, deleteField, addView, updateView, deleteView, reload }
 }

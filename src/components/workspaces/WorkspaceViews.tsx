@@ -64,7 +64,11 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
           <FilterChips
             filter={active?.config?.filter ?? null}
             fields={grid.fields}
-            count={grid.records.length}
+            count={grid.total ?? undefined}
+            onRemove={active ? () => {
+              const { filter: _filter, ...rest } = active.config ?? {}
+              grid.updateView(active.id, rest)
+            } : undefined}
           />
           {grid.filterError && (
             <p className="mb-3 text-sm text-amber-600">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { authorizeWorkspace } from '@/lib/workspaces/authorize'
+import { validateFilter, FilterError, type FilterField } from '@/lib/workspaces/filter'
 
 // PATCH /api/workspaces/[id]/views/[viewId] - Update view config
 export async function PATCH(
@@ -33,10 +34,28 @@ export async function PATCH(
       }
     }
 
+    // Validate + normalize any saved filter against the real schema, same as
+    // POST /views — a filter is only ever persisted in its coerced form, and
+    // PATCH must not accept a payload POST would reject.
+    let storedConfig = config
+    if (storedConfig?.filter) {
+      try {
+        storedConfig = {
+          ...storedConfig,
+          filter: validateFilter(storedConfig.filter, fields as unknown as FilterField[]),
+        }
+      } catch (e: any) {
+        if (e instanceof FilterError) {
+          return NextResponse.json({ error: e.message }, { status: 400 })
+        }
+        throw e
+      }
+    }
+
     // 3. Persist
     const view = await db.workspaceView.update({
       where: { id: viewId, workspaceId },
-      data: { config },
+      data: { config: storedConfig },
     })
 
     return NextResponse.json(view)

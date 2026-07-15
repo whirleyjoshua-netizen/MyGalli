@@ -59,9 +59,18 @@ function coerce(field: FilterField, value: unknown): string | number | boolean {
     throw new FilterError(`"${field.label}" has an invalid value`)
   }
   if (field.type === 'date') {
-    const s = String(value)
-    if (Number.isNaN(Date.parse(s))) {
-      throw new FilterError(`"${field.label}" is not a date: ${value}`)
+    // Dates are stored as yyyy-MM-dd strings and compared lexicographically
+    // via a raw JSONB string comparison (see filterToPrismaWhere) — that
+    // ordering is only correct for ISO form. Accepting anything Date.parse
+    // swallows (e.g. "07/01/2026") and passing it through verbatim would let
+    // an ambiguous format compare lexicographically against every ISO row,
+    // matching (or excluding) far more than intended. So we reject rather
+    // than reformat: reformatting a parsed date risks timezone bugs, and
+    // rejecting is honest about what the comparison actually does.
+    const s = String(value).trim()
+    const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+    if (!ISO_DATE.test(s) || Number.isNaN(Date.parse(s))) {
+      throw new FilterError(`"${field.label}" needs a date in YYYY-MM-DD form, got: ${value}`)
     }
     return s
   }

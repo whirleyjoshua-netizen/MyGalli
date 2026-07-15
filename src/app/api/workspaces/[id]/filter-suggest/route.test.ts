@@ -108,4 +108,11 @@ describe('POST filter-suggest', () => {
     ;(rateLimit as any).mockResolvedValue(new Response('rate limited', { status: 429 }))
     expect((await POST(req({ question: 'soccer' }), ctx)).status).toBe(429)
   })
+
+  it('rate limits by user id, not just IP (Finding: per-IP limiter let one account spend from several networks)', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u-42' })
+    modelReturns({ op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }] })
+    await POST(req({ question: 'soccer' }), ctx)
+    expect(rateLimit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ identifier: 'u-42' }))
+  })
 })

@@ -12,8 +12,14 @@ export async function GET(
 
   const { id: workspaceId, viewId } = await params
   const searchParams = request.nextUrl.searchParams
-  const page = parseInt(searchParams.get('page') || '1')
-  const pageSize = parseInt(searchParams.get('pageSize') || '100')
+  // Clamped the same way as the main GET /api/workspaces/[id]: this route was
+  // dormant until the UI switched its record source to it, so its previously
+  // unreachable input surface (e.g. ?pageSize=abc -> NaN -> take:NaN -> 500,
+  // or ?page=0 -> negative skip -> 500) is now reachable.
+  const parsedPage = parseInt(searchParams.get('page') || '1')
+  const page = Number.isFinite(parsedPage) ? Math.max(1, parsedPage) : 1
+  const parsedPageSize = parseInt(searchParams.get('pageSize') || '100')
+  const pageSize = Number.isFinite(parsedPageSize) ? Math.min(200, Math.max(1, parsedPageSize)) : 100
 
   try {
     const result = await queryWorkspaceView({

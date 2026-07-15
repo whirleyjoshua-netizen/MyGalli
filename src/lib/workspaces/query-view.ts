@@ -59,7 +59,10 @@ export async function queryWorkspaceView({
       where,
       skip,
       take: pageSize,
-      orderBy: { createdAt: 'desc' },
+      // Must match the main GET /api/workspaces/[id]'s ordering (asc) — the UI
+      // treats both as interchangeable record sources, and addRow appends to
+      // the end of the array, which only makes sense under ascending order.
+      orderBy: { createdAt: 'asc' },
       select: { id: true, data: true, updatedAt: true }
     }),
     db.workspaceRecord.count({ where })

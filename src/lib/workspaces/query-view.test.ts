@@ -72,4 +72,10 @@ describe('queryWorkspaceView filtering', () => {
     expect((db.workspaceRecord.findMany as any).mock.calls[0][0].take).toBe(100)
     expect(result.pagination.pageSize).toBe(100)
   })
+
+  it('orders by createdAt asc, matching the main GET /api/workspaces/[id] (Finding: row order silently flipped)', async () => {
+    setup({})
+    await queryWorkspaceView(ARGS)
+    expect((db.workspaceRecord.findMany as any).mock.calls[0][0].orderBy).toEqual({ createdAt: 'asc' })
+  })
 })

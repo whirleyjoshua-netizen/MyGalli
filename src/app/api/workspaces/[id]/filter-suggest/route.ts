@@ -17,6 +17,7 @@ Rules:
 - Use only the comparators each column lists.
 - For choice columns the value must be exactly one of that column's options.
 - Strip currency symbols and separators from numbers: "$1,200" -> 1200.
+- Date values MUST be in "YYYY-MM-DD" form (e.g. "2026-07-01"). Never use "MM/DD/YYYY" or any other format.
 - The filter is flat: one top-level "and"/"or" over conditions. There is no nesting.
 - If the request maps to a single condition, still return the {op, conditions} shape.`
 
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const user = await getUser(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const limited = await rateLimit(request, { limit: 10, windowMs: 60_000, prefix: 'ws-filter-ai' })
+  const limited = await rateLimit(request, { limit: 10, windowMs: 60_000, prefix: 'ws-filter-ai', identifier: user.id })
   if (limited) return limited
 
   const { id: workspaceId } = await params
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       max_tokens: 1024,
       system: SYSTEM,
       output_config: {
-        format: { type: 'json_schema', schema: buildFilterJsonSchema(fields) as any },
+        format: { type: 'json_schema', schema: buildFilterJsonSchema(fields) },
       },
       messages: [
         {
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           content: `Columns:\n${describeSchemaForPrompt(fields)}\n\nRequest: ${question.trim()}`,
         },
       ],
-    } as any)
+    })
 
     const raw = message.content[0]?.type === 'text' ? message.content[0].text : ''
     if (!raw) {
