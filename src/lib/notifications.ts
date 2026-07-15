@@ -48,3 +48,15 @@ export async function notifyFollowers(actorId: string, input: BaseInput): Promis
     console.error('notifyFollowers failed', e)
   }
 }
+
+/** Fan out one notification to an explicit recipient list (see postNotifyTargets). */
+export async function notifyHubMembers(userIds: string[], input: BaseInput): Promise<void> {
+  try {
+    if (userIds.length === 0) return
+    await db.notification.createMany({
+      data: userIds.map((userId) => toRow(userId, input)),
+    })
+  } catch (e) {
+    console.error('notifyHubMembers failed', e)
+  }
+}

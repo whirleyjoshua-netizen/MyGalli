@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { canParticipate } from '@/lib/community'
+import { canParticipate, postNotifyTargets } from '@/lib/community'
 import { rateLimit } from '@/lib/rate-limit'
+import { notifyHubMembers } from '@/lib/notifications'
 
 async function collaboratorIds(hubId: string): Promise<string[]> {
   const rows = await db.hubCollaborator.findMany({ where: { hubId }, select: { userId: true } })
@@ -54,10 +55,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (limited) return limited
   const me = await getUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const hub = await db.hub.findUnique({ where: { id }, select: { id: true, userId: true, community: true } })
+  const hub = await db.hub.findUnique({
+    where: { id },
+    select: { id: true, userId: true, community: true, title: true, slug: true, user: { select: { username: true } } },
+  })
   if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const isMember = !!(await db.hubMember.findUnique({ where: { hubId_userId: { hubId: id, userId: me.id } }, select: { id: true } }))
-  if (!canParticipate(me.id, hub, await collaboratorIds(id), isMember)) {
+  const collabIds = await collaboratorIds(id)
+  if (!canParticipate(me.id, hub, collabIds, isMember)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   const body = await request.json().catch(() => ({}))
@@ -65,5 +70,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const imageUrl = typeof body.imageUrl === 'string' && body.imageUrl ? body.imageUrl : null
   if (!text && !imageUrl) return NextResponse.json({ error: 'Empty post' }, { status: 400 })
   const post = await db.hubPost.create({ data: { hubId: id, authorId: me.id, text: text || null, imageUrl } })
+  const memberIds = (await db.hubMember.findMany({ where: { hubId: id }, select: { userId: true } })).map((m) => m.userId)
+  const targets = postNotifyTargets({ authorId: me.id, ownerId: hub.userId, collabIds, memberIds })
+  await notifyHubMembers(targets, {
+    type: 'hub_post',
+    actor: { id: me.id, name: me.name || me.username, avatar: me.avatar },
+    entityUrl: `/${hub.user.username}/hub/${hub.slug}`,
+    contextText: hub.title,
+  })
   return NextResponse.json({ id: post.id }, { status: 201 })
 }

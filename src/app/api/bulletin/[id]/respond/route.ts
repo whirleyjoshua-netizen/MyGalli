@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { isInScope } from '@/lib/bulletin'
+import { isInScope, firstBlock } from '@/lib/bulletin'
 import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
 
 interface Props {
@@ -38,8 +38,7 @@ export async function POST(request: NextRequest, { params }: Props) {
     })
 
     // Recompute results (the responder has now answered, so they may see them).
-    const blocks = Array.isArray(post.blocks) ? (post.blocks as any[]) : []
-    const block = blocks[0] || null
+    const block = firstBlock(post.blocks)
     let results = null
     if (block) {
       const rows = await db.bulletinResponse.findMany({

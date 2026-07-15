@@ -48,6 +48,7 @@ model User {
   hubPosts HubPost[] @relation("HubPostAuthor")
   hubPostLikes HubPostLike[]
   hubPostComments HubPostComment[] @relation("HubPostCommentAuthor")
+  hubPostResponses HubPostResponse[]
   ownedWorkspaces          Workspace[]       @relation("OwnedWorkspaces")
   workspaceRecordsCreated  WorkspaceRecord[] @relation("WorkspaceRecordsCreated")
   workspaceRecordsUpdated  WorkspaceRecord[] @relation("WorkspaceRecordsUpdated")
@@ -670,6 +671,7 @@ model HubPost {
   createdAt DateTime      @default(now())
   likes     HubPostLike[]
   comments  HubPostComment[]
+  responses HubPostResponse[]
   @@index([hubId, createdAt])
 }
 
@@ -693,4 +695,20 @@ model HubPostComment {
   text      String
   createdAt DateTime @default(now())
   @@index([postId, createdAt])
+}
+
+model HubPostResponse {
+  id        String   @id @default(cuid())
+  postId    String
+  post      HubPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Same shape as BulletinResponse.responses: { [elementId]: { type, question, answer } }
+  responses Json
+
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
 }

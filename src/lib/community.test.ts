@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canPostToHub, toMemberDTO, canParticipate, canModerate } from './community'
+import { canPostToHub, toMemberDTO, canParticipate, canModerate, postNotifyTargets } from './community'
 
 describe('canPostToHub', () => {
   const hub = { userId: 'owner1' }
@@ -34,4 +34,34 @@ describe('canModerate', () => {
     expect(canModerate('c1', hub, ['c1'])).toBe(true)
   })
   it('member does not moderate', () => expect(canModerate('m1', hub, [])).toBe(false))
+})
+
+describe('postNotifyTargets', () => {
+  const base = { ownerId: 'owner', collabIds: ['collab'], memberIds: ['m1', 'm2'] }
+
+  it('owner posting notifies all members, never the author', () => {
+    expect(postNotifyTargets({ ...base, authorId: 'owner' }).sort()).toEqual(['m1', 'm2'])
+  })
+
+  it('collaborator posting notifies all members', () => {
+    expect(postNotifyTargets({ ...base, authorId: 'collab' }).sort()).toEqual(['m1', 'm2'])
+  })
+
+  it('member posting notifies owner + collaborators only', () => {
+    expect(postNotifyTargets({ ...base, authorId: 'm1' }).sort()).toEqual(['collab', 'owner'])
+  })
+
+  it('excludes the author when the author is also a member', () => {
+    const out = postNotifyTargets({ ...base, authorId: 'owner', memberIds: ['owner', 'm1'] })
+    expect(out).toEqual(['m1'])
+  })
+
+  it('de-duplicates repeated ids', () => {
+    const out = postNotifyTargets({ ...base, authorId: 'm1', collabIds: ['collab', 'collab'], memberIds: ['m1'] })
+    expect(out.sort()).toEqual(['collab', 'owner'])
+  })
+
+  it('returns empty when there is nobody else to notify', () => {
+    expect(postNotifyTargets({ authorId: 'owner', ownerId: 'owner', collabIds: [], memberIds: [] })).toEqual([])
+  })
 })
