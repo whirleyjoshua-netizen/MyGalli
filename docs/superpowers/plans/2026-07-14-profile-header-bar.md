@@ -12,7 +12,8 @@
 
 - Work in worktree `C:\Users\whirl\pages-mvp\.claude\worktrees\profile-header-bar`, branch `profile-header-bar`. **Never commit on `main`.** Verify with `git status -sb` before every commit.
 - **Never commit:** `Documents/`, `Images/`, `g1t.json`, `nul`, `.claude/settings.local.json`. Always `git add` exact paths — never `git add -A`.
-- Tests: `pnpm test` (vitest run). Colocated `*.test.tsx` next to the component.
+- Tests: `pnpm test` (vitest run). Colocated `*.test.tsx` next to the component. Run a single file while iterating: `pnpm test path/to/file.test.tsx`.
+  - `pnpm install` has already been run **in this worktree** — git worktrees start without `node_modules` (it's gitignored), and this one's was empty. It is populated now; `pnpm test`, `pnpm exec next lint`, and `pnpm exec tsc --noEmit` all work from the worktree root. Do **not** reach into the main checkout's `node_modules`, and do not re-run `pnpm install` (it takes ~4 min).
 - `tsc --noEmit` does **not** run ESLint, and prod builds have previously failed on lint. `pnpm exec next lint` must pass before the branch is done.
 - Bare `<img>` requires `{/* eslint-disable-next-line @next/next/no-img-element */}` on the line above. Use `<Link>` for static internal routes, never `<a href="/static">`.
 - Preserve exact existing Tailwind classes when moving markup. `galli-dark` is a real token (`galli.dark` = `#0F3D2E`).
@@ -107,13 +108,21 @@ describe('ExploreClient header', () => {
     fireEvent.click(screen.getByLabelText('Clear search'))
     expect(input.value).toBe('')
   })
+
+  // Guards the refactor: without this, Task 4 could drop the sticky wrapper
+  // and every other test here would still pass. Stickiness IS the feature.
+  // jsdom does no layout, so the Tailwind class is the only observable.
+  it('renders the header bar pinned to the top of the viewport', () => {
+    const { container } = render(<ExploreClient initialRows={emptyRows} />)
+    expect(container.querySelector('.sticky.top-0.z-20')).toBeInTheDocument()
+  })
 })
 ```
 
 - [ ] **Step 2: Run the tests to verify they pass against current code**
 
 Run: `pnpm test src/components/explore/ExploreClient.test.tsx`
-Expected: **PASS** (5 tests). These characterize existing behavior, so they must be green now.
+Expected: **PASS** (6 tests). These characterize existing behavior, so they must be green now.
 
 A failure here means the test is wrong, not the component — fix the test until it describes what Explore actually does today. Do not touch `ExploreClient.tsx` in this task.
 
@@ -189,6 +198,14 @@ describe('GalliTopBar', () => {
     mockUser.current = null
     render(<GalliTopBar />)
     expect(screen.getByText('My Galli')).toBeInTheDocument()
+  })
+
+  // jsdom does no layout, so the Tailwind class is the only observable for
+  // stickiness — and a header that doesn't stick is the feature failing.
+  it('pins itself to the top of the viewport', () => {
+    mockUser.current = null
+    const { container } = render(<GalliTopBar />)
+    expect(container.querySelector('.sticky.top-0.z-20')).toBeInTheDocument()
   })
 })
 ```
@@ -292,7 +309,7 @@ export function GalliTopBar({
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `pnpm test src/components/nav/GalliTopBar.test.tsx`
-Expected: PASS (6 tests)
+Expected: PASS (7 tests)
 
 - [ ] **Step 5: Commit**
 
@@ -526,7 +543,7 @@ Remove whichever are no longer referenced. Note `Compass`, `Loader2`, and `Users
 - [ ] **Step 3: Run Task 1's tests to prove behavior is preserved**
 
 Run: `pnpm test src/components/explore/ExploreClient.test.tsx`
-Expected: PASS (5 tests), **unmodified**. If any fail, the refactor changed behavior — fix the component, not the test.
+Expected: PASS (6 tests), **unmodified**. If any fail, the refactor changed behavior — fix the component, not the test.
 
 - [ ] **Step 4: Verify no unused imports**
 
@@ -621,7 +638,7 @@ This is lazy initial state — it seeds on first render only, so typing afterwar
 - [ ] **Step 4: Run tests to verify all pass**
 
 Run: `pnpm test src/components/explore/ExploreClient.test.tsx`
-Expected: PASS (8 tests — 5 from Task 1 plus 3 new)
+Expected: PASS (9 tests — 6 from Task 1 plus 3 new)
 
 - [ ] **Step 5: Commit**
 
@@ -765,7 +782,7 @@ with:
 - [ ] **Step 6: Verify the whole suite and lint**
 
 Run: `pnpm test`
-Expected: PASS — full suite green (main was 505/505; this branch adds 27).
+Expected: PASS — full suite green (main was 505/505; this branch adds 29).
 
 Run: `pnpm exec next lint`
 Expected: no errors.
