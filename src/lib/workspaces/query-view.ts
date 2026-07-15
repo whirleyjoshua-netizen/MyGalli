@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { authorizeWorkspace } from './authorize'
+import { validateFilter, filterToPrismaWhere, FilterError } from './filter'
 
 type QueryOptions = {
   workspaceId: string
@@ -14,7 +15,7 @@ export async function queryWorkspaceView({
   viewId,
   userId,
   page = 1,
-  pageSize = 25,
+  pageSize = 100,
 }: QueryOptions) {
   // 1. Authorize
   await authorizeWorkspace(userId, workspaceId)
@@ -31,24 +32,40 @@ export async function queryWorkspaceView({
     orderBy: { position: 'asc' },
   })
 
-  // 4. Build Query (basic implementation for POC)
+  // 4. Build query — apply the view's saved filter, if any.
   const skip = (page - 1) * pageSize
-  
-  // NOTE: Filtering and sorting logic would be built here incrementally as requested.
-  // Currently focusing on pagination and fetching.
+  const config = view.config as { visibleFields?: string[]; filter?: unknown }
+
+  let filterWhere: Record<string, any> = {}
+  let filterError: string | undefined
+  if (config?.filter) {
+    try {
+      // Re-validate on every read: columns can be deleted or retyped after a
+      // filter is saved, so a stored filter is untrusted input like any other.
+      const spec = validateFilter(config.filter, fields)
+      filterWhere = filterToPrismaWhere(spec)
+    } catch (e: any) {
+      if (!(e instanceof FilterError)) throw e
+      // A stale filter degrades to "show everything" + a surfaced message,
+      // rather than 500ing a view the user can still otherwise use.
+      filterError = e.message
+    }
+  }
+
+  const where = { workspaceId, status: 'active', ...filterWhere }
+
   const [records, total] = await Promise.all([
     db.workspaceRecord.findMany({
-      where: { workspaceId, status: 'active' },
+      where,
       skip,
       take: pageSize,
       orderBy: { createdAt: 'desc' },
       select: { id: true, data: true, updatedAt: true }
     }),
-    db.workspaceRecord.count({ where: { workspaceId, status: 'active' } })
+    db.workspaceRecord.count({ where })
   ])
 
   // 5. Projection (strip non-visible fields if defined in config)
-  const config = view.config as { visibleFields?: string[] }
   const visibleFields = config?.visibleFields || fields.map(f => f.key)
   
   const projectedRecords = records.map(record => {
@@ -60,9 +77,10 @@ export async function queryWorkspaceView({
   })
 
   return {
-    view: { id: view.id, name: view.name, type: view.type },
+    view: { id: view.id, name: view.name, type: view.type, config: view.config },
     fields: fields.filter(f => visibleFields.includes(f.key)),
     records: projectedRecords,
+    filterError,
     pagination: {
       page,
       pageSize,

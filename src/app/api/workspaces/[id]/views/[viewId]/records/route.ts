@@ -13,7 +13,7 @@ export async function GET(
   const { id: workspaceId, viewId } = await params
   const searchParams = request.nextUrl.searchParams
   const page = parseInt(searchParams.get('page') || '1')
-  const pageSize = parseInt(searchParams.get('pageSize') || '25')
+  const pageSize = parseInt(searchParams.get('pageSize') || '100')
 
   try {
     const result = await queryWorkspaceView({

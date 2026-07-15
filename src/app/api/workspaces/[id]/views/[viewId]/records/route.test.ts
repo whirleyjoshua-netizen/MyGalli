@@ -19,7 +19,7 @@ describe('GET /api/workspaces/[id]/views/[viewId]/records', () => {
       view: { id: 'v1', name: 'Test View', type: 'table' },
       fields: [{ key: 'field1', label: 'Field 1', type: 'text' }],
       records: [{ id: 'r1', data: { field1: 'val' }, updatedAt: updatedAt.toISOString() }],
-      pagination: { page: 1, pageSize: 25, total: 1, totalPages: 1 }
+      pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 }
     }
     ;(queryWorkspaceView as any).mockResolvedValue(mockResult)
     
@@ -36,7 +36,7 @@ describe('GET /api/workspaces/[id]/views/[viewId]/records', () => {
       viewId: 'v1',
       userId: 'u1',
       page: 1,
-      pageSize: 25
+      pageSize: 100
     })
   })
 })
