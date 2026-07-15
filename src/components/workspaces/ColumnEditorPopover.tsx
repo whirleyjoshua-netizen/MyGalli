@@ -8,6 +8,11 @@ const TYPES = [
   { value: 'date', label: 'Date' },
   { value: 'choice', label: 'Single-select' },
   { value: 'checkbox', label: 'Checkbox' },
+  { value: 'currency', label: 'Currency' },
+  { value: 'percent', label: 'Percent' },
+  { value: 'rating', label: 'Rating' },
+  { value: 'url', label: 'Link' },
+  { value: 'email', label: 'Email' },
 ]
 
 export function ColumnEditorPopover({ onSubmit, onClose }: {
@@ -17,12 +22,15 @@ export function ColumnEditorPopover({ onSubmit, onClose }: {
   const [label, setLabel] = useState('')
   const [type, setType] = useState('text')
   const [optionsText, setOptionsText] = useState('')
+  const [symbol, setSymbol] = useState('$')
+  const [ratingMax, setRatingMax] = useState(5)
 
   function submit() {
     if (!label.trim()) return
-    const config = type === 'choice'
-      ? { options: optionsText.split('\n').map((s) => s.trim()).filter(Boolean) }
-      : undefined
+    let config: any = undefined
+    if (type === 'choice') config = { options: optionsText.split('\n').map((s) => s.trim()).filter(Boolean) }
+    else if (type === 'currency') config = { symbol: symbol.trim() || '$' }
+    else if (type === 'rating') config = { max: Math.max(1, Math.min(10, ratingMax || 5)) }
     onSubmit(label.trim(), type, config)
   }
 
@@ -40,6 +48,14 @@ export function ColumnEditorPopover({ onSubmit, onClose }: {
           <textarea value={optionsText} onChange={(e) => setOptionsText(e.target.value)}
             placeholder="One option per line" rows={4}
             className="mb-3 w-full rounded-lg border border-border bg-transparent px-3 py-2" />
+        )}
+        {type === 'currency' && (
+          <input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="Symbol (e.g. $)" maxLength={3}
+            className="mb-3 w-full rounded-lg border border-border bg-transparent px-3 py-2" />
+        )}
+        {type === 'rating' && (
+          <input type="number" min={1} max={10} value={ratingMax} onChange={(e) => setRatingMax(parseInt(e.target.value) || 5)}
+            placeholder="Max stars" className="mb-3 w-full rounded-lg border border-border bg-transparent px-3 py-2" />
         )}
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="rounded-lg px-4 py-2 text-muted-foreground">Cancel</button>
