@@ -25,17 +25,22 @@
 
 ---
 
-### Task 1: Pure notification-target selection
+### Task 1: Pure helpers — `postNotifyTargets` + `firstBlock`
 
-The role-split fan-out rule, as a pure function with no DB access — so it is unit-testable and reviewable on its own.
+Two pure functions with no DB access, so they are unit-testable and reviewable on their own.
+
+`firstBlock` exists because the "read the post's single block out of the `blocks` JSON column" line is otherwise repeated in three places (the existing bulletin respond route, plus Tasks 7 and 8). One pure helper, three call sites.
 
 **Files:**
 - Modify: `src/lib/community.ts` (append; file is 44 lines)
-- Test: `src/lib/community.test.ts` (append)
+- Modify: `src/lib/bulletin.ts` (append; file is 59 lines)
+- Test: `src/lib/community.test.ts` (append), `src/lib/bulletin.test.ts` (append)
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `postNotifyTargets(input: { authorId: string; ownerId: string; collabIds: string[]; memberIds: string[] }): string[]` — used by Task 4.
+- Produces:
+  - `postNotifyTargets(input: { authorId: string; ownerId: string; collabIds: string[]; memberIds: string[] }): string[]` — used by Task 4.
+  - `firstBlock(blocks: unknown): CanvasElement | null` — used by Tasks 7 and 8.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -113,11 +118,68 @@ cd "C:/Users/whirl/pages-mvp/.claude/worktrees/hub-community" && set -a && . ./.
 ```
 Expected: PASS — all 6 new tests green, existing `canParticipate`/`canModerate` tests still green.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Write the failing test for `firstBlock`**
+
+Append to `src/lib/bulletin.test.ts`:
+
+```ts
+import { firstBlock } from './bulletin'
+
+describe('firstBlock', () => {
+  it('returns the single block from a blocks array', () => {
+    const b = { id: 'b1', type: 'poll' }
+    expect(firstBlock([b])).toEqual(b)
+  })
+  it('returns null for an empty array', () => {
+    expect(firstBlock([])).toBeNull()
+  })
+  it('returns null for a non-array (null, undefined, object, string)', () => {
+    expect(firstBlock(null)).toBeNull()
+    expect(firstBlock(undefined)).toBeNull()
+    expect(firstBlock({})).toBeNull()
+    expect(firstBlock('nope')).toBeNull()
+  })
+  it('ignores extra blocks — v1 allows at most one', () => {
+    expect(firstBlock([{ id: 'a' }, { id: 'b' }])).toEqual({ id: 'a' })
+  })
+})
+```
+
+- [ ] **Step 6: Run it to verify it fails**
 
 ```bash
-git add src/lib/community.ts src/lib/community.test.ts
-git commit -m "feat(community): pure postNotifyTargets — role-split notification fan-out"
+cd "C:/Users/whirl/pages-mvp/.claude/worktrees/hub-community" && set -a && . ./.env && set +a && export DATABASE_URL="postgresql://pages:pages@127.0.0.1:5434/pages" && pnpm vitest run src/lib/bulletin.test.ts
+```
+Expected: FAIL — `firstBlock is not a function`.
+
+- [ ] **Step 7: Implement `firstBlock`**
+
+Append to `src/lib/bulletin.ts` (it already imports nothing; add the type import at the top):
+
+```ts
+import type { CanvasElement } from '@/lib/types/canvas'
+```
+
+```ts
+/** The post's single block, read out of the `blocks` JSON column. v1 stores at most one. */
+export function firstBlock(blocks: unknown): CanvasElement | null {
+  if (!Array.isArray(blocks) || blocks.length === 0) return null
+  return (blocks[0] as CanvasElement) || null
+}
+```
+
+- [ ] **Step 8: Run both test files to verify they pass**
+
+```bash
+cd "C:/Users/whirl/pages-mvp/.claude/worktrees/hub-community" && set -a && . ./.env && set +a && export DATABASE_URL="postgresql://pages:pages@127.0.0.1:5434/pages" && pnpm vitest run src/lib/community.test.ts src/lib/bulletin.test.ts
+```
+Expected: PASS — all new tests green, existing tests in both files still green.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add src/lib/community.ts src/lib/community.test.ts src/lib/bulletin.ts src/lib/bulletin.test.ts
+git commit -m "feat(community): pure postNotifyTargets + firstBlock helpers"
 ```
 
 ---
@@ -719,6 +781,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { canParticipate } from '@/lib/community'
+import { firstBlock } from '@/lib/bulletin'
 import { rateLimit } from '@/lib/rate-limit'
 import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
 
@@ -761,8 +824,7 @@ export async function POST(request: NextRequest, { params }: Props) {
     })
 
     // Recompute results (the responder has now answered, so they may see them).
-    const blocks = Array.isArray(post.blocks) ? (post.blocks as any[]) : []
-    const block = blocks[0] || null
+    const block = firstBlock(post.blocks)
     let results = null
     if (block) {
       const rows = await db.hubPostResponse.findMany({
@@ -781,6 +843,22 @@ export async function POST(request: NextRequest, { params }: Props) {
 ```
 
 Note `toRecords(rows, false)` — identity is **not** included, matching Bulletin. Community responses stay anonymous in aggregates.
+
+- [ ] **Step 3b: Swap the existing bulletin route onto the shared helper**
+
+Now that `firstBlock` exists, remove the duplicated extraction from `src/app/api/bulletin/[id]/respond/route.ts:41-42`. Replace:
+
+```ts
+    const blocks = Array.isArray(post.blocks) ? (post.blocks as any[]) : []
+    const block = blocks[0] || null
+```
+with:
+```ts
+    const block = firstBlock(post.blocks)
+```
+and add `firstBlock` to its existing `@/lib/bulletin` import (which already imports `isInScope`).
+
+This is a behaviour-neutral refactor; the bulletin route's existing tests are the proof.
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
@@ -836,7 +914,7 @@ Expected: FAIL — everything comes back null.
 In `src/app/api/hubs/[id]/posts/route.ts`, add imports:
 
 ```ts
-import { normalizeSettings, resultsVisible } from '@/lib/bulletin'
+import { normalizeSettings, resultsVisible, firstBlock } from '@/lib/bulletin'
 import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
 ```
 
@@ -870,8 +948,7 @@ Replace the `posts` query + `feed` map (lines 24-47) with:
   }
 
   const feed = posts.map((p) => {
-    const blocks = Array.isArray(p.blocks) ? (p.blocks as any[]) : []
-    const block = blocks[0] || null
+    const block = firstBlock(p.blocks)
     const settings = normalizeSettings(p.settings)
     const rows = byPost.get(p.id) || []
     const mine = me ? rows.find((r) => r.userId === me.id) : undefined
