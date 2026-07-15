@@ -54,4 +54,31 @@ describe('GalliTopBar', () => {
     const { container } = render(<GalliTopBar />)
     expect(container.querySelector('.sticky.top-0.z-20')).toBeInTheDocument()
   })
+
+  // Same rationale as the sticky test. These pin the two tones the product
+  // deliberately chose — Explore's frosted Anchor and the profile's white —
+  // and guard against a drift back to the retired gradient.
+  describe('tone', () => {
+    it('defaults to the frosted Anchor glass, not the retired gradient', () => {
+      mockUser.current = null
+      const { container } = render(<GalliTopBar />)
+      expect(container.querySelector('.bg-galli-dark\\/70.backdrop-blur-md')).toBeInTheDocument()
+      expect(container.querySelector('[class*="from-galli"]')).not.toBeInTheDocument()
+    })
+
+    it('blends into a light page when tone is light', () => {
+      mockUser.current = null
+      const { container } = render(<GalliTopBar tone="light" />)
+      expect(container.querySelector('.bg-surface\\/80.backdrop-blur-md')).toBeInTheDocument()
+      expect(container.querySelector('.bg-galli-dark\\/70')).not.toBeInTheDocument()
+    })
+
+    it('darkens its contents for the light tone so they stay visible', () => {
+      mockUser.current = null
+      const { container } = render(<GalliTopBar tone="light" />)
+      // The wordmark must not stay white-on-white.
+      expect(screen.getByText('My Galli')).toHaveClass('text-galli-dark')
+      expect(container.querySelector('.text-white')).not.toBeInTheDocument()
+    })
+  })
 })

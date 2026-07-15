@@ -10,6 +10,7 @@ export function ProfileSearchInput() {
 
   return (
     <SearchBox
+      tone="light"
       value={value}
       onChange={setValue}
       onSubmit={() => {

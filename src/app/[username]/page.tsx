@@ -51,7 +51,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
   return (
     <div className="min-h-screen bg-background">
-      <GalliTopBar search={<ProfileSearchInput />} />
+      <GalliTopBar tone="light" search={<ProfileSearchInput />} />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-10">
         <ProfileCover coverImage={user.coverImage} isOwner={isMe} />
         <div className="space-y-5">

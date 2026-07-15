@@ -61,4 +61,22 @@ describe('SearchBox', () => {
     rerender(<SearchBox value="" onChange={onChange} placeholder="Find people" />)
     expect(screen.getByPlaceholderText('Find people')).toBeInTheDocument()
   })
+
+  // The pill inherits no colour from the bar, so a tone mismatch renders it
+  // invisible (white chrome on white). jsdom has no layout; the class is the
+  // only observable.
+  describe('tone', () => {
+    it('defaults to the glass pill', () => {
+      render(<SearchBox value="" onChange={onChange} />)
+      expect(screen.getByRole('search')).toHaveClass('border-white/30', 'bg-white/15')
+    })
+
+    it('darkens the pill for the light tone so it stays visible on white', () => {
+      render(<SearchBox value="" onChange={onChange} tone="light" />)
+      const form = screen.getByRole('search')
+      expect(form).toHaveClass('border-border', 'bg-background')
+      expect(form).not.toHaveClass('bg-white/15')
+      expect(screen.getByLabelText('Search')).toHaveClass('text-foreground')
+    })
+  })
 })
