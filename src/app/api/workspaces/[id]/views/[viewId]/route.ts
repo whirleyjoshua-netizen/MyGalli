@@ -48,3 +48,27 @@ export async function PATCH(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+// DELETE /api/workspaces/[id]/views/[viewId] - Delete a view
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; viewId: string }> }
+) {
+  const user = await getUser(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { id: workspaceId, viewId } = await params
+  try {
+    await authorizeWorkspace(user.id, workspaceId)
+    const count = await db.workspaceView.count({ where: { workspaceId } })
+    if (count <= 1) return NextResponse.json({ error: 'Cannot delete the last view' }, { status: 400 })
+    const { count: deleted } = await db.workspaceView.deleteMany({ where: { id: viewId, workspaceId } })
+    if (deleted === 0) return NextResponse.json({ error: 'View not found' }, { status: 404 })
+    return NextResponse.json({ ok: true })
+  } catch (error: any) {
+    if (error.message === 'Unauthorized or Workspace not found') {
+      return NextResponse.json({ error: 'Workspace not found' }, { status: 404 })
+    }
+    console.error('Delete view error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

@@ -17,22 +17,22 @@ describe('POST /api/workspaces/[id]/views', () => {
 
   const ctx = { params: Promise.resolve({ id: 'w1' }) }
 
-  it('creates a valid table view', async () => {
+  it('creates a valid grid view', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'u1' })
     ;(db.workspace.findUnique as any).mockResolvedValue({ ownerId: 'u1' })
     ;(db.workspaceField.findMany as any).mockResolvedValue([{ key: 'field1' }])
     ;(db.workspaceView.count as any).mockResolvedValue(0)
     ;(db.workspaceView.create as any).mockResolvedValue({ id: 'v1' })
-    
+
     const req = new Request('http://localhost/api/workspaces/w1/views', {
       method: 'POST',
-      body: JSON.stringify({ name: 'View 1', type: 'table', config: { visibleFields: ['field1'] } }),
+      body: JSON.stringify({ name: 'View 1', type: 'grid', config: { visibleFields: ['field1'] } }),
     })
-    
+
     const res = await POST(req as any, ctx)
     expect(res.status).toBe(201)
     expect(db.workspaceView.create).toHaveBeenCalledWith({
-      data: { workspaceId: 'w1', name: 'View 1', type: 'table', config: { visibleFields: ['field1'] }, position: 0 }
+      data: { workspaceId: 'w1', name: 'View 1', type: 'grid', config: { visibleFields: ['field1'] }, position: 0 }
     })
   })
 
@@ -40,15 +40,77 @@ describe('POST /api/workspaces/[id]/views', () => {
     ;(getUser as any).mockResolvedValue({ id: 'u1' })
     ;(db.workspace.findUnique as any).mockResolvedValue({ ownerId: 'u1' })
     ;(db.workspaceField.findMany as any).mockResolvedValue([{ key: 'field1' }])
-    
+
     const req = new Request('http://localhost/api/workspaces/w1/views', {
       method: 'POST',
-      body: JSON.stringify({ name: 'View 1', type: 'table', config: { visibleFields: ['unknown'] } }),
+      body: JSON.stringify({ name: 'View 1', type: 'grid', config: { visibleFields: ['unknown'] } }),
     })
-    
+
     const res = await POST(req as any, ctx)
     expect(res.status).toBe(400)
     const body = await res.json()
     expect(body.error).toContain('Unknown fields: unknown')
+  })
+
+  it('rejects an unsupported view type', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    ;(db.workspace.findUnique as any).mockResolvedValue({ ownerId: 'u1' })
+    ;(db.workspaceField.findMany as any).mockResolvedValue([{ key: 'field1' }])
+
+    const req = new Request('http://localhost/api/workspaces/w1/views', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'View 1', type: 'table' }),
+    })
+
+    const res = await POST(req as any, ctx)
+    expect(res.status).toBe(400)
+  })
+
+  it('creates a valid gallery view', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    ;(db.workspace.findUnique as any).mockResolvedValue({ ownerId: 'u1' })
+    ;(db.workspaceField.findMany as any).mockResolvedValue([{ key: 'field1' }])
+    ;(db.workspaceView.count as any).mockResolvedValue(0)
+    ;(db.workspaceView.create as any).mockResolvedValue({ id: 'v2' })
+
+    const req = new Request('http://localhost/api/workspaces/w1/views', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Gallery 1', type: 'gallery' }),
+    })
+
+    const res = await POST(req as any, ctx)
+    expect(res.status).toBe(201)
+  })
+
+  it('rejects kanban without a choice groupByField', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    ;(db.workspace.findUnique as any).mockResolvedValue({ ownerId: 'u1' })
+    ;(db.workspaceField.findMany as any).mockResolvedValue([{ key: 'field1', type: 'text' }])
+
+    const req = new Request('http://localhost/api/workspaces/w1/views', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Board', type: 'kanban', config: { groupByField: 'field1' } }),
+    })
+
+    const res = await POST(req as any, ctx)
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toContain('Kanban needs a single-select field')
+  })
+
+  it('creates a valid kanban view when groupByField is a choice field', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    ;(db.workspace.findUnique as any).mockResolvedValue({ ownerId: 'u1' })
+    ;(db.workspaceField.findMany as any).mockResolvedValue([{ key: 'status', type: 'choice' }])
+    ;(db.workspaceView.count as any).mockResolvedValue(0)
+    ;(db.workspaceView.create as any).mockResolvedValue({ id: 'v3' })
+
+    const req = new Request('http://localhost/api/workspaces/w1/views', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Board', type: 'kanban', config: { groupByField: 'status' } }),
+    })
+
+    const res = await POST(req as any, ctx)
+    expect(res.status).toBe(201)
   })
 })

@@ -21,7 +21,8 @@ export async function POST(
     if (!name || !type) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
 
     // 2. Validate View Type
-    if (type !== 'table') {
+    const ALLOWED_VIEW_TYPES = ['grid', 'gallery', 'kanban']
+    if (!ALLOWED_VIEW_TYPES.includes(type)) {
       return NextResponse.json({ error: 'Unsupported view type' }, { status: 400 })
     }
 
@@ -29,6 +30,13 @@ export async function POST(
     const fields = await db.workspaceField.findMany({ where: { workspaceId } })
     const fieldKeys = fields.map((f) => f.key)
 
+    if (type === 'kanban') {
+      const gf = config?.groupByField
+      const field = fields.find((f) => f.key === gf)
+      if (!field || field.type !== 'choice') {
+        return NextResponse.json({ error: 'Kanban needs a single-select field to group by' }, { status: 400 })
+      }
+    }
     if (config?.visibleFields) {
       const unknownFields = config.visibleFields.filter(
         (f: string) => !fieldKeys.includes(f)
