@@ -4,7 +4,7 @@
 
 **Goal:** Give the public profile page the same sticky gradient header Explore has, by extracting that header into one shared component both pages consume.
 
-**Architecture:** Extract the header currently inlined in `ExploreClient.tsx` into a new client component `src/components/nav/GalliTopBar.tsx`. It owns the gradient bar, frog + wordmark, auth-aware Home and avatar/login, and exposes two slots: `search` (a ReactNode) and `children` (the sub-bar). Explore passes its existing live-filter input and category chips; the profile passes a `ProfileSearchInput` that routes to `/explore?search=`. Explore additionally learns to seed its search state from `?search=`.
+**Architecture:** Extract the header currently inlined in `ExploreClient.tsx` into `src/components/nav/GalliTopBar.tsx` — it owns the gradient bar, frog + wordmark, auth-aware Home and avatar/login, and exposes a `search` slot plus a `children` sub-bar slot. The search *chrome* is extracted separately into `src/components/nav/SearchBox.tsx` so Explore and the profile share one pill styling while keeping their own behavior (live filter vs. navigate). Explore additionally learns to seed its search state from `?search=`.
 
 **Tech Stack:** Next.js 15 App Router, React 19, TypeScript, Tailwind, zustand (`useAuthStore`, persisted to localStorage), vitest + @testing-library/react (jsdom).
 
@@ -16,21 +16,25 @@
 - `tsc --noEmit` does **not** run ESLint, and prod builds have previously failed on lint. `pnpm exec next lint` must pass before the branch is done.
 - Bare `<img>` requires `{/* eslint-disable-next-line @next/next/no-img-element */}` on the line above. Use `<Link>` for static internal routes, never `<a href="/static">`.
 - Preserve exact existing Tailwind classes when moving markup. `galli-dark` is a real token (`galli.dark` = `#0F3D2E`).
-- Do not change Explore's filtering/debounce/grid logic. Markup moves; behavior does not.
+- Do not change Explore's filtering, debounce, or grid logic. Markup moves; behavior does not.
+  - **One intended exception:** Home becomes auth-aware (`/dashboard` logged in, `/` logged out). Today Explore hard-codes `/dashboard` even for logged-out visitors. This is required by the spec and is not a regression.
+- The search pill styling exists in exactly one place: `SearchBox`. Do not copy its classes into any other file.
 
 ## File Structure
 
 | File | Responsibility |
 |---|---|
-| `src/components/nav/GalliTopBar.tsx` | **Create.** Presentational shell: gradient bar, brand, auth-aware Home + avatar/login, `search` and `children` slots. Knows nothing about its consumers. |
-| `src/components/nav/GalliTopBar.test.tsx` | **Create.** Auth states + slot rendering. |
-| `src/components/nav/ProfileSearchInput.tsx` | **Create.** Search box that routes to `/explore?search=`. |
-| `src/components/nav/ProfileSearchInput.test.tsx` | **Create.** Submit routes; empty submit no-ops. |
 | `src/components/explore/ExploreClient.test.tsx` | **Create (Task 1).** Characterization tests written *before* the refactor. |
-| `src/components/explore/ExploreClient.tsx` | **Modify.** Consume `GalliTopBar`; seed search from `?search=`. |
-| `src/app/[username]/page.tsx` | **Modify.** Render `<GalliTopBar search={<ProfileSearchInput />} />` above `ProfileCover`. |
+| `src/components/nav/GalliTopBar.tsx` | **Create (Task 2).** Gradient bar, brand, auth-aware Home + avatar/login, `search` and `children` slots. Knows nothing about its consumers. |
+| `src/components/nav/GalliTopBar.test.tsx` | **Create (Task 2).** Auth states + slot rendering. |
+| `src/components/nav/SearchBox.tsx` | **Create (Task 3).** The search pill chrome only. Controlled; behavior supplied by the caller. |
+| `src/components/nav/SearchBox.test.tsx` | **Create (Task 3).** Change/submit/clear behavior. |
+| `src/components/explore/ExploreClient.tsx` | **Modify (Tasks 4, 5).** Consume `GalliTopBar` + `SearchBox`; seed search from `?search=`. |
+| `src/components/nav/ProfileSearchInput.tsx` | **Create (Task 6).** Owns router + state; renders `SearchBox`; routes to `/explore?search=`. |
+| `src/components/nav/ProfileSearchInput.test.tsx` | **Create (Task 6).** Submit routes; empty/whitespace submit no-ops. |
+| `src/app/[username]/page.tsx` | **Modify (Task 6).** Render `<GalliTopBar search={<ProfileSearchInput />} />` above `ProfileCover`. |
 
-**Task order rationale:** Task 1 writes characterization tests against Explore's *current* behavior so the extraction in Task 3 is provably behavior-preserving. Tasks 2–5 each end with a green suite and a commit.
+**Task order rationale:** Task 1 characterizes Explore's *current* behavior so the extraction in Task 4 is provably behavior-preserving. Tasks 2 and 3 build the shared pieces; Task 4 swaps Explore onto them; Task 5 adds URL seeding; Task 6 mounts on the profile. Each task ends with a green suite and a commit.
 
 ---
 
@@ -131,7 +135,7 @@ git commit -m "test(explore): characterize header + search behavior before refac
 
 **Interfaces:**
 - Consumes: `useAuthStore` from `@/lib/store` (shape: `{ user: { username: string; name: string | null; avatar: string | null } | null }`)
-- Produces: `GalliTopBar({ search, children }: { search?: React.ReactNode; children?: React.ReactNode })` — used by Tasks 3 and 5.
+- Produces: `GalliTopBar({ search, children }: { search?: React.ReactNode; children?: React.ReactNode })` — used by Tasks 4 and 6.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -170,8 +174,8 @@ describe('GalliTopBar', () => {
 
   it('omits the sub-bar when no children are given', () => {
     mockUser.current = null
-    const { container } = render(<GalliTopBar />)
-    expect(container.querySelector('[data-testid="subbar"]')).toBeNull()
+    render(<GalliTopBar />)
+    expect(screen.queryByTestId('subbar')).not.toBeInTheDocument()
   })
 
   it('renders children in the sub-bar', () => {
@@ -196,7 +200,7 @@ Expected: FAIL — `Failed to resolve import "./GalliTopBar"`
 
 - [ ] **Step 3: Write the implementation**
 
-Create `src/components/nav/GalliTopBar.tsx`. Classes are copied verbatim from `ExploreClient.tsx` lines 64–140 so the bar is pixel-identical; the only additions are the auth-aware `homeHref` and the two slots.
+Create `src/components/nav/GalliTopBar.tsx`. Classes are copied verbatim from `ExploreClient.tsx` lines 64–140 so the bar is pixel-identical; the only additions are the auth-aware `href` on Home and the two slots.
 
 ```tsx
 'use client'
@@ -300,61 +304,224 @@ git commit -m "feat(nav): shared GalliTopBar with search + sub-bar slots"
 
 ---
 
-### Task 3: Refactor `ExploreClient` onto `GalliTopBar`
+### Task 3: Create `SearchBox`
 
-Behavior-preserving. Task 1's tests must stay green without modification — that is the proof.
+The search pill chrome, in one place. Explore and the profile share the styling; each supplies its own behavior. This is the only file allowed to contain these classes.
+
+**Files:**
+- Create: `src/components/nav/SearchBox.tsx`
+- Test: `src/components/nav/SearchBox.test.tsx`
+
+**Interfaces:**
+- Consumes: nothing from earlier tasks
+- Produces:
+  ```ts
+  SearchBox(props: {
+    value: string
+    onChange: (value: string) => void
+    onSubmit?: () => void
+    onClear?: () => void
+    placeholder?: string   // default: 'Search My Galli pages…'
+  })
+  ```
+  Renders a `<form role="search">`. The clear button appears only when `onClear` is supplied **and** `value` is non-empty. Used by Tasks 4 and 6.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `src/components/nav/SearchBox.test.tsx`:
+
+```tsx
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { SearchBox } from './SearchBox'
+
+const onChange = vi.fn()
+const onSubmit = vi.fn()
+const onClear = vi.fn()
+
+beforeEach(() => vi.clearAllMocks())
+
+describe('SearchBox', () => {
+  it('reports typing through onChange', () => {
+    render(<SearchBox value="" onChange={onChange} />)
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'surf' } })
+    expect(onChange).toHaveBeenCalledWith('surf')
+  })
+
+  it('shows the current value', () => {
+    render(<SearchBox value="surf" onChange={onChange} />)
+    expect((screen.getByLabelText('Search') as HTMLInputElement).value).toBe('surf')
+  })
+
+  it('calls onSubmit when the form is submitted', () => {
+    render(<SearchBox value="surf" onChange={onChange} onSubmit={onSubmit} />)
+    fireEvent.submit(screen.getByRole('search'))
+    expect(onSubmit).toHaveBeenCalled()
+  })
+
+  it('does not throw on submit when no onSubmit is given', () => {
+    render(<SearchBox value="surf" onChange={onChange} />)
+    expect(() => fireEvent.submit(screen.getByRole('search'))).not.toThrow()
+  })
+
+  it('shows the clear button only when onClear is given and value is non-empty', () => {
+    const { rerender } = render(<SearchBox value="surf" onChange={onChange} onClear={onClear} />)
+    expect(screen.getByLabelText('Clear search')).toBeInTheDocument()
+
+    rerender(<SearchBox value="" onChange={onChange} onClear={onClear} />)
+    expect(screen.queryByLabelText('Clear search')).not.toBeInTheDocument()
+
+    rerender(<SearchBox value="surf" onChange={onChange} />)
+    expect(screen.queryByLabelText('Clear search')).not.toBeInTheDocument()
+  })
+
+  it('calls onClear when the clear button is clicked', () => {
+    render(<SearchBox value="surf" onChange={onChange} onClear={onClear} />)
+    fireEvent.click(screen.getByLabelText('Clear search'))
+    expect(onClear).toHaveBeenCalled()
+  })
+
+  it('does not submit the form when the clear button is clicked', () => {
+    render(<SearchBox value="surf" onChange={onChange} onSubmit={onSubmit} onClear={onClear} />)
+    fireEvent.click(screen.getByLabelText('Clear search'))
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('uses a default placeholder and accepts an override', () => {
+    const { rerender } = render(<SearchBox value="" onChange={onChange} />)
+    expect(screen.getByPlaceholderText('Search My Galli pages…')).toBeInTheDocument()
+
+    rerender(<SearchBox value="" onChange={onChange} placeholder="Find people" />)
+    expect(screen.getByPlaceholderText('Find people')).toBeInTheDocument()
+  })
+})
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm test src/components/nav/SearchBox.test.tsx`
+Expected: FAIL — `Failed to resolve import "./SearchBox"`
+
+- [ ] **Step 3: Write the implementation**
+
+Create `src/components/nav/SearchBox.tsx`. Classes are copied verbatim from `ExploreClient.tsx` lines 88–102.
+
+`type="button"` on the clear button is **required**: a bare `<button>` inside a `<form>` defaults to `type="submit"`, which would fire `onSubmit` on every clear. The current Explore code gets away with a bare button only because it isn't inside a form.
+
+```tsx
+'use client'
+
+import { Search, X } from 'lucide-react'
+
+export function SearchBox({
+  value,
+  onChange,
+  onSubmit,
+  onClear,
+  placeholder = 'Search My Galli pages…',
+}: {
+  value: string
+  onChange: (value: string) => void
+  onSubmit?: () => void
+  onClear?: () => void
+  placeholder?: string
+}) {
+  return (
+    <form
+      role="search"
+      onSubmit={(e) => {
+        e.preventDefault()
+        onSubmit?.()
+      }}
+      className="flex h-10 w-44 items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3.5 backdrop-blur-sm sm:w-72 md:w-80"
+    >
+      <Search className="h-4 w-4 shrink-0 text-white/80" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label="Search"
+        className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/70"
+      />
+      {onClear && value && (
+        <button type="button" onClick={onClear} aria-label="Clear search">
+          <X className="h-4 w-4 text-white/80" />
+        </button>
+      )}
+    </form>
+  )
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pnpm test src/components/nav/SearchBox.test.tsx`
+Expected: PASS (8 tests)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git status -sb
+git add src/components/nav/SearchBox.tsx src/components/nav/SearchBox.test.tsx
+git commit -m "feat(nav): shared SearchBox pill chrome"
+```
+
+---
+
+### Task 4: Refactor `ExploreClient` onto `GalliTopBar` + `SearchBox`
+
+Behavior-preserving. Task 1's tests must stay green **without modification** — that is the proof.
 
 **Files:**
 - Modify: `src/components/explore/ExploreClient.tsx:1-11` (imports), `:63-140` (header block)
 
 **Interfaces:**
-- Consumes: `GalliTopBar({ search, children })` from Task 2
+- Consumes: `GalliTopBar({ search, children })` (Task 2); `SearchBox({ value, onChange, onSubmit?, onClear?, placeholder? })` (Task 3)
 - Produces: no new exports
 
 - [ ] **Step 1: Replace the header block**
 
-In `src/components/explore/ExploreClient.tsx`, replace lines 63–140 (the entire `{/* Sticky header */}` div, from `<div className="sticky top-0 z-20">` through its closing `</div>`) with:
+In `src/components/explore/ExploreClient.tsx`, replace lines 63–140 — the entire `{/* Sticky header */}` block, from `<div className="sticky top-0 z-20">` through its matching closing `</div>` — with:
 
 ```tsx
       {/* Sticky header */}
       <GalliTopBar
         search={
-          <div className="flex h-10 w-44 items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3.5 backdrop-blur-sm sm:w-72 md:w-80">
-            <Search className="h-4 w-4 shrink-0 text-white/80" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search My Galli pages…"
-              aria-label="Search"
-              className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/70"
-            />
-            {search && (
-              <button onClick={() => setSearch('')} aria-label="Clear search">
-                <X className="h-4 w-4 text-white/80" />
-              </button>
-            )}
-          </div>
+          <SearchBox
+            value={search}
+            onChange={setSearch}
+            onClear={() => setSearch('')}
+          />
         }
       >
         <ExploreCategoryChips active={activeCategory} onSelect={(id) => { setActiveCategory(id); setSearch('') }} />
       </GalliTopBar>
 ```
 
+No `onSubmit` is passed: Explore filters live as you type, so Enter should do nothing beyond suppressing a page reload — which `SearchBox` already handles via `preventDefault`.
+
 - [ ] **Step 2: Fix the imports**
 
-Replace line 4 — `Home` and `User as UserIcon` now live in `GalliTopBar` and become unused here (unused imports fail lint):
+Replace line 4 — `Search`, `X`, `Home`, and `User as UserIcon` now live in `SearchBox`/`GalliTopBar` and would be unused here (unused imports fail lint):
 
 ```tsx
-import { Search, X, Compass, Loader2, Users } from 'lucide-react'
+import { Compass, Loader2, Users } from 'lucide-react'
 ```
 
 Add after line 9:
 
 ```tsx
 import { GalliTopBar } from '@/components/nav/GalliTopBar'
+import { SearchBox } from '@/components/nav/SearchBox'
 ```
 
-`Link` (line 5) and `useAuthStore` (line 6) may now be unused in this file. Check with `grep -n "Link\|useAuthStore\|initial" src/components/explore/ExploreClient.tsx` — remove whichever are no longer referenced, including the `const initial = ...` line if `initial` is now unused.
+`Link` (line 5) and `useAuthStore` (line 6) may now be unused in this file, along with the `const initial = ...` line. Check each with:
+
+```bash
+grep -n "Link\|useAuthStore\|initial\|Search\|<X\b\|Home\|UserIcon" src/components/explore/ExploreClient.tsx
+```
+
+Remove whichever are no longer referenced. Note `Compass`, `Loader2`, and `Users` are used further down the file in the body — keep them.
 
 - [ ] **Step 3: Run Task 1's tests to prove behavior is preserved**
 
@@ -371,12 +538,12 @@ Expected: no errors for `ExploreClient.tsx`.
 ```bash
 git status -sb
 git add src/components/explore/ExploreClient.tsx
-git commit -m "refactor(explore): consume shared GalliTopBar"
+git commit -m "refactor(explore): consume shared GalliTopBar + SearchBox"
 ```
 
 ---
 
-### Task 4: Seed Explore's search from `?search=`
+### Task 5: Seed Explore's search from `?search=`
 
 **Files:**
 - Modify: `src/components/explore/ExploreClient.tsx`
@@ -384,13 +551,13 @@ git commit -m "refactor(explore): consume shared GalliTopBar"
 
 **Interfaces:**
 - Consumes: `useSearchParams` from `next/navigation`
-- Produces: Explore honors `?search=<query>` — relied on by Task 5's `ProfileSearchInput`
+- Produces: Explore honors `?search=<query>` — relied on by Task 6's `ProfileSearchInput`
 
 `src/app/explore/page.tsx` already wraps `<ExploreContent />` in `<Suspense>`, which `useSearchParams` requires. No page change needed.
 
 - [ ] **Step 1: Write the failing tests**
 
-Add to `src/components/explore/ExploreClient.test.tsx`. Also add this mock alongside the existing `@/lib/store` mock at the top of the file:
+In `src/components/explore/ExploreClient.test.tsx`, add this mock alongside the existing `@/lib/store` mock at the top of the file:
 
 ```tsx
 const mockParams = vi.hoisted(() => ({ current: new URLSearchParams() }))
@@ -442,14 +609,14 @@ Add the import:
 import { useSearchParams } from 'next/navigation'
 ```
 
-Then replace the `useState` on line 23 (`const [search, setSearch] = useState('')`) with:
+Then replace line 23 (`const [search, setSearch] = useState('')`) with:
 
 ```tsx
   const searchParams = useSearchParams()
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
 ```
 
-This is lazy initial state — it seeds on first render only, so the user typing afterward is never clobbered.
+This is lazy initial state — it seeds on first render only, so typing afterward is never clobbered.
 
 - [ ] **Step 4: Run tests to verify all pass**
 
@@ -466,15 +633,15 @@ git commit -m "feat(explore): seed search from ?search= query param"
 
 ---
 
-### Task 5: Add the header to the public profile
+### Task 6: Add the header to the public profile
 
 **Files:**
 - Create: `src/components/nav/ProfileSearchInput.tsx`
 - Test: `src/components/nav/ProfileSearchInput.test.tsx`
-- Modify: `src/app/[username]/page.tsx:50-53`
+- Modify: `src/app/[username]/page.tsx`
 
 **Interfaces:**
-- Consumes: `GalliTopBar` (Task 2); Explore's `?search=` support (Task 4)
+- Consumes: `GalliTopBar` (Task 2); `SearchBox` (Task 3); Explore's `?search=` support (Task 5)
 - Produces: `ProfileSearchInput()` — no props
 
 - [ ] **Step 1: Write the failing test**
@@ -506,6 +673,13 @@ describe('ProfileSearchInput', () => {
     expect(push).toHaveBeenCalledWith('/explore?search=surf%20%26%20turf')
   })
 
+  it('trims surrounding whitespace from the query', () => {
+    render(<ProfileSearchInput />)
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: '  surfing  ' } })
+    fireEvent.submit(screen.getByRole('search'))
+    expect(push).toHaveBeenCalledWith('/explore?search=surfing')
+  })
+
   it('does nothing when submitted empty', () => {
     render(<ProfileSearchInput />)
     fireEvent.submit(screen.getByRole('search'))
@@ -528,39 +702,29 @@ Expected: FAIL — `Failed to resolve import "./ProfileSearchInput"`
 
 - [ ] **Step 3: Write the implementation**
 
-Create `src/components/nav/ProfileSearchInput.tsx`. The wrapper classes match Explore's search box exactly so the bar looks identical across pages.
+Create `src/components/nav/ProfileSearchInput.tsx`. It owns router + state only; all chrome comes from `SearchBox`.
 
 ```tsx
 'use client'
 
 import { useState } from 'react'
-import { Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { SearchBox } from './SearchBox'
 
 export function ProfileSearchInput() {
   const router = useRouter()
   const [value, setValue] = useState('')
 
   return (
-    <form
-      role="search"
-      onSubmit={(e) => {
-        e.preventDefault()
+    <SearchBox
+      value={value}
+      onChange={setValue}
+      onSubmit={() => {
         const q = value.trim()
         if (!q) return
         router.push(`/explore?search=${encodeURIComponent(q)}`)
       }}
-      className="flex h-10 w-44 items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3.5 backdrop-blur-sm sm:w-72 md:w-80"
-    >
-      <Search className="h-4 w-4 shrink-0 text-white/80" />
-      <input
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="Search My Galli pages…"
-        aria-label="Search"
-        className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/70"
-      />
-    </form>
+    />
   )
 }
 ```
@@ -568,7 +732,7 @@ export function ProfileSearchInput() {
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `pnpm test src/components/nav/ProfileSearchInput.test.tsx`
-Expected: PASS (4 tests)
+Expected: PASS (5 tests)
 
 - [ ] **Step 5: Mount the bar on the profile page**
 
@@ -579,7 +743,7 @@ import { GalliTopBar } from '@/components/nav/GalliTopBar'
 import { ProfileSearchInput } from '@/components/nav/ProfileSearchInput'
 ```
 
-Then change the return block's opening — replace:
+Then replace:
 
 ```tsx
     <div className="min-h-screen bg-background">
@@ -596,12 +760,12 @@ with:
         <ProfileCover coverImage={user.coverImage} isOwner={isMe} />
 ```
 
-`GalliTopBar` and `ProfileSearchInput` are client components rendered from this server component — a client island. No `'use client'` on the page, and no auth props threaded: `GalliTopBar` reads the persisted store itself.
+`GalliTopBar` and `ProfileSearchInput` are client components rendered from this server component — a client island. Do **not** add `'use client'` to the page, and do not thread auth props: `GalliTopBar` reads the persisted store itself.
 
 - [ ] **Step 6: Verify the whole suite and lint**
 
 Run: `pnpm test`
-Expected: PASS — full suite green (was 505/505 on main; now +18 from this branch).
+Expected: PASS — full suite green (main was 505/505; this branch adds 27).
 
 Run: `pnpm exec next lint`
 Expected: no errors.
@@ -619,7 +783,7 @@ git commit -m "feat(profile): add shared GalliTopBar to public profile"
 
 ---
 
-### Task 6: Browser verification
+### Task 7: Browser verification
 
 Unit tests can't prove the bar renders correctly over the cover image or that the search round-trip works against a real server.
 
@@ -645,7 +809,7 @@ Confirm:
 
 - [ ] **Step 3: Verify the search round-trip**
 
-Type `surf` into the profile's search box and submit. Confirm the URL becomes `/explore?search=surf` **and** the Explore search box is prefilled with `surf` (this is Task 4 working end-to-end).
+Type `surf` into the profile's search box and press Enter. Confirm the URL becomes `/explore?search=surf` **and** the Explore search box is prefilled with `surf` (this is Task 5 working end-to-end).
 
 - [ ] **Step 4: Verify as a logged-in user**
 
@@ -653,7 +817,7 @@ Log in as `marcus@demo.gallio.app` / `demo1234`, then visit another user's profi
 
 - [ ] **Step 5: Confirm Explore is unregressed**
 
-Visit `/explore`. Confirm the bar looks identical to before, category chips filter, and typing in search still filters the grid live (no navigation).
+Visit `/explore`. Confirm the bar looks identical to before, category chips filter, typing in search still filters the grid live (no navigation), and the clear button clears without reloading the page.
 
 - [ ] **Step 6: Report findings**
 
@@ -667,5 +831,6 @@ Report what was observed. Do **not** claim success without having actually loade
 - [ ] `pnpm exec next lint` clean
 - [ ] `pnpm exec tsc --noEmit` clean
 - [ ] Browser-verified: logged-out + logged-in profile, search round-trip, Explore unregressed
+- [ ] Search pill classes exist in exactly one file (`SearchBox.tsx`)
 - [ ] All commits on `profile-header-bar`; `main` untouched
 - [ ] No forbidden files staged
