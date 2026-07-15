@@ -13,8 +13,14 @@
 - Work in worktree `C:\Users\whirl\pages-mvp\.claude\worktrees\profile-header-bar`, branch `profile-header-bar`. **Never commit on `main`.** Verify with `git status -sb` before every commit.
 - **Never commit:** `Documents/`, `Images/`, `g1t.json`, `nul`, `.claude/settings.local.json`. Always `git add` exact paths — never `git add -A`.
 - Tests: `pnpm test` (vitest run). Colocated `*.test.tsx` next to the component. Run a single file while iterating: `pnpm test path/to/file.test.tsx`.
-  - `pnpm install` has already been run **in this worktree** — git worktrees start without `node_modules` (it's gitignored), and this one's was empty. It is populated now; `pnpm test`, `pnpm exec next lint`, and `pnpm exec tsc --noEmit` all work from the worktree root. Do **not** reach into the main checkout's `node_modules`, and do not re-run `pnpm install` (it takes ~4 min).
-- `tsc --noEmit` does **not** run ESLint, and prod builds have previously failed on lint. `pnpm exec next lint` must pass before the branch is done.
+  - `pnpm install` has already been run **in this worktree** — git worktrees start without `node_modules` (it's gitignored), and this one's was empty. It is populated now; `pnpm test` and `pnpm exec tsc --noEmit` work from the worktree root (for lint, see the next bullet — `next lint` is the one command that does not). Do **not** reach into the main checkout's `node_modules`, and do not re-run `pnpm install` (it takes ~4 min).
+- `tsc --noEmit` does **not** run ESLint, and prod builds have previously failed on lint. Lint must pass before the branch is done.
+  - **`pnpm exec next lint` does NOT work in this worktree.** It fails with `Plugin "@next/next" was conflicted between ".eslintrc.json" and "..\..\..\.eslintrc.json"`. Cause: this worktree is nested *inside* the main checkout, and `.eslintrc.json` has no `"root": true`, so ESLint cascades upward and loads the parent's config on top of this one. It is an environment artifact, not a code defect — and it is NOT a licence to skip linting.
+  - **Use this instead** (verified working, exit 0):
+    ```bash
+    pnpm exec eslint src --no-eslintrc -c .eslintrc.json --ext .ts,.tsx --resolve-plugins-relative-to .
+    ```
+    Scope the path to what you changed while iterating (e.g. `src/components/nav`). Plain `next lint` works normally in the main checkout and in CI, which are not nested — so this workaround is for local verification only and must not be committed anywhere.
 - Bare `<img>` requires `{/* eslint-disable-next-line @next/next/no-img-element */}` on the line above. Use `<Link>` for static internal routes, never `<a href="/static">`.
 - Preserve exact existing Tailwind classes when moving markup. `galli-dark` is a real token (`galli.dark` = `#0F3D2E`).
 - Do not change Explore's filtering, debounce, or grid logic. Markup moves; behavior does not.
@@ -559,8 +565,8 @@ Expected: PASS (7 tests), **unmodified**. If any fail, the refactor changed beha
 
 - [ ] **Step 4: Verify no unused imports**
 
-Run: `pnpm exec next lint`
-Expected: no errors for `ExploreClient.tsx`.
+Run: `pnpm exec eslint src/components/explore --no-eslintrc -c .eslintrc.json --ext .ts,.tsx --resolve-plugins-relative-to .`
+Expected: exit 0, no output. (Plain `next lint` fails in this worktree — see Global Constraints.)
 
 - [ ] **Step 5: Commit**
 
@@ -796,8 +802,8 @@ with:
 Run: `pnpm test`
 Expected: PASS — full suite green (main was 505/505; this branch adds 30).
 
-Run: `pnpm exec next lint`
-Expected: no errors.
+Run: `pnpm exec eslint src --no-eslintrc -c .eslintrc.json --ext .ts,.tsx --resolve-plugins-relative-to .`
+Expected: exit 0, no output. (Plain `next lint` fails in this worktree — see Global Constraints.)
 
 Run: `pnpm exec tsc --noEmit`
 Expected: no errors.
@@ -857,7 +863,7 @@ Report what was observed. Do **not** claim success without having actually loade
 ## Definition of Done
 
 - [ ] `pnpm test` green (full suite)
-- [ ] `pnpm exec next lint` clean
+- [ ] Lint clean via `pnpm exec eslint src --no-eslintrc -c .eslintrc.json --ext .ts,.tsx --resolve-plugins-relative-to .`
 - [ ] `pnpm exec tsc --noEmit` clean
 - [ ] Browser-verified: logged-out + logged-in profile, search round-trip, Explore unregressed
 - [ ] Search pill classes exist in exactly one file (`SearchBox.tsx`)
