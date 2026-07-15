@@ -27,6 +27,16 @@ describe('buildFilterJsonSchema', () => {
     const json = JSON.stringify(buildFilterJsonSchema(fields))
     expect(json).not.toContain('$ref')
   })
+
+  it('declares value as anyOf of string/number/boolean, never a type array', () => {
+    const schema: any = buildFilterJsonSchema(fields)
+    const value = schema.properties.conditions.items.properties.value
+    expect(value).toEqual({
+      anyOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }],
+    })
+    expect(Array.isArray(value.type)).toBe(false)
+    expect(value.type).toBeUndefined()
+  })
 })
 
 describe('describeSchemaForPrompt', () => {

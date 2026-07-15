@@ -23,7 +23,7 @@ export function buildFilterJsonSchema(fields: FilterField[]): Record<string, unk
           properties: {
             field: { type: 'string', enum: fields.map((f) => f.key) },
             cmp: { type: 'string', enum: ALL_CMPS },
-            value: { type: ['string', 'number', 'boolean'] },
+            value: { anyOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }] },
           },
         },
       },
