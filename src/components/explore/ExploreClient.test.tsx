@@ -51,4 +51,12 @@ describe('ExploreClient header', () => {
     fireEvent.click(screen.getByLabelText('Clear search'))
     expect(input.value).toBe('')
   })
+
+  // Guards the refactor: without this, the later extraction could drop the
+  // sticky wrapper and every other test here would still pass. Stickiness IS
+  // the feature. jsdom does no layout, so the Tailwind class is the only observable.
+  it('renders the header bar pinned to the top of the viewport', () => {
+    const { container } = render(<ExploreClient initialRows={emptyRows} />)
+    expect(container.querySelector('.sticky.top-0.z-20')).toBeInTheDocument()
+  })
 })
