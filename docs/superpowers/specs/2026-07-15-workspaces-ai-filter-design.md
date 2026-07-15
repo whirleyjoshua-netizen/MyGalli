@@ -39,18 +39,20 @@ Deferred: manual filter builder UI, sort, nested boolean logic, filters on publi
 Structured outputs **do not support recursive JSON Schema**. Arbitrarily nested boolean logic cannot be schema-guaranteed, so the spec is one top-level `and`/`or` over flat conditions:
 
 ```ts
-type Cmp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'is_empty' | 'is_not_empty'
-type Condition = { field: string; cmp: Cmp; value?: string | number | boolean }
+type Cmp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains'
+type Condition = { field: string; cmp: Cmp; value: string | number | boolean }
 type FilterSpec = { op: 'and' | 'or'; conditions: Condition[] }
 ```
 
 Covers "soccer players over $1,200" and "Tennis or Track". Does **not** cover `(A and B) or C`. Ship the honest limit rather than fake nesting the schema can't enforce.
 
 Legal comparators per field type (enforced by `validateFilter`, not by the prompt):
-- `text`/`url`/`email`: `eq`, `neq`, `contains`, `is_empty`, `is_not_empty`
-- `number`/`currency`/`percent`/`rating`/`date`: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `is_empty`, `is_not_empty`
-- `choice`: `eq`, `neq`, `is_empty`, `is_not_empty` (value must be one of the field's options)
+- `text`/`url`/`email`: `eq`, `neq`, `contains`
+- `number`/`currency`/`percent`/`rating`/`date`: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`
+- `choice`: `eq`, `neq` (value must be one of the field's options)
 - `checkbox`: `eq`, `neq`
+
+**`is_empty` / `is_not_empty` are deliberately deferred, not forgotten.** Emptiness over JSONB means disambiguating Prisma's `JsonNull` / `DbNull` / `AnyNull` against a missing key and an empty string. Our Prisma is mocked in unit tests, so a wrong `where` shape would pass every test and fail only at runtime — the plan would be specifying code it cannot verify. It lands as a follow-up with a live DB assertion behind it.
 
 ### Trust boundary
 Claude receives each field's `key`, `label`, `type`, and — for `choice` fields — its `options` (required to map "soccer" → `"Soccer"`). **No records are sent**, consistent with D's no-leak model.
