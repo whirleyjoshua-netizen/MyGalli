@@ -5,7 +5,7 @@ import { Check } from 'lucide-react'
 import type { PollAggregate } from '@/lib/element-aggregate'
 import type { BulletinBlockProps } from '../BulletinBlock'
 
-export function BulletinPoll({ postId, block, results, myResponse, onResults }: BulletinBlockProps) {
+export function BulletinPoll({ postId, basePath, block, results, myResponse, onResults }: BulletinBlockProps) {
   const options = block.pollOptions || []
   const allowMultiple = block.pollAllowMultiple ?? false
   const priorAnswer = myResponse?.[block.id]?.answer
@@ -37,7 +37,7 @@ export function BulletinPoll({ postId, block, results, myResponse, onResults }: 
     if (selected.size === 0 || submitting) return
     setSubmitting(true)
     try {
-      const res = await fetch(`/api/bulletin/${postId}/respond`, {
+      const res = await fetch(`${basePath}/${postId}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

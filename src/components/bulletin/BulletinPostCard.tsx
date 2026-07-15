@@ -96,6 +96,7 @@ export function BulletinPostCard({
       {post.block && (
         <BulletinBlock
           postId={post.id}
+          basePath={basePath}
           block={post.block}
           results={results}
           myResponse={myResponse}

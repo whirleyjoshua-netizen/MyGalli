@@ -16,7 +16,7 @@ describe('BulletinPoll', () => {
     vi.stubGlobal('fetch', fetchMock)
     const onResults = vi.fn()
 
-    render(<BulletinPoll postId="p1" block={block} results={null} myResponse={null} onResults={onResults} />)
+    render(<BulletinPoll postId="p1" basePath="/api/bulletin" block={block} results={null} myResponse={null} onResults={onResults} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Coffee' }))
     fireEvent.click(screen.getByRole('button', { name: /vote/i }))
@@ -33,8 +33,32 @@ describe('BulletinPoll', () => {
 
   it('shows results (percentages) when results are already visible', () => {
     const results = { elementId: 'blk-1', type: 'poll', question: 'Coffee or tea?', options: ['Coffee', 'Tea'], allowMultiple: false, totalVoters: 4, distribution: [{ option: 'Coffee', count: 3, percentage: 75 }, { option: 'Tea', count: 1, percentage: 25 }], respondents: [] }
-    render(<BulletinPoll postId="p1" block={block} results={results as any} myResponse={{ 'blk-1': { type: 'poll', answer: ['Coffee'] } }} onResults={() => {}} />)
+    render(<BulletinPoll postId="p1" basePath="/api/bulletin" block={block} results={results as any} myResponse={{ 'blk-1': { type: 'poll', answer: ['Coffee'] } }} onResults={() => {}} />)
     expect(screen.getByText('75%')).toBeInTheDocument()
     expect(screen.getByText('25%')).toBeInTheDocument()
+  })
+
+  it('posts the vote to the default bulletin path', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: null }) })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<BulletinPoll postId="p1" basePath="/api/bulletin" block={block} results={null} myResponse={null} onResults={() => {}} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Coffee' }))
+    fireEvent.click(screen.getByRole('button', { name: /vote/i }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/bulletin/p1/respond', expect.anything()))
+  })
+
+  it('posts the vote to the hub path when given a hub basePath', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: null }) })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<BulletinPoll postId="p1" basePath="/api/hubs/h1/posts" block={block} results={null} myResponse={null} onResults={() => {}} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Coffee' }))
+    fireEvent.click(screen.getByRole('button', { name: /vote/i }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/hubs/h1/posts/p1/respond', expect.anything()))
   })
 })
