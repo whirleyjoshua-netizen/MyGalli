@@ -75,13 +75,31 @@ The route already computes `touchesContent` over `COLLAB_FIELDS`
 concurrency. This design adds a second, wider set:
 
 ```ts
-// A visitor sees the canvas, but also the title, blurb and cover.
-const VISIBLE_FIELDS = [...COLLAB_FIELDS, 'title', 'description', 'coverImage'] as const
+// A visitor sees the canvas, but also the title and blurb.
+const VISIBLE_FIELDS = [...COLLAB_FIELDS, 'title', 'description'] as const
 ```
 
 - If an update touches any `VISIBLE_FIELDS` → set `contentUpdatedAt = new Date()`.
 - `published`, `category`, and the view counter deliberately do **not** stamp.
   Publishing is not an edit; a visitor sees no change.
+
+**`coverImage` is excluded — corrected during the final review.** It was
+originally listed here on the claim that a visitor sees it. That is false for the
+page itself: `display.coverImage` appears only in `generateMetadata` as the
+OG/share image, never in the page body, in either layout branch. It is therefore
+off-page and visitor-facing in exactly the way `category` is — the same criterion
+that excludes it.
+
+Including it was not merely inconsistent, it was a live bug: `PublishDialog.tsx`
+always sends `{published, category, coverImage}`, and `JSON.stringify` preserves
+`null`, so **every publish stamped the date** — a page last edited in January
+would read "Updated just now" after a republish that changed nothing. The
+dashboard thumbnail swap (`dashboard/page.tsx`, `my-pages/page.tsx`) did the same.
+
+Fixing the rule rather than the three callers was deliberate: one rule cannot be
+re-broken by a fourth caller that ships an unchanged cover. **A cover swap alone
+does not count as an update.** `coverImage` remains in the route's PATCH
+allowlist — covers still save, they just don't stamp.
 - Toggling `showLastUpdated` alone does **not** stamp — with one exception below.
 
 `showLastUpdated` joins the field allowlist in the route. It is owner-only for

@@ -417,17 +417,24 @@ In `src/lib/collab.ts`, after line 1, add:
  * them is what "last updated" means to a reader.
  *
  * Wider than COLLAB_FIELDS (which governs who may edit and optimistic
- * concurrency) because title, description and cover are visible too — but
- * narrower than "every field", because `published` and `category` change
- * nothing a visitor sees on the page itself.
+ * concurrency) because title and description are visible too — but narrower
+ * than "every field": `published` and `category` change nothing a visitor
+ * sees, and `coverImage` is likewise excluded because it is never rendered in
+ * the page body — it only appears in `generateMetadata` as the OG/share
+ * image, not on the page itself.
  */
 export const VISIBLE_FIELDS = [
   ...COLLAB_FIELDS,
   'title',
   'description',
-  'coverImage',
 ] as const
 ```
+
+> **Corrected during the final review.** This originally included `'coverImage'`,
+> which made **every publish stamp the date**: `PublishDialog.tsx` always sends
+> `{published, category, coverImage}` and `JSON.stringify` preserves `null`, so
+> the field was always present. Same via the dashboard thumbnail swap. The rule
+> was fixed rather than the three callers, so a fourth caller can't re-break it.
 
 - [ ] **Step 4: Stamp in the route**
 
