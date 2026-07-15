@@ -85,6 +85,9 @@ export function PageEditor({ pageId }: PageEditorProps) {
   // Collaboration state
   const [version, setVersion] = useState(0)
   const versionRef = useRef(0)
+  // Serialised payload of the last PATCH that succeeded. An autosave that would
+  // resend exactly this is a no-op, so we skip the request entirely.
+  const lastSavedPayloadRef = useRef<string | null>(null)
   const [isOwner, setIsOwner] = useState(true)
   const [conflict, setConflict] = useState(false)
   const [showCollaborate, setShowCollaborate] = useState(false)
@@ -334,25 +337,36 @@ export function PageEditor({ pageId }: PageEditorProps) {
         ? tabsConfig.tabs[0].sections
         : sections
 
+      const payload = {
+        // title is owner-only; collaborators omit it to avoid a 403
+        ...(isOwner ? { title } : {}),
+        sections: sectionsToSave,
+        background,
+        spacing,
+        headerCard: headerCard.enabled ? headerCard : null,
+        tabs: tabsConfig.enabled ? tabsConfig : null,
+      }
+
+      // `version` is excluded from the identity check: it is bookkeeping, not
+      // content, and it changes on every successful save — including it would
+      // make every payload look different and defeat the skip.
+      const payloadKey = JSON.stringify(payload)
+      if (payloadKey === lastSavedPayloadRef.current) {
+        setSaving(false)
+        return
+      }
+
       const res = await fetch(`/api/displays/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          // title is owner-only; collaborators omit it to avoid a 403
-          ...(isOwner ? { title } : {}),
-          sections: sectionsToSave,
-          background,
-          spacing,
-          headerCard: headerCard.enabled ? headerCard : null,
-          tabs: tabsConfig.enabled ? tabsConfig : null,
-          version: versionRef.current,
-        }),
+        body: JSON.stringify({ ...payload, version: versionRef.current }),
       })
       if (res.status === 409) {
         setConflict(true)
         return
       }
       if (res.ok) {
+        lastSavedPayloadRef.current = payloadKey
         const updated = await res.json()
         if (typeof updated.version === 'number') {
           versionRef.current = updated.version

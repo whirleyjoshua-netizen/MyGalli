@@ -139,3 +139,33 @@ describe('PageEditor renders the control panel', () => {
     )
   })
 })
+
+describe('PageEditor autosave', () => {
+  // An idle editor must not PATCH. Task 3 stamps contentUpdatedAt whenever a
+  // visible field is present in the payload, so a redundant autosave would make
+  // the public "last updated" badge report when the editor was last OPEN rather
+  // than when the page last CHANGED.
+  it('does not PATCH when an autosave would send an unchanged payload', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      render(<PageEditor pageId="p1" />)
+
+      // Let the initial load settle.
+      await waitFor(() => expect(screen.getByDisplayValue('My Page')).toBeInTheDocument())
+
+      const patchCount = () =>
+        (fetch as any).mock.calls.filter((c: any[]) => c[1]?.method === 'PATCH').length
+
+      // First autosave tick: the editor may legitimately save once.
+      await vi.advanceTimersByTimeAsync(5000)
+      await waitFor(() => expect(patchCount()).toBeLessThanOrEqual(1))
+      const afterFirst = patchCount()
+
+      // Nothing was edited, so further ticks must issue no further PATCHes.
+      await vi.advanceTimersByTimeAsync(15000)
+      expect(patchCount()).toBe(afterFirst)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
