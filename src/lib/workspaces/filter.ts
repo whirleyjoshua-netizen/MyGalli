@@ -53,6 +53,16 @@ function coerce(field: FilterField, value: unknown): string | number | boolean {
   if (value === null || value === undefined) {
     throw new FilterError(`"${field.label}" needs a value`)
   }
+  if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
+    throw new FilterError(`"${field.label}" has an invalid value`)
+  }
+  if (field.type === 'date') {
+    const s = String(value)
+    if (Number.isNaN(Date.parse(s))) {
+      throw new FilterError(`"${field.label}" is not a date: ${value}`)
+    }
+    return s
+  }
   if (NUMERIC.includes(field.type)) {
     const n = typeof value === 'number' ? value : Number(String(value).replace(/[$,%\s]/g, ''))
     if (!Number.isFinite(n)) throw new FilterError(`"${field.label}" is not a number: ${value}`)

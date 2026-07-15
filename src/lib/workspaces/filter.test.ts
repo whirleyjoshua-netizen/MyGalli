@@ -6,6 +6,7 @@ const fields: FilterField[] = [
   { key: 'sport', label: 'Sport', type: 'choice', config: { options: ['Soccer', 'Tennis'] } },
   { key: 'fee', label: 'Fee', type: 'currency', config: { symbol: '$' } },
   { key: 'active', label: 'Active', type: 'checkbox' },
+  { key: 'startDate', label: 'Start Date', type: 'date' },
 ]
 
 describe('validateFilter', () => {
@@ -52,5 +53,25 @@ describe('validateFilter', () => {
     expect(() => validateFilter({ op: 'xor', conditions: [] }, fields)).toThrow(/op must be/)
     expect(() => validateFilter({ op: 'and', conditions: [] }, fields)).toThrow(/at least one condition/)
     expect(() => validateFilter(null, fields)).toThrow(FilterError)
+  })
+
+  it('rejects an array value for a currency field instead of coercing it', () => {
+    const spec = { op: 'and', conditions: [{ field: 'fee', cmp: 'gt', value: ['1', '2'] }] }
+    expect(() => validateFilter(spec, fields)).toThrow(FilterError)
+  })
+
+  it('rejects an object value for a text field', () => {
+    const spec = { op: 'and', conditions: [{ field: 'name', cmp: 'eq', value: {} }] }
+    expect(() => validateFilter(spec, fields)).toThrow(FilterError)
+  })
+
+  it('rejects a non-date string for a date field', () => {
+    const spec = { op: 'and', conditions: [{ field: 'startDate', cmp: 'gt', value: 'banana' }] }
+    expect(() => validateFilter(spec, fields)).toThrow(/not a date/)
+  })
+
+  it('accepts a valid date string for a date field and returns it unchanged', () => {
+    const spec = { op: 'and', conditions: [{ field: 'startDate', cmp: 'gt', value: '2026-01-15' }] }
+    expect(validateFilter(spec, fields).conditions[0].value).toBe('2026-01-15')
   })
 })
