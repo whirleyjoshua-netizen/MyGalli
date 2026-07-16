@@ -1,6 +1,36 @@
 # Action required from Joshua — Workspaces Sub-project E (AI filter)
 
-Two things I can't do from here. Neither blocks me writing the fixes — I'm proceeding — but **item 1 decides whether E is safe to merge at all.**
+Three things I can't do from here. **Items 1 and 3 both gate merge.**
+
+---
+
+## 3. Your local `ANTHROPIC_API_KEY` is dead — and it's the last unproven thing (blocks merge)
+
+**Status:** the browser/API smoke passed on everything that touches the database. The filter queries were run against real Postgres and are proven: numeric comparison is genuinely numeric (`fee > 1200` correctly excludes the 900 record — a lexicographic bug would have included it), dates work, row order is right, the count is a true total, and malformed page params no longer 500.
+
+**The one thing still unproven is the live Anthropic request.** When I called `filter-suggest` for real, it came back:
+
+```
+401 {"type":"error","error":{"type":"authentication_error","message":"API key is invalid."}}
+```
+
+The key in your local `.env` has a valid shape (`sk-ant-…`, 108 chars) but Anthropic rejects it — expired, rotated, or revoked. Your notes do say to rotate anything pasted into chat, so this is likely intentional.
+
+**Why this matters.** The request failed at *authentication*, which happens **before** Anthropic validates the request body. So this tells us nothing about whether our `output_config` / `json_schema` payload is actually accepted. Every test mocks the SDK, so **no test can prove it either.** This is the single remaining "works in tests, might 400 in production" risk in E — and it's exactly the class of bug that made me change the schema from a type-array to `anyOf` earlier.
+
+### Steps
+
+Put a working key in the worktree's env so I can make one real call (one call, a few cents):
+
+1. Get a valid key from the Anthropic Console, or copy the one already working in Vercel prod (`my-galli` → Settings → Environment Variables → `ANTHROPIC_API_KEY`).
+2. Edit **`C:\Users\whirl\pages-mvp\.claude\worktrees\e-ai-filter\.env`** and set:
+   ```
+   ANTHROPIC_API_KEY=sk-ant-...
+   ```
+   (That file is gitignored — it will not be committed. Don't paste the key into chat; just save it to the file and tell me it's in.)
+3. Tell me "key is in" and I'll run the live call and report exactly what Anthropic says.
+
+**If you'd rather not**, say so and I'll note in the PR that the live request shape is unverified, with the specific failure mode to watch for on first production use (a 400 from Anthropic on the request body).
 
 ---
 
