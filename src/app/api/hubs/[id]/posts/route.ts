@@ -4,6 +4,9 @@ import { getUser } from '@/lib/auth'
 import { canParticipate, postNotifyTargets } from '@/lib/community'
 import { rateLimit } from '@/lib/rate-limit'
 import { notifyHubMembers } from '@/lib/notifications'
+import { normalizeSettings, resultsVisible, firstBlock, isBulletinBlockType, isEmptyPost } from '@/lib/bulletin'
+import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
+import type { Prisma } from '@prisma/client'
 
 async function collaboratorIds(hubId: string): Promise<string[]> {
   const rows = await db.hubCollaborator.findMany({ where: { hubId }, select: { userId: true } })
@@ -32,20 +35,47 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       _count: { select: { comments: true } },
     },
   })
-  const feed = posts.map((p) => ({
-    id: p.id,
-    author: p.author,
-    text: p.text,
-    imageUrl: p.imageUrl,
-    block: null,
-    settings: { revealAfterAnswer: false, liveTally: false },
-    createdAt: p.createdAt.toISOString(),
-    likeCount: p.likes.length,
-    likedByMe: me ? p.likes.some((l) => l.userId === me.id) : false,
-    myResponse: null,
-    results: null,
-    commentCount: p._count.comments,
-  }))
+
+  // One query for every response on this page of posts, grouped in memory (avoids N+1).
+  const postIds = posts.map((p) => p.id)
+  const responseRows = postIds.length
+    ? await db.hubPostResponse.findMany({
+        where: { postId: { in: postIds } },
+        select: { postId: true, userId: true, responses: true, createdAt: true, user: { select: { name: true, username: true, avatar: true } } },
+      })
+    : []
+  const byPost = new Map<string, typeof responseRows>()
+  for (const r of responseRows) {
+    const list = byPost.get(r.postId)
+    if (list) list.push(r)
+    else byPost.set(r.postId, [r])
+  }
+
+  const feed = posts.map((p) => {
+    const block = firstBlock(p.blocks)
+    const settings = normalizeSettings(p.settings)
+    const rows = byPost.get(p.id) || []
+    const mine = me ? rows.find((r) => r.userId === me.id) : undefined
+    const canSee = resultsVisible({
+      isAuthor: !!me && me.id === p.authorId,
+      revealAfterAnswer: settings.revealAfterAnswer,
+      hasResponded: !!mine,
+    })
+    return {
+      id: p.id,
+      author: p.author,
+      text: p.text,
+      imageUrl: p.imageUrl,
+      block,
+      settings,
+      createdAt: p.createdAt.toISOString(),
+      likeCount: p.likes.length,
+      likedByMe: me ? p.likes.some((l) => l.userId === me.id) : false,
+      myResponse: (mine?.responses as Record<string, { type: string; answer: unknown }> | undefined) ?? null,
+      results: block && canSee ? aggregateBlock(block, toRecords(rows, false)) : null,
+      commentCount: p._count.comments,
+    }
+  })
   return NextResponse.json({ posts: feed })
 }
 
@@ -68,8 +98,28 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const body = await request.json().catch(() => ({}))
   const text = typeof body.text === 'string' ? body.text.trim().slice(0, 5000) : ''
   const imageUrl = typeof body.imageUrl === 'string' && body.imageUrl ? body.imageUrl : null
-  if (!text && !imageUrl) return NextResponse.json({ error: 'Empty post' }, { status: 400 })
-  const post = await db.hubPost.create({ data: { hubId: id, authorId: me.id, text: text || null, imageUrl } })
+  const block = body.block && typeof body.block === 'object' ? body.block : null
+  if (block) {
+    if (!isBulletinBlockType(block.type)) {
+      return NextResponse.json({ error: 'Unsupported block type' }, { status: 400 })
+    }
+    if (typeof block.id !== 'string' || !block.id) {
+      block.id = `blk-${me.id.slice(-4)}-${text ? text.length : 0}-${Math.round(1000 * block.type.length)}`
+    }
+  }
+  if (isEmptyPost({ text, imageUrl, block })) {
+    return NextResponse.json({ error: 'Empty post' }, { status: 400 })
+  }
+  const post = await db.hubPost.create({
+    data: {
+      hubId: id,
+      authorId: me.id,
+      text: text || null,
+      imageUrl,
+      blocks: block ? [block] : [],
+      settings: normalizeSettings(body.settings) as unknown as Prisma.InputJsonValue,
+    },
+  })
   const memberIds = (await db.hubMember.findMany({ where: { hubId: id }, select: { userId: true } })).map((m) => m.userId)
   const targets = postNotifyTargets({ authorId: me.id, ownerId: hub.userId, collabIds, memberIds })
   await notifyHubMembers(targets, {

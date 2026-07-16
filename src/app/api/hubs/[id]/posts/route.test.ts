@@ -17,12 +17,13 @@ vi.mock('@/lib/db', () => ({
 import { getUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { notifyHubMembers } from '@/lib/notifications'
-import { POST } from './route'
+import { GET, POST } from './route'
 
-const HUB = { id: 'h1', userId: 'owner', community: true, title: 'Smoke Hub', slug: 'smoke-hub', user: { username: 'hubowner' } }
+const HUB = { id: 'h1', userId: 'owner', community: true, displayId: 'd1', title: 'Smoke Hub', slug: 'smoke-hub', user: { username: 'hubowner' } }
 const ctx = { params: Promise.resolve({ id: 'h1' }) }
 const req = (body: unknown) =>
   new Request('http://localhost/api/hubs/h1/posts', { method: 'POST', body: JSON.stringify(body) }) as any
+const getReq = () => new Request('http://localhost/api/hubs/h1/posts', { method: 'GET' }) as any
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -31,6 +32,8 @@ beforeEach(() => {
   ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem' }) // caller is a member
   ;(db.hubMember.findMany as any).mockResolvedValue([{ userId: 'm1' }, { userId: 'm2' }])
   ;(db.hubPost.create as any).mockResolvedValue({ id: 'p1' })
+  ;(db.display.findUnique as any).mockResolvedValue({ published: true })
+  ;(db.hubPostResponse.findMany as any).mockResolvedValue([])
 })
 
 describe('POST /api/hubs/[id]/posts — notifications', () => {
@@ -73,5 +76,129 @@ describe('POST /api/hubs/[id]/posts — notifications', () => {
     await POST(req({ text: 'hello' }), ctx)
     expect(db.hubPost.create).toHaveBeenCalled()
     expect(notifyHubMembers).toHaveBeenCalled()
+  })
+})
+
+const POST_WITH_BLOCK = {
+  id: 'p1',
+  authorId: 'owner',
+  author: { id: 'owner', name: 'Owner', username: 'hubowner', avatar: null },
+  text: 'hi',
+  imageUrl: null,
+  blocks: [{ id: 'b1', type: 'poll', pollQuestion: 'Q', pollOptions: ['A', 'B'], pollAllowMultiple: false }],
+  settings: { revealAfterAnswer: true, liveTally: false },
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+  likes: [],
+  _count: { comments: 0 },
+}
+
+const POST_NO_BLOCK = {
+  id: 'p2',
+  authorId: 'owner',
+  author: { id: 'owner', name: 'Owner', username: 'hubowner', avatar: null },
+  text: 'no block here',
+  imageUrl: null,
+  blocks: [],
+  settings: { revealAfterAnswer: false, liveTally: false },
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+  likes: [],
+  _count: { comments: 0 },
+}
+
+const M1_RESPONSE = {
+  postId: 'p1',
+  userId: 'm1',
+  responses: { b1: { type: 'poll', answer: 'A' } },
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+  user: { name: 'M1', username: 'm1', avatar: null },
+}
+
+describe('POST /api/hubs/[id]/posts — blocks', () => {
+  it('persists an attached block into blocks[] and normalizes settings', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'Owner', username: 'hubowner', avatar: null })
+    const block = { id: 'b1', type: 'poll', pollQuestion: 'Q', pollOptions: ['a', 'b'] }
+    const res = await POST(req({ text: '', block, settings: { revealAfterAnswer: true } }), ctx)
+    expect(res.status).toBe(201)
+    const createArgs = (db.hubPost.create as any).mock.calls[0][0]
+    expect(createArgs.data.blocks).toEqual([block])
+    expect(createArgs.data.settings).toEqual({ revealAfterAnswer: true, liveTally: false })
+  })
+
+  it('400s on an unsupported block type', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'Owner', username: 'hubowner', avatar: null })
+    const res = await POST(req({ block: { id: 'b1', type: 'malicious' } }), ctx)
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toBe('Unsupported block type')
+  })
+
+  it('allows a block-only post with no text', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'Owner', username: 'hubowner', avatar: null })
+    const block = { id: 'b1', type: 'poll', pollQuestion: 'Q', pollOptions: ['a', 'b'] }
+    const res = await POST(req({ text: '', block }), ctx)
+    expect(res.status).toBe(201)
+  })
+
+  it('still 400s on a truly empty post', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'Owner', username: 'hubowner', avatar: null })
+    const res = await POST(req({ text: '', imageUrl: null }), ctx)
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('GET /api/hubs/[id]/posts — block/settings/myResponse/results', () => {
+  it('returns the post block and normalized settings', async () => {
+    ;(getUser as any).mockResolvedValue(null)
+    ;(db.hubPost.findMany as any).mockResolvedValue([POST_WITH_BLOCK])
+    const res = await GET(getReq(), ctx)
+    const body = await res.json()
+    expect(body.posts[0].block.id).toBe('b1')
+    expect(body.posts[0].settings.revealAfterAnswer).toBe(true)
+  })
+
+  it('returns myResponse for the requesting user only', async () => {
+    ;(db.hubPost.findMany as any).mockResolvedValue([POST_WITH_BLOCK])
+    ;(db.hubPostResponse.findMany as any).mockResolvedValue([M1_RESPONSE])
+
+    ;(getUser as any).mockResolvedValue({ id: 'm1', name: 'M1', username: 'm1', avatar: null })
+    const asM1 = await (await GET(getReq(), ctx)).json()
+    expect(asM1.posts[0].myResponse).toEqual({ b1: { type: 'poll', answer: 'A' } })
+
+    ;(getUser as any).mockResolvedValue({ id: 'm2', name: 'M2', username: 'm2', avatar: null })
+    const asM2 = await (await GET(getReq(), ctx)).json()
+    expect(asM2.posts[0].myResponse).toBeNull()
+  })
+
+  it('hides results from a non-responder when revealAfterAnswer is true', async () => {
+    ;(db.hubPost.findMany as any).mockResolvedValue([POST_WITH_BLOCK])
+    ;(db.hubPostResponse.findMany as any).mockResolvedValue([M1_RESPONSE])
+    ;(getUser as any).mockResolvedValue({ id: 'm2', name: 'M2', username: 'm2', avatar: null })
+    const body = await (await GET(getReq(), ctx)).json()
+    expect(body.posts[0].results).toBeNull()
+  })
+
+  it('shows results to a responder when revealAfterAnswer is true', async () => {
+    ;(db.hubPost.findMany as any).mockResolvedValue([POST_WITH_BLOCK])
+    ;(db.hubPostResponse.findMany as any).mockResolvedValue([M1_RESPONSE])
+    ;(getUser as any).mockResolvedValue({ id: 'm1', name: 'M1', username: 'm1', avatar: null })
+    const body = await (await GET(getReq(), ctx)).json()
+    expect(body.posts[0].results).not.toBeNull()
+  })
+
+  it('shows results to the post author regardless', async () => {
+    ;(db.hubPost.findMany as any).mockResolvedValue([POST_WITH_BLOCK])
+    ;(db.hubPostResponse.findMany as any).mockResolvedValue([])
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'Owner', username: 'hubowner', avatar: null })
+    const body = await (await GET(getReq(), ctx)).json()
+    expect(body.posts[0].results).not.toBeNull()
+  })
+
+  it('returns block null for a post with no block', async () => {
+    ;(db.hubPost.findMany as any).mockResolvedValue([POST_NO_BLOCK])
+    ;(db.hubPostResponse.findMany as any).mockResolvedValue([])
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'Owner', username: 'hubowner', avatar: null })
+    const body = await (await GET(getReq(), ctx)).json()
+    expect(body.posts[0].block).toBeNull()
+    expect(body.posts[0].results).toBeNull()
   })
 })
