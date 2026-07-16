@@ -113,6 +113,39 @@ const M1_RESPONSE = {
   user: { name: 'M1', username: 'm1', avatar: null },
 }
 
+describe('POST /api/hubs/[id]/posts — blocks', () => {
+  it('persists an attached block into blocks[] and normalizes settings', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'Owner', username: 'hubowner', avatar: null })
+    const block = { id: 'b1', type: 'poll', pollQuestion: 'Q', pollOptions: ['a', 'b'] }
+    const res = await POST(req({ text: '', block, settings: { revealAfterAnswer: true } }), ctx)
+    expect(res.status).toBe(201)
+    const createArgs = (db.hubPost.create as any).mock.calls[0][0]
+    expect(createArgs.data.blocks).toEqual([block])
+    expect(createArgs.data.settings).toEqual({ revealAfterAnswer: true, liveTally: false })
+  })
+
+  it('400s on an unsupported block type', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'Owner', username: 'hubowner', avatar: null })
+    const res = await POST(req({ block: { id: 'b1', type: 'malicious' } }), ctx)
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toBe('Unsupported block type')
+  })
+
+  it('allows a block-only post with no text', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'Owner', username: 'hubowner', avatar: null })
+    const block = { id: 'b1', type: 'poll', pollQuestion: 'Q', pollOptions: ['a', 'b'] }
+    const res = await POST(req({ text: '', block }), ctx)
+    expect(res.status).toBe(201)
+  })
+
+  it('still 400s on a truly empty post', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'Owner', username: 'hubowner', avatar: null })
+    const res = await POST(req({ text: '', imageUrl: null }), ctx)
+    expect(res.status).toBe(400)
+  })
+})
+
 describe('GET /api/hubs/[id]/posts — block/settings/myResponse/results', () => {
   it('returns the post block and normalized settings', async () => {
     ;(getUser as any).mockResolvedValue(null)

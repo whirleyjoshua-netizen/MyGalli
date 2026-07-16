@@ -4,8 +4,9 @@ import { getUser } from '@/lib/auth'
 import { canParticipate, postNotifyTargets } from '@/lib/community'
 import { rateLimit } from '@/lib/rate-limit'
 import { notifyHubMembers } from '@/lib/notifications'
-import { normalizeSettings, resultsVisible, firstBlock } from '@/lib/bulletin'
+import { normalizeSettings, resultsVisible, firstBlock, isBulletinBlockType, isEmptyPost } from '@/lib/bulletin'
 import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
+import type { Prisma } from '@prisma/client'
 
 async function collaboratorIds(hubId: string): Promise<string[]> {
   const rows = await db.hubCollaborator.findMany({ where: { hubId }, select: { userId: true } })
@@ -97,8 +98,28 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const body = await request.json().catch(() => ({}))
   const text = typeof body.text === 'string' ? body.text.trim().slice(0, 5000) : ''
   const imageUrl = typeof body.imageUrl === 'string' && body.imageUrl ? body.imageUrl : null
-  if (!text && !imageUrl) return NextResponse.json({ error: 'Empty post' }, { status: 400 })
-  const post = await db.hubPost.create({ data: { hubId: id, authorId: me.id, text: text || null, imageUrl } })
+  const block = body.block && typeof body.block === 'object' ? body.block : null
+  if (block) {
+    if (!isBulletinBlockType(block.type)) {
+      return NextResponse.json({ error: 'Unsupported block type' }, { status: 400 })
+    }
+    if (typeof block.id !== 'string' || !block.id) {
+      block.id = `blk-${me.id.slice(-4)}-${text ? text.length : 0}-${Math.round(1000 * block.type.length)}`
+    }
+  }
+  if (isEmptyPost({ text, imageUrl, block })) {
+    return NextResponse.json({ error: 'Empty post' }, { status: 400 })
+  }
+  const post = await db.hubPost.create({
+    data: {
+      hubId: id,
+      authorId: me.id,
+      text: text || null,
+      imageUrl,
+      blocks: block ? [block] : [],
+      settings: normalizeSettings(body.settings) as unknown as Prisma.InputJsonValue,
+    },
+  })
   const memberIds = (await db.hubMember.findMany({ where: { hubId: id }, select: { userId: true } })).map((m) => m.userId)
   const targets = postNotifyTargets({ authorId: me.id, ownerId: hub.userId, collabIds, memberIds })
   await notifyHubMembers(targets, {
