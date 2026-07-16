@@ -4,6 +4,8 @@ import { getUser } from '@/lib/auth'
 import { canParticipate, postNotifyTargets } from '@/lib/community'
 import { rateLimit } from '@/lib/rate-limit'
 import { notifyHubMembers } from '@/lib/notifications'
+import { normalizeSettings, resultsVisible, firstBlock } from '@/lib/bulletin'
+import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
 
 async function collaboratorIds(hubId: string): Promise<string[]> {
   const rows = await db.hubCollaborator.findMany({ where: { hubId }, select: { userId: true } })
@@ -32,20 +34,47 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       _count: { select: { comments: true } },
     },
   })
-  const feed = posts.map((p) => ({
-    id: p.id,
-    author: p.author,
-    text: p.text,
-    imageUrl: p.imageUrl,
-    block: null,
-    settings: { revealAfterAnswer: false, liveTally: false },
-    createdAt: p.createdAt.toISOString(),
-    likeCount: p.likes.length,
-    likedByMe: me ? p.likes.some((l) => l.userId === me.id) : false,
-    myResponse: null,
-    results: null,
-    commentCount: p._count.comments,
-  }))
+
+  // One query for every response on this page of posts, grouped in memory (avoids N+1).
+  const postIds = posts.map((p) => p.id)
+  const responseRows = postIds.length
+    ? await db.hubPostResponse.findMany({
+        where: { postId: { in: postIds } },
+        select: { postId: true, userId: true, responses: true, createdAt: true, user: { select: { name: true, username: true, avatar: true } } },
+      })
+    : []
+  const byPost = new Map<string, typeof responseRows>()
+  for (const r of responseRows) {
+    const list = byPost.get(r.postId)
+    if (list) list.push(r)
+    else byPost.set(r.postId, [r])
+  }
+
+  const feed = posts.map((p) => {
+    const block = firstBlock(p.blocks)
+    const settings = normalizeSettings(p.settings)
+    const rows = byPost.get(p.id) || []
+    const mine = me ? rows.find((r) => r.userId === me.id) : undefined
+    const canSee = resultsVisible({
+      isAuthor: !!me && me.id === p.authorId,
+      revealAfterAnswer: settings.revealAfterAnswer,
+      hasResponded: !!mine,
+    })
+    return {
+      id: p.id,
+      author: p.author,
+      text: p.text,
+      imageUrl: p.imageUrl,
+      block,
+      settings,
+      createdAt: p.createdAt.toISOString(),
+      likeCount: p.likes.length,
+      likedByMe: me ? p.likes.some((l) => l.userId === me.id) : false,
+      myResponse: (mine?.responses as Record<string, { type: string; answer: unknown }> | undefined) ?? null,
+      results: block && canSee ? aggregateBlock(block, toRecords(rows, false)) : null,
+      commentCount: p._count.comments,
+    }
+  })
   return NextResponse.json({ posts: feed })
 }
 
