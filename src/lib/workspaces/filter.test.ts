@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateFilter, FilterError, filterToPrismaWhere, describeFilter, type FilterField } from './filter'
+import { validateFilter, validateSort, FilterError, filterToPrismaWhere, describeFilter, type FilterField } from './filter'
 
 const fields: FilterField[] = [
   { key: 'name', label: 'Name', type: 'text' },
@@ -160,5 +160,21 @@ describe('describeFilter', () => {
       fields
     )
     expect(describeFilter(spec, fields)).toBe('Sport is Soccer or Sport is Tennis')
+  })
+})
+
+describe('validateSort', () => {
+  it('accepts a valid sort and returns it normalized', () => {
+    expect(validateSort({ field: 'fee', dir: 'desc' }, fields)).toEqual({ field: 'fee', dir: 'desc' })
+  })
+  it('rejects an unknown field', () => {
+    expect(() => validateSort({ field: 'ghost', dir: 'asc' }, fields)).toThrow(FilterError)
+    expect(() => validateSort({ field: 'ghost', dir: 'asc' }, fields)).toThrow(/Unknown field/)
+  })
+  it('rejects a bad direction', () => {
+    expect(() => validateSort({ field: 'fee', dir: 'sideways' }, fields)).toThrow(/direction/)
+  })
+  it('rejects a non-object', () => {
+    expect(() => validateSort(null, fields)).toThrow(FilterError)
   })
 })

@@ -146,3 +146,14 @@ export function describeFilter(spec: FilterSpec, fields: FilterField[]): string 
   })
   return parts.join(spec.op === 'or' ? ' or ' : ' and ')
 }
+
+export type SortSpec = { field: string; dir: 'asc' | 'desc' }
+
+/** Validates an untrusted sort spec against the real schema. Throws FilterError. */
+export function validateSort(sort: unknown, fields: FilterField[]): SortSpec {
+  if (!sort || typeof sort !== 'object') throw new FilterError('Sort must be an object')
+  const { field, dir } = sort as any
+  if (!fields.find((f) => f.key === field)) throw new FilterError(`Unknown field: ${field}`)
+  if (dir !== 'asc' && dir !== 'desc') throw new FilterError('Sort direction must be "asc" or "desc"')
+  return { field, dir }
+}
