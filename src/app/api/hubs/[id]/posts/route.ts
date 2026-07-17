@@ -31,7 +31,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     take: 50,
     include: {
       author: { select: { id: true, name: true, username: true, avatar: true } },
-      likes: { select: { userId: true } },
       _count: { select: { comments: true } },
     },
   })
@@ -79,8 +78,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       block,
       settings,
       createdAt: p.createdAt.toISOString(),
-      likeCount: p.likes.length,
-      likedByMe: me ? p.likes.some((l) => l.userId === me.id) : false,
       reactions: summarizeReactions(reactionsByPost.get(p.id) || [], me?.id),
       myResponse: (mine?.responses as Record<string, { type: string; answer: unknown }> | undefined) ?? null,
       results: block && canSee ? aggregateBlock(block, toRecords(rows, false)) : null,
