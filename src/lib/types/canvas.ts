@@ -155,6 +155,7 @@ export type ElementType =
   | 'before-after'           // Batch 1: before/after image slider
   | 'tip-jar'                // Batch 1: tip jar / support button
   | 'product-list'
+  | 'lead-gen'               // Commerce: email-for-freebie lead magnet
 
   // Batch 2: Map
   | 'map'                   // Interactive Leaflet map with photo-pins + directions
@@ -324,6 +325,14 @@ export interface CanvasElement {
   // Product List specific (showcase of products; all in element JSON)
   productListTitle?: string
   products?: Product[]
+  // Lead Gen specific (email-for-freebie; content resolved server-side on submit)
+  leadGenHeadline?: string
+  leadGenButtonLabel?: string
+  leadGenMessage?: string       // preset body emailed to the visitor
+  leadGenFileUrl?: string       // Blob URL of the delivered file (optional)
+  leadGenFileName?: string      // display name for the download link
+  leadGenSuccessText?: string   // shown on the page after submit
+  leadGenCollectName?: boolean  // collect an optional name field
   // Calendar specific (month calendar of events)
   calendarTitle?: string
   calendarSubtitle?: string
@@ -1310,6 +1319,15 @@ export function createElement(type: ElementType): CanvasElement {
       return { ...base, tipJarTitle: 'Support my work', tipJarMessage: 'If you enjoy what I do, consider leaving a tip 💚', tipJarPlatform: 'custom', tipJarUrl: '', tipJarButtonText: 'Leave a tip', tipJarAmounts: ['$3', '$5', '$10'] }
     case 'product-list':
       return { ...base, productListTitle: 'Products', products: [] }
+    case 'lead-gen':
+      return {
+        ...base,
+        leadGenHeadline: 'Get my free guide',
+        leadGenButtonLabel: 'Send it to me',
+        leadGenMessage: "Thanks for your interest! Here's what I promised — enjoy.",
+        leadGenSuccessText: 'Check your inbox! 📬',
+        leadGenCollectName: false,
+      }
     case 'map':
       return {
         ...base,
