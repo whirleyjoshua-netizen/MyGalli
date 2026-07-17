@@ -18,7 +18,7 @@ export function PublicIndexElement({ element }: Props) {
   const accent = element.indexAccent || '#39D98A'
   const numbers = element.indexEnableNumbers ?? true
   const showSearch = element.indexEnableSearch ?? true
-  const allEntries = element.indexEntries ?? []
+  const allEntries = useMemo(() => element.indexEntries ?? [], [element.indexEntries])
 
   const [view, setView] = useState<'list' | 'cards'>(element.indexView ?? 'list')
   const [query, setQuery] = useState('')
@@ -26,6 +26,11 @@ export function PublicIndexElement({ element }: Props) {
   const [cardIndex, setCardIndex] = useState(0)
 
   const filtered = useMemo(() => filterEntries(allEntries, query), [allEntries, query])
+
+  const indexById = useMemo(
+    () => new Map(filtered.map((e, i) => [e.id, i])),
+    [filtered],
+  )
 
   if (allEntries.length === 0) {
     return (
@@ -97,7 +102,7 @@ export function PublicIndexElement({ element }: Props) {
                 </div>
               )}
               {group.entries.map((entry) => {
-                const globalIndex = filtered.indexOf(entry)
+                const globalIndex = indexById.get(entry.id) ?? 0
                 const href = safeHref(entry.linkUrl)
                 const detail = hasDetail(entry)
                 const open = expanded === entry.id
