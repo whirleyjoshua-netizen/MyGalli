@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canPostToHub, toMemberDTO, canParticipate, canModerate, postNotifyTargets } from './community'
+import { canPostToHub, toMemberDTO, canParticipate, canModerate, postNotifyTargets, canViewCommunityHub } from './community'
 
 describe('canPostToHub', () => {
   const hub = { userId: 'owner1' }
@@ -63,5 +63,15 @@ describe('postNotifyTargets', () => {
 
   it('returns empty when there is nobody else to notify', () => {
     expect(postNotifyTargets({ authorId: 'owner', ownerId: 'owner', collabIds: [], memberIds: [] })).toEqual([])
+  })
+})
+
+describe('canViewCommunityHub', () => {
+  it('published communities are public', () => {
+    expect(canViewCommunityHub({ published: true, isPrivileged: false })).toBe(true)
+  })
+  it('unpublished communities are visible only to privileged viewers', () => {
+    expect(canViewCommunityHub({ published: false, isPrivileged: false })).toBe(false)
+    expect(canViewCommunityHub({ published: false, isPrivileged: true })).toBe(true)
   })
 })

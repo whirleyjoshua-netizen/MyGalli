@@ -20,7 +20,7 @@ import { db } from '@/lib/db'
 import { notifyHubMembers } from '@/lib/notifications'
 import { GET, POST } from './route'
 
-const HUB = { id: 'h1', userId: 'owner', community: true, displayId: 'd1', title: 'Smoke Hub', slug: 'smoke-hub', user: { username: 'hubowner' } }
+const HUB = { id: 'h1', userId: 'owner', community: true, displayId: 'd1', published: true, title: 'Smoke Hub', slug: 'smoke-hub', user: { username: 'hubowner' } }
 const ctx = { params: Promise.resolve({ id: 'h1' }) }
 const req = (body: unknown) =>
   new Request('http://localhost/api/hubs/h1/posts', { method: 'POST', body: JSON.stringify(body) }) as any
