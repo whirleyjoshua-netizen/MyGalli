@@ -61,6 +61,12 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
 
       {active && grid.recordsViewId === active.id ? (
         <>
+          <input
+            value={grid.search}
+            onChange={(e) => grid.setSearch(e.target.value)}
+            placeholder="Search records…"
+            className="mb-3 w-full max-w-xs rounded-lg border border-border bg-transparent px-3 py-2 text-sm"
+          />
           <FilterChips
             filter={active?.config?.filter ?? null}
             fields={grid.fields}
@@ -75,6 +81,11 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
               This view&apos;s filter no longer matches the columns ({grid.filterError}) — showing all records.
             </p>
           )}
+          {grid.sortError && (
+            <p className="mb-3 text-sm text-amber-600">
+              This view&apos;s sort no longer matches the columns — showing default order.
+            </p>
+          )}
 
           {/* Active view */}
           {active?.type === 'gallery' ? (
@@ -84,6 +95,22 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
           ) : (
             <GridView grid={grid} />
           )}
+
+          {typeof grid.total === 'number' && grid.total > 0 && (() => {
+            const from = (grid.page - 1) * 100 + 1
+            const to = Math.min(grid.page * 100, grid.total)
+            return (
+              <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
+                <span>Showing {from}–{to} of {grid.total}</span>
+                <div className="flex gap-2">
+                  <button disabled={grid.page <= 1} onClick={() => grid.setPage(grid.page - 1)}
+                    className="rounded-lg border border-border px-3 py-1 disabled:opacity-40">‹ Prev</button>
+                  <button disabled={to >= grid.total} onClick={() => grid.setPage(grid.page + 1)}
+                    className="rounded-lg border border-border px-3 py-1 disabled:opacity-40">Next ›</button>
+                </div>
+              </div>
+            )
+          })()}
         </>
       ) : (
         <div className="p-8 text-muted-foreground">Loading…</div>

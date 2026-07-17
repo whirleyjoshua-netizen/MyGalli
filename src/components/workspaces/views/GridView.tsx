@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
 import { GridCell } from '../cells/GridCell'
 import { ColumnEditorPopover } from '../ColumnEditorPopover'
 import type { useWorkspaceGrid } from '../useWorkspaceGrid'
@@ -28,7 +28,16 @@ export function GridView({ grid }: { grid: ReturnType<typeof useWorkspaceGrid> }
             {grid.fields.map((f) => (
               <th key={f.id} className="group px-4 py-3 text-left font-semibold">
                 <span className="flex items-center gap-1">
-                  {f.label}{f.required ? <span className="text-red-500">*</span> : null}
+                  <button
+                    onClick={() => grid.setSort(f.key)}
+                    title={`Sort by ${f.label}`}
+                    aria-label={`Sort by ${f.label}`}
+                    className="flex items-center gap-1"
+                  >
+                    {f.label}
+                    {grid.activeSort?.field === f.key && (grid.activeSort.dir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </button>
+                  {f.required ? <span className="text-red-500">*</span> : null}
                   <button onClick={() => { if (confirm(`Delete column "${f.label}"?`)) grid.deleteField(f.id) }}
                     className="opacity-0 transition group-hover:opacity-100" title="Delete column">
                     <Trash2 size={13} className="text-muted-foreground hover:text-red-500" />
