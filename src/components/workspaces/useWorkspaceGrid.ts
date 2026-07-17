@@ -35,6 +35,9 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
   // so the per-view records effect (keyed on activeViewId) re-fires and picks up
   // e.g. a filterError caused by deleting a field the active view's filter used.
   const [viewRecordsNonce, setViewRecordsNonce] = useState(0)
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [sortError, setSortError] = useState<string | null>(null)
   // Guards against out-of-order responses: only the latest-issued request for
   // view records is allowed to commit its result.
   const viewRecordsRequestRef = useRef(0)
@@ -214,7 +217,8 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
     // haven't actually arrived yet.
     setRecordsViewId(null)
     try {
-      const res = await fetch(`/api/workspaces/${workspaceId}/views/${viewId}/records`)
+      const qs = new URLSearchParams({ page: String(page), search })
+      const res = await fetch(`/api/workspaces/${workspaceId}/views/${viewId}/records?${qs}`)
       if (!res.ok) throw new Error('Failed to load records')
       const body = await res.json()
       // Ignore stale responses: if a newer request has been issued since this
@@ -225,12 +229,13 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
       commitRecords(body.records ?? [])
       setRecordsViewId(viewId)
       setFilterError(body.filterError ?? null)
+      setSortError(body.sortError ?? null)
       setTotal(typeof body.pagination?.total === 'number' ? body.pagination.total : null)
     } catch (e: any) {
       if (requestId !== viewRecordsRequestRef.current) return
       setError(e.message || 'Failed to load records')
     }
-  }, [workspaceId, commitRecords])
+  }, [workspaceId, commitRecords, page, search])
 
   useEffect(() => {
     if (activeViewId) loadViewRecords(activeViewId)
@@ -238,5 +243,25 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeViewId, loadViewRecords, viewRecordsNonce])
 
-  return { loading, error, workspace, fields, views, records, activeViewId, setActiveViewId, filterError, recordsViewId, total, loadViewRecords, addRow, updateCell, deleteRow, addField, updateField, deleteField, addView, updateView, deleteView, reload }
+  useEffect(() => { setPage(1) }, [activeViewId])
+  useEffect(() => { setPage(1) }, [search])
+
+  const setSort = useCallback((fieldKey: string) => {
+    const view = views.find((v) => v.id === activeViewId)
+    if (!view) return
+    const cur = (view.config as any)?.sort as { field: string; dir: 'asc' | 'desc' } | undefined
+    let next: { field: string; dir: 'asc' | 'desc' } | undefined
+    if (!cur || cur.field !== fieldKey) next = { field: fieldKey, dir: 'asc' }
+    else if (cur.dir === 'asc') next = { field: fieldKey, dir: 'desc' }
+    else next = undefined // third click clears
+    const nextConfig = { ...(view.config as any) }
+    if (next) nextConfig.sort = next
+    else delete nextConfig.sort
+    updateView(view.id, nextConfig)
+  }, [views, activeViewId, updateView])
+
+  const activeSort = ((views.find((v) => v.id === activeViewId)?.config as any)?.sort ?? null) as
+    { field: string; dir: 'asc' | 'desc' } | null
+
+  return { loading, error, workspace, fields, views, records, activeViewId, setActiveViewId, filterError, recordsViewId, total, loadViewRecords, addRow, updateCell, deleteRow, addField, updateField, deleteField, addView, updateView, deleteView, reload, page, setPage, search, setSearch, setSort, sortError, activeSort }
 }

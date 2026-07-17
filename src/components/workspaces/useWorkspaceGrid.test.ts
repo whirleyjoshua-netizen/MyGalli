@@ -210,8 +210,8 @@ describe('useWorkspaceGrid', () => {
     await waitFor(() => expect(result.current.records.map((r) => r.id)).toEqual(['r9']))
 
     const calls = fetchMock.mock.calls.map((c: any[]) => c[0] as string)
-    expect(calls).toContain('/api/workspaces/w1/views/v2/records')
-    expect(calls).not.toContain('/api/workspaces/w1/views/v1/records')
+    expect(calls.some((c) => c.startsWith('/api/workspaces/w1/views/v2/records'))).toBe(true)
+    expect(calls.some((c) => c.startsWith('/api/workspaces/w1/views/v1/records'))).toBe(false)
   })
 
   it('falls back to the first view when initialViewId is unknown/garbage', async () => {
