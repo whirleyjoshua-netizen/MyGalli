@@ -65,8 +65,8 @@ function conditionSql(c: Condition, fields: FilterField[], p: (v: any) => string
   const numeric = NUMERIC.includes(field.type)
   const lhs = `data->>${p(c.field)}`
   switch (c.cmp) {
-    case 'eq': return `${lhs} = ${p(c.value)}`
-    case 'neq': return `NOT (${lhs} = ${p(c.value)})`
+    case 'eq': return numeric ? `(${lhs})::numeric = ${p(c.value)}` : `${lhs} = ${p(c.value)}`
+    case 'neq': return numeric ? `NOT ((${lhs})::numeric = ${p(c.value)})` : `NOT (${lhs} = ${p(c.value)})`
     // Match E's string_contains (case-sensitive, %/_ in the value act as wildcards
     // exactly as Prisma's string_contains does — so wrap WITHOUT escaping).
     case 'contains': return `${lhs} LIKE ${p('%' + c.value + '%')}`

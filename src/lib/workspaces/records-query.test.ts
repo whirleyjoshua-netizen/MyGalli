@@ -64,6 +64,43 @@ describe('buildRecordsQuery', () => {
     expect(q.countParams).toEqual(['w1', 'sport', 'Soccer', 'fee', 1200, 'name', '%jo%', 'sport', 'Tennis'])
   })
 
+  it('numeric eq casts data->>key to ::numeric before comparison', () => {
+    const q = buildRecordsQuery({
+      ...base,
+      filter: { op: 'and', conditions: [{ field: 'fee', cmp: 'eq', value: 1200 }] },
+    })
+    expect(q.sql).toContain('(data->>$2)::numeric = $3')
+  })
+
+  it('numeric neq casts data->>key to ::numeric before comparison', () => {
+    const q = buildRecordsQuery({
+      ...base,
+      filter: { op: 'and', conditions: [{ field: 'fee', cmp: 'neq', value: 1200 }] },
+    })
+    expect(q.sql).toContain('NOT ((data->>$2)::numeric = $3)')
+  })
+
+  it('text/choice eq does not cast (plain text comparison)', () => {
+    const q = buildRecordsQuery({
+      ...base,
+      filter: { op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }] },
+    })
+    expect(q.sql).toContain('data->>$2 = $3')
+    expect(q.sql).not.toContain('::numeric')
+  })
+
+  it('numeric gte/lte cast to ::numeric', () => {
+    const q = buildRecordsQuery({
+      ...base,
+      filter: { op: 'and', conditions: [
+        { field: 'fee', cmp: 'gte', value: 100 },
+        { field: 'fee', cmp: 'lte', value: 500 },
+      ] },
+    })
+    expect(q.sql).toContain('(data->>$2)::numeric >= $3')
+    expect(q.sql).toContain('(data->>$4)::numeric <= $5')
+  })
+
   it('or-filter joins with OR', () => {
     const q = buildRecordsQuery({
       ...base,
