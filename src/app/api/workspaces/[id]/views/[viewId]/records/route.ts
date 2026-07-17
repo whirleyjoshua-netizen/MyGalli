@@ -20,6 +20,7 @@ export async function GET(
   const page = Number.isFinite(parsedPage) ? Math.max(1, parsedPage) : 1
   const parsedPageSize = parseInt(searchParams.get('pageSize') || '100')
   const pageSize = Number.isFinite(parsedPageSize) ? Math.min(200, Math.max(1, parsedPageSize)) : 100
+  const search = (searchParams.get('search') || '').slice(0, 200)
 
   try {
     const result = await queryWorkspaceView({
@@ -28,6 +29,7 @@ export async function GET(
       userId: user.id,
       page,
       pageSize,
+      search,
     })
 
     return NextResponse.json(result)

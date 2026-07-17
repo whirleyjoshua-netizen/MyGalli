@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { authorizeWorkspace } from '@/lib/workspaces/authorize'
-import { validateFilter, FilterError, type FilterField } from '@/lib/workspaces/filter'
+import { validateFilter, validateSort, FilterError, type FilterField } from '@/lib/workspaces/filter'
 
 // POST /api/workspaces/[id]/views - Create a new view
 export async function POST(
@@ -60,6 +60,15 @@ export async function POST(
         if (e instanceof FilterError) {
           return NextResponse.json({ error: e.message }, { status: 400 })
         }
+        throw e
+      }
+    }
+
+    if (storedConfig.sort) {
+      try {
+        storedConfig = { ...storedConfig, sort: validateSort(storedConfig.sort, fields as unknown as FilterField[]) }
+      } catch (e: any) {
+        if (e instanceof FilterError) return NextResponse.json({ error: e.message }, { status: 400 })
         throw e
       }
     }

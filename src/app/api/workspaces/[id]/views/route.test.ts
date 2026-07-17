@@ -160,4 +160,32 @@ describe('POST /api/workspaces/[id]/views', () => {
     expect(res.status).toBe(400)
     expect((await res.json()).error).toMatch(/Unknown field/)
   })
+
+  it('accepts a valid config.sort and stores it', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    ;(db.workspace.findUnique as any).mockResolvedValue({ ownerId: 'u1' })
+    ;(db.workspaceField.findMany as any).mockResolvedValue([{ id: 'f1', key: 'fee', label: 'Fee', type: 'currency' }])
+    ;(db.workspaceView.count as any).mockResolvedValue(1)
+    ;(db.workspaceView.create as any).mockResolvedValue({ id: 'v9' })
+    const req = new Request('http://localhost/api/workspaces/w1/views', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Sorted', type: 'grid', config: { sort: { field: 'fee', dir: 'desc' } } }),
+    })
+    const res = await POST(req as any, ctx)
+    expect(res.status).toBe(201)
+    expect((db.workspaceView.create as any).mock.calls[0][0].data.config.sort).toEqual({ field: 'fee', dir: 'desc' })
+  })
+
+  it('400s on a sort naming an unknown field', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    ;(db.workspace.findUnique as any).mockResolvedValue({ ownerId: 'u1' })
+    ;(db.workspaceField.findMany as any).mockResolvedValue([{ id: 'f1', key: 'fee', label: 'Fee', type: 'currency' }])
+    const req = new Request('http://localhost/api/workspaces/w1/views', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Bad', type: 'grid', config: { sort: { field: 'ghost', dir: 'asc' } } }),
+    })
+    const res = await POST(req as any, ctx)
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toMatch(/Unknown field/)
+  })
 })

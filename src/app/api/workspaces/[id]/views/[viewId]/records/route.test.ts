@@ -36,7 +36,8 @@ describe('GET /api/workspaces/[id]/views/[viewId]/records', () => {
       viewId: 'v1',
       userId: 'u1',
       page: 1,
-      pageSize: 100
+      pageSize: 100,
+      search: ''
     })
   })
 
