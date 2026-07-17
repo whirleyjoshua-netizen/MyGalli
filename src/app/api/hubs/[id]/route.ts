@@ -35,6 +35,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (typeof body.description === 'string') data.description = body.description.slice(0, 1000)
   if (typeof body.coverImage === 'string') data.coverImage = body.coverImage
   if (typeof body.community === 'boolean') data.community = body.community
+  if (typeof body.published === 'boolean') data.published = body.published
+  if (typeof body.tagline === 'string') data.tagline = body.tagline.trim().slice(0, 160)
+  if (typeof body.heroVideoUrl === 'string') data.heroVideoUrl = body.heroVideoUrl.trim().slice(0, 500)
   const hub = await db.hub.update({ where: { id }, data })
   return NextResponse.json(hub)
 }
