@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { canParticipate, postNotifyTargets } from '@/lib/community'
+import { canParticipate, postNotifyTargets, canViewCommunityHub } from '@/lib/community'
 import { rateLimit } from '@/lib/rate-limit'
 import { notifyHubMembers } from '@/lib/notifications'
 import { normalizeSettings, resultsVisible, firstBlock, isBulletinBlockType, isEmptyPost } from '@/lib/bulletin'
 import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
+import { summarizeReactions } from '@/lib/hub-reactions'
 import type { Prisma } from '@prisma/client'
 
 async function collaboratorIds(hubId: string): Promise<string[]> {
@@ -15,15 +16,14 @@ async function collaboratorIds(hubId: string): Promise<string[]> {
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const hub = await db.hub.findUnique({ where: { id }, select: { id: true, community: true, displayId: true, userId: true } })
+  const hub = await db.hub.findUnique({ where: { id }, select: { id: true, community: true, userId: true, published: true } })
   if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const me = await getUser(request)
-  // Draft (unpublished) community posts stay private — only the owner + collaborators can read them.
-  // KEEP IN SYNC with readableCommunityHub() in [postId]/comments/route.ts GET.
-  const display = hub.displayId ? await db.display.findUnique({ where: { id: hub.displayId }, select: { published: true } }) : null
-  if (!display?.published) {
-    const canView = !!me && (me.id === hub.userId || (await collaboratorIds(id)).includes(me.id))
-    if (!canView) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  // Draft (unpublished) community posts stay private — only owner + collaborators can read.
+  // KEEP IN SYNC with the comments route GET.
+  const isPrivileged = !!me && (me.id === hub.userId || (await collaboratorIds(id)).includes(me.id))
+  if (!canViewCommunityHub({ published: hub.published, isPrivileged })) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
   const posts = await db.hubPost.findMany({
     where: { hubId: id },
@@ -31,7 +31,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     take: 50,
     include: {
       author: { select: { id: true, name: true, username: true, avatar: true } },
-      likes: { select: { userId: true } },
       _count: { select: { comments: true } },
     },
   })
@@ -49,6 +48,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const list = byPost.get(r.postId)
     if (list) list.push(r)
     else byPost.set(r.postId, [r])
+  }
+
+  const reactionRows = postIds.length
+    ? await db.hubPostReaction.findMany({ where: { postId: { in: postIds } }, select: { postId: true, emoji: true, userId: true } })
+    : []
+  const reactionsByPost = new Map<string, { emoji: string; userId: string }[]>()
+  for (const r of reactionRows) {
+    const list = reactionsByPost.get(r.postId)
+    if (list) list.push(r)
+    else reactionsByPost.set(r.postId, [r])
   }
 
   const feed = posts.map((p) => {
@@ -69,8 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       block,
       settings,
       createdAt: p.createdAt.toISOString(),
-      likeCount: p.likes.length,
-      likedByMe: me ? p.likes.some((l) => l.userId === me.id) : false,
+      reactions: summarizeReactions(reactionsByPost.get(p.id) || [], me?.id),
       myResponse: (mine?.responses as Record<string, { type: string; answer: unknown }> | undefined) ?? null,
       results: block && canSee ? aggregateBlock(block, toRecords(rows, false)) : null,
       commentCount: p._count.comments,
