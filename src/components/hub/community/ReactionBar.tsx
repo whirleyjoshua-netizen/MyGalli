@@ -20,6 +20,8 @@ export function ReactionBar({
 
   async function toggle(emoji: string) {
     if (disabled) return
+    const prevCounts = counts
+    const prevMine = mine
     const has = mine.includes(emoji)
     const method = has ? 'DELETE' : 'POST'
     // optimistic
@@ -32,9 +34,17 @@ export function ReactionBar({
         body: JSON.stringify({ emoji }),
       })
       if (res.status === 401) { window.location.href = '/login'; return }
-      if (res.ok) { const d = await res.json(); setCounts(d.counts); setMine(d.mine) }
+      if (res.ok) {
+        const d = await res.json()
+        setCounts(d.counts)
+        setMine(d.mine)
+      } else {
+        setCounts(prevCounts)
+        setMine(prevMine)
+      }
     } catch {
-      /* leave optimistic state */
+      setCounts(prevCounts)
+      setMine(prevMine)
     }
     setOpen(false)
   }

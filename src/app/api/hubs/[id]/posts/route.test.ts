@@ -11,7 +11,6 @@ vi.mock('@/lib/db', () => ({
     hubPost: { create: vi.fn(), findMany: vi.fn() },
     hubPostResponse: { findMany: vi.fn() },
     hubPostReaction: { findMany: vi.fn() },
-    display: { findUnique: vi.fn() },
   },
 }))
 
@@ -20,7 +19,7 @@ import { db } from '@/lib/db'
 import { notifyHubMembers } from '@/lib/notifications'
 import { GET, POST } from './route'
 
-const HUB = { id: 'h1', userId: 'owner', community: true, displayId: 'd1', published: true, title: 'Smoke Hub', slug: 'smoke-hub', user: { username: 'hubowner' } }
+const HUB = { id: 'h1', userId: 'owner', community: true, published: true, title: 'Smoke Hub', slug: 'smoke-hub', user: { username: 'hubowner' } }
 const ctx = { params: Promise.resolve({ id: 'h1' }) }
 const req = (body: unknown) =>
   new Request('http://localhost/api/hubs/h1/posts', { method: 'POST', body: JSON.stringify(body) }) as any
@@ -33,7 +32,6 @@ beforeEach(() => {
   ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem' }) // caller is a member
   ;(db.hubMember.findMany as any).mockResolvedValue([{ userId: 'm1' }, { userId: 'm2' }])
   ;(db.hubPost.create as any).mockResolvedValue({ id: 'p1' })
-  ;(db.display.findUnique as any).mockResolvedValue({ published: true })
   ;(db.hubPostResponse.findMany as any).mockResolvedValue([])
   ;(db.hubPostReaction.findMany as any).mockResolvedValue([])
 })
@@ -209,7 +207,7 @@ describe('GET /api/hubs/[id]/posts — reactions', () => {
   it('includes a reaction summary per post', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'm1', name: 'M1', username: 'm1', avatar: null })
     ;(db.hubPost.findMany as any).mockResolvedValue([
-      { id: 'p1', author: { id: 'a', name: 'A', username: 'a', avatar: null }, text: 'hi', imageUrl: null, blocks: [], settings: {}, createdAt: new Date(), authorId: 'a', likes: [], _count: { comments: 0 } },
+      { id: 'p1', author: { id: 'a', name: 'A', username: 'a', avatar: null }, text: 'hi', imageUrl: null, blocks: [], settings: {}, createdAt: new Date(), authorId: 'a', _count: { comments: 0 } },
     ])
     ;(db.hubPostReaction.findMany as any).mockResolvedValue([
       { postId: 'p1', emoji: '❤️', userId: 'm1' },

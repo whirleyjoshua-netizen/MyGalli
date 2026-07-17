@@ -17,8 +17,8 @@ export interface FeedPost {
   block: CanvasElement | null
   settings: { revealAfterAnswer: boolean; liveTally: boolean }
   createdAt: string
-  likeCount: number
-  likedByMe: boolean
+  likeCount?: number
+  likedByMe?: boolean
   myResponse: Record<string, { type: string; answer: unknown }> | null
   results: ElementAggregate | null
   reactions?: ReactionSummary
@@ -31,15 +31,18 @@ export function BulletinPostCard({
   onDeleted,
   basePath = '/api/bulletin',
   canModerate,
+  canReact,
 }: {
   post: FeedPost
   currentUserId?: string
   onDeleted: (id: string) => void
   basePath?: string
   canModerate?: boolean
+  canReact?: boolean
 }) {
-  const [liked, setLiked] = useState(post.likedByMe)
-  const [likeCount, setLikeCount] = useState(post.likeCount)
+  const [liked, setLiked] = useState(post.likedByMe ?? false)
+  const [likeCount, setLikeCount] = useState(post.likeCount ?? 0)
+  const resolvedCanReact = canReact ?? (currentUserId != null)
   const [results, setResults] = useState<ElementAggregate | null>(post.results)
   const [myResponse, setMyResponse] = useState(post.myResponse)
 
@@ -112,7 +115,7 @@ export function BulletinPostCard({
       )}
 
       {post.reactions ? (
-        <ReactionBar postId={post.id} basePath={basePath} initial={post.reactions} disabled={!currentUserId} />
+        <ReactionBar postId={post.id} basePath={basePath} initial={post.reactions} disabled={!resolvedCanReact} />
       ) : (
         <div className="flex items-center gap-1 pt-0.5">
           <button onClick={toggleLike} className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium ${liked ? 'text-red-500' : 'text-muted-foreground hover:text-foreground'}`}>

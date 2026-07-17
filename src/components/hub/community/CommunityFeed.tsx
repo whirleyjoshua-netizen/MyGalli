@@ -36,12 +36,13 @@ export function CommunityFeed({
               currentUserId={currentUserId}
               basePath={`/api/hubs/${hubId}/posts`}
               canModerate={isPrivileged}
+              canReact={canPost}
               onDeleted={(delId) => setPosts((cur) => cur.filter((x) => x.id !== delId))}
             />
             <HubPostComments
               hubId={hubId}
               postId={p.id}
-              initialCount={(p as { commentCount?: number }).commentCount ?? 0}
+              initialCount={p.commentCount ?? 0}
               canComment={canPost}
               canModerate={isPrivileged}
               currentUserId={currentUserId}
