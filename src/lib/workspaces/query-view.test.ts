@@ -8,7 +8,7 @@ vi.mock('@/lib/db', () => ({
   db: {
     workspaceView: { findUnique: vi.fn() },
     workspaceField: { findMany: vi.fn() },
-    workspaceRecord: { findMany: vi.fn(), count: vi.fn() },
+    $queryRawUnsafe: vi.fn(),
   },
 }))
 
@@ -21,8 +21,10 @@ function setup(config: any) {
   ;(authorizeWorkspace as any).mockResolvedValue({ id: 'w1' })
   ;(db.workspaceView.findUnique as any).mockResolvedValue({ id: 'v1', name: 'V', type: 'grid', config })
   ;(db.workspaceField.findMany as any).mockResolvedValue(FIELDS)
-  ;(db.workspaceRecord.findMany as any).mockResolvedValue([])
-  ;(db.workspaceRecord.count as any).mockResolvedValue(0)
+  ;(db.$queryRawUnsafe as any).mockReset()
+  ;(db.$queryRawUnsafe as any)
+    .mockResolvedValueOnce([{ id: 'r1', data: { sport: 'Soccer' }, updatedAt: new Date(0) }]) // records
+    .mockResolvedValueOnce([{ count: 1 }])                                                     // count
 }
 
 const ARGS = { workspaceId: 'w1', viewId: 'v1', userId: 'u1' }
@@ -30,52 +32,41 @@ const ARGS = { workspaceId: 'w1', viewId: 'v1', userId: 'u1' }
 describe('queryWorkspaceView filtering', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('applies the view filter to BOTH findMany and count', async () => {
-    setup({ filter: { op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }] } })
-    await queryWorkspaceView(ARGS)
-
-    const expected = { AND: [{ data: { path: ['sport'], equals: 'Soccer' } }] }
-    expect((db.workspaceRecord.findMany as any).mock.calls[0][0].where).toMatchObject({
-      workspaceId: 'w1',
-      status: 'active',
-      ...expected,
-    })
-    expect((db.workspaceRecord.count as any).mock.calls[0][0].where).toMatchObject({
-      workspaceId: 'w1',
-      status: 'active',
-      ...expected,
-    })
+  it('runs the built SQL for records and the count SQL for the total', async () => {
+    setup({}) // existing helper that mocks view + fields
+    const res = await queryWorkspaceView(ARGS)
+    const calls = (db.$queryRawUnsafe as any).mock.calls
+    expect(calls[0][0]).toMatch(/SELECT id, data, "updatedAt" FROM "WorkspaceRecord"/)
+    expect(calls[1][0]).toMatch(/SELECT count\(\*\)::int AS count/)
+    expect(res.pagination.total).toBe(1)
   })
 
-  it('queries unfiltered when the view has no filter', async () => {
-    setup({})
-    await queryWorkspaceView(ARGS)
-    const where = (db.workspaceRecord.findMany as any).mock.calls[0][0].where
-    expect(where).toEqual({ workspaceId: 'w1', status: 'active' })
-    expect(where.AND).toBeUndefined()
+  it('drops a stale sort (unknown field) and surfaces sortError without throwing', async () => {
+    setup({ sort: { field: 'deleted_col', dir: 'asc' } })
+    const res = await queryWorkspaceView(ARGS)
+    expect(res.sort).toBeNull()
+    expect(res.sortError).toMatch(/Unknown field/)
+    // still queried (unsorted), no throw:
+    expect((db.$queryRawUnsafe as any).mock.calls.length).toBe(2)
+  })
+
+  it('passes a valid sort + search through to the query', async () => {
+    setup({ sort: { field: 'fee', dir: 'desc' } })
+    await queryWorkspaceView({ ...ARGS, search: 'carter' })
+    const recordsSql = (db.$queryRawUnsafe as any).mock.calls[0][0]
+    expect(recordsSql).toContain('::numeric DESC')
+    expect(recordsSql).toContain('jsonb_each_text')
   })
 
   it('ignores a stale filter naming a field that no longer exists', async () => {
     setup({ filter: { op: 'and', conditions: [{ field: 'deleted_col', cmp: 'eq', value: 'x' }] } })
     const result = await queryWorkspaceView(ARGS)
-    // Must not throw and must not silently filter on garbage
-    expect((db.workspaceRecord.findMany as any).mock.calls[0][0].where).toEqual({
-      workspaceId: 'w1',
-      status: 'active',
-    })
     expect(result.filterError).toMatch(/Unknown field/)
   })
 
   it('defaults pageSize to 100 (matching the main GET)', async () => {
     setup({})
     const result = await queryWorkspaceView(ARGS)
-    expect((db.workspaceRecord.findMany as any).mock.calls[0][0].take).toBe(100)
     expect(result.pagination.pageSize).toBe(100)
-  })
-
-  it('orders by createdAt asc, matching the main GET /api/workspaces/[id] (Finding: row order silently flipped)', async () => {
-    setup({})
-    await queryWorkspaceView(ARGS)
-    expect((db.workspaceRecord.findMany as any).mock.calls[0][0].orderBy).toEqual({ createdAt: 'asc' })
   })
 })

@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { authorizeWorkspace } from './authorize'
-import { validateFilter, filterToPrismaWhere, FilterError } from './filter'
+import { validateFilter, validateSort, FilterError, type FilterSpec, type SortSpec } from './filter'
+import { buildRecordsQuery } from './records-query'
 
 type QueryOptions = {
   workspaceId: string
@@ -8,6 +9,7 @@ type QueryOptions = {
   userId: string
   page?: number
   pageSize?: number
+  search?: string
 }
 
 export async function queryWorkspaceView({
@@ -16,6 +18,7 @@ export async function queryWorkspaceView({
   userId,
   page = 1,
   pageSize = 100,
+  search,
 }: QueryOptions) {
   // 1. Authorize
   await authorizeWorkspace(userId, workspaceId)
@@ -32,18 +35,17 @@ export async function queryWorkspaceView({
     orderBy: { position: 'asc' },
   })
 
-  // 4. Build query — apply the view's saved filter, if any.
-  const skip = (page - 1) * pageSize
-  const config = view.config as { visibleFields?: string[]; filter?: unknown }
+  // 4. Validate the view's saved filter + sort (untrusted: columns can change
+  //    after they were saved), then build one parameterized SQL query.
+  const config = view.config as { visibleFields?: string[]; filter?: unknown; sort?: unknown }
 
-  let filterWhere: Record<string, any> = {}
+  let filterSpec: FilterSpec | null = null
   let filterError: string | undefined
   if (config?.filter) {
     try {
       // Re-validate on every read: columns can be deleted or retyped after a
       // filter is saved, so a stored filter is untrusted input like any other.
-      const spec = validateFilter(config.filter, fields)
-      filterWhere = filterToPrismaWhere(spec)
+      filterSpec = validateFilter(config.filter, fields)
     } catch (e: any) {
       if (!(e instanceof FilterError)) throw e
       // A stale filter degrades to "show everything" + a surfaced message,
@@ -52,21 +54,26 @@ export async function queryWorkspaceView({
     }
   }
 
-  const where = { workspaceId, status: 'active', ...filterWhere }
+  let sortSpec: SortSpec | null = null
+  let sortError: string | undefined
+  if (config?.sort) {
+    try {
+      sortSpec = validateSort(config.sort, fields)
+    } catch (e: any) {
+      if (!(e instanceof FilterError)) throw e
+      sortError = e.message
+    }
+  }
 
-  const [records, total] = await Promise.all([
-    db.workspaceRecord.findMany({
-      where,
-      skip,
-      take: pageSize,
-      // Must match the main GET /api/workspaces/[id]'s ordering (asc) — the UI
-      // treats both as interchangeable record sources, and addRow appends to
-      // the end of the array, which only makes sense under ascending order.
-      orderBy: { createdAt: 'asc' },
-      select: { id: true, data: true, updatedAt: true }
-    }),
-    db.workspaceRecord.count({ where })
+  const built = buildRecordsQuery({
+    workspaceId, fields, filter: filterSpec, search, sort: sortSpec, page, pageSize,
+  })
+
+  const [records, countRows] = await Promise.all([
+    db.$queryRawUnsafe(built.sql, ...built.params) as Promise<Array<{ id: string; data: any; updatedAt: Date }>>,
+    db.$queryRawUnsafe(built.countSql, ...built.countParams) as Promise<Array<{ count: number }>>,
   ])
+  const total = countRows[0]?.count ?? 0
 
   // 5. Projection (strip non-visible fields if defined in config)
   const visibleFields = config?.visibleFields || fields.map(f => f.key)
@@ -84,6 +91,8 @@ export async function queryWorkspaceView({
     fields: fields.filter(f => visibleFields.includes(f.key)),
     records: projectedRecords,
     filterError,
+    sort: sortSpec,
+    sortError,
     pagination: {
       page,
       pageSize,
