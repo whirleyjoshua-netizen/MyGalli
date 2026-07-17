@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Image as ImageIcon, Loader2, Trash2, FolderPlus, ChevronRight, Users, UsersRound, StickyNote } from 'lucide-react'
+import Link from 'next/link'
+import { Image as ImageIcon, Loader2, Trash2, FolderPlus, ChevronRight, Users, UsersRound, StickyNote, Globe } from 'lucide-react'
 import { buildFolderTree, folderPath, type FolderNode } from '@/lib/hub-tree'
 import { HubFolderTree } from './HubFolderTree'
 import { HubItemList, type HubItem } from './HubItemList'
@@ -21,6 +22,7 @@ interface Hub {
   description: string | null
   coverImage: string | null
   community: boolean
+  slug: string
 }
 
 interface HubEditorProps {
@@ -330,6 +332,15 @@ export function HubEditor({ hubId }: HubEditorProps) {
         >
           <UsersRound className="w-4 h-4" /> Community
         </button>
+        {user?.username && hub.slug && (
+          <Link
+            href={`/${user.username}/hub/${hub.slug}`}
+            target="_blank"
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg text-primary hover:bg-muted/60"
+          >
+            <Globe className="w-4 h-4" /> View public page
+          </Link>
+        )}
       </div>
 
       {/* Header */}
