@@ -47,6 +47,7 @@ model User {
   hubMemberships HubMember[] @relation("UserHubMemberships")
   hubPosts HubPost[] @relation("HubPostAuthor")
   hubPostLikes HubPostLike[]
+  hubPostReactions HubPostReaction[]
   hubPostComments HubPostComment[] @relation("HubPostCommentAuthor")
   hubPostResponses HubPostResponse[]
   ownedWorkspaces          Workspace[]       @relation("OwnedWorkspaces")
@@ -557,6 +558,9 @@ model Hub {
   description String?
   coverImage  String?
   community   Boolean     @default(false)
+  published   Boolean     @default(false)
+  tagline     String?
+  heroVideoUrl String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   folders     HubFolder[]
@@ -670,6 +674,7 @@ model HubPost {
   settings  Json          @default("{}")
   createdAt DateTime      @default(now())
   likes     HubPostLike[]
+  reactions HubPostReaction[]
   comments  HubPostComment[]
   responses HubPostResponse[]
   @@index([hubId, createdAt])
@@ -683,6 +688,18 @@ model HubPostLike {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   @@unique([postId, userId])
+  @@index([postId])
+}
+
+model HubPostReaction {
+  id        String   @id @default(cuid())
+  postId    String
+  post      HubPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime @default(now())
+  @@unique([postId, userId, emoji])
   @@index([postId])
 }
 
