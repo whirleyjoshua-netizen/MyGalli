@@ -2,8 +2,10 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2, Boxes, Upload, Loader2, ArrowRight } from 'lucide-react'
+import { Trash2, Boxes, Upload, Loader2, ArrowRight, UsersRound, Repeat } from 'lucide-react'
 import type { CanvasElement } from '@/lib/types/canvas'
+
+type HubRow = { id: string; title: string; slug: string; community: boolean }
 
 interface Props {
   element: CanvasElement
@@ -30,6 +32,27 @@ export function HubElement({ element, onChange, onDelete, isSelected, onSelect }
   const coverInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [changing, setChanging] = useState(false)
+  const [hubs, setHubs] = useState<HubRow[] | null>(null)
+
+  const openChange = async () => {
+    setChanging(true)
+    if (hubs === null) {
+      try {
+        const res = await fetch('/api/hubs')
+        const data = res.ok ? await res.json() : { hubs: [] }
+        setHubs(Array.isArray(data?.hubs) ? data.hubs : [])
+      } catch {
+        setHubs([])
+      }
+    }
+  }
+
+  const relink = (hubId: string) => {
+    const hub = hubs?.find((h) => h.id === hubId)
+    if (hub) onChange({ hubId: hub.id, hubSlug: hub.slug, hubCommunity: hub.community })
+    setChanging(false)
+  }
 
   const handleCoverFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -59,6 +82,11 @@ export function HubElement({ element, onChange, onDelete, isSelected, onSelect }
         <div className="flex items-center gap-2">
           <Boxes className="w-4 h-4 text-primary" />
           <span className="text-sm font-semibold">Hub</span>
+          {element.hubCommunity && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+              <UsersRound className="w-2.5 h-2.5" /> Community
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -98,13 +126,41 @@ export function HubElement({ element, onChange, onDelete, isSelected, onSelect }
 
         {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
 
-        <button
-          onClick={(e) => { e.stopPropagation(); if (element.hubId) router.push('/hubs/' + element.hubId) }}
-          disabled={!element.hubId}
-          className="flex items-center gap-1.5 text-sm text-primary hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:no-underline"
-        >
-          Open Hub <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        {changing ? (
+          <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
+            {hubs === null ? (
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Loader2 className="w-3 h-3 animate-spin" /> Loading…</p>
+            ) : (
+              <select
+                value={element.hubId || ''}
+                onChange={(e) => relink(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="" disabled>Choose a hub…</option>
+                {hubs.map((h) => (
+                  <option key={h.id} value={h.id}>{h.title}{h.community ? ' (Community)' : ''}</option>
+                ))}
+              </select>
+            )}
+            <button onClick={() => setChanging(false)} className="text-xs text-muted-foreground hover:underline">Cancel</button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <button
+              onClick={(e) => { e.stopPropagation(); if (element.hubId) router.push('/hubs/' + element.hubId) }}
+              disabled={!element.hubId}
+              className="flex items-center gap-1.5 text-sm text-primary hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:no-underline"
+            >
+              Open Hub <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); openChange() }}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <Repeat className="w-3.5 h-3.5" /> Change
+            </button>
+          </div>
+        )}
       </div>
 
       {isSelected && (

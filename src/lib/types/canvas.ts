@@ -1341,7 +1341,7 @@ export function createElement(type: ElementType): CanvasElement {
         whiteboardPreviewUrl: '',
       }
     case 'hub':
-      return { ...base, hubId: '', hubCoverImage: '', hubTitleOverride: '' }
+      return { ...base, hubId: '', hubCoverImage: '', hubTitleOverride: '', hubSlug: '', hubUsername: '', hubCommunity: false }
     default:
       return base
   }
