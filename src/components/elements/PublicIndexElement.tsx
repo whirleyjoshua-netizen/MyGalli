@@ -27,10 +27,14 @@ export function PublicIndexElement({ element }: Props) {
 
   const filtered = useMemo(() => filterEntries(allEntries, query), [allEntries, query])
 
-  const indexById = useMemo(
-    () => new Map(filtered.map((e, i) => [e.id, i])),
-    [filtered],
-  )
+  const indexById = useMemo(() => {
+    const m = new Map<string, number>()
+    let n = 0
+    for (const g of groupByCategory(filtered)) {
+      for (const e of g.entries) m.set(e.id, n++)
+    }
+    return m
+  }, [filtered])
 
   if (allEntries.length === 0) {
     return (
