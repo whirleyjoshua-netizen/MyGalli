@@ -6,6 +6,7 @@ import { rateLimit } from '@/lib/rate-limit'
 import { notifyHubMembers } from '@/lib/notifications'
 import { normalizeSettings, resultsVisible, firstBlock, isBulletinBlockType, isEmptyPost } from '@/lib/bulletin'
 import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
+import { summarizeReactions } from '@/lib/hub-reactions'
 import type { Prisma } from '@prisma/client'
 
 async function collaboratorIds(hubId: string): Promise<string[]> {
@@ -51,6 +52,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     else byPost.set(r.postId, [r])
   }
 
+  const reactionRows = postIds.length
+    ? await db.hubPostReaction.findMany({ where: { postId: { in: postIds } }, select: { postId: true, emoji: true, userId: true } })
+    : []
+  const reactionsByPost = new Map<string, { emoji: string; userId: string }[]>()
+  for (const r of reactionRows) {
+    const list = reactionsByPost.get(r.postId)
+    if (list) list.push(r)
+    else reactionsByPost.set(r.postId, [r])
+  }
+
   const feed = posts.map((p) => {
     const block = firstBlock(p.blocks)
     const settings = normalizeSettings(p.settings)
@@ -71,6 +82,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       createdAt: p.createdAt.toISOString(),
       likeCount: p.likes.length,
       likedByMe: me ? p.likes.some((l) => l.userId === me.id) : false,
+      reactions: summarizeReactions(reactionsByPost.get(p.id) || [], me?.id),
       myResponse: (mine?.responses as Record<string, { type: string; answer: unknown }> | undefined) ?? null,
       results: block && canSee ? aggregateBlock(block, toRecords(rows, false)) : null,
       commentCount: p._count.comments,

@@ -10,6 +10,7 @@ vi.mock('@/lib/db', () => ({
     hubCollaborator: { findMany: vi.fn() },
     hubPost: { create: vi.fn(), findMany: vi.fn() },
     hubPostResponse: { findMany: vi.fn() },
+    hubPostReaction: { findMany: vi.fn() },
     display: { findUnique: vi.fn() },
   },
 }))
@@ -34,6 +35,7 @@ beforeEach(() => {
   ;(db.hubPost.create as any).mockResolvedValue({ id: 'p1' })
   ;(db.display.findUnique as any).mockResolvedValue({ published: true })
   ;(db.hubPostResponse.findMany as any).mockResolvedValue([])
+  ;(db.hubPostReaction.findMany as any).mockResolvedValue([])
 })
 
 describe('POST /api/hubs/[id]/posts — notifications', () => {
@@ -200,5 +202,21 @@ describe('GET /api/hubs/[id]/posts — block/settings/myResponse/results', () =>
     const body = await (await GET(getReq(), ctx)).json()
     expect(body.posts[0].block).toBeNull()
     expect(body.posts[0].results).toBeNull()
+  })
+})
+
+describe('GET /api/hubs/[id]/posts — reactions', () => {
+  it('includes a reaction summary per post', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'm1', name: 'M1', username: 'm1', avatar: null })
+    ;(db.hubPost.findMany as any).mockResolvedValue([
+      { id: 'p1', author: { id: 'a', name: 'A', username: 'a', avatar: null }, text: 'hi', imageUrl: null, blocks: [], settings: {}, createdAt: new Date(), authorId: 'a', likes: [], _count: { comments: 0 } },
+    ])
+    ;(db.hubPostReaction.findMany as any).mockResolvedValue([
+      { postId: 'p1', emoji: '❤️', userId: 'm1' },
+      { postId: 'p1', emoji: '❤️', userId: 'z' },
+    ])
+    const res = await GET(getReq(), ctx)
+    const body = await res.json()
+    expect(body.posts[0].reactions).toEqual({ counts: { '❤️': 2 }, mine: ['❤️'] })
   })
 })
