@@ -6,6 +6,8 @@ import type { ElementAggregate } from '@/lib/element-aggregate'
 import { BulletinBlock } from './BulletinBlock'
 import type { CanvasElement } from '@/lib/types/canvas'
 import { timeAgo } from '@/lib/time-ago'
+import { ReactionBar } from '@/components/hub/community/ReactionBar'
+import type { ReactionSummary } from '@/lib/hub-reactions'
 
 export interface FeedPost {
   id: string
@@ -19,6 +21,8 @@ export interface FeedPost {
   likedByMe: boolean
   myResponse: Record<string, { type: string; answer: unknown }> | null
   results: ElementAggregate | null
+  reactions?: ReactionSummary
+  commentCount?: number
 }
 
 export function BulletinPostCard({
@@ -107,11 +111,15 @@ export function BulletinPostCard({
         />
       )}
 
-      <div className="flex items-center gap-1 pt-0.5">
-        <button onClick={toggleLike} className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium ${liked ? 'text-red-500' : 'text-muted-foreground hover:text-foreground'}`}>
-          <Heart className={`h-4 w-4 ${liked ? 'fill-red-500' : ''}`} /> {likeCount > 0 ? likeCount : ''}
-        </button>
-      </div>
+      {post.reactions ? (
+        <ReactionBar postId={post.id} basePath={basePath} initial={post.reactions} disabled={!currentUserId} />
+      ) : (
+        <div className="flex items-center gap-1 pt-0.5">
+          <button onClick={toggleLike} className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium ${liked ? 'text-red-500' : 'text-muted-foreground hover:text-foreground'}`}>
+            <Heart className={`h-4 w-4 ${liked ? 'fill-red-500' : ''}`} /> {likeCount > 0 ? likeCount : ''}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
