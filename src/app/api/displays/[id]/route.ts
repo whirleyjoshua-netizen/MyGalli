@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { canEdit, splitUpdate, COLLAB_FIELDS } from '@/lib/collab'
+import { canEdit, splitUpdate, COLLAB_FIELDS, VISIBLE_FIELDS } from '@/lib/collab'
 import { isValidCategory } from '@/lib/categories'
 import { notifyFollowers } from '@/lib/notifications'
 import { findLiveFeedIds } from '@/lib/live-feed-reconcile'
@@ -110,7 +110,7 @@ export async function PATCH(
 
     // Only pass through known fields, then split owner-only vs collaborator-allowed
     const known: Record<string, unknown> = {}
-    for (const k of ['title', 'description', 'published', 'sections', 'background', 'spacing', 'headerCard', 'tabs', 'coverImage', 'category']) {
+    for (const k of ['title', 'description', 'published', 'sections', 'background', 'spacing', 'headerCard', 'tabs', 'coverImage', 'category', 'showLastUpdated']) {
       if (updates[k] !== undefined) known[k] = updates[k]
     }
     const { data, rejected } = splitUpdate(known, isOwner)
@@ -130,6 +130,21 @@ export async function PATCH(
     const touchesContent = Object.keys(data).some((k) => (COLLAB_FIELDS as readonly string[]).includes(k))
     if (touchesContent && typeof clientVersion === 'number' && clientVersion !== display.version) {
       return NextResponse.json({ error: 'Version conflict', currentVersion: display.version }, { status: 409 })
+    }
+
+    // "Last updated" tracks visible edits only. Deliberately NOT display.updatedAt:
+    // the view counter writes to this row on every page view, so @updatedAt would
+    // restamp it and the badge would always read "just now".
+    const touchesVisible = Object.keys(data).some((k) =>
+      (VISIBLE_FIELDS as readonly string[]).includes(k),
+    )
+    // Enabling the badge on a page with no recorded edit sets the date to now:
+    // the owner asserting the page is current, rather than a date we invented.
+    const bootstraps =
+      data.showLastUpdated === true && display.contentUpdatedAt === null
+
+    if (touchesVisible || bootstraps) {
+      data.contentUpdatedAt = new Date()
     }
 
     const updated = await db.display.update({

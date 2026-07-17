@@ -1,6 +1,8 @@
 // Pure bulletin domain helpers: block validation, settings normalization,
 // follow-scope, and the results-reveal rule. No IO — unit-testable.
 
+import type { CanvasElement } from '@/lib/types/canvas'
+
 export const BULLETIN_BLOCK_TYPES = ['poll', 'rating', 'shortanswer'] as const
 export type BulletinBlockType = (typeof BULLETIN_BLOCK_TYPES)[number]
 
@@ -56,4 +58,10 @@ export function rankTrending<T extends TrendingCandidate>(
   })
   const start = (page - 1) * limit
   return { pageItems: sorted.slice(start, start + limit), total: sorted.length }
+}
+
+/** The post's single block, read out of the `blocks` JSON column. v1 stores at most one. */
+export function firstBlock(blocks: unknown): CanvasElement | null {
+  if (!Array.isArray(blocks) || blocks.length === 0) return null
+  return (blocks[0] as CanvasElement) || null
 }

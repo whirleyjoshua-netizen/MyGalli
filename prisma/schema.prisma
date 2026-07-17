@@ -48,6 +48,7 @@ model User {
   hubPosts HubPost[] @relation("HubPostAuthor")
   hubPostLikes HubPostLike[]
   hubPostComments HubPostComment[] @relation("HubPostCommentAuthor")
+  hubPostResponses HubPostResponse[]
   ownedWorkspaces          Workspace[]       @relation("OwnedWorkspaces")
   workspaceRecordsCreated  WorkspaceRecord[] @relation("WorkspaceRecordsCreated")
   workspaceRecordsUpdated  WorkspaceRecord[] @relation("WorkspaceRecordsUpdated")
@@ -196,6 +197,14 @@ model Display {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // Public "last updated" indicator.
+  // NOTE: updatedAt is unusable for this — the view counter writes to this row
+  // on every page view, so @updatedAt restamps it. contentUpdatedAt is set only
+  // by the PATCH route, and only when an edit touches something a visitor sees.
+  // Null means "no visible edit observed yet" — the badge stays hidden.
+  showLastUpdated  Boolean   @default(false)
+  contentUpdatedAt DateTime?
 
   // Analytics events
   analytics   AnalyticsEvent[]
@@ -662,6 +671,7 @@ model HubPost {
   createdAt DateTime      @default(now())
   likes     HubPostLike[]
   comments  HubPostComment[]
+  responses HubPostResponse[]
   @@index([hubId, createdAt])
 }
 
@@ -685,4 +695,20 @@ model HubPostComment {
   text      String
   createdAt DateTime @default(now())
   @@index([postId, createdAt])
+}
+
+model HubPostResponse {
+  id        String   @id @default(cuid())
+  postId    String
+  post      HubPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Same shape as BulletinResponse.responses: { [elementId]: { type, question, answer } }
+  responses Json
+
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
 }

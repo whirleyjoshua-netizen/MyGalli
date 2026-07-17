@@ -6,6 +6,7 @@ vi.mock('@/lib/collab', () => ({
   canEdit: () => true,
   splitUpdate: (known: Record<string, unknown>) => ({ data: known, rejected: [] }),
   COLLAB_FIELDS: ['sections', 'tabs', 'background', 'spacing', 'headerCard'],
+  VISIBLE_FIELDS: ['sections', 'tabs', 'background', 'spacing', 'headerCard', 'title', 'description'],
 }))
 vi.mock('@/lib/categories', () => ({ isValidCategory: () => true }))
 vi.mock('@/lib/notifications', () => ({ notifyFollowers: vi.fn() }))

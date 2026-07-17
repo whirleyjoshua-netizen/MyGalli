@@ -5,7 +5,7 @@ import { Star } from 'lucide-react'
 import type { RatingAggregate } from '@/lib/element-aggregate'
 import type { BulletinBlockProps } from '../BulletinBlock'
 
-export function BulletinRating({ postId, block, results, myResponse, onResults }: BulletinBlockProps) {
+export function BulletinRating({ postId, basePath, block, results, myResponse, onResults }: BulletinBlockProps) {
   const max = block.ratingMax || 5
   const priorAnswer = myResponse?.[block.id]?.answer
   const [submitted, setSubmitted] = useState(false)
@@ -19,7 +19,7 @@ export function BulletinRating({ postId, block, results, myResponse, onResults }
     if (rating === null || submitting || answered) return
     setSubmitting(true)
     try {
-      const res = await fetch(`/api/bulletin/${postId}/respond`, {
+      const res = await fetch(`${basePath}/${postId}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ responses: { [block.id]: { type: 'rating', question: block.ratingQuestion, answer: rating } } }),

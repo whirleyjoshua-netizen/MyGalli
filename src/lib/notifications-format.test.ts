@@ -21,3 +21,20 @@ describe('formatNotification', () => {
     expect(formatNotification({ type: 'message', actorName: 'Ann', contextText: null })).toBe('Ann sent you a message')
   })
 })
+
+describe('formatNotification — hub community types', () => {
+  it('formats hub_post with the hub title', () => {
+    expect(formatNotification({ type: 'hub_post', actorName: 'Ada', contextText: 'Smoke Hub' }))
+      .toBe('Ada posted in “Smoke Hub”')
+  })
+
+  it('formats hub_comment with the hub title', () => {
+    expect(formatNotification({ type: 'hub_comment', actorName: 'Ada', contextText: 'Smoke Hub' }))
+      .toBe('Ada commented on your post in “Smoke Hub”')
+  })
+
+  it('falls back gracefully when contextText is missing', () => {
+    expect(formatNotification({ type: 'hub_post', actorName: 'Ada' })).toBe('Ada posted in a community')
+    expect(formatNotification({ type: 'hub_comment', actorName: 'Ada' })).toBe('Ada commented on your post')
+  })
+})

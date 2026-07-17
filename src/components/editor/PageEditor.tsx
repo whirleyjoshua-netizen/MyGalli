@@ -60,6 +60,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
   const [tabsConfig, setTabsConfig] = useState<TabsConfig>(DEFAULT_TABS_CONFIG)
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [kitConfig, setKitConfig] = useState<KitPageConfig | null>(null)
+  const [showLastUpdated, setShowLastUpdated] = useState(false)
 
   // UI state
   const [loading, setLoading] = useState(true)
@@ -84,6 +85,9 @@ export function PageEditor({ pageId }: PageEditorProps) {
   // Collaboration state
   const [version, setVersion] = useState(0)
   const versionRef = useRef(0)
+  // Serialised payload of the last PATCH that succeeded. An autosave that would
+  // resend exactly this is a no-op, so we skip the request entirely.
+  const lastSavedPayloadRef = useRef<string | null>(null)
   const [isOwner, setIsOwner] = useState(true)
   const [conflict, setConflict] = useState(false)
   const [showCollaborate, setShowCollaborate] = useState(false)
@@ -222,6 +226,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
         setPublished(data.published)
         setCategory(data.category ?? null)
         setCoverImage(data.coverImage ?? null)
+        setShowLastUpdated(!!data.showLastUpdated)
         setVersion(typeof data.version === 'number' ? data.version : 0)
         versionRef.current = typeof data.version === 'number' ? data.version : 0
         setIsOwner(data.isOwner !== false)
@@ -231,12 +236,12 @@ export function PageEditor({ pageId }: PageEditorProps) {
           ? JSON.parse(data.sections)
           : data.sections || []
 
-        // If no sections, initialize with one
-        if (loadedSections.length === 0) {
-          setSections([createInitialSection()])
-        } else {
-          setSections(loadedSections)
-        }
+        // If no sections, initialize with one. Generated once and reused for
+        // both setSections and the lastSavedPayloadRef seed below, since
+        // createInitialSection() mints fresh ids off Date.now() — calling it
+        // twice would make the seeded key diverge from actual state.
+        const seedSections = loadedSections.length === 0 ? [createInitialSection()] : loadedSections
+        setSections(seedSections)
 
         // Parse background
         const loadedBackground = typeof data.background === 'string'
@@ -271,6 +276,25 @@ export function PageEditor({ pageId }: PageEditorProps) {
           ? (typeof data.kitConfig === 'string' ? JSON.parse(data.kitConfig) : data.kitConfig)
           : null
         setKitConfig(loadedKitConfig)
+
+        // Seed the "last saved" identity from the same normalised values just
+        // set into state (not the raw response) so an untouched editor's
+        // first autosave tick sees an identical payload and skips the PATCH
+        // entirely, instead of stamping the public "updated" date once per
+        // open. Note: for a legacy page with no sections, this seeds with
+        // the fabricated createInitialSection() output, so that fabrication
+        // itself won't be persisted until a real edit is made — intentional,
+        // since opening a legacy page shouldn't stamp an "updated" date.
+        const loadedIsOwner = data.isOwner !== false
+        lastSavedPayloadRef.current = JSON.stringify(buildPayload({
+          isOwner: loadedIsOwner,
+          title: data.title,
+          sections: seedSections,
+          tabsConfig: loadedTabs,
+          background: loadedBackground,
+          spacing: { ...DEFAULT_SPACING_CONFIG, ...loadedSpacing },
+          headerCard: loadedHeaderCard,
+        }))
       } else if (res.status === 403 || res.status === 404) {
         // No access to this page (not owner/collaborator) — back to dashboard
         router.push('/dashboard')
@@ -322,35 +346,62 @@ export function PageEditor({ pageId }: PageEditorProps) {
     columns: [{ id: `col-${Date.now()}`, elements: [] }],
   })
 
+  // Builds the exact save payload shape from a given (normalised) state.
+  // Shared by savePage (to compute what it's about to send) and loadPage
+  // (to seed lastSavedPayloadRef with the same key, from the same
+  // post-normalisation values that end up in state) so the two never drift.
+  const buildPayload = (args: {
+    isOwner: boolean
+    title: string
+    sections: Section[]
+    tabsConfig: TabsConfig
+    background: BackgroundConfig
+    spacing: SpacingConfig
+    headerCard: HeaderCardConfig
+  }) => {
+    // When tabs are enabled, keep top-level sections synced with first tab for backward compat
+    const sectionsToSave = args.tabsConfig.enabled && args.tabsConfig.tabs.length > 0
+      ? args.tabsConfig.tabs[0].sections
+      : args.sections
+
+    return {
+      // title is owner-only; collaborators omit it to avoid a 403
+      ...(args.isOwner ? { title: args.title } : {}),
+      sections: sectionsToSave,
+      background: args.background,
+      spacing: args.spacing,
+      headerCard: args.headerCard.enabled ? args.headerCard : null,
+      tabs: args.tabsConfig.enabled ? args.tabsConfig : null,
+    }
+  }
+
   const savePage = useCallback(async () => {
     if (!id || saving || conflict) return
 
     setSaving(true)
     try {
-      // When tabs are enabled, keep top-level sections synced with first tab for backward compat
-      const sectionsToSave = tabsConfig.enabled && tabsConfig.tabs.length > 0
-        ? tabsConfig.tabs[0].sections
-        : sections
+      const payload = buildPayload({ isOwner, title, sections, tabsConfig, background, spacing, headerCard })
+
+      // `version` is excluded from the identity check: it is bookkeeping, not
+      // content, and it changes on every successful save — including it would
+      // make every payload look different and defeat the skip.
+      const payloadKey = JSON.stringify(payload)
+      if (payloadKey === lastSavedPayloadRef.current) {
+        setSaving(false)
+        return
+      }
 
       const res = await fetch(`/api/displays/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          // title is owner-only; collaborators omit it to avoid a 403
-          ...(isOwner ? { title } : {}),
-          sections: sectionsToSave,
-          background,
-          spacing,
-          headerCard: headerCard.enabled ? headerCard : null,
-          tabs: tabsConfig.enabled ? tabsConfig : null,
-          version: versionRef.current,
-        }),
+        body: JSON.stringify({ ...payload, version: versionRef.current }),
       })
       if (res.status === 409) {
         setConflict(true)
         return
       }
       if (res.ok) {
+        lastSavedPayloadRef.current = payloadKey
         const updated = await res.json()
         if (typeof updated.version === 'number') {
           versionRef.current = updated.version
@@ -978,6 +1029,26 @@ export function PageEditor({ pageId }: PageEditorProps) {
     )
   }
 
+  // Deliberately its own PATCH rather than joining the autosave: the autosave
+  // always ships sections/background/etc, which count as visible edits, so
+  // riding along would stamp contentUpdatedAt and reset the page's real edit
+  // date every time the owner flipped this. Same narrow-payload pattern as
+  // PublishDialog.
+  const changeShowLastUpdated = async (next: boolean) => {
+    const previous = showLastUpdated
+    setShowLastUpdated(next) // optimistic
+    try {
+      const res = await fetch(`/api/displays/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showLastUpdated: next }),
+      })
+      if (!res.ok) setShowLastUpdated(previous)
+    } catch {
+      setShowLastUpdated(previous)
+    }
+  }
+
   // Section ⚙ opens the section settings modal (layout/column-count + column style).
   const openSectionSettings = (sectionId: string) => {
     setEditingSectionId(sectionId)
@@ -1332,6 +1403,8 @@ export function PageEditor({ pageId }: PageEditorProps) {
                   }
                 }}
                 currentSections={sections}
+                showLastUpdated={showLastUpdated}
+                onShowLastUpdatedChange={changeShowLastUpdated}
               />
             }
           />

@@ -5,7 +5,7 @@ import { Check } from 'lucide-react'
 import type { ShortAnswerAggregate } from '@/lib/element-aggregate'
 import type { BulletinBlockProps } from '../BulletinBlock'
 
-export function BulletinShortAnswer({ postId, block, results, myResponse, onResults }: BulletinBlockProps) {
+export function BulletinShortAnswer({ postId, basePath, block, results, myResponse, onResults }: BulletinBlockProps) {
   const priorAnswer = myResponse?.[block.id]?.answer
   const [submitted, setSubmitted] = useState(false)
   const answered = (priorAnswer != null && priorAnswer !== '') || submitted
@@ -18,7 +18,7 @@ export function BulletinShortAnswer({ postId, block, results, myResponse, onResu
     if (!answer || submitting || answered) return
     setSubmitting(true)
     try {
-      const res = await fetch(`/api/bulletin/${postId}/respond`, {
+      const res = await fetch(`${basePath}/${postId}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ responses: { [block.id]: { type: 'shortanswer', question: block.shortAnswerQuestion, answer } } }),

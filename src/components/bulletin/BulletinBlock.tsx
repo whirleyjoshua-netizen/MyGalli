@@ -8,6 +8,7 @@ import { BulletinShortAnswer } from './blocks/BulletinShortAnswer'
 
 export interface BulletinBlockProps {
   postId: string
+  basePath: string
   block: CanvasElement
   results: ElementAggregate | null
   myResponse: Record<string, { type: string; answer: unknown }> | null

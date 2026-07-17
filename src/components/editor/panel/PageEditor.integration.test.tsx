@@ -28,6 +28,80 @@ beforeEach(() => {
   }))
 })
 
+describe('PageEditor "show last updated" toggle', () => {
+  it('PATCHes only { showLastUpdated: true } (no sections/version) when flipped on', async () => {
+    render(<PageEditor pageId="p1" />)
+    await waitFor(() => expect(screen.getByText('Heading — Hi')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /^page$/i }))
+    const toggle = await screen.findByRole('switch', { name: /show when this page was last updated/i })
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+
+    fireEvent.click(toggle)
+
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'))
+
+    const fetchMock = global.fetch as unknown as ReturnType<typeof vi.fn>
+    const toggleCall = fetchMock.mock.calls.find(
+      (call: any[]) =>
+        call[0] === '/api/displays/p1' &&
+        call[1]?.method === 'PATCH' &&
+        JSON.parse(call[1].body).showLastUpdated !== undefined
+    )
+    expect(toggleCall).toBeDefined()
+    const body = JSON.parse(toggleCall![1].body)
+    expect(body).toEqual({ showLastUpdated: true })
+  })
+
+  it('rolls back the switch when the PATCH responds !ok', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string, opts?: any) => {
+      if (url === '/api/displays/p1' && (!opts || opts.method === undefined)) {
+        return { ok: true, status: 200, json: async () => page } as any
+      }
+      if (opts?.method === 'PATCH' && JSON.parse(opts.body).showLastUpdated !== undefined) {
+        return { ok: false, status: 500, json: async () => ({ error: 'boom' }) } as any
+      }
+      return { ok: true, status: 200, json: async () => ({ version: 2 }) } as any
+    }))
+
+    render(<PageEditor pageId="p1" />)
+    await waitFor(() => expect(screen.getByText('Heading — Hi')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /^page$/i }))
+    const toggle = await screen.findByRole('switch', { name: /show when this page was last updated/i })
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+
+    fireEvent.click(toggle)
+    // Optimistic flip happens synchronously with state update
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'))
+    // Then rolls back once the failed PATCH resolves
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'false'))
+  })
+
+  it('rolls back the switch when the PATCH throws', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string, opts?: any) => {
+      if (url === '/api/displays/p1' && (!opts || opts.method === undefined)) {
+        return { ok: true, status: 200, json: async () => page } as any
+      }
+      if (opts?.method === 'PATCH' && JSON.parse(opts.body).showLastUpdated !== undefined) {
+        throw new Error('network down')
+      }
+      return { ok: true, status: 200, json: async () => ({ version: 2 }) } as any
+    }))
+
+    render(<PageEditor pageId="p1" />)
+    await waitFor(() => expect(screen.getByText('Heading — Hi')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /^page$/i }))
+    const toggle = await screen.findByRole('switch', { name: /show when this page was last updated/i })
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+
+    fireEvent.click(toggle)
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'))
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'false'))
+  })
+})
+
 describe('PageEditor renders the control panel', () => {
   it('shows the Elements list with the page element and hides old top-bar buttons', async () => {
     render(<PageEditor pageId="p1" />)
@@ -63,5 +137,73 @@ describe('PageEditor renders the control panel', () => {
     await waitFor(() =>
       expect(screen.getByText(/settings for this element/i)).toBeInTheDocument()
     )
+  })
+})
+
+describe('PageEditor autosave', () => {
+  // An autosave PATCH carries `sections`/`background`/etc; the toggle's own
+  // PATCH carries only `{ showLastUpdated }`. Filter on the payload shape,
+  // not just the method, so the toggle test above can't contaminate counts
+  // and vice versa.
+  const autosavePatchCount = (fetchMock: any) =>
+    fetchMock.mock.calls.filter(
+      (c: any[]) => c[1]?.method === 'PATCH' && JSON.parse(c[1].body).sections !== undefined
+    ).length
+
+  // An idle editor must not PATCH at all. Task 3 stamps contentUpdatedAt
+  // whenever a visible field is present in the payload, so even a single
+  // redundant autosave would make the public "last updated" badge report
+  // when the editor was last OPEN rather than when the page last CHANGED.
+  // lastSavedPayloadRef is now seeded from loadPage's own normalised state,
+  // so the very first tick already matches and is skipped — zero PATCHes,
+  // not "at most one".
+  it('does not PATCH when an autosave would send an unchanged payload', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      render(<PageEditor pageId="p1" />)
+
+      // Let the initial load settle.
+      await waitFor(() => expect(screen.getByDisplayValue('My Page')).toBeInTheDocument())
+
+      // Nothing was edited across multiple ticks: no autosave PATCH ever fires.
+      await vi.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(15000)
+      expect(autosavePatchCount(fetch as any)).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // Lower bound: a real content edit MUST still autosave. Without this test,
+  // a regression that wedges savePage into always skipping would pass every
+  // other test in this file (the toggle tests bypass savePage entirely; the
+  // idle test above only proves the *unchanged* case is skipped).
+  it('PATCHes with the edited content after a real change', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      render(<PageEditor pageId="p1" />)
+      await waitFor(() => expect(screen.getByDisplayValue('My Page')).toBeInTheDocument())
+
+      // Make a real content edit: change the page title.
+      const titleInput = screen.getByDisplayValue('My Page')
+      fireEvent.change(titleInput, { target: { value: 'Edited Title' } })
+      await waitFor(() => expect(screen.getByDisplayValue('Edited Title')).toBeInTheDocument())
+
+      await vi.advanceTimersByTimeAsync(5000)
+
+      await vi.waitFor(() => {
+        expect(autosavePatchCount(fetch as any)).toBeGreaterThan(0)
+      })
+
+      const fetchMock = fetch as any
+      const autosaveCall = fetchMock.mock.calls.find(
+        (c: any[]) => c[1]?.method === 'PATCH' && JSON.parse(c[1].body).sections !== undefined
+      )
+      expect(autosaveCall).toBeDefined()
+      const body = JSON.parse(autosaveCall![1].body)
+      expect(body.title).toBe('Edited Title')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

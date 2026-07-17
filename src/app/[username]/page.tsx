@@ -6,6 +6,8 @@ import { getJwtSecret } from '@/lib/auth'
 import { deriveFriend } from '@/lib/social'
 import { AUTH_COOKIE } from '@/lib/constants'
 import { ProfileCover } from '@/components/profile/ProfileCover'
+import { GalliTopBar } from '@/components/nav/GalliTopBar'
+import { ProfileSearchInput } from '@/components/nav/ProfileSearchInput'
 import { ProfileHeaderCard } from '@/components/profile/ProfileHeaderCard'
 import { ProfileBioBar } from '@/components/profile/ProfileBioBar'
 import { ProfileProjectsSection } from '@/components/profile/ProfileProjectsSection'
@@ -49,6 +51,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
   return (
     <div className="min-h-screen bg-background">
+      <GalliTopBar tone="light" search={<ProfileSearchInput />} />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-10">
         <ProfileCover coverImage={user.coverImage} isOwner={isMe} />
         <div className="space-y-5">
