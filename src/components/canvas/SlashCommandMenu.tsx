@@ -59,6 +59,7 @@ import {
   Inbox,
   ShoppingBag,
   Gauge,
+  LibraryBig,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -82,6 +83,7 @@ const commands: Command[] = [
   { id: 'toggle', label: 'Toggle', icon: ChevronDownIcon, description: 'Collapsible content', category: 'Content' },
   { id: 'code', label: 'Code Block', icon: Code2, description: 'Syntax-highlighted code', category: 'Content' },
   { id: 'timeline', label: 'Timeline', icon: Clock, description: 'Interactive event timeline', category: 'Content' },
+  { id: 'index', label: 'Index', icon: LibraryBig, description: 'Scannable catalog of linked items', category: 'Content' },
 
   // Data & Visuals
   { id: 'list', label: 'Bulleted List', icon: List, description: 'Simple bullet list', category: 'Data & Visuals' },

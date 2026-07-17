@@ -62,6 +62,7 @@ import { PublicCalendarElement } from '@/components/elements/PublicCalendarEleme
 import { PublicAppointmentsElement } from '@/components/elements/PublicAppointmentsElement'
 import { PublicMailboxElement } from '@/components/elements/PublicMailboxElement'
 import { PublicProductListElement } from '@/components/elements/PublicProductListElement'
+import { PublicIndexElement } from '@/components/elements/PublicIndexElement'
 
 export function getGridClass(layout: string): string {
   switch (layout) {
@@ -438,6 +439,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'product-list':
       return <PublicProductListElement element={element} />
+
+    case 'index':
+      return <PublicIndexElement element={element} />
 
     case 'calendar':
       return <PublicCalendarElement element={element} />
