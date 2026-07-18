@@ -138,10 +138,10 @@ function AnalyticsContent() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-background px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-4 min-w-0">
             <div className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-primary" />
+              <BarChart3 className="w-5 h-5 text-primary shrink-0" />
               <h1 className="text-xl font-bold">Data</h1>
             </div>
           </div>
@@ -150,7 +150,7 @@ function AnalyticsContent() {
           <select
             value={selectedDisplayId || ''}
             onChange={(e) => setSelectedDisplayId(e.target.value)}
-            className="px-3 py-2 border border-border rounded-lg bg-background text-sm"
+            className="px-3 py-2 border border-border rounded-lg bg-background text-sm min-w-0 max-w-[55%] truncate"
           >
             <option value="" disabled>
               Select a page
@@ -164,11 +164,11 @@ function AnalyticsContent() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="max-w-6xl mx-auto mt-4">
-          <div className="flex gap-0">
+        <div className="max-w-6xl mx-auto mt-4 overflow-x-auto scrollbar-hide -mx-6 px-6">
+          <div className="flex gap-0 w-max">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 ${
+              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'overview'
                   ? 'border-primary text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -178,7 +178,7 @@ function AnalyticsContent() {
             </button>
             <button
               onClick={() => setActiveTab('elements')}
-              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'elements'
                   ? 'border-primary text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -189,7 +189,7 @@ function AnalyticsContent() {
             </button>
             <button
               onClick={() => setActiveTab('bulletin')}
-              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'bulletin'
                   ? 'border-primary text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -200,7 +200,7 @@ function AnalyticsContent() {
             </button>
             <button
               onClick={() => setActiveTab('messages')}
-              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'messages'
                   ? 'border-primary text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
