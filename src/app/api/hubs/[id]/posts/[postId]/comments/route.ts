@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
-import { canParticipate } from '@/lib/community'
+import { canParticipate, canViewCommunityHub } from '@/lib/community'
 import { createNotification } from '@/lib/notifications'
 
 type Params = { params: Promise<{ id: string; postId: string }> }
@@ -14,13 +14,10 @@ async function collaboratorIds(hubId: string): Promise<string[]> {
 
 // Mirror of the posts-GET read gate — KEEP IN SYNC with src/app/api/hubs/[id]/posts/route.ts GET.
 async function readableCommunityHub(id: string, meId: string | null) {
-  const hub = await db.hub.findUnique({ where: { id }, select: { id: true, community: true, displayId: true, userId: true } })
+  const hub = await db.hub.findUnique({ where: { id }, select: { id: true, community: true, userId: true, published: true } })
   if (!hub || !hub.community) return null
-  const display = hub.displayId ? await db.display.findUnique({ where: { id: hub.displayId }, select: { published: true } }) : null
-  if (!display?.published) {
-    const canView = !!meId && (meId === hub.userId || (await collaboratorIds(id)).includes(meId))
-    if (!canView) return null
-  }
+  const isPrivileged = !!meId && (meId === hub.userId || (await collaboratorIds(id)).includes(meId))
+  if (!canViewCommunityHub({ published: hub.published, isPrivileged })) return null
   return hub
 }
 

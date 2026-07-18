@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Image as ImageIcon, Loader2, Trash2, FolderPlus, ChevronRight, Users, UsersRound, StickyNote } from 'lucide-react'
+import Link from 'next/link'
+import { Image as ImageIcon, Loader2, Trash2, FolderPlus, ChevronRight, Users, UsersRound, StickyNote, Globe } from 'lucide-react'
 import { buildFolderTree, folderPath, type FolderNode } from '@/lib/hub-tree'
 import { HubFolderTree } from './HubFolderTree'
 import { HubItemList, type HubItem } from './HubItemList'
@@ -21,6 +22,10 @@ interface Hub {
   description: string | null
   coverImage: string | null
   community: boolean
+  slug: string
+  tagline?: string | null
+  heroVideoUrl?: string | null
+  published?: boolean
 }
 
 interface HubEditorProps {
@@ -330,6 +335,15 @@ export function HubEditor({ hubId }: HubEditorProps) {
         >
           <UsersRound className="w-4 h-4" /> Community
         </button>
+        {user?.username && hub.slug && (
+          <Link
+            href={`/${user.username}/hub/${hub.slug}`}
+            target="_blank"
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg text-primary hover:bg-muted/60"
+          >
+            <Globe className="w-4 h-4" /> View public page
+          </Link>
+        )}
       </div>
 
       {/* Header */}
@@ -375,6 +389,26 @@ export function HubEditor({ hubId }: HubEditorProps) {
             rows={2}
             className="w-full text-sm text-muted-foreground bg-transparent focus:outline-none focus:ring-2 focus:ring-primary rounded-lg px-1 -mx-1 resize-none"
           />
+          {hub.community && (
+            <div className="mt-3 space-y-2 rounded-xl border border-border p-3">
+              <input
+                defaultValue={hub.tagline ?? ''}
+                onBlur={(e) => patchHub({ tagline: e.target.value })}
+                placeholder="Tagline (short line under the title)"
+                className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm"
+              />
+              <input
+                defaultValue={hub.heroVideoUrl ?? ''}
+                onBlur={(e) => patchHub({ heroVideoUrl: e.target.value })}
+                placeholder="Hero video URL (YouTube, Vimeo, or .mp4)"
+                className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm"
+              />
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={!!hub.published} onChange={(e) => patchHub({ published: e.target.checked })} className="accent-galli" />
+                Published — visible to everyone
+              </label>
+            </div>
+          )}
         </div>
       </div>
 
