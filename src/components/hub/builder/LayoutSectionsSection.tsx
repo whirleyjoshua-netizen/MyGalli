@@ -3,7 +3,7 @@
 import { ArrowUp, ArrowDown, GripVertical } from 'lucide-react'
 import type { HubConfig, HubSidebarKey } from '@/lib/types/hub-config'
 
-const LABELS: Record<HubSidebarKey, string> = { members: 'Members', resources: 'Resources', video: 'Video hero' }
+const LABELS: Record<HubSidebarKey, string> = { members: 'Members', resources: 'Resources', video: 'Video hero', events: 'Upcoming events' }
 
 export function LayoutSectionsSection({ config, onChange }: { config: HubConfig; onChange: (c: HubConfig) => void }) {
   const move = (i: number, dir: -1 | 1) => {

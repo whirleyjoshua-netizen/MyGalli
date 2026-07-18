@@ -1,23 +1,26 @@
 'use client'
 
 import { useState } from 'react'
-import { UsersRound, FolderOpen, FileText, LinkIcon } from 'lucide-react'
+import { UsersRound, FolderOpen, FileText, LinkIcon, CalendarDays } from 'lucide-react'
 import { hubVideoEmbed } from '@/lib/hub-video-embed'
 import type { HubConfig, HubSidebarKey } from '@/lib/types/hub-config'
+import type { EventDTO } from '@/lib/hub-events'
 
 type Member = { userId: string; username: string; name: string | null; avatar: string | null }
 type Resource = { id: string; type: string; title: string; url: string | null }
 
 export function CommunitySidebar({
-  config, heroVideoUrl, members, resources,
+  config, heroVideoUrl, members, resources, events = [],
 }: {
   config: HubConfig
   heroVideoUrl: string | null
   members: Member[]
   resources: Resource[]
+  events?: EventDTO[]
 }) {
   const [showMembers, setShowMembers] = useState(false)
   const [showResources, setShowResources] = useState(false)
+  const [showEvents, setShowEvents] = useState(false)
   const embed = hubVideoEmbed(heroVideoUrl)
 
   const widget = (key: HubSidebarKey) => {
@@ -50,6 +53,29 @@ export function CommunitySidebar({
               </span>
             ))}
           </div>
+        </section>
+      )
+    }
+    if (key === 'events') {
+      const upcoming = events // already upcoming from the server; empty ⇒ hide
+      if (upcoming.length === 0) return null
+      return (
+        <section key="events" className="rounded-2xl border border-border bg-surface p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" /> Upcoming</h3>
+            {upcoming.length > 3 && <button onClick={() => setShowEvents(true)} className="text-xs text-primary hover:underline">View all →</button>}
+          </div>
+          <ul className="space-y-3">
+            {upcoming.slice(0, 3).map((e) => (
+              <li key={e.id} className="flex gap-3">
+                <EventDateChip iso={e.startsAt} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{e.title}</p>
+                  <p className="text-xs text-muted-foreground">{eventWhen(e)}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
       )
     }
@@ -104,8 +130,39 @@ export function CommunitySidebar({
           ))}
         </Modal>
       )}
+      {showEvents && (
+        <Modal title="Upcoming events" onClose={() => setShowEvents(false)}>
+          {events.map((e) => (
+            <div key={e.id} className="flex gap-3 py-1.5">
+              <EventDateChip iso={e.startsAt} />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{e.title}</p>
+                <p className="text-xs text-muted-foreground">{eventWhen(e)}</p>
+              </div>
+            </div>
+          ))}
+        </Modal>
+      )}
     </div>
   )
+}
+
+function EventDateChip({ iso }: { iso: string }) {
+  const d = new Date(iso)
+  const mon = d.toLocaleString('en-US', { month: 'short' }).toUpperCase()
+  return (
+    <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-galli/10 text-primary">
+      <span className="text-[10px] font-semibold leading-none">{mon}</span>
+      <span className="text-base font-bold leading-none">{d.getDate()}</span>
+    </span>
+  )
+}
+function eventWhen(e: EventDTO): string {
+  const d = new Date(e.startsAt)
+  const day = d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  const time = e.allDay ? 'All day' : d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' })
+  const where = e.isOnline ? ' · Online' : ''
+  return `${day} · ${time}${where}`
 }
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {

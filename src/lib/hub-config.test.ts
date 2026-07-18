@@ -15,7 +15,7 @@ describe('sanitizeHubConfig', () => {
       access: { whoCanPost: 'owner-only' },
     })
     // video first (from input, first occurrence wins), then the missing members+resources appended enabled
-    expect(out.sidebar.map((s) => s.key)).toEqual(['video', 'members', 'resources'])
+    expect(out.sidebar.map((s) => s.key)).toEqual(['video', 'members', 'events', 'resources'])
     expect(out.sidebar[0]).toEqual({ key: 'video', enabled: false })
     expect(out.feed.composerEnabled).toBe(false)
     expect(out.feed.emptyStateText!.length).toBeLessThanOrEqual(200)

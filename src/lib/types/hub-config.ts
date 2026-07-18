@@ -1,4 +1,4 @@
-export const HUB_SIDEBAR_KEYS = ['video', 'members', 'resources'] as const
+export const HUB_SIDEBAR_KEYS = ['video', 'members', 'events', 'resources'] as const
 export type HubSidebarKey = (typeof HUB_SIDEBAR_KEYS)[number]
 export type HubSidebarWidget = { key: HubSidebarKey; enabled: boolean }
 export type HubWhoCanPost = 'members' | 'owner-only'
@@ -13,6 +13,7 @@ export const DEFAULT_HUB_CONFIG: HubConfig = {
   sidebar: [
     { key: 'video', enabled: true },
     { key: 'members', enabled: true },
+    { key: 'events', enabled: true },
     { key: 'resources', enabled: true },
   ],
   feed: { composerEnabled: true, loadMoreEnabled: true },
