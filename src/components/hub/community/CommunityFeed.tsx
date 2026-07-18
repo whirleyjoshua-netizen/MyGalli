@@ -7,18 +7,20 @@ import { HubPostComments } from '@/components/hub/HubPostComments'
 import type { HubConfig } from '@/lib/types/hub-config'
 
 export function CommunityFeed({
-  hubId, canPost, isPrivileged, currentUserId, config,
+  hubId, canPost, isPrivileged, currentUserId, config, preview,
 }: {
   hubId: string
   canPost: boolean
   isPrivileged: boolean
   currentUserId?: string
   config: HubConfig
+  preview?: boolean
 }) {
   const [posts, setPosts] = useState<FeedPost[]>([])
   const [loaded, setLoaded] = useState(false)
 
   async function load() {
+    if (preview) { setPosts([]); setLoaded(true); return }
     const res = await fetch(`/api/hubs/${hubId}/posts`)
     if (res.ok) setPosts((await res.json()).posts)
     setLoaded(true)
