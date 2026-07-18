@@ -570,6 +570,7 @@ model Hub {
   collaborators HubCollaborator[]
   members     HubMember[]
   posts       HubPost[]
+  hubEvents   HubEvent[]
   @@unique([userId, slug])
   @@index([userId])
   @@index([displayId])
@@ -690,6 +691,21 @@ model HubPostReaction {
   createdAt DateTime @default(now())
   @@unique([postId, userId, emoji])
   @@index([postId])
+}
+
+model HubEvent {
+  id          String   @id @default(cuid())
+  hubId       String
+  hub         Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  title       String
+  startsAt    DateTime
+  endsAt      DateTime?
+  allDay      Boolean  @default(false)
+  isOnline    Boolean  @default(false)
+  location    String?
+  description String?
+  createdAt   DateTime @default(now())
+  @@index([hubId, startsAt])
 }
 
 model HubPostComment {
