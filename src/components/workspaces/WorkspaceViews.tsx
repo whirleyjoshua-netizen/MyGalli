@@ -2,19 +2,21 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, Upload } from 'lucide-react'
 import { useWorkspaceGrid, PAGE_SIZE } from './useWorkspaceGrid'
 import { GridView } from './views/GridView'
 import { GalleryView } from './views/GalleryView'
 import { KanbanView } from './views/KanbanView'
 import { AddViewModal } from './AddViewModal'
 import { FilterChips } from './FilterChips'
+import { ImportCsvModal } from './ImportCsvModal'
 
 export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
   const router = useRouter()
   const params = useSearchParams()
   const grid = useWorkspaceGrid(workspaceId, params.get('view'))
   const [addingView, setAddingView] = useState(false)
+  const [importing, setImporting] = useState(false)
   // Local, always-mounted controlled state for the search input. Typing here
   // never touches `grid.search` (the fetch driver) directly — a debounced
   // effect below pushes it after a pause. This keeps the <input> node itself
@@ -74,6 +76,9 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
         ))}
         <button onClick={() => setAddingView(true)} className="ml-1 flex items-center gap-1 px-2 py-2 text-sm text-muted-foreground hover:text-galli" title="Add view">
           <Plus size={14} /> View
+        </button>
+        <button onClick={() => setImporting(true)} className="ml-1 flex items-center gap-1 px-2 py-2 text-sm text-muted-foreground hover:text-galli" title="Import CSV">
+          <Upload size={14} /> Import CSV
         </button>
       </div>
 
@@ -143,6 +148,15 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
             const v = await grid.addView(name, type, config)
             if (v) switchTo(v.id)
           }} />
+      )}
+
+      {importing && (
+        <ImportCsvModal
+          workspaceId={workspaceId}
+          fields={grid.fields}
+          onClose={() => setImporting(false)}
+          onImported={() => grid.reload()}
+        />
       )}
     </div>
   )
