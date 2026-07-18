@@ -89,7 +89,8 @@ export function PublicTabView({
       {/* Tab Bar — sticky at top of page */}
       <nav className={`sticky top-0 z-20 bg-background/90 backdrop-blur-sm border-b border-border`}>
         <div className="max-w-6xl mx-auto px-4">
-          <div className={`flex items-center gap-1 ${containerBorder} ${alignmentClass}`}>
+          <div className="overflow-x-auto scrollbar-hide">
+          <div className={`flex items-center gap-1 ${alignment === 'stretch' ? 'w-full' : 'w-max min-w-full'} ${containerBorder} ${alignmentClass}`}>
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -101,6 +102,7 @@ export function PublicTabView({
                 {tab.label}
               </button>
             ))}
+          </div>
           </div>
         </div>
       </nav>

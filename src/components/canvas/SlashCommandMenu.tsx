@@ -59,6 +59,7 @@ import {
   Inbox,
   ShoppingBag,
   Gauge,
+  Rocket,
   LibraryBig,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
@@ -164,6 +165,7 @@ const commands: Command[] = [
   { id: 'calendar', label: 'Calendar', icon: Calendar, description: 'Mark events on a monthly calendar', category: 'Scheduling' },
   { id: 'appointments', label: 'Appointments', icon: CalendarClock, description: 'Let visitors book a time with you', category: 'Scheduling', pro: true },
   { id: 'product-list', label: 'Product List', icon: ShoppingBag, description: 'A shoppable list of products with images & buy links', category: 'Commerce' },
+  { id: 'waitlist', label: 'Wait List', icon: Rocket, description: 'Collect signups before a launch, with a live count', category: 'Commerce' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Commerce', 'Scheduling', 'Live', 'Forms', 'Social', 'Apps', 'Kit']

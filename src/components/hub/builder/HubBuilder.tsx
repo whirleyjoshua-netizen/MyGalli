@@ -69,7 +69,7 @@ export function HubBuilder({ hubId }: { hubId: string }) {
         </aside>
         <main className="min-w-0 flex-1 overflow-y-auto p-6">
           {section === 'settings' && <HubSettingsSection hub={merged} onField={setField} />}
-          {section === 'layout' && <LayoutSectionsSection config={config} onChange={setConfig} />}
+          {section === 'layout' && <LayoutSectionsSection config={config} onChange={setConfig} hubId={merged.id} />}
           {section === 'profile' && <HubProfileSection hub={merged} onField={setField} />}
           {section === 'community' && <CommunitySettingsSection config={config} onChange={setConfig} />}
         </main>

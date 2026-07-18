@@ -242,6 +242,9 @@ model Display {
 
   workspaceRecord WorkspaceRecord?
 
+  // Wait list signups
+  waitlistSignups WaitlistSignup[]
+
   @@unique([userId, slug])
   @@index([userId])
   @@index([published])
@@ -265,6 +268,20 @@ model Booking {
   @@unique([elementId, start])
   @@index([displayId])
   @@index([elementId, start])
+}
+
+model WaitlistSignup {
+  id        String   @id @default(cuid())
+  displayId String
+  display   Display  @relation(fields: [displayId], references: [id], onDelete: Cascade)
+  elementId String
+  email     String
+  name      String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@unique([displayId, elementId, email])
+  @@index([displayId, elementId])
 }
 
 model DisplayCollaborator {
@@ -570,6 +587,7 @@ model Hub {
   collaborators HubCollaborator[]
   members     HubMember[]
   posts       HubPost[]
+  hubEvents   HubEvent[]
   @@unique([userId, slug])
   @@index([userId])
   @@index([displayId])
@@ -690,6 +708,21 @@ model HubPostReaction {
   createdAt DateTime @default(now())
   @@unique([postId, userId, emoji])
   @@index([postId])
+}
+
+model HubEvent {
+  id          String   @id @default(cuid())
+  hubId       String
+  hub         Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  title       String
+  startsAt    DateTime
+  endsAt      DateTime?
+  allDay      Boolean  @default(false)
+  isOnline    Boolean  @default(false)
+  location    String?
+  description String?
+  createdAt   DateTime @default(now())
+  @@index([hubId, startsAt])
 }
 
 model HubPostComment {

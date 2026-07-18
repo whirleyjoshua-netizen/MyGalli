@@ -61,12 +61,10 @@ export function PublicChartElement({ element }: PublicChartElementProps) {
     let currentAngle = -90
 
     return (
-      <div className="flex items-center justify-center gap-8">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
         <div
-          className="relative"
+          className="relative w-40 sm:w-[200px] aspect-square max-w-full shrink-0"
           style={{
-            width: '200px',
-            height: '200px',
             transform: enable3D ? 'perspective(1000px) rotateX(10deg)' : undefined,
           }}
         >

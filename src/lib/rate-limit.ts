@@ -84,15 +84,23 @@ function memoryRateLimit(ip: string, prefix: string, limit: number, windowMs: nu
  */
 export async function rateLimit(
   request: NextRequest,
-  opts: { limit: number; windowMs: number; prefix?: string }
+  opts: { limit: number; windowMs: number; prefix?: string; identifier?: string }
 ): Promise<NextResponse | null> {
+  // Callers that pass `identifier` (e.g. an authenticated user id) are keyed
+  // on that instead of the request IP — this is required whenever the caller
+  // is the sole spend control on something gated by auth, not by network
+  // origin, since several accounts can otherwise share one IP-derived bucket
+  // or one account can spread requests across many IPs. Existing callers that
+  // don't pass it are unaffected: they still key on x-forwarded-for exactly
+  // as before.
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const key = opts.identifier || ip
   const prefix = opts.prefix || 'global'
 
   // Try Redis first
   const redisLimiter = getRedisLimiter(prefix, opts.limit, opts.windowMs)
   if (redisLimiter) {
-    const { success, reset } = await redisLimiter.limit(ip)
+    const { success, reset } = await redisLimiter.limit(key)
     if (!success) {
       const retryAfter = Math.ceil((reset - Date.now()) / 1000)
       return NextResponse.json(
@@ -104,5 +112,5 @@ export async function rateLimit(
   }
 
   // Fallback to in-memory
-  return memoryRateLimit(ip, prefix, opts.limit, opts.windowMs)
+  return memoryRateLimit(key, prefix, opts.limit, opts.windowMs)
 }

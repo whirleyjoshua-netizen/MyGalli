@@ -1,4 +1,4 @@
-export type NotificationType = 'follow' | 'bulletin' | 'page_published' | 'comment' | 'hub_collaborator' | 'message' | 'hub_member' | 'hub_post' | 'hub_comment'
+export type NotificationType = 'follow' | 'bulletin' | 'page_published' | 'comment' | 'hub_collaborator' | 'message' | 'hub_member' | 'hub_post' | 'hub_comment' | 'hub_event'
 
 export function formatNotification(n: { type: string; actorName: string; contextText?: string | null }): string {
   switch (n.type) {
@@ -20,6 +20,8 @@ export function formatNotification(n: { type: string; actorName: string; context
       return `${n.actorName} posted in ${n.contextText ? `“${n.contextText}”` : 'a community'}`
     case 'hub_comment':
       return `${n.actorName} commented on your post${n.contextText ? ` in “${n.contextText}”` : ''}`
+    case 'hub_event':
+      return `${n.actorName} added an event in ${n.contextText ? `“${n.contextText}”` : 'a community'}`
     default:
       return n.actorName
   }
