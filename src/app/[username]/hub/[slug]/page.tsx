@@ -9,6 +9,7 @@ import { visibleNotes } from '@/lib/hub-notes'
 import { visibleBookmarks } from '@/lib/hub-highlight'
 import { CommunityHubView } from '@/components/hub/community/CommunityHubView'
 import { canViewCommunityHub } from '@/lib/community'
+import { sanitizeHubConfig } from '@/lib/hub-config'
 
 interface Props {
   params: Promise<{ username: string; slug: string }>
@@ -73,6 +74,7 @@ export default async function PublicHubPage({ params }: Props) {
     ])
     const members = memberRows.map((m) => ({ userId: m.userId, username: m.user.username, name: m.user.name, avatar: m.user.avatar }))
     const resources = items.map((i) => ({ id: i.id, type: i.type, title: i.title, url: i.url }))
+    const config = sanitizeHubConfig(hub.config)
     return (
       <CommunityHubView
         hub={{ id: hub.id, title: hub.title, tagline: hub.tagline, description: hub.description, coverImage: hub.coverImage, heroVideoUrl: hub.heroVideoUrl }}
@@ -85,6 +87,7 @@ export default async function PublicHubPage({ params }: Props) {
         resources={resources}
         counts={{ posts: postsCount, members: members.length, resources: resources.length, events: 0 }}
         sharePath={`/${user.username}/hub/${slug}`}
+        config={config}
       />
     )
   }

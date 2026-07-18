@@ -3,13 +3,15 @@
 import { useState } from 'react'
 import { UsersRound, FolderOpen, FileText, LinkIcon } from 'lucide-react'
 import { hubVideoEmbed } from '@/lib/hub-video-embed'
+import type { HubConfig, HubSidebarKey } from '@/lib/types/hub-config'
 
 type Member = { userId: string; username: string; name: string | null; avatar: string | null }
 type Resource = { id: string; type: string; title: string; url: string | null }
 
 export function CommunitySidebar({
-  heroVideoUrl, members, resources,
+  config, heroVideoUrl, members, resources,
 }: {
+  config: HubConfig
   heroVideoUrl: string | null
   members: Member[]
   resources: Resource[]
@@ -18,53 +20,64 @@ export function CommunitySidebar({
   const [showResources, setShowResources] = useState(false)
   const embed = hubVideoEmbed(heroVideoUrl)
 
-  return (
-    <div className="space-y-4">
-      {embed && (
-        <div className="overflow-hidden rounded-2xl border border-border bg-black">
+  const widget = (key: HubSidebarKey) => {
+    if (key === 'video') {
+      if (!embed) return null
+      return (
+        <div key="video" className="overflow-hidden rounded-2xl border border-border bg-black">
           {embed.kind === 'file' ? (
             <video src={embed.src} controls className="aspect-video w-full" />
           ) : (
             <iframe src={embed.src} title="Community video" allow="fullscreen; picture-in-picture" className="aspect-video w-full" />
           )}
         </div>
-      )}
-
-      <section className="rounded-2xl border border-border bg-surface p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-sm font-semibold"><UsersRound className="h-4 w-4 text-primary" /> Members ({members.length})</h3>
-          {members.length > 6 && <button onClick={() => setShowMembers(true)} className="text-xs text-primary hover:underline">View all →</button>}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {members.slice(0, 12).map((m) => (
-            <span key={m.userId} title={m.name || m.username} className="h-9 w-9 overflow-hidden rounded-full bg-gradient-to-br from-galli/30 to-galli-violet/30">
-              {m.avatar && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={m.avatar} alt="" className="h-full w-full object-cover" />
-              )}
-            </span>
-          ))}
-        </div>
-      </section>
-
-      {resources.length > 0 && (
-        <section className="rounded-2xl border border-border bg-surface p-4">
+      )
+    }
+    if (key === 'members') {
+      return (
+        <section key="members" className="rounded-2xl border border-border bg-surface p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-sm font-semibold"><FolderOpen className="h-4 w-4 text-primary" /> Resources</h3>
-            {resources.length > 5 && <button onClick={() => setShowResources(true)} className="text-xs text-primary hover:underline">View all →</button>}
+            <h3 className="flex items-center gap-2 text-sm font-semibold"><UsersRound className="h-4 w-4 text-primary" /> Members ({members.length})</h3>
+            {members.length > 6 && <button onClick={() => setShowMembers(true)} className="text-xs text-primary hover:underline">View all →</button>}
           </div>
-          <ul className="space-y-2">
-            {resources.slice(0, 5).map((r) => (
-              <li key={r.id}>
-                <a href={r.url || '#'} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm hover:text-primary">
-                  {r.type === 'link' ? <LinkIcon className="h-4 w-4 text-muted-foreground" /> : <FileText className="h-4 w-4 text-muted-foreground" />}
-                  <span className="truncate">{r.title}</span>
-                </a>
-              </li>
+          <div className="flex flex-wrap gap-2">
+            {members.slice(0, 12).map((m) => (
+              <span key={m.userId} title={m.name || m.username} className="h-9 w-9 overflow-hidden rounded-full bg-gradient-to-br from-galli/30 to-galli-violet/30">
+                {m.avatar && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={m.avatar} alt="" className="h-full w-full object-cover" />
+                )}
+              </span>
             ))}
-          </ul>
+          </div>
         </section>
-      )}
+      )
+    }
+    // resources
+    if (resources.length === 0) return null
+    return (
+      <section key="resources" className="rounded-2xl border border-border bg-surface p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-sm font-semibold"><FolderOpen className="h-4 w-4 text-primary" /> Resources</h3>
+          {resources.length > 5 && <button onClick={() => setShowResources(true)} className="text-xs text-primary hover:underline">View all →</button>}
+        </div>
+        <ul className="space-y-2">
+          {resources.slice(0, 5).map((r) => (
+            <li key={r.id}>
+              <a href={r.url || '#'} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm hover:text-primary">
+                {r.type === 'link' ? <LinkIcon className="h-4 w-4 text-muted-foreground" /> : <FileText className="h-4 w-4 text-muted-foreground" />}
+                <span className="truncate">{r.title}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {config.sidebar.filter((w) => w.enabled).map((w) => widget(w.key))}
 
       {showMembers && (
         <Modal title={`Members (${members.length})`} onClose={() => setShowMembers(false)}>
