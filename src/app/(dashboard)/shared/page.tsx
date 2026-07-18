@@ -2,7 +2,8 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Users, Globe, Lock, Plus, Crown } from 'lucide-react'
+import Link from 'next/link'
+import { Users, Globe, Lock, Plus, Crown, Pencil } from 'lucide-react'
 import { CreateCommunityModal } from '@/components/community/CreateCommunityModal'
 
 interface SharedDisplay {
@@ -112,18 +113,28 @@ function MyPondContent() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {communities.map((c) => (
-                <a key={c.id} href={`/${c.username}/hub/${c.slug}`} className="rounded-xl border border-border bg-surface p-4 hover:shadow-soft transition">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold truncate">{c.title}</span>
-                    {c.isOwner && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary shrink-0">
-                        <Crown className="w-3 h-3" /> Owner
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground truncate">{c.latestPost?.text || 'No posts yet'}</div>
-                  <div className="mt-2 text-[11px] text-muted-foreground/70">{c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}</div>
-                </a>
+                <div key={c.id} className="relative">
+                  <a href={`/${c.username}/hub/${c.slug}`} className="block rounded-xl border border-border bg-surface p-4 hover:shadow-soft transition">
+                    <div className="flex items-center gap-2 pr-14">
+                      <span className="font-semibold truncate">{c.title}</span>
+                      {c.isOwner && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary shrink-0">
+                          <Crown className="w-3 h-3" /> Owner
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground truncate">{c.latestPost?.text || 'No posts yet'}</div>
+                    <div className="mt-2 text-[11px] text-muted-foreground/70">{c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}</div>
+                  </a>
+                  {c.isOwner && (
+                    <Link
+                      href={`/hubs/${c.id}`}
+                      className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm hover:bg-muted"
+                    >
+                      <Pencil className="w-3 h-3" /> Edit
+                    </Link>
+                  )}
+                </div>
               ))}
             </div>
           </>

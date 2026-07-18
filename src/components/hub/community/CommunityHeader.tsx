@@ -1,9 +1,10 @@
 'use client'
 
-import { UserPlus, Check, Share2 } from 'lucide-react'
+import Link from 'next/link'
+import { UserPlus, Check, Share2, Pencil } from 'lucide-react'
 
 export function CommunityHeader({
-  title, tagline, ownerUsername, coverImage, memberAvatars, counts, joined, isPrivileged, onToggleJoin, sharePath,
+  title, tagline, ownerUsername, coverImage, memberAvatars, counts, joined, isPrivileged, onToggleJoin, sharePath, editHref,
 }: {
   title: string
   tagline: string | null
@@ -15,6 +16,7 @@ export function CommunityHeader({
   isPrivileged: boolean
   onToggleJoin: () => void
   sharePath: string
+  editHref?: string
 }) {
   async function share() {
     const url = `${window.location.origin}${sharePath}`
@@ -52,6 +54,9 @@ export function CommunityHeader({
       </div>
       <div className="flex flex-col items-end gap-3">
         <div className="flex gap-2">
+          {isPrivileged && editHref && (
+            <Link href={editHref} className="inline-flex items-center gap-1.5 rounded-full bg-galli px-4 py-2 text-sm font-semibold text-white"><Pencil className="h-4 w-4" /> Edit</Link>
+          )}
           {!isPrivileged && (
             <button onClick={onToggleJoin} className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold ${joined ? 'border border-border text-foreground' : 'bg-galli text-white'}`}>
               {joined ? <><Check className="h-4 w-4" /> Joined</> : <><UserPlus className="h-4 w-4" /> Follow</>}

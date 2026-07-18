@@ -51,6 +51,7 @@ export function CommunityHubView({
             isPrivileged={isPrivileged}
             onToggleJoin={toggleJoin}
             sharePath={sharePath}
+            editHref={preview ? undefined : `/hubs/${hub.id}`}
           />
           <div className="mt-5 flex items-center gap-3 border-t border-border pt-4">
             <span className="inline-flex items-center gap-1.5 border-b-2 border-primary pb-1 text-sm font-medium"><Leaf className="h-4 w-4 text-primary" /> Home</span>
