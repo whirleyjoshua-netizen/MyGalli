@@ -6,7 +6,7 @@ type ProfileHub = {
   published: boolean; community: boolean; version: number; username: string
 }
 
-export function HubProfileSection({ hub, onField }: { hub: ProfileHub; onField: (k: any, v: any) => void }) {
+export function HubProfileSection({ hub, onField }: { hub: ProfileHub; onField: (k: 'title' | 'tagline' | 'heroVideoUrl', v: string) => void }) {
   return (
     <div className="max-w-2xl space-y-4">
       <h2 className="text-lg font-bold">Hub profile</h2>

@@ -6,7 +6,7 @@ type SettingsHub = {
   published: boolean; community: boolean; version: number; username: string
 }
 
-export function HubSettingsSection({ hub, onField }: { hub: SettingsHub; onField: (k: any, v: any) => void }) {
+export function HubSettingsSection({ hub, onField }: { hub: SettingsHub; onField: (k: 'published' | 'description', v: string | boolean) => void }) {
   return (
     <div className="max-w-2xl space-y-4">
       <h2 className="text-lg font-bold">Hub settings</h2>

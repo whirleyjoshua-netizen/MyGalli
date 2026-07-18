@@ -44,7 +44,6 @@ export function LayoutSectionsSection({ config, onChange }: { config: HubConfig;
         <h2 className="text-lg font-bold">Feed</h2>
         <div className="mt-3 space-y-3">
           <Row label="Allow members to post" checked={config.feed.composerEnabled} onChange={(v) => setFeed({ composerEnabled: v })} />
-          <Row label="Show a 'Load more' button" checked={config.feed.loadMoreEnabled} onChange={(v) => setFeed({ loadMoreEnabled: v })} />
           <div>
             <label className="mb-1 block text-sm font-medium">Empty-state message</label>
             <input value={config.feed.emptyStateText ?? ''} onChange={(e) => setFeed({ emptyStateText: e.target.value })} placeholder="No posts yet. Be the first to share something." maxLength={200} className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm" />

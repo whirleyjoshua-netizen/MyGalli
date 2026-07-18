@@ -18,12 +18,14 @@ export function useHubAutosave({
   const [dirty, setDirty] = useState(false)
   const versionRef = useRef(version)
   const lastKeyRef = useRef<string | null>(buildHubPayloadKey(payload))
+  const baselineSet = useRef(false)
 
   useEffect(() => { versionRef.current = version }, [version])
 
   const key = buildHubPayloadKey(payload)
   useEffect(() => {
     if (!enabled || conflict) return
+    if (!baselineSet.current) { baselineSet.current = true; lastKeyRef.current = key; return }
     if (key === lastKeyRef.current) return
     setDirty(true)
     const t = setTimeout(async () => {
