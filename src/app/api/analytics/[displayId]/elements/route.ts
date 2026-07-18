@@ -5,6 +5,7 @@ import type { Section } from '@/lib/types/canvas'
 import type { TabsConfig } from '@/lib/types/tabs'
 import { collectRsvpGuests, summarizeRsvp, buildItemBoard } from '@/lib/rsvp'
 import { aggregatePoll as sharedPoll, aggregateRating as sharedRating, aggregateShortAnswer as sharedShortAnswer, type ResponseRecord } from '@/lib/element-aggregate'
+import { collectElements } from '@/lib/waitlist'
 
 const INTERACTIVE_TYPES = ['mcq', 'rating', 'shortanswer', 'poll', 'comment', 'wedding-rsvp', 'business-review', 'rsvp'] as const
 
@@ -81,8 +82,34 @@ export async function GET(request: NextRequest, { params }: Props) {
       ),
     ]
 
+    // Wait List signups (owner-only; the ownership check above already gated this route)
+    const waitlistEls = [
+      ...collectElements(mainSections),
+      ...((tabsConfig?.tabs || []).flatMap((t) => collectElements(t.sections))),
+    ].filter((e) => e.type === 'waitlist')
+
+    let waitlistCards: Array<Record<string, unknown>> = []
+    if (waitlistEls.length) {
+      const signups = await db.waitlistSignup.findMany({
+        where: { displayId, elementId: { in: waitlistEls.map((e) => String(e.id)) } },
+        orderBy: { createdAt: 'asc' },
+        select: { elementId: true, email: true, name: true, createdAt: true },
+      })
+      waitlistCards = waitlistEls.map((el) => {
+        const rows = signups.filter((s) => s.elementId === el.id)
+        return {
+          elementId: String(el.id),
+          type: 'waitlist',
+          title: (el.waitlistTitle as string) || 'Wait List',
+          capacity: typeof el.waitlistCapacity === 'number' ? el.waitlistCapacity : null,
+          count: rows.length,
+          signups: rows.map((r) => ({ email: r.email, name: r.name, joinedAt: r.createdAt.toISOString() })),
+        }
+      })
+    }
+
     if (allElements.length === 0) {
-      return NextResponse.json({ display: { id: display.id, title: display.title }, elements: [] })
+      return NextResponse.json({ display: { id: display.id, title: display.title }, elements: waitlistCards })
     }
 
     // Fetch all form responses for aggregation
@@ -114,7 +141,7 @@ export async function GET(request: NextRequest, { params }: Props) {
 
     return NextResponse.json({
       display: { id: display.id, title: display.title },
-      elements,
+      elements: [...elements, ...waitlistCards],
     })
   } catch (error) {
     console.error('Element analytics error:', error)

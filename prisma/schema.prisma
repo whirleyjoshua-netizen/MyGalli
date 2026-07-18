@@ -242,6 +242,9 @@ model Display {
 
   workspaceRecord WorkspaceRecord?
 
+  // Wait list signups
+  waitlistSignups WaitlistSignup[]
+
   @@unique([userId, slug])
   @@index([userId])
   @@index([published])
@@ -265,6 +268,20 @@ model Booking {
   @@unique([elementId, start])
   @@index([displayId])
   @@index([elementId, start])
+}
+
+model WaitlistSignup {
+  id        String   @id @default(cuid())
+  displayId String
+  display   Display  @relation(fields: [displayId], references: [id], onDelete: Cascade)
+  elementId String
+  email     String
+  name      String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@unique([displayId, elementId, email])
+  @@index([displayId, elementId])
 }
 
 model DisplayCollaborator {

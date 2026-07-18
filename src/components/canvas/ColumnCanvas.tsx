@@ -120,6 +120,8 @@ import { MailboxElement } from '@/components/elements/MailboxElement'
 import { PublicMailboxElement } from '@/components/elements/PublicMailboxElement'
 import { ProductListElement } from '@/components/elements/ProductListElement'
 import { PublicProductListElement } from '@/components/elements/PublicProductListElement'
+import { WaitlistElement } from '@/components/elements/WaitlistElement'
+import { PublicWaitlistElement } from '@/components/elements/PublicWaitlistElement'
 import { IndexElement } from '@/components/elements/IndexElement'
 import { PublicIndexElement } from '@/components/elements/PublicIndexElement'
 import { WorkspaceKpiElement } from '@/components/elements/WorkspaceKpiElement'
@@ -843,6 +845,20 @@ export function ColumnCanvas({
         }
         return (
           <FlowchartElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'waitlist':
+        if (isPreviewMode && displayId) {
+          return <PublicWaitlistElement element={element} displayId={displayId} />
+        }
+        return (
+          <WaitlistElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}

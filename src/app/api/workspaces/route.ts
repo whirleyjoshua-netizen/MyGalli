@@ -26,15 +26,32 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/workspaces - List user's workspaces
+// GET /api/workspaces - List user's workspaces (enriched for the landing cards)
 export async function GET(request: NextRequest) {
   const user = await getUser(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const workspaces = await db.workspace.findMany({
+  const rows = await db.workspace.findMany({
     where: { ownerId: user.id },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { updatedAt: 'desc' },
+    select: {
+      id: true, name: true, description: true, icon: true, updatedAt: true,
+      _count: { select: { fields: true, records: { where: { status: 'active' } } } },
+      views: { orderBy: { position: 'asc' }, take: 1, select: { type: true } },
+      records: { where: { status: 'active' }, orderBy: { updatedAt: 'desc' }, take: 1, select: { updatedAt: true } },
+    },
   })
 
-  return NextResponse.json(workspaces)
+  const items = rows.map((w) => {
+    const latestRec = w.records[0]?.updatedAt
+    const lastActivity = latestRec && latestRec > w.updatedAt ? latestRec : w.updatedAt
+    return {
+      id: w.id, name: w.name, description: w.description, icon: w.icon,
+      recordCount: w._count.records, fieldCount: w._count.fields,
+      primaryView: w.views[0]?.type ?? null,
+      lastActivity: lastActivity.toISOString(),
+    }
+  })
+
+  return NextResponse.json(items)
 }

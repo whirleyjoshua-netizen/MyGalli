@@ -7,6 +7,7 @@ import { PublicCardElement } from '@/components/elements/PublicCardElement'
 import { PublicCodeElement } from '@/components/elements/PublicCodeElement'
 import { PublicCommentSection } from '@/components/elements/PublicCommentSection'
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
+import { PublicWaitlistElement } from '@/components/elements/PublicWaitlistElement'
 import { PublicLiveFeedElement } from '@/components/elements/PublicLiveFeedElement'
 import { PublicWorkspaceKpiElement } from '@/components/elements/PublicWorkspaceKpiElement'
 import { PublicMCQElement } from '@/components/elements/PublicMCQElement'
@@ -430,6 +431,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'poll':
       return <PublicPollElement element={element} displayId={displayId || ''} />
+
+    case 'waitlist':
+      return <PublicWaitlistElement element={element} displayId={displayId || ''} />
 
     case 'tracker':
       return <PublicTrackerElement element={element} displayId={displayId || ''} />
