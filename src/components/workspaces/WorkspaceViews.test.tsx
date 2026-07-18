@@ -59,3 +59,30 @@ describe('WorkspaceViews filter chips', () => {
     })
   })
 })
+
+describe('WorkspaceViews search box (Finding 1 regression)', () => {
+  it('keeps the search input mounted while records are loading (recordsViewId !== active view id)', async () => {
+    // Never let the records fetch resolve — this reproduces the state during
+    // every keystroke pre-fix: recordsViewId is cleared to null the instant a
+    // fetch starts, so the input would unmount if it were rendered inside the
+    // records-loading gate.
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => mainGet })
+    fetchMock.mockImplementation(() => new Promise(() => {})) // records fetch never resolves
+    ;(globalThis as any).fetch = fetchMock
+
+    render(<WorkspaceViews workspaceId="w1" />)
+
+    // Wait for the workspace shell (view tabs) to appear, i.e. past the
+    // top-level grid.loading gate — at this point the records fetch is still
+    // in flight (recordsViewId !== active.id) and the body shows "Loading…".
+    await waitFor(() => expect(screen.getByText('Grid')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getAllByText('Loading…').length).toBeGreaterThan(0))
+
+    // The search input must still be present and typable.
+    const input = screen.getByPlaceholderText('Search records…') as HTMLInputElement
+    expect(input).toBeInTheDocument()
+    fireEvent.change(input, { target: { value: 'abc' } })
+    expect(input.value).toBe('abc')
+  })
+})

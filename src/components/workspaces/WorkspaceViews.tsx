@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, X } from 'lucide-react'
-import { useWorkspaceGrid } from './useWorkspaceGrid'
+import { useWorkspaceGrid, PAGE_SIZE } from './useWorkspaceGrid'
 import { GridView } from './views/GridView'
 import { GalleryView } from './views/GalleryView'
 import { KanbanView } from './views/KanbanView'
@@ -15,6 +15,24 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
   const params = useSearchParams()
   const grid = useWorkspaceGrid(workspaceId, params.get('view'))
   const [addingView, setAddingView] = useState(false)
+  // Local, always-mounted controlled state for the search input. Typing here
+  // never touches `grid.search` (the fetch driver) directly — a debounced
+  // effect below pushes it after a pause. This keeps the <input> node itself
+  // stable across the loading gate below, so typing can never lose focus,
+  // and keeps every keystroke from firing a full-table ILIKE scan.
+  const [searchInput, setSearchInput] = useState(grid.search)
+
+  // Debounce: push the local input value to the hook's fetch-driving `search`
+  // state ~300ms after the user stops typing.
+  useEffect(() => {
+    const t = setTimeout(() => grid.setSearch(searchInput), 300)
+    return () => clearTimeout(t)
+  }, [searchInput, grid.setSearch])
+
+  // Keep the visible input in sync when the active view changes (the hook
+  // clears `grid.search` on view switch — mirror that locally so the box
+  // doesn't show a stale query for the new view).
+  useEffect(() => { setSearchInput('') }, [grid.activeViewId])
 
   if (grid.loading) return <div className="p-8 text-muted-foreground">Loading…</div>
   if (grid.error && !grid.workspace) {
@@ -59,62 +77,64 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
         </button>
       </div>
 
+      {/* Search box, filter chips and errors derive from view config / local
+          state, not from the in-flight records fetch — they stay mounted
+          across loading states so typing never loses focus and the pager
+          buttons never vanish mid-click. */}
+      <input
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
+        placeholder="Search records…"
+        className="mb-3 w-full max-w-xs rounded-lg border border-border bg-transparent px-3 py-2 text-sm"
+      />
+      <FilterChips
+        filter={active?.config?.filter ?? null}
+        fields={grid.fields}
+        count={grid.total ?? undefined}
+        onRemove={active ? () => {
+          const { filter: _filter, ...rest } = active.config ?? {}
+          grid.updateView(active.id, rest)
+        } : undefined}
+      />
+      {grid.filterError && (
+        <p className="mb-3 text-sm text-amber-600">
+          This view&apos;s filter no longer matches the columns ({grid.filterError}) — showing all records.
+        </p>
+      )}
+      {grid.sortError && (
+        <p className="mb-3 text-sm text-amber-600">
+          This view&apos;s sort no longer matches the columns — showing default order.
+        </p>
+      )}
+
+      {/* Only the records-dependent body sits behind the loading gate. */}
       {active && grid.recordsViewId === active.id ? (
-        <>
-          <input
-            value={grid.search}
-            onChange={(e) => grid.setSearch(e.target.value)}
-            placeholder="Search records…"
-            className="mb-3 w-full max-w-xs rounded-lg border border-border bg-transparent px-3 py-2 text-sm"
-          />
-          <FilterChips
-            filter={active?.config?.filter ?? null}
-            fields={grid.fields}
-            count={grid.total ?? undefined}
-            onRemove={active ? () => {
-              const { filter: _filter, ...rest } = active.config ?? {}
-              grid.updateView(active.id, rest)
-            } : undefined}
-          />
-          {grid.filterError && (
-            <p className="mb-3 text-sm text-amber-600">
-              This view&apos;s filter no longer matches the columns ({grid.filterError}) — showing all records.
-            </p>
-          )}
-          {grid.sortError && (
-            <p className="mb-3 text-sm text-amber-600">
-              This view&apos;s sort no longer matches the columns — showing default order.
-            </p>
-          )}
-
-          {/* Active view */}
-          {active?.type === 'gallery' ? (
-            <GalleryView fields={grid.fields} records={grid.records} config={active.config} />
-          ) : active?.type === 'kanban' ? (
-            <KanbanView fields={grid.fields} records={grid.records} config={active.config} />
-          ) : (
-            <GridView grid={grid} />
-          )}
-
-          {typeof grid.total === 'number' && grid.total > 0 && (() => {
-            const from = (grid.page - 1) * 100 + 1
-            const to = Math.min(grid.page * 100, grid.total)
-            return (
-              <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-                <span>Showing {from}–{to} of {grid.total}</span>
-                <div className="flex gap-2">
-                  <button disabled={grid.page <= 1} onClick={() => grid.setPage(grid.page - 1)}
-                    className="rounded-lg border border-border px-3 py-1 disabled:opacity-40">‹ Prev</button>
-                  <button disabled={to >= grid.total} onClick={() => grid.setPage(grid.page + 1)}
-                    className="rounded-lg border border-border px-3 py-1 disabled:opacity-40">Next ›</button>
-                </div>
-              </div>
-            )
-          })()}
-        </>
+        active.type === 'gallery' ? (
+          <GalleryView fields={grid.fields} records={grid.records} config={active.config} />
+        ) : active.type === 'kanban' ? (
+          <KanbanView fields={grid.fields} records={grid.records} config={active.config} />
+        ) : (
+          <GridView grid={grid} />
+        )
       ) : (
         <div className="p-8 text-muted-foreground">Loading…</div>
       )}
+
+      {typeof grid.total === 'number' && grid.total > 0 && (() => {
+        const from = (grid.page - 1) * PAGE_SIZE + 1
+        const to = Math.min(grid.page * PAGE_SIZE, grid.total)
+        return (
+          <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
+            <span>Showing {from}–{to} of {grid.total}</span>
+            <div className="flex gap-2">
+              <button disabled={grid.page <= 1} onClick={() => grid.setPage(grid.page - 1)}
+                className="rounded-lg border border-border px-3 py-1 disabled:opacity-40">‹ Prev</button>
+              <button disabled={to >= grid.total} onClick={() => grid.setPage(grid.page + 1)}
+                className="rounded-lg border border-border px-3 py-1 disabled:opacity-40">Next ›</button>
+            </div>
+          </div>
+        )
+      })()}
 
       {addingView && (
         <AddViewModal fields={grid.fields} workspaceId={workspaceId} onClose={() => setAddingView(false)}

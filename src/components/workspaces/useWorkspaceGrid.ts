@@ -7,6 +7,11 @@ export type GridField = { id: string; key: string; label: string; type: string; 
 type Workspace = { id: string; name: string; description: string | null; icon: string | null }
 export type WorkspaceView = { id: string; name: string; type: string; config: any; position: number }
 
+// Single source of truth for the records-per-page size used both for the
+// fetch (sent explicitly so the server default can't silently drift away
+// from the label) and for the pager's from/to math in WorkspaceViews.
+export const PAGE_SIZE = 100
+
 export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | null) {
   // Seed for the very first reload only (deep-link support for ?view=<id>).
   // Captured once — once the user picks a view via setActiveViewId, that
@@ -217,7 +222,7 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
     // haven't actually arrived yet.
     setRecordsViewId(null)
     try {
-      const qs = new URLSearchParams({ page: String(page), search })
+      const qs = new URLSearchParams({ page: String(page), search, pageSize: String(PAGE_SIZE) })
       const res = await fetch(`/api/workspaces/${workspaceId}/views/${viewId}/records?${qs}`)
       if (!res.ok) throw new Error('Failed to load records')
       const body = await res.json()
@@ -245,6 +250,10 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
 
   useEffect(() => { setPage(1) }, [activeViewId])
   useEffect(() => { setPage(1) }, [search])
+  // Search is per-view UX, not a global filter: clear it when the user
+  // switches views so it can't silently leak a query onto an unrelated view.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setSearch('') }, [activeViewId])
 
   const setSort = useCallback((fieldKey: string) => {
     const view = views.find((v) => v.id === activeViewId)
@@ -258,6 +267,9 @@ export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | n
     if (next) nextConfig.sort = next
     else delete nextConfig.sort
     updateView(view.id, nextConfig)
+    // Re-sorting from a deep page would otherwise leave the user on an
+    // arbitrary middle slice of the newly-ordered result set.
+    setPage(1)
   }, [views, activeViewId, updateView])
 
   const activeSort = ((views.find((v) => v.id === activeViewId)?.config as any)?.sort ?? null) as
