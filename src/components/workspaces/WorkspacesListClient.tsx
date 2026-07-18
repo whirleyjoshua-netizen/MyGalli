@@ -105,7 +105,7 @@ export function WorkspacesListClient() {
               </div>
 
               {visible.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No workspaces match "{search}".</p>
+                <p className="text-sm text-muted-foreground">No workspaces match &ldquo;{search}&rdquo;.</p>
               ) : layout === 'grid' ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {visible.map((ws) => <WorkspaceCard key={ws.id} ws={ws} layout="grid" />)}
