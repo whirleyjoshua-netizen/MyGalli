@@ -72,6 +72,7 @@ export function CommunitySidebar({
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{e.title}</p>
                   <p className="text-xs text-muted-foreground">{eventWhen(e)}</p>
+                  {e.location && <EventLocation location={e.location} />}
                 </div>
               </li>
             ))}
@@ -138,6 +139,8 @@ export function CommunitySidebar({
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{e.title}</p>
                 <p className="text-xs text-muted-foreground">{eventWhen(e)}</p>
+                {e.location && <EventLocation location={e.location} />}
+                {e.description && <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{e.description}</p>}
               </div>
             </div>
           ))}
@@ -163,6 +166,17 @@ function eventWhen(e: EventDTO): string {
   const time = e.allDay ? 'All day' : d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' })
   const where = e.isOnline ? ' · Online' : ''
   return `${day} · ${time}${where}`
+}
+
+function EventLocation({ location }: { location: string }) {
+  if (/^https?:\/\//i.test(location)) {
+    return (
+      <a href={location} target="_blank" rel="noreferrer" className="block truncate text-xs text-primary hover:underline">
+        {location}
+      </a>
+    )
+  }
+  return <p className="truncate text-xs text-muted-foreground">{location}</p>
 }
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
