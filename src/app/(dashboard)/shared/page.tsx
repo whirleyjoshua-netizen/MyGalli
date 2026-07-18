@@ -93,6 +93,7 @@ function MyPondContent() {
         filter={filter} onFilter={setFilter}
         sort={sort} onSort={setSort}
         showFilter={isCommunities}
+        searchPlaceholder={isCommunities ? 'Search communities...' : 'Search pages...'}
       />
 
       <div className="flex gap-6">
@@ -103,7 +104,7 @@ function MyPondContent() {
             communities.length === 0 ? (
               <EmptyState title="No communities in your pond yet." hint="Create one to start connecting." action={() => setNewOpen(true)} />
             ) : visibleCommunities.length === 0 ? (
-              <EmptyState title={`No communities match “${query}”.`} />
+              <EmptyState title={query.trim() ? `No communities match “${query}”.` : 'No communities match this filter.'} />
             ) : (
               <CardGrid view={view}>
                 {visibleCommunities.map((c) => <CommunityCard key={c.id} community={c} view={view} />)}

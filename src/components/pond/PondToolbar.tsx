@@ -5,11 +5,13 @@ import type { PondFilter, PondSort } from '@/lib/pond'
 
 export function PondToolbar({
   query, onQuery, filter, onFilter, sort, onSort, showFilter,
+  searchPlaceholder = 'Search communities...',
 }: {
   query: string; onQuery: (v: string) => void
   filter: PondFilter; onFilter: (v: PondFilter) => void
   sort: PondSort; onSort: (v: PondSort) => void
   showFilter: boolean
+  searchPlaceholder?: string
 }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
@@ -17,7 +19,7 @@ export function PondToolbar({
         <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
         <input
           type="text"
-          placeholder="Search communities..."
+          placeholder={searchPlaceholder}
           value={query}
           onChange={(e) => onQuery(e.target.value)}
           className="w-full pl-9 pr-3 py-2.5 bg-surface border border-border rounded-xl outline-none focus:ring-2 focus:ring-ring text-sm"
@@ -45,7 +47,7 @@ export function PondToolbar({
           <option value="active">Recently active</option>
           <option value="newest">Newest</option>
           <option value="alpha">Alphabetical</option>
-          <option value="members">Most members</option>
+          {showFilter && <option value="members">Most members</option>}
         </select>
       </div>
     </div>
