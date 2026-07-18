@@ -6,7 +6,7 @@ import { sanitizeHubConfig } from '@/lib/hub-config'
 async function ownHub(request: NextRequest, id: string) {
   const me = await getUser(request)
   if (!me) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
-  const hub = await db.hub.findUnique({ where: { id } })
+  const hub = await db.hub.findUnique({ where: { id }, include: { user: { select: { username: true } } } })
   if (!hub || hub.userId !== me.id) return { error: NextResponse.json({ error: 'Not found' }, { status: 404 }) }
   return { me, hub }
 }
