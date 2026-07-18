@@ -19,7 +19,7 @@ describe('GET /api/workspaces/[id]/views/[viewId]/records', () => {
       view: { id: 'v1', name: 'Test View', type: 'table' },
       fields: [{ key: 'field1', label: 'Field 1', type: 'text' }],
       records: [{ id: 'r1', data: { field1: 'val' }, updatedAt: updatedAt.toISOString() }],
-      pagination: { page: 1, pageSize: 25, total: 1, totalPages: 1 }
+      pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 }
     }
     ;(queryWorkspaceView as any).mockResolvedValue(mockResult)
     
@@ -36,7 +36,47 @@ describe('GET /api/workspaces/[id]/views/[viewId]/records', () => {
       viewId: 'v1',
       userId: 'u1',
       page: 1,
-      pageSize: 25
+      pageSize: 100,
+      search: ''
     })
+  })
+
+  it('clamps a non-numeric pageSize to the default instead of NaN (Finding: unclamped page/pageSize)', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    ;(queryWorkspaceView as any).mockResolvedValue({ records: [], pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 } })
+
+    const req = {
+      nextUrl: new URL('http://localhost/api/workspaces/w1/views/v1/records?pageSize=abc&page=0')
+    } as unknown as NextRequest
+
+    const res = await GET(req as any, ctx)
+    expect(res.status).toBe(200)
+    expect(queryWorkspaceView).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 1, pageSize: 100 })
+    )
+  })
+
+  it('clamps pageSize above the max down to 200', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    ;(queryWorkspaceView as any).mockResolvedValue({ records: [], pagination: { page: 1, pageSize: 200, total: 0, totalPages: 0 } })
+
+    const req = {
+      nextUrl: new URL('http://localhost/api/workspaces/w1/views/v1/records?pageSize=9999')
+    } as unknown as NextRequest
+
+    await GET(req as any, ctx)
+    expect(queryWorkspaceView).toHaveBeenCalledWith(expect.objectContaining({ pageSize: 200 }))
+  })
+
+  it('clamps a negative page to 1', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    ;(queryWorkspaceView as any).mockResolvedValue({ records: [], pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 } })
+
+    const req = {
+      nextUrl: new URL('http://localhost/api/workspaces/w1/views/v1/records?page=-5')
+    } as unknown as NextRequest
+
+    await GET(req as any, ctx)
+    expect(queryWorkspaceView).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }))
   })
 })

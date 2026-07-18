@@ -5,13 +5,47 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 export type GridRecord = { id: string; data: Record<string, any>; updatedAt: string }
 export type GridField = { id: string; key: string; label: string; type: string; position: number; required?: boolean; config?: any }
 type Workspace = { id: string; name: string; description: string | null; icon: string | null }
+export type WorkspaceView = { id: string; name: string; type: string; config: any; position: number }
 
-export function useWorkspaceGrid(workspaceId: string) {
+// Single source of truth for the records-per-page size used both for the
+// fetch (sent explicitly so the server default can't silently drift away
+// from the label) and for the pager's from/to math in WorkspaceViews.
+export const PAGE_SIZE = 100
+
+export function useWorkspaceGrid(workspaceId: string, initialViewId?: string | null) {
+  // Seed for the very first reload only (deep-link support for ?view=<id>).
+  // Captured once — once the user picks a view via setActiveViewId, that
+  // becomes `cur` on subsequent reloads and always wins (see reload() below),
+  // so this seed can never re-assert itself over a later user choice.
+  const initialViewIdRef = useRef(initialViewId ?? null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [fields, setFields] = useState<GridField[]>([])
+  const [views, setViews] = useState<WorkspaceView[]>([])
   const [records, setRecords] = useState<GridRecord[]>([])
+  const [activeViewId, setActiveViewId] = useState<string | null>(null)
+  const [filterError, setFilterError] = useState<string | null>(null)
+  // Which view the currently-committed `records` belong to. Set atomically
+  // with each successful commitRecords in loadViewRecords, and cleared to
+  // null whenever a fetch for a (possibly different) view starts, so
+  // consumers can tell — without a race — whether `records` actually
+  // describes `activeViewId` right now, or a fetch is still in flight.
+  const [recordsViewId, setRecordsViewId] = useState<string | null>(null)
+  // The view's true total record count (from pagination.total), not just the
+  // current page length — committed on the exact same path/gate as records so
+  // it can never describe a different (or stale) view than what's on screen.
+  const [total, setTotal] = useState<number | null>(null)
+  // Bumped by mutators that change a field/column without changing activeViewId,
+  // so the per-view records effect (keyed on activeViewId) re-fires and picks up
+  // e.g. a filterError caused by deleting a field the active view's filter used.
+  const [viewRecordsNonce, setViewRecordsNonce] = useState(0)
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [sortError, setSortError] = useState<string | null>(null)
+  // Guards against out-of-order responses: only the latest-issued request for
+  // view records is allowed to commit its result.
+  const viewRecordsRequestRef = useRef(0)
   // recordsRef is the synchronously-maintained source of truth for the records
   // array. Every path that changes records goes through commitRecords(), which
   // updates the ref and React state together — so back-to-back mutators in the
@@ -30,14 +64,26 @@ export function useWorkspaceGrid(workspaceId: string) {
       const body = await res.json()
       setWorkspace(body.workspace)
       setFields(body.fields)
-      commitRecords(body.records)
+      const viewList = body.views ?? []
+      setViews(viewList)
+      // Records are owned exclusively by the per-view fetch (loadViewRecords) so
+      // that what's on screen always matches the active view's saved filter.
+      // Resolve activeViewId against the *fresh* view list: keep the current id
+      // only if it still exists (e.g. it wasn't just deleted), else fall back to
+      // the first view.
+      setActiveViewId((cur) => {
+        if (cur && viewList.some((v: WorkspaceView) => v.id === cur)) return cur
+        const seed = initialViewIdRef.current
+        if (seed && viewList.some((v: WorkspaceView) => v.id === seed)) return seed
+        return viewList[0]?.id ?? null
+      })
       setError(null)
     } catch (e: any) {
       setError(e.message || 'Failed to load')
     } finally {
       setLoading(false)
     }
-  }, [workspaceId, commitRecords])
+  }, [workspaceId])
 
   useEffect(() => { reload() }, [reload])
 
@@ -104,6 +150,7 @@ export function useWorkspaceGrid(workspaceId: string) {
       })
       if (!res.ok) throw new Error('Add column failed')
       await reload()
+      setViewRecordsNonce((n) => n + 1)
     } catch (e: any) { setError(e.message || 'Add column failed') }
   }, [workspaceId, reload])
 
@@ -116,6 +163,7 @@ export function useWorkspaceGrid(workspaceId: string) {
       })
       if (!res.ok) throw new Error('Update column failed')
       await reload()
+      setViewRecordsNonce((n) => n + 1)
     } catch (e: any) { setError(e.message || 'Update column failed') }
   }, [workspaceId, reload])
 
@@ -124,8 +172,108 @@ export function useWorkspaceGrid(workspaceId: string) {
       const res = await fetch(`/api/workspaces/${workspaceId}/fields/${fieldId}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Delete column failed')
       await reload()
+      setViewRecordsNonce((n) => n + 1)
     } catch (e: any) { setError(e.message || 'Delete column failed') }
   }, [workspaceId, reload])
 
-  return { loading, error, workspace, fields, records, addRow, updateCell, deleteRow, addField, updateField, deleteField, reload }
+  const addView = useCallback(async (name: string, type: string, config?: any): Promise<WorkspaceView | null> => {
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/views`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, type, config: config ?? {} }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Add view failed')
+      const view = await res.json()
+      await reload()
+      return view
+    } catch (e: any) { setError(e.message || 'Add view failed'); return null }
+  }, [workspaceId, reload])
+
+  const updateView = useCallback(async (viewId: string, config: Record<string, any>) => {
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/views/${viewId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Update view failed')
+      await reload()
+      // The view's own records (e.g. after clearing its filter) need
+      // re-fetching even though activeViewId hasn't changed.
+      setViewRecordsNonce((n) => n + 1)
+    } catch (e: any) { setError(e.message || 'Update view failed') }
+  }, [workspaceId, reload])
+
+  const deleteView = useCallback(async (viewId: string) => {
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/views/${viewId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Delete view failed')
+      await reload()
+    } catch (e: any) { setError(e.message || 'Delete view failed') }
+  }, [workspaceId, reload])
+
+  const loadViewRecords = useCallback(async (viewId: string) => {
+    const requestId = ++viewRecordsRequestRef.current
+    // A new fetch is starting: the committed records no longer provably
+    // belong to any particular view until this (or a newer) request commits.
+    // Clearing this synchronously with the request bump means there is never
+    // a render where recordsViewId claims to match a view whose records
+    // haven't actually arrived yet.
+    setRecordsViewId(null)
+    try {
+      const qs = new URLSearchParams({ page: String(page), search, pageSize: String(PAGE_SIZE) })
+      const res = await fetch(`/api/workspaces/${workspaceId}/views/${viewId}/records?${qs}`)
+      if (!res.ok) throw new Error('Failed to load records')
+      const body = await res.json()
+      // Ignore stale responses: if a newer request has been issued since this
+      // one started (e.g. the user switched views again before this resolved),
+      // discard this result — including its filterError and total — so it
+      // can't overwrite the currently-active view's records.
+      if (requestId !== viewRecordsRequestRef.current) return
+      commitRecords(body.records ?? [])
+      setRecordsViewId(viewId)
+      setFilterError(body.filterError ?? null)
+      setSortError(body.sortError ?? null)
+      setTotal(typeof body.pagination?.total === 'number' ? body.pagination.total : null)
+    } catch (e: any) {
+      if (requestId !== viewRecordsRequestRef.current) return
+      setError(e.message || 'Failed to load records')
+    }
+  }, [workspaceId, commitRecords, page, search])
+
+  useEffect(() => {
+    if (activeViewId) loadViewRecords(activeViewId)
+    else { commitRecords([]); setRecordsViewId(null) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeViewId, loadViewRecords, viewRecordsNonce])
+
+  useEffect(() => { setPage(1) }, [activeViewId])
+  useEffect(() => { setPage(1) }, [search])
+  // Search is per-view UX, not a global filter: clear it when the user
+  // switches views so it can't silently leak a query onto an unrelated view.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setSearch('') }, [activeViewId])
+
+  const setSort = useCallback((fieldKey: string) => {
+    const view = views.find((v) => v.id === activeViewId)
+    if (!view) return
+    const cur = (view.config as any)?.sort as { field: string; dir: 'asc' | 'desc' } | undefined
+    let next: { field: string; dir: 'asc' | 'desc' } | undefined
+    if (!cur || cur.field !== fieldKey) next = { field: fieldKey, dir: 'asc' }
+    else if (cur.dir === 'asc') next = { field: fieldKey, dir: 'desc' }
+    else next = undefined // third click clears
+    const nextConfig = { ...(view.config as any) }
+    if (next) nextConfig.sort = next
+    else delete nextConfig.sort
+    updateView(view.id, nextConfig)
+    // Re-sorting from a deep page would otherwise leave the user on an
+    // arbitrary middle slice of the newly-ordered result set.
+    setPage(1)
+  }, [views, activeViewId, updateView])
+
+  const activeSort = ((views.find((v) => v.id === activeViewId)?.config as any)?.sort ?? null) as
+    { field: string; dir: 'asc' | 'desc' } | null
+
+  return { loading, error, workspace, fields, views, records, activeViewId, setActiveViewId, filterError, recordsViewId, total, loadViewRecords, addRow, updateCell, deleteRow, addField, updateField, deleteField, addView, updateView, deleteView, reload, page, setPage, search, setSearch, setSort, sortError, activeSort }
 }

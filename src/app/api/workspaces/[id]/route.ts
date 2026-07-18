@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, { params }: Ctx) {
   const parsedPageSize = parseInt(searchParams.get('pageSize') || '100')
   const pageSize = Number.isFinite(parsedPageSize) ? Math.min(200, Math.max(1, parsedPageSize)) : 100
 
-  const [fields, records, total] = await Promise.all([
+  const [fields, records, total, views] = await Promise.all([
     db.workspaceField.findMany({ where: { workspaceId: id }, orderBy: { position: 'asc' } }),
     db.workspaceRecord.findMany({
       where: { workspaceId: id, status: 'active' },
@@ -35,13 +35,21 @@ export async function GET(request: NextRequest, { params }: Ctx) {
       select: { id: true, data: true, updatedAt: true },
     }),
     db.workspaceRecord.count({ where: { workspaceId: id, status: 'active' } }),
+    db.workspaceView.findMany({ where: { workspaceId: id }, orderBy: { position: 'asc' } }),
   ])
+
+  let viewList = views
+  if (viewList.length === 0) {
+    const def = await db.workspaceView.create({ data: { workspaceId: id, name: 'Grid', type: 'grid', config: {}, position: 0 } })
+    viewList = [def]
+  }
 
   const ws = g.ws!
   return NextResponse.json({
     workspace: { id: ws.id, name: ws.name, description: ws.description, icon: ws.icon },
     fields,
     records,
+    views: viewList,
     pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
   })
 }
