@@ -1,11 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import { ArrowUp, ArrowDown, GripVertical } from 'lucide-react'
 import type { HubConfig, HubSidebarKey } from '@/lib/types/hub-config'
+import { HubEventsModal } from './HubEventsModal'
 
 const LABELS: Record<HubSidebarKey, string> = { members: 'Members', resources: 'Resources', video: 'Video hero', events: 'Upcoming events' }
 
-export function LayoutSectionsSection({ config, onChange }: { config: HubConfig; onChange: (c: HubConfig) => void }) {
+export function LayoutSectionsSection({ config, onChange, hubId }: { config: HubConfig; onChange: (c: HubConfig) => void; hubId: string }) {
+  const [manageEvents, setManageEvents] = useState(false)
   const move = (i: number, dir: -1 | 1) => {
     const j = i + dir
     if (j < 0 || j >= config.sidebar.length) return
@@ -29,6 +32,9 @@ export function LayoutSectionsSection({ config, onChange }: { config: HubConfig;
             <div key={w.key} className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3">
               <GripVertical className="h-4 w-4 text-muted-foreground/50" />
               <span className="flex-1 text-sm font-medium">{LABELS[w.key]}</span>
+              {w.key === 'events' && (
+                <button onClick={() => setManageEvents(true)} className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground">Manage</button>
+              )}
               <button onClick={() => move(i, -1)} disabled={i === 0} className="rounded p-1 text-muted-foreground disabled:opacity-30 hover:bg-muted"><ArrowUp className="h-4 w-4" /></button>
               <button onClick={() => move(i, 1)} disabled={i === config.sidebar.length - 1} className="rounded p-1 text-muted-foreground disabled:opacity-30 hover:bg-muted"><ArrowDown className="h-4 w-4" /></button>
               <label className="relative inline-flex cursor-pointer items-center">
@@ -50,6 +56,7 @@ export function LayoutSectionsSection({ config, onChange }: { config: HubConfig;
           </div>
         </div>
       </section>
+      {manageEvents && <HubEventsModal hubId={hubId} onClose={() => setManageEvents(false)} />}
     </div>
   )
 }
