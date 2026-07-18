@@ -29,7 +29,7 @@ describe('PATCH /api/hubs/[id] — config + version', () => {
     const arg = (db.hub.update as any).mock.calls[0]![0]
     expect(arg.data.version).toBe(4)
     expect(arg.data.config.access.whoCanPost).toBe('owner-only')
-    expect(arg.data.config.sidebar).toHaveLength(3) // sanitized to full widget set
+    expect(arg.data.config.sidebar).toHaveLength(4) // sanitized to full widget set
   })
   it('404 for non-owner', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'stranger' })
