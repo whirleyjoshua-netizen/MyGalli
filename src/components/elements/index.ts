@@ -111,6 +111,8 @@ export { PublicAppointmentsElement } from './PublicAppointmentsElement'
 // Commerce
 export { ProductListElement } from './ProductListElement'
 export { PublicProductListElement } from './PublicProductListElement'
+export { WaitlistElement } from './WaitlistElement'
+export { PublicWaitlistElement } from './PublicWaitlistElement'
 
 // Workspaces
 export { WorkspaceKpiElement } from './WorkspaceKpiElement'
