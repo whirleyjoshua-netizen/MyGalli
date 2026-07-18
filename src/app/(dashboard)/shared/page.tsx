@@ -1,30 +1,19 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Users, Globe, Lock, Plus, Crown } from 'lucide-react'
-import { CreateCommunityModal } from '@/components/community/CreateCommunityModal'
-
-interface SharedDisplay {
-  id: string
-  slug: string
-  title: string
-  coverImage?: string | null
-  published: boolean
-  updatedAt: string
-  owner: { username: string; name: string | null; avatar: string | null }
-}
-
-type Community = {
-  id: string
-  title: string
-  username: string
-  slug: string
-  coverImage: string | null
-  isOwner: boolean
-  memberCount: number
-  latestPost: { text: string | null; createdAt: string } | null
-}
+import { Suspense, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Users } from 'lucide-react'
+import {
+  filterSortCommunities, filterSortCollabs,
+  type PondCommunity, type PondCollab, type PondFilter, type PondSort,
+} from '@/lib/pond'
+import { PondHero } from '@/components/pond/PondHero'
+import { PondWelcomeBanner } from '@/components/pond/PondWelcomeBanner'
+import { PondToolbar } from '@/components/pond/PondToolbar'
+import { CommunityCard } from '@/components/pond/CommunityCard'
+import { CollabCard } from '@/components/pond/CollabCard'
+import { GetMoreCard } from '@/components/pond/GetMoreCard'
+import { NewCommunityModal } from '@/components/pond/NewCommunityModal'
 
 export default function MyPondPage() {
   return (
@@ -35,44 +24,56 @@ export default function MyPondPage() {
 }
 
 function MyPondContent() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<'collabs' | 'communities'>(
     searchParams.get('tab') === 'collabs' ? 'collabs' : 'communities'
   )
-  const [displays, setDisplays] = useState<SharedDisplay[]>([])
-  const [communities, setCommunities] = useState<Community[]>([])
+  const [communities, setCommunities] = useState<PondCommunity[]>([])
+  const [collabs, setCollabs] = useState<PondCollab[]>([])
   const [loading, setLoading] = useState(true)
-  const [creating, setCreating] = useState(false)
 
-  const loadCommunities = useCallback(
-    () =>
-      fetch('/api/communities')
-        .then((r) => (r.ok ? r.json() : { communities: [] }))
-        .then((d) => setCommunities(Array.isArray(d?.communities) ? d.communities : []))
-        .catch(() => {}),
-    []
-  )
+  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<PondFilter>('all')
+  const [sort, setSort] = useState<PondSort>('active')
+  const [welcomeDismissed, setWelcomeDismissed] = useState(true)
+  const [newOpen, setNewOpen] = useState(false)
+
+  // hydrate persisted UI prefs
+  useEffect(() => {
+    setWelcomeDismissed(localStorage.getItem('pond-welcome-dismissed') === '1')
+    const v = localStorage.getItem('pond-view')
+    if (v === 'grid' || v === 'list') setView(v)
+  }, [])
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/collaborations').then((r) => (r.ok ? r.json() : { displays: [] })).then((d) => setDisplays(Array.isArray(d?.displays) ? d.displays : [])).catch(() => {}),
-      loadCommunities(),
+      fetch('/api/communities/joined').then((r) => (r.ok ? r.json() : { communities: [] })).then((d) => setCommunities(Array.isArray(d?.communities) ? d.communities : [])).catch(() => {}),
+      fetch('/api/collaborations').then((r) => (r.ok ? r.json() : { displays: [] })).then((d) => setCollabs(Array.isArray(d?.displays) ? d.displays : [])).catch(() => {}),
     ]).finally(() => setLoading(false))
-  }, [loadCommunities])
+  }, [])
+
+  const setViewPersist = (v: 'grid' | 'list') => { setView(v); localStorage.setItem('pond-view', v) }
+  const dismissWelcome = () => { setWelcomeDismissed(true); localStorage.setItem('pond-welcome-dismissed', '1') }
+
+  const visibleCommunities = useMemo(
+    () => filterSortCommunities(communities, { query, filter, sort }),
+    [communities, query, filter, sort]
+  )
+  const visibleCollabs = useMemo(
+    () => filterSortCollabs(collabs, { query, sort }),
+    [collabs, query, sort]
+  )
+
+  const isCommunities = activeTab === 'communities'
 
   return (
     <div className="px-6 lg:px-8 py-7">
-      <div className="mb-6">
-        <h1 className="flex items-center gap-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-          <Users className="w-6 h-6 text-primary" /> My Pond
-        </h1>
-        <p className="text-muted-foreground mt-1">Communities you&apos;ve joined and pages you collaborate on.</p>
-      </div>
+      <PondHero view={view} onView={setViewPersist} onNewCommunity={() => setNewOpen(true)} />
 
       {/* Tabs */}
       <div className="flex gap-0 border-b border-border mb-6">
-        {([['communities', 'Communities', communities.length], ['collabs', 'Collabs', displays.length]] as const).map(([key, label, count]) => (
+        {([['communities', 'Communities', communities.length], ['collabs', 'Collabs', collabs.length]] as const).map(([key, label, count]) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
@@ -85,83 +86,65 @@ function MyPondContent() {
         ))}
       </div>
 
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : activeTab === 'communities' ? (
-        communities.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-border rounded-2xl">
-            <Users className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-muted-foreground">No communities yet.</p>
-            <p className="text-sm text-muted-foreground/70 mt-1">Create your own, or join one and it shows up here.</p>
-            <button
-              onClick={() => setCreating(true)}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-galli px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition"
-            >
-              <Plus className="w-4 h-4" /> New community
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="mb-4 flex justify-end">
-              <button
-                onClick={() => setCreating(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-galli px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition"
-              >
-                <Plus className="w-4 h-4" /> New community
-              </button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {communities.map((c) => (
-                <a key={c.id} href={`/${c.username}/hub/${c.slug}`} className="rounded-xl border border-border bg-surface p-4 hover:shadow-soft transition">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold truncate">{c.title}</span>
-                    {c.isOwner && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary shrink-0">
-                        <Crown className="w-3 h-3" /> Owner
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground truncate">{c.latestPost?.text || 'No posts yet'}</div>
-                  <div className="mt-2 text-[11px] text-muted-foreground/70">{c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}</div>
-                </a>
-              ))}
-            </div>
-          </>
-        )
-      ) : displays.length === 0 ? (
-        <div className="text-center py-20 border border-dashed border-border rounded-2xl">
-          <Users className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
-          <p className="text-muted-foreground">No pages shared with you yet.</p>
-          <p className="text-sm text-muted-foreground/70 mt-1">When someone invites you to collaborate, it shows up here.</p>
-        </div>
-      ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {displays.map((d) => (
-            <button
-              key={d.id}
-              onClick={() => router.push(`/editor?id=${d.id}`)}
-              className="group text-left rounded-2xl border border-border bg-surface overflow-hidden shadow-soft hover:shadow-soft-lg hover:border-primary/30 transition-all cursor-pointer"
-            >
-              <div className={`h-32 ${d.coverImage ? '' : 'bg-gradient-to-br from-galli/20 to-galli-violet/20'}`}>
-                {d.coverImage && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={d.coverImage} alt="" className="w-full h-full object-cover" />
-                )}
-              </div>
-              <div className="p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">{d.title}</h3>
-                  {d.published ? <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" /> : <Lock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 truncate">shared by @{d.owner.username}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+      {!welcomeDismissed && <PondWelcomeBanner onDismiss={dismissWelcome} />}
 
-      {creating && (
-        <CreateCommunityModal onClose={() => setCreating(false)} onCreated={loadCommunities} />
+      <PondToolbar
+        query={query} onQuery={setQuery}
+        filter={filter} onFilter={setFilter}
+        sort={sort} onSort={setSort}
+        showFilter={isCommunities}
+      />
+
+      <div className="flex gap-6">
+        <main className="flex-1 min-w-0">
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : isCommunities ? (
+            communities.length === 0 ? (
+              <EmptyState title="No communities in your pond yet." hint="Create one to start connecting." action={() => setNewOpen(true)} />
+            ) : visibleCommunities.length === 0 ? (
+              <EmptyState title={`No communities match “${query}”.`} />
+            ) : (
+              <CardGrid view={view}>
+                {visibleCommunities.map((c) => <CommunityCard key={c.id} community={c} view={view} />)}
+              </CardGrid>
+            )
+          ) : collabs.length === 0 ? (
+            <EmptyState title="No pages shared with you yet." hint="When someone invites you to collaborate, it shows up here." />
+          ) : visibleCollabs.length === 0 ? (
+            <EmptyState title={`No pages match “${query}”.`} />
+          ) : (
+            <CardGrid view={view}>
+              {visibleCollabs.map((d) => <CollabCard key={d.id} collab={d} view={view} />)}
+            </CardGrid>
+          )}
+        </main>
+
+        <aside className="w-72 shrink-0 hidden xl:block">
+          <GetMoreCard onCreate={() => setNewOpen(true)} />
+        </aside>
+      </div>
+
+      <NewCommunityModal open={newOpen} onClose={() => setNewOpen(false)} />
+    </div>
+  )
+}
+
+function CardGrid({ view, children }: { view: 'grid' | 'list'; children: React.ReactNode }) {
+  if (view === 'list') return <div className="flex flex-col gap-3">{children}</div>
+  return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{children}</div>
+}
+
+function EmptyState({ title, hint, action }: { title: string; hint?: string; action?: () => void }) {
+  return (
+    <div className="text-center py-20 border border-dashed border-border rounded-2xl">
+      <Users className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
+      <p className="text-muted-foreground">{title}</p>
+      {hint && <p className="text-sm text-muted-foreground/70 mt-1">{hint}</p>}
+      {action && (
+        <button onClick={action} className="mt-4 inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90">
+          Create a community
+        </button>
       )}
     </div>
   )
