@@ -42,6 +42,13 @@ export function canModerate(
   return userId === hub.userId || collaboratorIds.includes(userId)
 }
 
+// A published community hub is public; an unpublished (draft) one is visible
+// only to the owner/collaborators. Replaces the old Display-published read gate
+// for community feeds, since standalone communities have no linked Display.
+export function canViewCommunityHub(input: { published: boolean; isPrivileged: boolean }): boolean {
+  return input.published || input.isPrivileged
+}
+
 /**
  * Who hears about a new community post.
  * Owner/collaborator posts are the broadcast members joined for -> notify every member.

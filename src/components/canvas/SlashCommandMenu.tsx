@@ -60,6 +60,7 @@ import {
   ShoppingBag,
   Gauge,
   Rocket,
+  LibraryBig,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -83,6 +84,7 @@ const commands: Command[] = [
   { id: 'toggle', label: 'Toggle', icon: ChevronDownIcon, description: 'Collapsible content', category: 'Content' },
   { id: 'code', label: 'Code Block', icon: Code2, description: 'Syntax-highlighted code', category: 'Content' },
   { id: 'timeline', label: 'Timeline', icon: Clock, description: 'Interactive event timeline', category: 'Content' },
+  { id: 'index', label: 'Index', icon: LibraryBig, description: 'Scannable catalog of linked items', category: 'Content' },
 
   // Data & Visuals
   { id: 'list', label: 'Bulleted List', icon: List, description: 'Simple bullet list', category: 'Data & Visuals' },
@@ -312,16 +314,16 @@ export function SlashCommandMenu({ position, onSelect, onClose, isKitPage, hideA
         </div>
 
         {/* Element grid — horizontal columns on desktop, single vertical list on mobile */}
-        <div className="flex-1 scrollbar-hide overflow-y-auto overflow-x-hidden md:overflow-x-auto md:overflow-y-hidden">
+        <div className="flex-1 min-h-0 scrollbar-thin overflow-y-auto overflow-x-hidden md:flex md:overflow-x-auto md:overflow-y-hidden">
           {columns.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground">No elements found</div>
           ) : (
             <div
               data-testid="element-grid"
-              className="flex flex-col divide-y md:flex-row md:h-full md:divide-x md:divide-y-0 divide-border"
+              className="flex flex-col divide-y md:flex-row md:min-h-0 md:divide-x md:divide-y-0 divide-border"
             >
               {columns.map((column, colIdx) => (
-                <div key={column.category} className="flex flex-col w-full md:w-[210px] md:flex-shrink-0 md:h-full">
+                <div key={column.category} className="flex flex-col w-full md:w-[210px] md:flex-shrink-0 md:h-full md:min-h-0">
                   {/* Category header */}
                   <div className="px-3 py-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-shrink-0 sticky top-0 bg-surface">
                     <span>{column.category}</span>
@@ -330,7 +332,7 @@ export function SlashCommandMenu({ position, onSelect, onClose, isKitPage, hideA
                     </span>
                   </div>
                   {/* Items — vertical scroll within the column */}
-                  <div className="overflow-y-auto flex-1 px-1 pb-1 scrollbar-hide">
+                  <div className="overflow-y-auto flex-1 min-h-0 px-1 pb-1 scrollbar-thin">
                     {column.cmds.map((cmd, rowIdx) => {
                       const isSelected = colIdx === clampedCol && rowIdx === clampedRow
                       if (cmd.disabled) {

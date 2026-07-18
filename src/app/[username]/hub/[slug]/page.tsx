@@ -7,6 +7,9 @@ import { resolveHubVisibility, readUnlockToken } from '@/lib/hub-access'
 import { getUserFromCookies } from '@/lib/get-user-from-cookies'
 import { visibleNotes } from '@/lib/hub-notes'
 import { visibleBookmarks } from '@/lib/hub-highlight'
+import { CommunityHubView } from '@/components/hub/community/CommunityHubView'
+import { canViewCommunityHub } from '@/lib/community'
+import { sanitizeHubConfig } from '@/lib/hub-config'
 
 interface Props {
   params: Promise<{ username: string; slug: string }>
@@ -19,7 +22,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!user) return {}
 
   const hub = await db.hub.findUnique({ where: { userId_slug: { userId: user.id, slug } } })
-  if (!hub || !hub.displayId) return {}
+  if (!hub) return {}
+
+  if (hub.community) {
+    if (!hub.published) return {}
+    return {
+      title: hub.title,
+      description: hub.tagline || hub.description || undefined,
+    }
+  }
+
+  if (!hub.displayId) return {}
 
   const display = await db.display.findUnique({ where: { id: hub.displayId }, select: { published: true } })
   if (!display || !display.published) return {}
@@ -39,14 +52,50 @@ export default async function PublicHubPage({ params }: Props) {
   }
 
   const hub = await db.hub.findUnique({ where: { userId_slug: { userId: user.id, slug } } })
-  if (!hub || !hub.displayId) {
-    notFound()
+  if (!hub) notFound()
+
+  const viewerUser = await getUserFromCookies()
+  let viewer: 'owner' | 'collaborator' | 'public' = 'public'
+  if (viewerUser?.id === hub.userId) viewer = 'owner'
+  else if (viewerUser) {
+    const collab = await db.hubCollaborator.findUnique({ where: { hubId_userId: { hubId: hub.id, userId: viewerUser.id } }, select: { id: true } })
+    if (collab) viewer = 'collaborator'
+  }
+  const isPrivileged = viewer === 'owner' || viewer === 'collaborator'
+
+  // Community hubs render the community page and gate on their own published flag.
+  if (hub.community) {
+    if (!canViewCommunityHub({ published: hub.published, isPrivileged })) notFound()
+    const [memberRows, items, postsCount, mine] = await Promise.all([
+      db.hubMember.findMany({ where: { hubId: hub.id }, select: { userId: true, user: { select: { username: true, name: true, avatar: true } } } }),
+      db.hubItem.findMany({ where: { hubId: hub.id, visibility: 'public', type: { in: ['file', 'link'] } }, orderBy: { createdAt: 'desc' } }),
+      db.hubPost.count({ where: { hubId: hub.id } }),
+      viewerUser ? db.hubMember.findUnique({ where: { hubId_userId: { hubId: hub.id, userId: viewerUser.id } }, select: { id: true } }) : Promise.resolve(null),
+    ])
+    const members = memberRows.map((m) => ({ userId: m.userId, username: m.user.username, name: m.user.name, avatar: m.user.avatar }))
+    const resources = items.map((i) => ({ id: i.id, type: i.type, title: i.title, url: i.url }))
+    const config = sanitizeHubConfig(hub.config)
+    return (
+      <CommunityHubView
+        hub={{ id: hub.id, title: hub.title, tagline: hub.tagline, description: hub.description, coverImage: hub.coverImage, heroVideoUrl: hub.heroVideoUrl }}
+        ownerUsername={user.username}
+        currentUserId={viewerUser?.id}
+        isPrivileged={isPrivileged}
+        joined={!!mine}
+        memberCount={members.length}
+        members={members}
+        resources={resources}
+        counts={{ posts: postsCount, members: members.length, resources: resources.length, events: 0 }}
+        sharePath={`/${user.username}/hub/${slug}`}
+        config={config}
+      />
+    )
   }
 
+  // Non-community hubs keep the data-room viewer (requires a published Display).
+  if (!hub.displayId) notFound()
   const display = await db.display.findUnique({ where: { id: hub.displayId }, select: { published: true } })
-  if (!display || !display.published) {
-    notFound()
-  }
+  if (!display || !display.published) notFound()
 
   const [folders, items, notes, bookmarks] = await Promise.all([
     db.hubFolder.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
@@ -56,29 +105,6 @@ export default async function PublicHubPage({ params }: Props) {
   ])
 
   const cookieStore = await cookies()
-  const viewerUser = await getUserFromCookies()
-  let viewer: 'owner' | 'collaborator' | 'public' = 'public'
-  if (viewerUser?.id === hub.userId) {
-    viewer = 'owner'
-  } else if (viewerUser) {
-    const collab = await db.hubCollaborator.findUnique({
-      where: { hubId_userId: { hubId: hub.id, userId: viewerUser.id } },
-      select: { id: true },
-    })
-    if (collab) viewer = 'collaborator'
-  }
-
-  let communityProps: { isCommunity: boolean; joined: boolean; memberCount: number; isPrivileged: boolean } = {
-    isCommunity: hub.community, joined: false, memberCount: 0, isPrivileged: viewer === 'owner' || viewer === 'collaborator',
-  }
-  if (hub.community) {
-    const [memberCount, mine] = await Promise.all([
-      db.hubMember.count({ where: { hubId: hub.id } }),
-      viewerUser ? db.hubMember.findUnique({ where: { hubId_userId: { hubId: hub.id, userId: viewerUser.id } }, select: { id: true } }) : Promise.resolve(null),
-    ])
-    communityProps = { ...communityProps, joined: !!mine, memberCount }
-  }
-
   const unlockedIds = new Set(readUnlockToken(cookieStore.get(`hub_unlock_${hub.id}`)?.value, hub.id))
   const status = resolveHubVisibility({
     folders: folders.map((f) => ({ id: f.id, parentId: f.parentId, visibility: f.visibility, hasPasscode: !!f.passcodeHash })),
@@ -144,7 +170,6 @@ export default async function PublicHubPage({ params }: Props) {
       bookmarks={safeBookmarks}
       username={user.username}
       hubId={hub.id}
-      community={communityProps}
       currentUserId={viewerUser?.id}
     />
   )

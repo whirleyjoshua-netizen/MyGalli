@@ -9,7 +9,7 @@ const csp = [
   "font-src 'self' data:",
   "connect-src 'self' blob: data: https://*.public.blob.vercel-storage.com https://accounts.google.com https://apis.google.com https://oauth2.googleapis.com https://nominatim.openstreetmap.org",
   "worker-src 'self' blob:",
-  "frame-src 'self' https://accounts.google.com https://open.spotify.com https://w.soundcloud.com",
+  "frame-src 'self' https://accounts.google.com https://open.spotify.com https://w.soundcloud.com https://www.youtube.com https://player.vimeo.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

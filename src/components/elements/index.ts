@@ -113,6 +113,8 @@ export { ProductListElement } from './ProductListElement'
 export { PublicProductListElement } from './PublicProductListElement'
 export { WaitlistElement } from './WaitlistElement'
 export { PublicWaitlistElement } from './PublicWaitlistElement'
+export { IndexElement } from './IndexElement'
+export { PublicIndexElement } from './PublicIndexElement'
 
 // Workspaces
 export { WorkspaceKpiElement } from './WorkspaceKpiElement'

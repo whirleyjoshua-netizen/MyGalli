@@ -14,6 +14,7 @@ import { CollaborateModal } from '@/components/editor/CollaborateModal'
 import { PresenceBar } from '@/components/editor/PresenceBar'
 import { PublishDialog } from '@/components/editor/PublishDialog'
 import { CardLibraryPicker } from '@/components/editor/CardLibraryPicker'
+import { HubPicker, type PickedHub } from '@/components/editor/HubPicker'
 import { ControlPanel } from '@/components/editor/panel/ControlPanel'
 import { ElementsTab } from '@/components/editor/panel/ElementsTab'
 import { PageTab } from '@/components/editor/panel/PageTab'
@@ -99,6 +100,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
 
   // Card picker state
   const [cardPickerOpen, setCardPickerOpen] = useState(false)
+  const [hubPickerOpen, setHubPickerOpen] = useState(false)
   const [upgradeOpen, setUpgradeOpen] = useState(false)
 
   // Column settings state
@@ -581,33 +583,11 @@ export function PageEditor({ pageId }: PageEditorProps) {
         return
       }
       case 'hub': {
-        // Hub elements are create-on-add: provision the Hub record first, then
-        // insert an element carrying the denormalized link (no DB read at render time).
+        // Let the owner link an existing hub/community or create a new one.
+        // The picker's onSelect (handleHubPickerSelect) inserts the element with
+        // the denormalized link (no DB read at render time).
         setShowSlashMenu(false)
-        ;(async () => {
-          try {
-            const res = await fetch('/api/hubs', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ displayId: id }),
-            })
-            if (!res.ok) return
-            const hub = await res.json()
-            const hubElement: CanvasElement = {
-              id: `el-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              type: 'hub',
-              hubId: hub.id,
-              hubCoverImage: '',
-              hubTitleOverride: '',
-              hubSlug: hub.slug,
-              hubUsername: user?.username || '',
-            }
-            appendElement(hubElement)
-          } finally {
-            setCurrentSection(null)
-            setCurrentColumn(null)
-          }
-        })()
+        setHubPickerOpen(true)
         return
       }
       case 'comment':
@@ -912,6 +892,25 @@ export function PageEditor({ pageId }: PageEditorProps) {
     appendElement(newElement)
 
     setShowSlashMenu(false)
+    setCurrentSection(null)
+    setCurrentColumn(null)
+  }
+
+  // Hub picker selection handler — insert a hub element carrying the linked
+  // hub's denormalized fields (id/slug/community) plus the owner's username.
+  const handleHubPickerSelect = (hub: PickedHub) => {
+    const hubElement: CanvasElement = {
+      id: `el-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: 'hub',
+      hubId: hub.id,
+      hubCoverImage: '',
+      hubTitleOverride: '',
+      hubSlug: hub.slug,
+      hubUsername: user?.username || '',
+      hubCommunity: hub.community,
+    }
+    appendElement(hubElement)
+    setHubPickerOpen(false)
     setCurrentSection(null)
     setCurrentColumn(null)
   }
@@ -1488,6 +1487,18 @@ export function PageEditor({ pageId }: PageEditorProps) {
           setCurrentColumn(null)
         }}
         onSelect={handleCardPickerSelect}
+      />
+
+      {/* Hub / Community Picker */}
+      <HubPicker
+        isOpen={hubPickerOpen}
+        onClose={() => {
+          setHubPickerOpen(false)
+          setCurrentSection(null)
+          setCurrentColumn(null)
+        }}
+        onSelect={handleHubPickerSelect}
+        displayId={id}
       />
 
       <UpgradePrompt isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} feature="Using library Apps" />

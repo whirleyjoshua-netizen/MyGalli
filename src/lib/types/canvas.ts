@@ -53,6 +53,19 @@ export interface Product {
   buyUrl: string              // external product link (validated via safeHref; may be '')
 }
 
+// Index element — a scannable catalog of connected items (all in element JSON)
+export interface IndexEntry {
+  id: string          // idx-<ts>-<rand>, stable per entry
+  label: string       // primary line, e.g. "NASA Mars Data"
+  subtitle?: string   // secondary line, e.g. "nasa.gov"
+  linkUrl?: string    // resolved via safeHref (internal root-relative or http/mailto/external)
+  category?: string   // group header; '' or undefined = ungrouped
+  image?: string      // optional thumbnail (Blob URL / allowlisted host)
+  note?: string       // expand-panel body text
+  meta?: { key: string; value: string }[]  // freeform pairs, e.g. Author: NASA
+  tags?: string[]     // chips; also searchable
+}
+
 // Calendar element — events marked on a month calendar
 export interface CalendarEvent {
   id: string
@@ -156,6 +169,7 @@ export type ElementType =
   | 'tip-jar'                // Batch 1: tip jar / support button
   | 'product-list'
   | 'waitlist'     // Pre-launch signup collector
+  | 'index'                 // Scannable catalog of connected items (list + cards)
 
   // Batch 2: Map
   | 'map'                   // Interactive Leaflet map with photo-pins + directions
@@ -325,6 +339,14 @@ export interface CanvasElement {
   // Product List specific (showcase of products; all in element JSON)
   productListTitle?: string
   products?: Product[]
+  // Index specific (scannable catalog; all in element JSON)
+  indexTitle?: string
+  indexIcon?: string                 // single emoji for the header, e.g. "🔎"
+  indexView?: 'list' | 'cards'       // default rendering mode
+  indexEnableSearch?: boolean        // show the live filter box
+  indexEnableNumbers?: boolean       // auto-number entries 001, 002…
+  indexAccent?: string               // accent color, default #39D98A
+  indexEntries?: IndexEntry[]
   // Calendar specific (month calendar of events)
   calendarTitle?: string
   calendarSubtitle?: string
@@ -1338,6 +1360,20 @@ export function createElement(type: ElementType): CanvasElement {
       return { ...base, tipJarTitle: 'Support my work', tipJarMessage: 'If you enjoy what I do, consider leaving a tip 💚', tipJarPlatform: 'custom', tipJarUrl: '', tipJarButtonText: 'Leave a tip', tipJarAmounts: ['$3', '$5', '$10'] }
     case 'product-list':
       return { ...base, productListTitle: 'Products', products: [] }
+    case 'index':
+      return {
+        ...base,
+        indexTitle: 'Index',
+        indexIcon: '🔎',
+        indexView: 'list',
+        indexEnableSearch: true,
+        indexEnableNumbers: true,
+        indexAccent: '#39D98A',
+        indexEntries: [
+          { id: `idx-${Date.now()}-a`, label: 'First entry', subtitle: 'example.com', linkUrl: '' },
+          { id: `idx-${Date.now()}-b`, label: 'Second entry', subtitle: 'example.org', linkUrl: '' },
+        ],
+      }
     case 'map':
       return {
         ...base,
@@ -1369,7 +1405,7 @@ export function createElement(type: ElementType): CanvasElement {
         whiteboardPreviewUrl: '',
       }
     case 'hub':
-      return { ...base, hubId: '', hubCoverImage: '', hubTitleOverride: '' }
+      return { ...base, hubId: '', hubCoverImage: '', hubTitleOverride: '', hubSlug: '', hubUsername: '', hubCommunity: false }
     default:
       return base
   }

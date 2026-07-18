@@ -9,7 +9,7 @@ vi.mock('@/lib/db', () => ({
     hubMember: { findUnique: vi.fn(), findMany: vi.fn() },
     hubCollaborator: { findMany: vi.fn() },
     hubPost: { findFirst: vi.fn() },
-    hubPostComment: { create: vi.fn() },
+    hubPostComment: { create: vi.fn(), findMany: vi.fn() },
     display: { findUnique: vi.fn() },
   },
 }))
@@ -17,13 +17,14 @@ vi.mock('@/lib/db', () => ({
 import { getUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createNotification } from '@/lib/notifications'
-import { POST } from './route'
+import { GET, POST } from './route'
 
 const HUB = { id: 'h1', userId: 'owner', community: true, title: 'Smoke Hub', slug: 'smoke-hub', user: { username: 'hubowner' } }
 const POST_ROW = { id: 'p1', authorId: 'm1' }
 const ctx = { params: Promise.resolve({ id: 'h1', postId: 'p1' }) }
 const req = (body: unknown) =>
   new Request('http://localhost/api/hubs/h1/posts/p1/comments', { method: 'POST', body: JSON.stringify(body) }) as any
+const getReq = () => new Request('http://localhost/api/hubs/h1/posts/p1/comments', { method: 'GET' }) as any
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -58,5 +59,32 @@ describe('POST comments — notifications', () => {
     })
     await POST(req({ text: 'self' }), ctx)
     expect(createNotification).not.toHaveBeenCalled()
+  })
+})
+
+describe('GET comments — read gate', () => {
+  it('404s an anonymous/non-privileged viewer on a draft (unpublished) community', async () => {
+    ;(db.hub.findUnique as any).mockResolvedValue({ ...HUB, published: false })
+    ;(getUser as any).mockResolvedValue(null)
+    const res = await GET(getReq(), ctx)
+    expect(res.status).toBe(404)
+  })
+
+  it('200s the owner (privileged) for the same draft hub', async () => {
+    ;(db.hub.findUnique as any).mockResolvedValue({ ...HUB, published: false })
+    ;(db.hubPostComment.findMany as any).mockResolvedValue([])
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'Owner', username: 'hubowner', avatar: null })
+    const res = await GET(getReq(), ctx)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.comments).toEqual([])
+  })
+
+  it('200s the public for a published community', async () => {
+    ;(db.hub.findUnique as any).mockResolvedValue({ ...HUB, published: true })
+    ;(db.hubPostComment.findMany as any).mockResolvedValue([])
+    ;(getUser as any).mockResolvedValue(null)
+    const res = await GET(getReq(), ctx)
+    expect(res.status).toBe(200)
   })
 })

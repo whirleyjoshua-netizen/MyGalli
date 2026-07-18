@@ -10,7 +10,7 @@ vi.mock('@/lib/db', () => ({
     hubCollaborator: { findMany: vi.fn() },
     hubPost: { create: vi.fn(), findMany: vi.fn() },
     hubPostResponse: { findMany: vi.fn() },
-    display: { findUnique: vi.fn() },
+    hubPostReaction: { findMany: vi.fn() },
   },
 }))
 
@@ -19,7 +19,7 @@ import { db } from '@/lib/db'
 import { notifyHubMembers } from '@/lib/notifications'
 import { GET, POST } from './route'
 
-const HUB = { id: 'h1', userId: 'owner', community: true, displayId: 'd1', title: 'Smoke Hub', slug: 'smoke-hub', user: { username: 'hubowner' } }
+const HUB = { id: 'h1', userId: 'owner', community: true, published: true, title: 'Smoke Hub', slug: 'smoke-hub', user: { username: 'hubowner' } }
 const ctx = { params: Promise.resolve({ id: 'h1' }) }
 const req = (body: unknown) =>
   new Request('http://localhost/api/hubs/h1/posts', { method: 'POST', body: JSON.stringify(body) }) as any
@@ -32,8 +32,8 @@ beforeEach(() => {
   ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem' }) // caller is a member
   ;(db.hubMember.findMany as any).mockResolvedValue([{ userId: 'm1' }, { userId: 'm2' }])
   ;(db.hubPost.create as any).mockResolvedValue({ id: 'p1' })
-  ;(db.display.findUnique as any).mockResolvedValue({ published: true })
   ;(db.hubPostResponse.findMany as any).mockResolvedValue([])
+  ;(db.hubPostReaction.findMany as any).mockResolvedValue([])
 })
 
 describe('POST /api/hubs/[id]/posts — notifications', () => {
@@ -200,5 +200,38 @@ describe('GET /api/hubs/[id]/posts — block/settings/myResponse/results', () =>
     const body = await (await GET(getReq(), ctx)).json()
     expect(body.posts[0].block).toBeNull()
     expect(body.posts[0].results).toBeNull()
+  })
+})
+
+describe('POST /api/hubs/[id]/posts — who-can-post', () => {
+  it('403 when community is owner-only and caller is a plain member', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'm1', name: 'M1', username: 'm1', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue({ ...HUB, config: { access: { whoCanPost: 'owner-only' } } })
+    ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem' }) // is a member
+    ;(db.hubCollaborator.findMany as any).mockResolvedValue([])
+    const res = await POST(req({ text: 'hi' }), ctx)
+    expect(res.status).toBe(403)
+  })
+  it('owner can still post to an owner-only community', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'O', username: 'hubowner', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue({ ...HUB, config: { access: { whoCanPost: 'owner-only' } } })
+    const res = await POST(req({ text: 'hi' }), ctx)
+    expect(res.status).toBe(201)
+  })
+})
+
+describe('GET /api/hubs/[id]/posts — reactions', () => {
+  it('includes a reaction summary per post', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'm1', name: 'M1', username: 'm1', avatar: null })
+    ;(db.hubPost.findMany as any).mockResolvedValue([
+      { id: 'p1', author: { id: 'a', name: 'A', username: 'a', avatar: null }, text: 'hi', imageUrl: null, blocks: [], settings: {}, createdAt: new Date(), authorId: 'a', _count: { comments: 0 } },
+    ])
+    ;(db.hubPostReaction.findMany as any).mockResolvedValue([
+      { postId: 'p1', emoji: '❤️', userId: 'm1' },
+      { postId: 'p1', emoji: '❤️', userId: 'z' },
+    ])
+    const res = await GET(getReq(), ctx)
+    const body = await res.json()
+    expect(body.posts[0].reactions).toEqual({ counts: { '❤️': 2 }, mine: ['❤️'] })
   })
 })

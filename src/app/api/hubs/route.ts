@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
   }
   const title = typeof body.title === 'string' && body.title.trim() ? body.title.trim().slice(0, 120) : 'Untitled Hub'
   const slug = `${slugify(title)}-${Math.random().toString(36).slice(2, 7)}`
-  const hub = await db.hub.create({ data: { userId: me.id, displayId, title, slug, community: body.community === true } })
+  const isCommunity = body.community === true
+  const hub = await db.hub.create({ data: { userId: me.id, displayId, title, slug, community: isCommunity, published: isCommunity } })
   return NextResponse.json(hub, { status: 201 })
 }
