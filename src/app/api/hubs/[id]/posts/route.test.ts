@@ -203,6 +203,23 @@ describe('GET /api/hubs/[id]/posts — block/settings/myResponse/results', () =>
   })
 })
 
+describe('POST /api/hubs/[id]/posts — who-can-post', () => {
+  it('403 when community is owner-only and caller is a plain member', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'm1', name: 'M1', username: 'm1', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue({ ...HUB, config: { access: { whoCanPost: 'owner-only' } } })
+    ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem' }) // is a member
+    ;(db.hubCollaborator.findMany as any).mockResolvedValue([])
+    const res = await POST(req({ text: 'hi' }), ctx)
+    expect(res.status).toBe(403)
+  })
+  it('owner can still post to an owner-only community', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', name: 'O', username: 'hubowner', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue({ ...HUB, config: { access: { whoCanPost: 'owner-only' } } })
+    const res = await POST(req({ text: 'hi' }), ctx)
+    expect(res.status).toBe(201)
+  })
+})
+
 describe('GET /api/hubs/[id]/posts — reactions', () => {
   it('includes a reaction summary per post', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'm1', name: 'M1', username: 'm1', avatar: null })
