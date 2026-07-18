@@ -28,10 +28,12 @@ describe('GET /api/waitlist/[displayId]/[elementId]/export', () => {
     expect(db.waitlistSignup.findMany).not.toHaveBeenCalled()
   })
 
-  it('403s when there is no authenticated user', async () => {
+  it('401s when there is no authenticated user', async () => {
     ;(getUser as any).mockResolvedValue(null)
     const res = await GET(req(), ctx)
-    expect(res.status).toBe(403)
+    expect(res.status).toBe(401)
+    expect(db.display.findUnique).not.toHaveBeenCalled()
+    expect(db.waitlistSignup.findMany).not.toHaveBeenCalled()
   })
 
   it('404s when the display does not exist', async () => {
@@ -47,6 +49,7 @@ describe('GET /api/waitlist/[displayId]/[elementId]/export', () => {
       { email: 'a@b.com', name: 'Alice', createdAt: new Date('2026-01-01T00:00:00Z') },
       { email: 'c@d.com', name: 'Bob, "The Builder"', createdAt: new Date('2026-01-02T00:00:00Z') },
       { email: 'e@f.com', name: null, createdAt: new Date('2026-01-03T00:00:00Z') },
+      { email: 'g@h.com', name: '=HYPERLINK("http://evil.example")', createdAt: new Date('2026-01-04T00:00:00Z') },
     ])
 
     const res = await GET(req(), ctx)
@@ -61,6 +64,7 @@ describe('GET /api/waitlist/[displayId]/[elementId]/export', () => {
     expect(lines[1]).toBe('a@b.com,Alice,2026-01-01T00:00:00.000Z')
     expect(lines[2]).toBe('c@d.com,"Bob, ""The Builder""",2026-01-02T00:00:00.000Z')
     expect(lines[3]).toBe('e@f.com,,2026-01-03T00:00:00.000Z')
+    expect(lines[4]).toBe('g@h.com,"\'=HYPERLINK(""http://evil.example"")",2026-01-04T00:00:00.000Z')
 
     expect(db.waitlistSignup.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { displayId: 'd1', elementId: 'w1' } }),

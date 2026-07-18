@@ -10,8 +10,13 @@ function needsEscape(value: string): boolean {
   return /[",\n]/.test(value)
 }
 
+function defuseFormula(value: string): string {
+  return /^[\s\t]*[=+\-@]/.test(value) ? `'${value}` : value
+}
+
 function csvField(value: string): string {
-  return needsEscape(value) ? csvEscape(value) : value
+  const defused = defuseFormula(value)
+  return needsEscape(defused) ? csvEscape(defused) : defused
 }
 
 export async function GET(
@@ -22,6 +27,10 @@ export async function GET(
 
   const user = await getUser(request)
 
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const display = await db.display.findUnique({
     where: { id: displayId },
     select: { id: true, userId: true },
@@ -31,7 +40,7 @@ export async function GET(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  if (!user || user.id !== display.userId) {
+  if (user.id !== display.userId) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
