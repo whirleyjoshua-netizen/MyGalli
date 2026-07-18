@@ -19,20 +19,20 @@ beforeEach(() => {
 
 describe('PATCH /api/hubs/[id] — config + version', () => {
   it('409 when version is stale', async () => {
-    const res = await PATCH(req({ config: {}, version: 2 }), ctx)
+    const res = (await PATCH(req({ config: {}, version: 2 }), ctx))!
     expect(res.status).toBe(409)
     expect(db.hub.update).not.toHaveBeenCalled()
   })
   it('sanitizes config, bumps version, returns updated hub', async () => {
-    const res = await PATCH(req({ config: { access: { whoCanPost: 'owner-only' } }, version: 3 }), ctx)
+    const res = (await PATCH(req({ config: { access: { whoCanPost: 'owner-only' } }, version: 3 }), ctx))!
     expect(res.status).toBe(200)
-    const arg = (db.hub.update as any).mock.calls[0][0]
+    const arg = (db.hub.update as any).mock.calls[0]![0]
     expect(arg.data.version).toBe(4)
     expect(arg.data.config.access.whoCanPost).toBe('owner-only')
     expect(arg.data.config.sidebar).toHaveLength(3) // sanitized to full widget set
   })
   it('404 for non-owner', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'stranger' })
-    expect((await PATCH(req({ config: {} }), ctx)).status).toBe(404)
+    expect((await PATCH(req({ config: {} }), ctx))!.status).toBe(404)
   })
 })
