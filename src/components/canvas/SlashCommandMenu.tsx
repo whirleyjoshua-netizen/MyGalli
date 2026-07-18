@@ -312,7 +312,7 @@ export function SlashCommandMenu({ position, onSelect, onClose, isKitPage, hideA
         </div>
 
         {/* Element grid — horizontal columns on desktop, single vertical list on mobile */}
-        <div className="flex-1 scrollbar-hide overflow-y-auto overflow-x-hidden md:overflow-x-auto md:overflow-y-hidden">
+        <div className="flex-1 scrollbar-thin overflow-y-auto overflow-x-hidden md:overflow-x-auto md:overflow-y-hidden">
           {columns.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground">No elements found</div>
           ) : (
@@ -330,7 +330,7 @@ export function SlashCommandMenu({ position, onSelect, onClose, isKitPage, hideA
                     </span>
                   </div>
                   {/* Items — vertical scroll within the column */}
-                  <div className="overflow-y-auto flex-1 px-1 pb-1 scrollbar-hide">
+                  <div className="overflow-y-auto flex-1 px-1 pb-1 scrollbar-thin">
                     {column.cmds.map((cmd, rowIdx) => {
                       const isSelected = colIdx === clampedCol && rowIdx === clampedRow
                       if (cmd.disabled) {
