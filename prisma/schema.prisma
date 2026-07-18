@@ -560,6 +560,8 @@ model Hub {
   published   Boolean     @default(false)
   tagline     String?
   heroVideoUrl String?
+  config      Json?
+  version     Int         @default(0)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   folders     HubFolder[]

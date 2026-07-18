@@ -7,6 +7,7 @@ import { notifyHubMembers } from '@/lib/notifications'
 import { normalizeSettings, resultsVisible, firstBlock, isBulletinBlockType, isEmptyPost } from '@/lib/bulletin'
 import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
 import { summarizeReactions } from '@/lib/hub-reactions'
+import { sanitizeHubConfig, canPostWithAccess } from '@/lib/hub-config'
 import type { Prisma } from '@prisma/client'
 
 async function collaboratorIds(hubId: string): Promise<string[]> {
@@ -95,12 +96,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const hub = await db.hub.findUnique({
     where: { id },
-    select: { id: true, userId: true, community: true, title: true, slug: true, user: { select: { username: true } } },
+    select: { id: true, userId: true, community: true, title: true, slug: true, config: true, user: { select: { username: true } } },
   })
   if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const isMember = !!(await db.hubMember.findUnique({ where: { hubId_userId: { hubId: id, userId: me.id } }, select: { id: true } }))
   const collabIds = await collaboratorIds(id)
-  if (!canParticipate(me.id, hub, collabIds, isMember)) {
+  const isPrivileged = me.id === hub.userId || collabIds.includes(me.id)
+  const base = canParticipate(me.id, hub, collabIds, isMember)
+  const whoCanPost = sanitizeHubConfig(hub.config).access.whoCanPost
+  if (!canPostWithAccess({ canParticipate: base, whoCanPost, isPrivileged })) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   const body = await request.json().catch(() => ({}))
