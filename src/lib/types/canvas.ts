@@ -155,6 +155,7 @@ export type ElementType =
   | 'before-after'           // Batch 1: before/after image slider
   | 'tip-jar'                // Batch 1: tip jar / support button
   | 'product-list'
+  | 'waitlist'     // Pre-launch signup collector
 
   // Batch 2: Map
   | 'map'                   // Interactive Leaflet map with photo-pins + directions
@@ -346,6 +347,18 @@ export interface CanvasElement {
   mailboxRequireName?: boolean
   mailboxButtonLabel?: string
   mailboxThankYou?: string
+  // Wait List element
+  waitlistTitle?: string
+  waitlistDescription?: string
+  waitlistCoverImage?: string | null
+  waitlistStyle?: 'hero' | 'progress'
+  waitlistButtonLabel?: string
+  waitlistCollectName?: boolean
+  waitlistLaunchDate?: string | null   // ISO; powers countdown + "Opens ..." text
+  waitlistShowCountdown?: boolean
+  waitlistCapacity?: number | null      // when set: progress bar + auto-close
+  waitlistShowCount?: boolean
+  waitlistConfirmationMessage?: string
   // Kit Profile specific
   kitProfileKitId?: string
   kitProfileData?: Record<string, any>
@@ -1007,6 +1020,21 @@ export function createElement(type: ElementType): CanvasElement {
         mailboxRequireName: false,
         mailboxButtonLabel: 'Send',
         mailboxThankYou: 'Thanks — your message was sent!',
+      }
+    case 'waitlist':
+      return {
+        ...base,
+        waitlistTitle: 'Join the Wait List',
+        waitlistDescription: '',
+        waitlistCoverImage: null,
+        waitlistStyle: 'hero',
+        waitlistButtonLabel: 'Join Wait List',
+        waitlistCollectName: false,
+        waitlistLaunchDate: null,
+        waitlistShowCountdown: true,
+        waitlistCapacity: null,
+        waitlistShowCount: true,
+        waitlistConfirmationMessage: "You're on the list! 🎉",
       }
     case 'experience-entry':
       return {
