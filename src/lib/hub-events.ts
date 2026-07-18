@@ -19,7 +19,7 @@ export function validateEventInput(raw: unknown): { ok: true; value: NormalizedE
   if (r.endsAt != null && r.endsAt !== '') {
     const e = new Date(r.endsAt)
     if (isNaN(e.getTime())) return { ok: false, error: 'Invalid end date' }
-    if (e.getTime() < startsAt.getTime()) return { ok: false, error: 'End must be after start' }
+    if (e.getTime() < startsAt.getTime()) return { ok: false, error: 'End cannot be before start' }
     endsAt = e
   }
   const location = typeof r.location === 'string' && r.location.trim() ? r.location.trim().slice(0, 500) : null
