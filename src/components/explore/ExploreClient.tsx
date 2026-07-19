@@ -218,20 +218,22 @@ function CommunitiesGrid({ communities }: { communities: ExploreCommunity[] }) {
         <Link
           key={h.id}
           href={`/${h.user.username}/hub/${h.slug}`}
-          className="overflow-hidden rounded-2xl border border-border bg-surface shadow-soft transition hover:border-galli/40"
+          className="group overflow-hidden rounded-2xl border border-border bg-surface shadow-soft transition hover:border-galli/40 hover:shadow-soft-lg"
         >
-          <div className="h-28 w-full overflow-hidden bg-gradient-to-br from-galli/25 to-galli-violet/20">
+          {/* Full-bleed cover — info is overlaid, no white strip */}
+          <div className={`relative h-48 w-full overflow-hidden ${h.coverImage ? '' : 'bg-gradient-to-br from-galli/25 to-galli-violet/20'}`}>
             {h.coverImage && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={h.coverImage} alt="" className="h-full w-full object-cover" />
+              <img src={h.coverImage} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
             )}
-          </div>
-          <div className="p-3">
-            <p className="truncate font-bold">{h.title}</p>
-            <p className="truncate text-xs text-muted-foreground">by @{h.user.username}</p>
-            <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <Users className="h-3.5 w-3.5" /> {h.memberCount} member{h.memberCount === 1 ? '' : 's'}
-            </p>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/75 via-black/35 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-3">
+              <p className="truncate font-bold text-white drop-shadow">{h.title}</p>
+              <p className="truncate text-xs text-white/80 drop-shadow">by @{h.user.username}</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-xs text-white/90 drop-shadow">
+                <Users className="h-3.5 w-3.5" /> {h.memberCount} member{h.memberCount === 1 ? '' : 's'}
+              </p>
+            </div>
           </div>
         </Link>
       ))}
