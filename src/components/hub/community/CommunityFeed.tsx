@@ -7,7 +7,7 @@ import { HubPostComments } from '@/components/hub/HubPostComments'
 import type { HubConfig } from '@/lib/types/hub-config'
 
 export function CommunityFeed({
-  hubId, canPost, isPrivileged, currentUserId, config, preview,
+  hubId, canPost, isPrivileged, currentUserId, config, preview, pollNonce,
 }: {
   hubId: string
   canPost: boolean
@@ -15,6 +15,7 @@ export function CommunityFeed({
   currentUserId?: string
   config: HubConfig
   preview?: boolean
+  pollNonce?: number
 }) {
   const [posts, setPosts] = useState<FeedPost[]>([])
   const [loaded, setLoaded] = useState(false)
@@ -29,7 +30,7 @@ export function CommunityFeed({
 
   return (
     <div className="space-y-4">
-      {canPost && config.feed.composerEnabled && <HubPostComposer hubId={hubId} onPosted={load} />}
+      {canPost && config.feed.composerEnabled && <HubPostComposer hubId={hubId} onPosted={load} pollNonce={pollNonce} />}
       {loaded && posts.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">{config.feed.emptyStateText || 'No posts yet. Be the first to share something.'}</p>
       ) : (
