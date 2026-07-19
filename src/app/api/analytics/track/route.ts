@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { isAnalyticsEventType, parseInteractMetadata } from '@/lib/analytics-events'
 
 // Parse user agent to extract device info
 function parseUserAgent(ua: string | null): {
@@ -54,6 +55,15 @@ function parseUtmParams(referrer: string | null): {
   }
 }
 
+// Vercel populates this header at the edge for every request. Country-level
+// only — we deliberately never read or store city or IP.
+export function countryFromHeaders(headers: Headers): string | null {
+  const raw = headers.get('x-vercel-ip-country')
+  if (!raw) return null
+  const code = raw.trim().toUpperCase()
+  return /^[A-Z]{2}$/.test(code) ? code : null
+}
+
 export async function POST(request: NextRequest) {
   const limited = await rateLimit(request, { limit: 60, windowMs: 60_000, prefix: 'analytics' })
   if (limited) return limited
@@ -64,6 +74,24 @@ export async function POST(request: NextRequest) {
 
     if (!displayId) {
       return NextResponse.json({ error: 'displayId is required' }, { status: 400 })
+    }
+
+    if (!isAnalyticsEventType(eventType)) {
+      return NextResponse.json({ error: 'Unsupported eventType' }, { status: 400 })
+    }
+
+    // Interact events must carry well-formed metadata; anything else is dropped
+    // rather than persisted as junk.
+    let storedMetadata: object | undefined
+    if (eventType === 'interact') {
+      const parsed = parseInteractMetadata(metadata)
+      if (!parsed) {
+        return NextResponse.json({ error: 'Invalid interact metadata' }, { status: 400 })
+      }
+      storedMetadata = parsed
+    } else if (eventType === 'share') {
+      const channel = typeof metadata?.channel === 'string' ? metadata.channel.trim() : ''
+      storedMetadata = channel ? { channel } : undefined
     }
 
     // Verify display exists
@@ -86,6 +114,7 @@ export async function POST(request: NextRequest) {
     const referrer = request.headers.get('referer')
     const { deviceType, browser, os } = parseUserAgent(userAgent)
     const utmParams = parseUtmParams(referrer)
+    const country = countryFromHeaders(request.headers)
 
     // Create analytics event
     const event = await db.analyticsEvent.create({
@@ -98,8 +127,9 @@ export async function POST(request: NextRequest) {
         deviceType,
         browser,
         os,
+        country,
         ...utmParams,
-        metadata: metadata || undefined,
+        metadata: storedMetadata,
       },
     })
 
