@@ -89,8 +89,10 @@ the header card, full-width.
   `linkedItemId` leakage.
 - Card shows the first 2 notes (title + truncated content), then **"View all notes →"** opening a
   modal with the full list. Empty state invites the owner to add the first note.
-- Owner/collab sees a **`+`** that opens a small compose form → `POST /api/hubs/[id]/notes`
-  (existing route, owner-gated already). Optimistic prepend on success.
+- **Owner only** sees a **`+`** that opens a small compose form → `POST /api/hubs/[id]/notes`
+  (existing route). Optimistic prepend on success. The route rejects collaborators, so the page must
+  thread a new **`isOwner`** prop — `CommunityHubView` today receives only `isPrivileged`
+  (owner *or* collaborator), which would show a `+` that 404s.
 - **No new API and no schema change.**
 
 ### R5 — Kollab AI card (inert slot)
@@ -107,10 +109,23 @@ Four buttons, all navigation over existing surfaces — **no new API**:
 
 | Button | Action |
 |---|---|
-| Polls | Opens the feed composer with a poll block ready (reuse `BlockEditor` entry path) |
+| Polls | Opens the feed composer with a poll block ready, via a `pollNonce` counter threaded view → feed → composer (a counter, not a boolean, so repeat presses re-fire) |
 | Events | Opens the existing `HubEventsModal` |
-| Files | Opens the resource manager (existing "Manage files & links" surface) |
-| Links | Same manager, links tab |
+| Files | Opens `HubResourcesModal` (**new — see R6a**) |
+| Links | Same modal |
+
+### R6a — `HubResourcesModal`: close the files/links gap
+
+**Discovered during planning:** community hubs have **no** files/links manager. `/hubs/[id]` renders
+`HubBuilder` when `hub.community` is true and `HubEditor` (where `HubItem`s are managed) otherwise —
+so a community owner cannot populate the Resources widget at all. The Tools card's Files/Links
+buttons would have nothing to open.
+
+M3c therefore adds `src/components/hub/builder/HubResourcesModal.tsx` over the **existing**
+owner-gated endpoints — `GET /api/hubs/[id]` (returns `items`), `POST /api/hubs/[id]/items`,
+`DELETE /api/hubs/[id]/items/[itemId]`. List file/link items, add one (type + title + url), delete
+one. `HubItem.visibility` defaults to `"public"`, so additions appear in the public widget
+immediately. Still no new API route and no migration.
 
 - Hidden entirely for non-privileged viewers — gated on `isPrivileged`, which
   `CommunityHubView` already receives.
@@ -119,8 +134,11 @@ Four buttons, all navigation over existing surfaces — **no new API**:
 
 ### R7 — Builder
 
-`LayoutSectionsSection`: a **Utility strip** group listing the three cards with enable toggles,
-mirroring the existing sidebar-widget rows. Writes `config.utility`. Live preview reflects toggles.
+`HubBuilderNav` already reserves a disabled **"Widgets & Tools — Top utility widgets"** entry in its
+`SOON` list. M3c **enables that section** (rather than bolting toggles onto Layout & Sections) with a
+new `WidgetsToolsSection`: enable toggles for the three utility cards writing `config.utility`, plus
+a "Manage files & links" button opening `HubResourcesModal` (R6a). `BuilderSection` gains
+`'widgets'`. Live preview reflects the toggles.
 
 ## Security / correctness notes
 
