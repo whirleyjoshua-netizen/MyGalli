@@ -11,6 +11,7 @@ import { HealthGauge } from '@/components/analytics/overview/HealthGauge'
 import { LiveActivityFeed } from '@/components/analytics/overview/LiveActivityFeed'
 import { SectionEngagementBars } from '@/components/analytics/overview/SectionEngagementBars'
 import { WidgetPerformanceTable } from '@/components/analytics/overview/WidgetPerformanceTable'
+import { AudienceBreakdowns } from '@/components/analytics/overview/AudienceBreakdowns'
 import { ReferrerDonut } from '@/components/analytics/overview/ReferrerDonut'
 import { QuickActions } from '@/components/analytics/overview/QuickActions'
 import type { HealthResult } from '@/lib/data-health'
@@ -273,6 +274,11 @@ function AnalyticsContent() {
                 </div>
 
                 <WidgetPerformanceTable rows={analytics.widgetPerformance} />
+
+                <AudienceBreakdowns
+                  devices={analytics.breakdown.devices}
+                  browsers={analytics.breakdown.browsers}
+                />
               </div>
 
               <aside className="space-y-6">
