@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { CommunityUtilityStrip } from './CommunityUtilityStrip'
 import { DEFAULT_HUB_CONFIG } from '@/lib/types/hub-config'
 
@@ -84,5 +84,19 @@ describe('Notes card', () => {
   it('invites the owner to write the first note when empty', () => {
     render(<CommunityUtilityStrip {...base} notes={[]} isOwner />)
     expect(screen.getByText('No notes yet.')).toBeInTheDocument()
+  })
+})
+
+describe('Tools card', () => {
+  it('fires the matching callback for each tool', async () => {
+    const onOpenPoll = vi.fn(), onOpenEvents = vi.fn(), onOpenResources = vi.fn()
+    render(<CommunityUtilityStrip {...base} isPrivileged onOpenPoll={onOpenPoll} onOpenEvents={onOpenEvents} onOpenResources={onOpenResources} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Polls' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Events' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Files' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Links' }))
+    expect(onOpenPoll).toHaveBeenCalledTimes(1)
+    expect(onOpenEvents).toHaveBeenCalledTimes(1)
+    expect(onOpenResources).toHaveBeenCalledTimes(2) // Files and Links share the manager
   })
 })

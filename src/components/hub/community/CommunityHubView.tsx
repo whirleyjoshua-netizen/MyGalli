@@ -7,6 +7,8 @@ import { CommunityFeed } from './CommunityFeed'
 import { CommunitySidebar } from './CommunitySidebar'
 import { CommunityKollab } from './CommunityKollab'
 import { CommunityUtilityStrip } from './CommunityUtilityStrip'
+import { HubEventsModal } from '@/components/hub/builder/HubEventsModal'
+import { HubResourcesModal } from '@/components/hub/builder/HubResourcesModal'
 import type { HubConfig } from '@/lib/types/hub-config'
 import type { EventDTO } from '@/lib/hub-events'
 import type { DropDTO } from '@/lib/hub-drops'
@@ -109,6 +111,8 @@ export function CommunityHubView({
           Good ideas grow in great communities.
         </div>
       </div>
+      {!preview && manageEvents && <HubEventsModal hubId={hub.id} onClose={() => setManageEvents(false)} />}
+      {!preview && manageResources && <HubResourcesModal hubId={hub.id} onClose={() => setManageResources(false)} />}
     </div>
   )
 }

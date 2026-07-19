@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Sparkles, StickyNote, Wrench, X } from 'lucide-react'
+import { BarChart3, CalendarDays, FolderOpen, Link2, Plus, Sparkles, StickyNote, Wrench, X } from 'lucide-react'
 import type { HubConfig, HubUtilityKey } from '@/lib/types/hub-config'
 import type { StripNote } from '@/lib/hub-notes'
 
@@ -150,7 +150,27 @@ function NoteModal({ title, onClose, children }: { title: string; onClose: () =>
   )
 }
 
-// Filled in by Task 7.
-function ToolsCard({ }: { onOpenPoll: () => void; onOpenEvents: () => void; onOpenResources: () => void }) {
-  return <Shell icon={<Wrench className="h-4 w-4 text-primary" />} title="Tools"><div /></Shell>
+function ToolsCard({ onOpenPoll, onOpenEvents, onOpenResources }: { onOpenPoll: () => void; onOpenEvents: () => void; onOpenResources: () => void }) {
+  const tools = [
+    { label: 'Polls', icon: <BarChart3 className="h-4 w-4" />, onClick: onOpenPoll },
+    { label: 'Events', icon: <CalendarDays className="h-4 w-4" />, onClick: onOpenEvents },
+    { label: 'Files', icon: <FolderOpen className="h-4 w-4" />, onClick: onOpenResources },
+    { label: 'Links', icon: <Link2 className="h-4 w-4" />, onClick: onOpenResources },
+  ]
+  return (
+    <Shell icon={<Wrench className="h-4 w-4 text-primary" />} title="Tools">
+      <div className="grid grid-cols-4 gap-2">
+        {tools.map((t) => (
+          <button
+            key={t.label}
+            onClick={t.onClick}
+            className="flex flex-col items-center gap-1 rounded-lg border border-border p-2 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            {t.icon}
+            {t.label}
+          </button>
+        ))}
+      </div>
+    </Shell>
+  )
 }
