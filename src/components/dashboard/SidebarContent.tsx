@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Plus, Home, FileText, Users, Compass, Library, BarChart3, Megaphone, ChevronRight, Database,
+  Plus, Home, FileText, Users, Compass, Library, BarChart3, Megaphone, ChevronRight, Database, Mail,
 } from 'lucide-react'
 import { ProfileCard } from '@/components/dashboard/ProfileCard'
 import { PagesTree } from '@/components/dashboard/PagesTree'
@@ -25,6 +25,7 @@ const NAV: NavItem[] = [
   { label: 'My Pond', icon: Users, href: '/shared', match: (p) => p.startsWith('/shared') },
   { label: 'Explore', icon: Compass, href: '/explore', match: (p) => p.startsWith('/explore') },
   { label: 'Data', icon: BarChart3, href: '/data', match: (p) => p.startsWith('/data') },
+  { label: 'Messages', icon: Mail, href: '/messages', match: (p) => p.startsWith('/messages') },
   { label: 'Library', icon: Library, href: '/library', match: (p) => p.startsWith('/library') },
 ]
 
@@ -121,7 +122,7 @@ export function SidebarContent({
             >
               <Icon className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary' : ''}`} />
               {!collapsed && <span>{item.label}</span>}
-              {item.href === '/data' && !collapsed && <MessagesNavBadge />}
+              {item.href === '/messages' && !collapsed && <MessagesNavBadge />}
             </Link>
           )
         })}
