@@ -120,10 +120,17 @@ const WIDGET_PRIMARY_STAT: Record<string, StatFormatter> = {
   rating: (count) => plural(count, 'interaction', 'interactions'),
   form: (count) => plural(count, 'submission', 'submissions'),
   video: (count) => plural(count, 'play', 'plays'),
+  // Counts uploaded-file playback only (native <audio> onPlay). Spotify/SoundCloud
+  // iframe embeds expose no play event and are never counted here.
   'audio-player': (count) => plural(count, 'play', 'plays'),
+  // Currently unreachable: PublicCalendarElement has no save/export/add-to-calendar
+  // action, so no interaction event can ever populate this count. Left in place
+  // for when a save feature is added.
   calendar: (count) => plural(count, 'save', 'saves'),
   'link-hub': (count) => plural(count, 'click', 'clicks'),
-  'tip-jar': (count) => plural(count, 'tip', 'tips'),
+  // Fires on click-through to the external payment destination, not on a
+  // confirmed tip — we cannot observe whether the visitor actually paid.
+  'tip-jar': (count) => plural(count, 'tip link click', 'tip link clicks'),
 }
 
 export function widgetPerformance(

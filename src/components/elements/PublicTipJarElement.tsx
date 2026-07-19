@@ -4,7 +4,7 @@ import { safeHref } from '@/lib/editor/safe-href'
 import { trackInteraction } from '@/lib/analytics'
 
 export function PublicTipJarElement({ element, displayId }: { element: CanvasElement; displayId?: string }) {
-  const trackTip = () => { if (displayId) void trackInteraction(displayId, element.id, 'tip-jar', 'tip') }
+  const trackTip = () => { if (displayId) void trackInteraction(displayId, element.id, 'tip-jar', 'click') }
   const href = safeHref(element.tipJarUrl)
   const amounts = (element.tipJarAmounts || []).filter(Boolean)
   return (

@@ -120,6 +120,23 @@ describe('widgetPerformance', () => {
     expect(rows[0].label).toBe('Mystery')
   })
 
+  it('reports tip-jar activity as click-throughs, not confirmed tips', () => {
+    const rows = widgetPerformance(
+      [{ elementId: 't', elementType: 'tip-jar', at: '2026-07-19T10:00:00Z' }],
+      10
+    )
+    expect(rows[0].stat).toBe('1 tip link click')
+
+    const rowsPlural = widgetPerformance(
+      [
+        { elementId: 't', elementType: 'tip-jar', at: '2026-07-19T10:00:00Z' },
+        { elementId: 't', elementType: 'tip-jar', at: '2026-07-19T11:00:00Z' },
+      ],
+      10
+    )
+    expect(rowsPlural[0].stat).toBe('2 tip link clicks')
+  })
+
   it('avoids dividing by zero when there are no views', () => {
     const rows = widgetPerformance([{ elementId: 'p', elementType: 'poll', at: '2026-07-19T10:00:00Z' }], 0)
     expect(rows[0].stat).toBe('0% of viewers voted')
