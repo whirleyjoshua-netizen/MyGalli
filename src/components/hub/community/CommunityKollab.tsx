@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import { upload } from '@vercel/blob/client'
 import { ImagePlus, Loader2, Play, X, Trash2 } from 'lucide-react'
-import type { DropDTO } from '@/lib/hub-drops'
+import { dropPathPrefix, type DropDTO } from '@/lib/hub-drops'
 
 async function captureVideoPoster(file: File): Promise<Blob | null> {
   return new Promise((resolve) => {
@@ -64,12 +64,14 @@ export function CommunityKollab({
       if (!isVideo && !isImage) { setError('Only photos and video are allowed'); continue }
       setUploading(true)
       try {
-        const blob = await upload(file.name, file, { access: 'public', handleUploadUrl: uploadUrl })
+        // Must sit under this hub's namespace — the token route refuses anything else.
+        const prefix = dropPathPrefix(hubId)
+        const blob = await upload(`${prefix}${file.name}`, file, { access: 'public', handleUploadUrl: uploadUrl })
         let thumbnailUrl: string | null = null
         if (isVideo) {
           const poster = await captureVideoPoster(file)
           if (poster) {
-            const pb = await upload(`${file.name}.poster.jpg`, poster, { access: 'public', handleUploadUrl: uploadUrl })
+            const pb = await upload(`${prefix}${file.name}.poster.jpg`, poster, { access: 'public', handleUploadUrl: uploadUrl })
             thumbnailUrl = pb.url
           }
         }

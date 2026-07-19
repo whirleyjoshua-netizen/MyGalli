@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { canModerate } from '@/lib/community'
 import { blobReadWriteToken } from '@/lib/storage-env'
+import { isOwnDropAsset } from '@/lib/hub-drops'
 
 type LoadResult =
   | { error: NextResponse; hub?: undefined; drop?: undefined; collabIds?: undefined }
@@ -27,9 +28,13 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   if (!isAuthor && !canModerate(me.id, r.hub, r.collabIds)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   await db.hubDrop.delete({ where: { id: dropId } })
   const token = blobReadWriteToken()
-  if (token) {
+  // `del` runs with the app-wide RW token over a Blob store shared with avatars,
+  // page images and message media. Never hand it a URL that isn't provably this
+  // hub's own drop asset, whatever ended up persisted on the row.
+  const owned = [r.drop.url, r.drop.thumbnailUrl].filter((u): u is string => !!u && isOwnDropAsset(id, u))
+  if (token && owned.length) {
     const { del } = await import('@vercel/blob')
-    await del([r.drop.url, r.drop.thumbnailUrl].filter(Boolean) as string[], { token }).catch(() => {})
+    await del(owned, { token }).catch(() => {})
   }
   return NextResponse.json({ ok: true })
 }

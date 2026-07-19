@@ -34,14 +34,14 @@ beforeEach(() => {
 describe('POST /drops', () => {
   it('401 when logged out', async () => {
     ;(getUser as any).mockResolvedValue(null)
-    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/y.jpg' }), ctx)
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1/y.jpg' }), ctx)
     expect(res.status).toBe(401)
   })
 
   it('403 for a non-member', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'stranger', username: 's', name: null, avatar: null })
     ;(db.hubMember.findUnique as any).mockResolvedValue(null)
-    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/y.jpg' }), ctx)
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1/y.jpg' }), ctx)
     expect(res.status).toBe(403)
   })
 
@@ -49,7 +49,7 @@ describe('POST /drops', () => {
     ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: null, avatar: null })
     ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club', config: { kollab: { enabled: true, whoCanDrop: 'owner-only' } }, user: { username: 'o' } })
     ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
-    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/y.jpg' }), ctx)
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1/y.jpg' }), ctx)
     expect(res.status).toBe(403)
   })
 
@@ -57,14 +57,14 @@ describe('POST /drops', () => {
     ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: null, avatar: null })
     ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club', config: { kollab: { enabled: false, whoCanDrop: 'members' } }, user: { username: 'o' } })
     ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
-    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/y.jpg' }), ctx)
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1/y.jpg' }), ctx)
     expect(res.status).toBe(403)
   })
 
   it('201 for a member drop + notifies', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: 'M', avatar: null })
     ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
-    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/y.jpg', caption: 'hi' }), ctx)
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1/y.jpg', caption: 'hi' }), ctx)
     expect(res.status).toBe(201)
     expect(await res.json()).toEqual({ id: 'd1' })
     expect(db.hubDrop.create).toHaveBeenCalled()
@@ -79,6 +79,16 @@ describe('POST /drops', () => {
     ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: 'M', avatar: null })
     ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
     const res = await POST(post({ type: 'image', url: 'https://attacker.example/tracker.gif' }), ctx)
+    expect(res.status).toBe(400)
+    expect(db.hubDrop.create).not.toHaveBeenCalled()
+  })
+
+  // Filing someone else's blob as a drop would let the author then delete it,
+  // since DELETE hard-deletes the row's url with the app-wide RW token.
+  it('400 for a blob url outside this hub namespace', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: 'M', avatar: null })
+    ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/avatars/victim.jpg' }), ctx)
     expect(res.status).toBe(400)
     expect(db.hubDrop.create).not.toHaveBeenCalled()
   })

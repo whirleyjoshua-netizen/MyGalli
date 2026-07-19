@@ -65,7 +65,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!canDropToPool({ canParticipate: participates, whoCanDrop: config.kollab.whoCanDrop, isPrivileged })) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
-  const parsed = validateDropInput(await request.json().catch(() => ({})))
+  const parsed = validateDropInput(id, await request.json().catch(() => ({})))
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
   const v = parsed.value
   const drop = await db.hubDrop.create({

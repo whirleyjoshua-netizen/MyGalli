@@ -15,17 +15,36 @@ export type NormalizedDrop = {
 const intOrNull = (v: unknown): number | null =>
   typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.floor(v) : null
 
-export function validateDropInput(raw: unknown): { ok: true; value: NormalizedDrop } | { ok: false; error: string } {
+// Every drop asset lives under a server-chosen, per-hub namespace. This is what
+// proves a URL is *this hub's* asset rather than someone else's: one Blob store
+// backs avatars, page images, message media and hub files, and the delete route
+// hard-deletes a drop's blob with the app-wide RW token. Matching only the blob
+// hostname would let anyone file a victim's asset as a drop and then delete it.
+export function dropPathPrefix(hubId: string): string {
+  return `hub-drops/${hubId}/`
+}
+
+export function isOwnDropAsset(hubId: string, url: string): boolean {
+  if (!isVercelBlobUrl(url)) return false
+  try {
+    // `new URL` normalises `..`, so a traversal cannot escape the prefix check.
+    return new URL(url).pathname.startsWith(`/${dropPathPrefix(hubId)}`)
+  } catch {
+    return false
+  }
+}
+
+export function validateDropInput(hubId: string, raw: unknown): { ok: true; value: NormalizedDrop } | { ok: false; error: string } {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, any>
   const type = r.type
   if (type !== 'image' && type !== 'video') return { ok: false, error: 'Invalid drop type' }
   // Every drop renders as <img src>/<video src> for all hub visitors. The Blob
   // token route is the upload authz boundary, but a member can POST straight to
-  // /drops and skip it — so re-check the host here rather than trust the client.
+  // /drops and skip it — so re-check ownership here rather than trust the client.
   const url = typeof r.url === 'string' ? r.url.trim() : ''
-  if (!url || !isVercelBlobUrl(url)) return { ok: false, error: 'A file URL is required' }
+  if (!url || !isOwnDropAsset(hubId, url)) return { ok: false, error: 'A file URL is required' }
   const thumbnailUrl = typeof r.thumbnailUrl === 'string' && r.thumbnailUrl.trim() ? r.thumbnailUrl.trim() : null
-  if (thumbnailUrl && !isVercelBlobUrl(thumbnailUrl)) return { ok: false, error: 'A file URL is required' }
+  if (thumbnailUrl && !isOwnDropAsset(hubId, thumbnailUrl)) return { ok: false, error: 'A file URL is required' }
   const caption = typeof r.caption === 'string' && r.caption.trim() ? r.caption.trim().slice(0, 500) : null
   const mimeType = typeof r.mimeType === 'string' && r.mimeType.trim() ? r.mimeType.trim().slice(0, 100) : null
   return { ok: true, value: { type, url, thumbnailUrl, caption, mimeType, width: intOrNull(r.width), height: intOrNull(r.height) } }
