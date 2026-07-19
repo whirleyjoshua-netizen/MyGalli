@@ -11,7 +11,7 @@ export function CommunityHeader({
   ownerUsername: string
   coverImage: string | null
   memberAvatars: { avatar: string | null }[]
-  counts: { posts: number; members: number; resources: number; events: number }
+  counts: { posts: number; members: number; resources: number; events: number; kollab: number }
   joined: boolean
   isPrivileged: boolean
   onToggleJoin: () => void
@@ -25,7 +25,7 @@ export function CommunityHeader({
       else { await navigator.clipboard.writeText(url); alert('Link copied') }
     } catch { /* cancelled */ }
   }
-  const tiles: [string, number][] = [['Posts', counts.posts], ['Members', counts.members], ['Resources', counts.resources], ['Events', counts.events]]
+  const tiles: [string, number][] = [['Posts', counts.posts], ['Members', counts.members], ['Resources', counts.resources], ['Events', counts.events], ['Kollab', counts.kollab]]
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
       <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-galli/30 to-galli-violet/30">
@@ -64,7 +64,7 @@ export function CommunityHeader({
           )}
           <button onClick={share} className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-medium"><Share2 className="h-4 w-4" /> Share</button>
         </div>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-5 gap-2">
           {tiles.map(([label, n]) => (
             <div key={label} className="rounded-xl border border-border px-3 py-2 text-center">
               <div className="text-base font-bold">{n}</div>

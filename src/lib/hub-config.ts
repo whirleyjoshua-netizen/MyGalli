@@ -4,6 +4,7 @@ import {
   type HubConfig,
   type HubSidebarKey,
   type HubWhoCanPost,
+  type HubWhoCanDrop,
 } from './types/hub-config'
 
 const bool = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d)
@@ -36,6 +37,9 @@ export function sanitizeHubConfig(raw: unknown): HubConfig {
 
   const whoCanPost: HubWhoCanPost = r.access?.whoCanPost === 'owner-only' ? 'owner-only' : 'members'
 
+  const kollabRaw = (r.kollab && typeof r.kollab === 'object' ? r.kollab : {}) as Record<string, any>
+  const whoCanDrop: HubWhoCanDrop = kollabRaw.whoCanDrop === 'owner-only' ? 'owner-only' : 'members'
+
   return {
     sidebar,
     feed: {
@@ -44,6 +48,10 @@ export function sanitizeHubConfig(raw: unknown): HubConfig {
       ...(emptyStateText !== undefined ? { emptyStateText } : {}),
     },
     access: { whoCanPost },
+    kollab: {
+      enabled: bool(kollabRaw.enabled, DEFAULT_HUB_CONFIG.kollab.enabled),
+      whoCanDrop,
+    },
   }
 }
 
@@ -53,6 +61,15 @@ export function canPostWithAccess(input: {
   isPrivileged: boolean
 }): boolean {
   if (input.whoCanPost === 'owner-only') return input.isPrivileged
+  return input.canParticipate
+}
+
+export function canDropToPool(input: {
+  canParticipate: boolean
+  whoCanDrop: HubWhoCanDrop
+  isPrivileged: boolean
+}): boolean {
+  if (input.whoCanDrop === 'owner-only') return input.isPrivileged
   return input.canParticipate
 }
 
