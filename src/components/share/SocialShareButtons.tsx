@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Facebook, Linkedin, Share2, Copy, Check } from 'lucide-react'
 import { xShareUrl, facebookShareUrl, linkedInShareUrl, buildShareText } from '@/lib/social-share'
+import { trackShare } from '@/lib/analytics'
 
 // lucide's `Twitter` is the old bird; use the modern X glyph.
 function XLogo() {
@@ -13,7 +14,15 @@ function XLogo() {
   )
 }
 
-export function SocialShareButtons({ url, title }: { url: string; title: string }) {
+export function SocialShareButtons({
+  url,
+  title,
+  displayId,
+}: {
+  url: string
+  title: string
+  displayId?: string
+}) {
   const [copied, setCopied] = useState(false)
   const [canNativeShare, setCanNativeShare] = useState(false)
 
@@ -25,11 +34,15 @@ export function SocialShareButtons({ url, title }: { url: string; title: string 
   if (!url) return null
 
   const text = buildShareText(title)
-  const open = (u: string) => window.open(u, '_blank', 'noopener,noreferrer')
+  const open = (u: string, channel: string) => {
+    window.open(u, '_blank', 'noopener,noreferrer')
+    void trackShare(displayId ?? '', channel)
+  }
 
   const nativeShare = async () => {
     try {
       await navigator.share({ title: title || 'My Galli', text, url })
+      void trackShare(displayId ?? '', 'native')
     } catch {
       // user cancelled (AbortError) or unsupported — ignore
     }
@@ -39,6 +52,7 @@ export function SocialShareButtons({ url, title }: { url: string; title: string 
     try {
       await navigator.clipboard.writeText(url)
       setCopied(true)
+      void trackShare(displayId ?? '', 'copy')
       setTimeout(() => setCopied(false), 2000)
     } catch {
       // clipboard blocked — best effort, no error surfaced
@@ -51,13 +65,13 @@ export function SocialShareButtons({ url, title }: { url: string; title: string 
   return (
     <div>
       <div className="flex flex-wrap gap-2">
-        <button onClick={() => open(xShareUrl(url, text))} className={btn} aria-label="Share on X">
+        <button onClick={() => open(xShareUrl(url, text), 'twitter')} className={btn} aria-label="Share on X">
           <XLogo /> X
         </button>
-        <button onClick={() => open(facebookShareUrl(url))} className={btn} aria-label="Share on Facebook">
+        <button onClick={() => open(facebookShareUrl(url), 'facebook')} className={btn} aria-label="Share on Facebook">
           <Facebook className="w-4 h-4" /> Facebook
         </button>
-        <button onClick={() => open(linkedInShareUrl(url))} className={btn} aria-label="Share on LinkedIn">
+        <button onClick={() => open(linkedInShareUrl(url), 'linkedin')} className={btn} aria-label="Share on LinkedIn">
           <Linkedin className="w-4 h-4" /> LinkedIn
         </button>
         {canNativeShare && (
