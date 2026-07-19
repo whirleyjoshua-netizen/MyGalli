@@ -35,7 +35,7 @@ async function captureVideoPoster(file: File): Promise<Blob | null> {
 }
 
 export function CommunityKollab({
-  hubId, canDrop, isPrivileged, currentUserId, enabled, initialDrops, total, preview,
+  hubId, canDrop, isPrivileged, currentUserId, enabled, initialDrops, total, preview, narrow,
 }: {
   hubId: string
   canDrop: boolean
@@ -45,6 +45,7 @@ export function CommunityKollab({
   initialDrops: DropDTO[]
   total: number
   preview?: boolean
+  narrow?: boolean
 }) {
   const [drops, setDrops] = useState<DropDTO[]>(initialDrops)
   // Tracked in state so uploads/removals don't make "Load more" vanish or linger.
@@ -151,7 +152,7 @@ export function CommunityKollab({
           {canDrop ? 'Be the first to drop a clip or photo.' : 'Nothing in the pool yet.'}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+        <div className={`grid gap-2 ${narrow ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'}`}>
           {drops.map((d) => (
             <div key={d.id} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
               <button onClick={() => setLightbox(d)} className="block h-full w-full">

@@ -52,7 +52,7 @@ export function CommunityHubView({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-galli/5 to-transparent">
-      <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mx-auto max-w-7xl px-4 py-8">
         <CommunityUtilityStrip
           hubId={hub.id}
           config={config}
@@ -87,24 +87,28 @@ export function CommunityHubView({
           </div>
         </div>
 
-        {config.kollab.enabled && (
-          <div className="mt-6">
-            <CommunityKollab
-              hubId={hub.id}
-              canDrop={config.kollab.whoCanDrop === 'owner-only' ? isPrivileged : (isPrivileged || joined)}
-              isPrivileged={isPrivileged}
-              currentUserId={currentUserId}
-              enabled={config.kollab.enabled}
-              initialDrops={drops}
-              total={counts.kollab}
-              preview={preview}
-            />
+        <div className={`mt-6 grid grid-cols-1 gap-6 ${config.kollab.enabled ? 'lg:grid-cols-[260px_1fr_320px]' : 'lg:grid-cols-[1fr_320px]'}`}>
+          {config.kollab.enabled && (
+            <div className="order-2 lg:order-none">
+              <CommunityKollab
+                hubId={hub.id}
+                canDrop={config.kollab.whoCanDrop === 'owner-only' ? isPrivileged : (isPrivileged || joined)}
+                isPrivileged={isPrivileged}
+                currentUserId={currentUserId}
+                enabled={config.kollab.enabled}
+                initialDrops={drops}
+                total={counts.kollab}
+                narrow
+                preview={preview}
+              />
+            </div>
+          )}
+          <div className="order-1 lg:order-none">
+            <CommunityFeed hubId={hub.id} canPost={canPost} isPrivileged={isPrivileged} currentUserId={currentUserId} config={config} preview={preview} pollNonce={pollNonce} />
           </div>
-        )}
-
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-          <CommunityFeed hubId={hub.id} canPost={canPost} isPrivileged={isPrivileged} currentUserId={currentUserId} config={config} preview={preview} pollNonce={pollNonce} />
-          <CommunitySidebar config={config} heroVideoUrl={hub.heroVideoUrl} members={members} resources={resources} events={events} />
+          <div className="order-3 lg:order-none">
+            <CommunitySidebar config={config} heroVideoUrl={hub.heroVideoUrl} members={members} resources={resources} events={events} />
+          </div>
         </div>
 
         <div className="mt-10 rounded-2xl border border-border bg-galli/5 py-6 text-center text-sm text-muted-foreground">
