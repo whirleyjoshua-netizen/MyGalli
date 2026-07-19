@@ -2,11 +2,13 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { BarChart3, Eye, Users, Monitor, Smartphone, Tablet, Globe, Calendar, Inbox, Megaphone, Mail } from 'lucide-react'
+import { BarChart3, Eye, Users, Monitor, Smartphone, Tablet, Globe, Calendar, Inbox, Megaphone, Mail, Link2, Clock, Lightbulb, TrendingUp, Target } from 'lucide-react'
 import { ElementsTab } from '@/components/analytics/ElementsTab'
 import { BulletinAnalyticsTab } from '@/components/analytics/BulletinAnalyticsTab'
 import { MessagesInbox } from '@/components/dashboard/MessagesInbox'
 import { PageHero } from '@/components/dashboard/PageHero'
+import { Sparkline } from '@/components/analytics/Sparkline'
+import { DataIllustration, type DataIllustrationVariant } from '@/components/analytics/DataIllustration'
 
 interface AnalyticsData {
   display: {
@@ -29,6 +31,8 @@ interface AnalyticsData {
     referrers: { domain: string; count: number }[]
   }
   viewsByDay: Record<string, number>
+  uniqueVisitorsByDay?: Record<string, number>
+  topReferrerByDay?: Record<string, number>
   recentEvents: {
     id: string
     eventType: string
@@ -140,6 +144,7 @@ function AnalyticsContent() {
       <PageHero
         icon={<BarChart3 className="w-7 h-7 text-primary" />}
         title="Data"
+        subtitle="Insights and analytics to help you understand and grow."
         controls={
           <select
             value={selectedDisplayId || ''}
@@ -245,56 +250,20 @@ function AnalyticsContent() {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-muted/30 rounded-lg p-6 border border-border">
-                <div className="flex items-center gap-3 mb-2">
-                  <Eye className="w-5 h-5 text-blue-500" />
-                  <span className="text-sm text-muted-foreground">Total Views</span>
-                </div>
-                <p className="text-3xl font-bold">{analytics.display.totalViews}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {analytics.summary.views} in last {days} days
-                </p>
-              </div>
-
-              <div className="bg-muted/30 rounded-lg p-6 border border-border">
-                <div className="flex items-center gap-3 mb-2">
-                  <Users className="w-5 h-5 text-green-500" />
-                  <span className="text-sm text-muted-foreground">Unique Visitors</span>
-                </div>
-                <p className="text-3xl font-bold">{analytics.summary.uniqueVisitors}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  In last {days} days
-                </p>
-              </div>
-
-              <div className="bg-muted/30 rounded-lg p-6 border border-border">
-                <div className="flex items-center gap-3 mb-2">
-                  <Globe className="w-5 h-5 text-purple-500" />
-                  <span className="text-sm text-muted-foreground">Top Referrer</span>
-                </div>
-                <p className="text-2xl font-bold truncate">
-                  {analytics.breakdown.referrers[0]?.domain || 'Direct'}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {analytics.breakdown.referrers[0]?.count || 0} visits
-                </p>
-              </div>
+              <StatCard tone="aqua" icon={<Eye className="h-5 w-5" />} label="Total Views" value={String(analytics.display.totalViews)} subline={`${analytics.summary.views} in last ${days} days`} byDay={analytics.viewsByDay} />
+              <StatCard tone="green" icon={<Users className="h-5 w-5" />} label="Unique Visitors" value={String(analytics.summary.uniqueVisitors)} subline={`In last ${days} days`} byDay={analytics.uniqueVisitorsByDay ?? {}} />
+              <StatCard tone="violet" icon={<Globe className="h-5 w-5" />} label="Top Referrer" value={analytics.breakdown.referrers[0]?.domain || 'Direct'} subline={`${analytics.breakdown.referrers[0]?.count || 0} visits`} byDay={analytics.topReferrerByDay ?? {}} />
             </div>
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Device Breakdown */}
-              <div className="bg-muted/30 rounded-lg p-6 border border-border">
-                <h3 className="text-sm font-medium mb-4">Device Breakdown</h3>
-                <div className="space-y-3">
-                  {Object.entries(analytics.breakdown.devices).length > 0 ? (
-                    Object.entries(analytics.breakdown.devices)
+              <OverviewCard icon={<Monitor className="h-4 w-4" />} title="Device Breakdown">
+                {Object.entries(analytics.breakdown.devices).length > 0 ? (
+                  <div className="space-y-3">
+                    {Object.entries(analytics.breakdown.devices)
                       .sort((a, b) => b[1] - a[1])
                       .map(([device, count]) => {
-                        const total = Object.values(analytics.breakdown.devices).reduce(
-                          (a, b) => a + b,
-                          0
-                        )
+                        const total = Object.values(analytics.breakdown.devices).reduce((a, b) => a + b, 0)
                         const percentage = Math.round((count / total) * 100)
                         return (
                           <div key={device} className="flex items-center gap-3">
@@ -302,114 +271,192 @@ function AnalyticsContent() {
                             <span className="capitalize text-sm flex-1">{device}</span>
                             <span className="text-sm text-muted-foreground">{count}</span>
                             <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-primary rounded-full"
-                                style={{ width: `${percentage}%` }}
-                              />
+                              <div className="h-full bg-primary rounded-full" style={{ width: `${percentage}%` }} />
                             </div>
-                            <span className="text-sm text-muted-foreground w-10 text-right">
-                              {percentage}%
-                            </span>
+                            <span className="text-sm text-muted-foreground w-10 text-right">{percentage}%</span>
                           </div>
                         )
-                      })
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No data yet</p>
-                  )}
-                </div>
-              </div>
+                      })}
+                  </div>
+                ) : (
+                  <EmptyState variant="device" text="Once visitors interact with your page, device data will appear here." />
+                )}
+              </OverviewCard>
 
-              {/* Browser Breakdown */}
-              <div className="bg-muted/30 rounded-lg p-6 border border-border">
-                <h3 className="text-sm font-medium mb-4">Browser Breakdown</h3>
-                <div className="space-y-3">
-                  {Object.entries(analytics.breakdown.browsers).length > 0 ? (
-                    Object.entries(analytics.breakdown.browsers)
+              <OverviewCard icon={<Globe className="h-4 w-4" />} title="Browser Breakdown">
+                {Object.entries(analytics.breakdown.browsers).length > 0 ? (
+                  <div className="space-y-3">
+                    {Object.entries(analytics.breakdown.browsers)
                       .sort((a, b) => b[1] - a[1])
                       .map(([browser, count]) => {
-                        const total = Object.values(analytics.breakdown.browsers).reduce(
-                          (a, b) => a + b,
-                          0
-                        )
+                        const total = Object.values(analytics.breakdown.browsers).reduce((a, b) => a + b, 0)
                         const percentage = Math.round((count / total) * 100)
                         return (
                           <div key={browser} className="flex items-center gap-3">
                             <span className="capitalize text-sm flex-1">{browser}</span>
                             <span className="text-sm text-muted-foreground">{count}</span>
                             <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-green-500 rounded-full"
-                                style={{ width: `${percentage}%` }}
-                              />
+                              <div className="h-full bg-green-500 rounded-full" style={{ width: `${percentage}%` }} />
                             </div>
-                            <span className="text-sm text-muted-foreground w-10 text-right">
-                              {percentage}%
-                            </span>
+                            <span className="text-sm text-muted-foreground w-10 text-right">{percentage}%</span>
                           </div>
                         )
-                      })
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No data yet</p>
-                  )}
-                </div>
-              </div>
+                      })}
+                  </div>
+                ) : (
+                  <EmptyState variant="browser" text="Once visitors interact with your page, browser data will appear here." />
+                )}
+              </OverviewCard>
             </div>
 
-            {/* Top Referrers */}
-            <div className="bg-muted/30 rounded-lg p-6 border border-border">
-              <h3 className="text-sm font-medium mb-4">Top Referrers</h3>
-              {analytics.breakdown.referrers.length > 0 ? (
-                <div className="space-y-2">
-                  {analytics.breakdown.referrers.map((ref, i) => (
-                    <div
-                      key={ref.domain}
-                      className="flex items-center justify-between py-2 border-b border-border last:border-0"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground w-6">{i + 1}.</span>
-                        <span className="text-sm">{ref.domain}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <OverviewCard icon={<Link2 className="h-4 w-4" />} title="Top Referrers">
+                {analytics.breakdown.referrers.length > 0 ? (
+                  <div className="space-y-2">
+                    {analytics.breakdown.referrers.map((ref, i) => (
+                      <div
+                        key={ref.domain}
+                        className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground w-6">{i + 1}.</span>
+                          <span className="text-sm">{ref.domain}</span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">{ref.count} visits</span>
                       </div>
-                      <span className="text-sm text-muted-foreground">{ref.count} visits</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No referrer data yet</p>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState variant="referrer" text="We'll show you which sites bring the most visitors to your page." />
+                )}
+              </OverviewCard>
+
+              <OverviewCard icon={<Clock className="h-4 w-4" />} title="Recent Activity">
+                {analytics.recentEvents.length > 0 ? (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {analytics.recentEvents.map((event) => (
+                      <div
+                        key={event.id}
+                        className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <DeviceIcon type={event.deviceType || 'desktop'} />
+                          <span className="text-sm capitalize">{event.browser || 'Unknown'}</span>
+                          {event.referrer && (
+                            <span className="text-xs text-muted-foreground">
+                              from {new URL(event.referrer).hostname}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(event.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState variant="activity" text="Recent events and interactions will appear here." />
+                )}
+              </OverviewCard>
             </div>
 
-            {/* Recent Activity */}
-            <div className="bg-muted/30 rounded-lg p-6 border border-border">
-              <h3 className="text-sm font-medium mb-4">Recent Activity</h3>
-              {analytics.recentEvents.length > 0 ? (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {analytics.recentEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex items-center justify-between py-2 border-b border-border last:border-0"
-                    >
-                      <div className="flex items-center gap-3">
-                        <DeviceIcon type={event.deviceType || 'desktop'} />
-                        <span className="text-sm capitalize">{event.browser || 'Unknown'}</span>
-                        {event.referrer && (
-                          <span className="text-xs text-muted-foreground">
-                            from {new URL(event.referrer).hostname}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(event.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No recent activity</p>
-              )}
-            </div>
+            <InsightsPanel />
           </div>
         ) : null}
       </main>
+    </div>
+  )
+}
+
+const STAT_TONE = {
+  aqua: { chip: 'bg-galli-aqua/10 text-galli-aqua', line: 'text-galli-aqua' },
+  green: { chip: 'bg-galli/15 text-galli-dark', line: 'text-galli' },
+  violet: { chip: 'bg-galli-violet/10 text-galli-violet', line: 'text-galli-violet' },
+} as const
+
+function StatCard({
+  icon, tone, label, value, subline, byDay,
+}: {
+  icon: React.ReactNode
+  tone: keyof typeof STAT_TONE
+  label: string
+  value: string
+  subline: string
+  byDay: Record<string, number>
+}) {
+  const spark = Object.keys(byDay).sort().map((d) => byDay[d])
+  const t = STAT_TONE[tone]
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="mb-3 flex items-center gap-2">
+            <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${t.chip}`}>{icon}</span>
+            <span className="text-sm text-muted-foreground">{label}</span>
+          </div>
+          <p className="truncate text-3xl font-bold">{value}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{subline}</p>
+        </div>
+        <div className={`w-24 shrink-0 self-end ${t.line}`}>
+          <Sparkline values={spark} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function OverviewCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-6 shadow-soft">
+      <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold">
+        <span className="text-muted-foreground">{icon}</span> {title}
+      </h3>
+      {children}
+    </div>
+  )
+}
+
+function EmptyState({ variant, text }: { variant: DataIllustrationVariant; text: string }) {
+  return (
+    <div className="flex items-center gap-4">
+      <DataIllustration variant={variant} className="h-20 w-28 shrink-0" />
+      <div>
+        <p className="text-sm font-semibold">No data yet</p>
+        <p className="text-sm text-muted-foreground">{text}</p>
+      </div>
+    </div>
+  )
+}
+
+const INSIGHTS = [
+  { icon: Users, title: 'Grow Your Audience', text: 'Share your page and invite collaborators to expand your community.' },
+  { icon: Eye, title: 'Create Engaging Content', text: 'Consistent, valuable content drives more views and engagement.' },
+  { icon: TrendingUp, title: 'Analyze & Optimize', text: 'Use data insights to understand what works best for your audience.' },
+  { icon: Target, title: 'Achieve Your Goals', text: 'Keep building, keep sharing, and watch your pond flourish.' },
+]
+
+function InsightsPanel() {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-galli/20 bg-galli/5 p-6">
+      <div className="mb-5 flex items-start gap-2">
+        <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-galli-dark" />
+        <div>
+          <h3 className="font-bold">Insights</h3>
+          <p className="text-sm text-muted-foreground">Track your growth and discover opportunities.</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:pr-36">
+        {INSIGHTS.map((it) => (
+          <div key={it.title}>
+            <span className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-galli-dark">
+              <it.icon className="h-4 w-4" />
+            </span>
+            <h4 className="text-sm font-bold">{it.title}</h4>
+            <p className="mt-0.5 text-sm text-muted-foreground">{it.text}</p>
+          </div>
+        ))}
+      </div>
+      <DataIllustration variant="sprout" className="pointer-events-none absolute bottom-0 right-2 hidden h-28 w-32 lg:block" />
     </div>
   )
 }

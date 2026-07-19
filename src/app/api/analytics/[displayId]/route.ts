@@ -83,6 +83,17 @@ export async function GET(request: NextRequest, { params }: Props) {
         {} as Record<string, number>
       )
 
+    // Unique visitors by day (distinct sessionId per day) — powers the visitors sparkline
+    const sessionsByDay: Record<string, Set<string>> = {}
+    for (const e of events) {
+      if (e.eventType === 'view' && e.sessionId) {
+        const day = e.createdAt.toISOString().split('T')[0]
+        ;(sessionsByDay[day] ||= new Set()).add(e.sessionId)
+      }
+    }
+    const uniqueVisitorsByDay: Record<string, number> = {}
+    for (const [day, set] of Object.entries(sessionsByDay)) uniqueVisitorsByDay[day] = set.size
+
     // Top referrers
     const referrerCounts = events
       .filter((e) => e.eventType === 'view' && e.referrer)
@@ -104,6 +115,20 @@ export async function GET(request: NextRequest, { params }: Props) {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
       .map(([domain, count]) => ({ domain, count }))
+
+    // Per-day count for the single top referrer domain — powers the referrer sparkline
+    const topDomain = topReferrers[0]?.domain
+    const topReferrerByDay: Record<string, number> = {}
+    if (topDomain) {
+      for (const e of events) {
+        if (e.eventType !== 'view' || !e.referrer) continue
+        let domain = 'direct'
+        try { domain = new URL(e.referrer).hostname } catch { domain = 'direct' }
+        if (domain !== topDomain) continue
+        const day = e.createdAt.toISOString().split('T')[0]
+        topReferrerByDay[day] = (topReferrerByDay[day] || 0) + 1
+      }
+    }
 
     // Recent events (last 50)
     const recentEvents = events.slice(0, 50).map((e) => ({
@@ -136,6 +161,8 @@ export async function GET(request: NextRequest, { params }: Props) {
         referrers: topReferrers,
       },
       viewsByDay,
+      uniqueVisitorsByDay,
+      topReferrerByDay,
       recentEvents,
     })
   } catch (error) {
