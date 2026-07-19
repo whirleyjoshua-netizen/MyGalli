@@ -10,7 +10,7 @@ import path from 'node:path'
 
 const ELEMENTS_DIR = __dirname
 
-const HANDLER_PATTERN = /\bon(Click|Change|Submit|Play)\s*=/
+const HANDLER_PATTERN = /\bon[A-Z][A-Za-z]*\s*=/
 
 function isPublicElementFile(fileName: string): boolean {
   return fileName.startsWith('Public') && fileName.endsWith('.tsx') && !fileName.endsWith('.test.tsx')
@@ -24,11 +24,20 @@ describe('Public element client directive', () => {
     expect(files.length).toBeGreaterThan(0)
   })
 
-  for (const fileName of files) {
+  const handlerBearingFiles = files.filter((fileName) => {
+    const content = fs.readFileSync(path.join(ELEMENTS_DIR, fileName), 'utf8')
+    return HANDLER_PATTERN.test(content)
+  })
+
+  // Sanity check so a future regex regression (e.g. narrowing back to a
+  // fixed handler list) can't silently collapse this test to a vacuous pass.
+  it('found at least one handler-bearing Public*.tsx file to guard', () => {
+    expect(handlerBearingFiles.length).toBeGreaterThan(0)
+  })
+
+  for (const fileName of handlerBearingFiles) {
     const filePath = path.join(ELEMENTS_DIR, fileName)
     const content = fs.readFileSync(filePath, 'utf8')
-
-    if (!HANDLER_PATTERN.test(content)) continue
 
     it(`${fileName} has 'use client' because it wires up a DOM event handler`, () => {
       const firstLine = content.split(/\r?\n/, 1)[0].trim()

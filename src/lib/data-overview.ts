@@ -45,7 +45,8 @@ function humanise(elementType: string): string {
 }
 
 function elementsOf(section: Section): CanvasElement[] {
-  return section.columns.flatMap((column) => column.elements)
+  const columns = Array.isArray(section?.columns) ? section.columns : []
+  return columns.flatMap((column) => (Array.isArray(column?.elements) ? column.elements : []))
 }
 
 // `Section` has no name field, so a label is derived: first heading's text,

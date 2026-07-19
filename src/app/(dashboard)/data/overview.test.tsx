@@ -19,8 +19,6 @@ const analytics = {
   breakdown: { devices: {}, browsers: {}, referrers: [{ domain: 'instagram.com', count: 32 }] },
   viewsByDay: { '2026-07-18': 40, '2026-07-19': 60 },
   uniqueVisitorsByDay: { '2026-07-18': 20, '2026-07-19': 30 },
-  topReferrerByDay: {},
-  recentEvents: [],
 }
 
 describe('Data page Overview cockpit', () => {

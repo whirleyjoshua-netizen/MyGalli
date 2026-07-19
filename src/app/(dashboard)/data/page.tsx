@@ -158,7 +158,7 @@ function AnalyticsContent() {
   const refreshAnalytics = useCallback(async () => {
     if (!selectedDisplayId) return
     try {
-      const res = await fetch(`/api/analytics/${selectedDisplayId}?live=1`)
+      const res = await fetch(`/api/analytics/${selectedDisplayId}?live=1&days=${days}`)
       if (res.ok) {
         const data = await res.json()
         setAnalytics((prev) => (prev ? { ...prev, liveActivity: data.liveActivity } : prev))
@@ -166,7 +166,7 @@ function AnalyticsContent() {
     } catch (error) {
       console.error('Failed to refresh live activity:', error)
     }
-  }, [selectedDisplayId])
+  }, [selectedDisplayId, days])
 
   return (
     <div className="min-h-screen bg-background">

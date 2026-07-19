@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildOverview, type OverviewInput } from './overview'
+import { collectAllSections } from './route'
 
 const baseInput = (): OverviewInput => ({
   currentEvents: [
@@ -68,15 +69,29 @@ describe('buildOverview', () => {
   })
 
   it('attributes an interaction on an element living inside a tab section', () => {
-    // Elements inside Display.tabs (a separate Json column, one Section[]
-    // per tab) must be attributed just like top-level display.sections —
-    // the route concatenates both before calling buildOverview.
+    // Mirrors what the route does: collectAllSections() merges display.sections
+    // with each enabled tab's sections before buildOverview ever runs, so an
+    // element that only exists inside a tab's Section[] must still be
+    // attributed to that section's engagement row.
     const input = baseInput()
-    input.sections.push({
-      id: 'tab-section-1',
-      layout: 'full-width',
-      columns: [{ id: 'tc1', elements: [{ id: 'tab-el', type: 'poll' }] }],
+    const tabSections = collectAllSections(input.sections, {
+      enabled: true,
+      tabs: [
+        {
+          id: 't1',
+          label: 'Tab 1',
+          slug: 'tab-1',
+          sections: [
+            {
+              id: 'tab-section-1',
+              layout: 'full-width',
+              columns: [{ id: 'tc1', elements: [{ id: 'tab-el', type: 'poll' }] }],
+            },
+          ],
+        },
+      ],
     } as never)
+    input.sections = tabSections
     input.currentEvents.push({
       eventType: 'interact', sessionId: 's4', country: 'US',
       metadata: { elementId: 'tab-el', elementType: 'poll', action: 'vote' },
@@ -98,5 +113,62 @@ describe('buildOverview', () => {
       })
     }
     expect(buildOverview(input).liveActivity).toHaveLength(20)
+  })
+})
+
+const topSection = { id: 'top-1', layout: 'full-width', columns: [{ id: 'c1', elements: [] }] }
+const tabSection = { id: 'tab-1', layout: 'full-width', columns: [{ id: 'tc1', elements: [] }] }
+
+describe('collectAllSections', () => {
+  it('returns only the top-level sections when there are no tabs', () => {
+    expect(collectAllSections([topSection], null)).toEqual([topSection])
+    expect(collectAllSections([topSection], undefined)).toEqual([topSection])
+  })
+
+  it('merges sections from an enabled tabs config object', () => {
+    const tabs = { enabled: true, tabs: [{ id: 't1', label: 'Tab', slug: 'tab', sections: [tabSection] }] }
+    expect(collectAllSections([topSection], tabs)).toEqual([topSection, tabSection])
+  })
+
+  it('parses tabs when it arrives as a JSON string', () => {
+    const tabs = { enabled: true, tabs: [{ id: 't1', label: 'Tab', slug: 'tab', sections: [tabSection] }] }
+    expect(collectAllSections([topSection], JSON.stringify(tabs))).toEqual([topSection, tabSection])
+  })
+
+  it('parses sections when it arrives as a JSON string', () => {
+    expect(collectAllSections(JSON.stringify([topSection]), null)).toEqual([topSection])
+  })
+
+  it('treats malformed/unparseable tabs as no tabs, never throwing', () => {
+    expect(collectAllSections([topSection], '{not valid json')).toEqual([topSection])
+    expect(collectAllSections([topSection], 'just a string')).toEqual([topSection])
+    expect(collectAllSections([topSection], 42)).toEqual([topSection])
+  })
+
+  it('treats malformed/unparseable sections as empty, never throwing', () => {
+    expect(collectAllSections('{not valid json', null)).toEqual([])
+    expect(collectAllSections(null, null)).toEqual([])
+  })
+
+  it('skips tab sections when tabs are disabled', () => {
+    const tabs = { enabled: false, tabs: [{ id: 't1', label: 'Tab', slug: 'tab', sections: [tabSection] }] }
+    expect(collectAllSections([topSection], tabs)).toEqual([topSection])
+  })
+
+  it('collects a tab section missing columns as-is, without throwing', () => {
+    const brokenTabSection = { id: 'tab-broken', layout: 'full-width' } as never
+    const tabs = { enabled: true, tabs: [{ id: 't1', label: 'Tab', slug: 'tab', sections: [brokenTabSection] }] }
+    let result: unknown[] = []
+    expect(() => {
+      result = collectAllSections([topSection], tabs)
+    }).not.toThrow()
+    expect(result).toEqual([topSection, brokenTabSection])
+
+    // Downstream, buildOverview's sectionEngagement (src/lib/data-overview.ts
+    // elementsOf) must also tolerate the columns-less section rather than
+    // throwing and 500ing the whole analytics route.
+    const input = baseInput()
+    input.sections = result as never
+    expect(() => buildOverview(input)).not.toThrow()
   })
 })
