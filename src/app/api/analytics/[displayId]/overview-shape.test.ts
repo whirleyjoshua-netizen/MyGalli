@@ -67,6 +67,28 @@ describe('buildOverview', () => {
     expect(out.widgetPerformance).toHaveLength(1)
   })
 
+  it('attributes an interaction on an element living inside a tab section', () => {
+    // Elements inside Display.tabs (a separate Json column, one Section[]
+    // per tab) must be attributed just like top-level display.sections —
+    // the route concatenates both before calling buildOverview.
+    const input = baseInput()
+    input.sections.push({
+      id: 'tab-section-1',
+      layout: 'full-width',
+      columns: [{ id: 'tc1', elements: [{ id: 'tab-el', type: 'poll' }] }],
+    } as never)
+    input.currentEvents.push({
+      eventType: 'interact', sessionId: 's4', country: 'US',
+      metadata: { elementId: 'tab-el', elementType: 'poll', action: 'vote' },
+      createdAt: new Date('2026-07-19T10:08:00Z'),
+    })
+
+    const out = buildOverview(input)
+    const tabRow = out.sectionEngagement.find((row) => row.id === 'tab-section-1')
+    expect(tabRow).toBeDefined()
+    expect(tabRow?.count).toBe(1)
+  })
+
   it('caps live activity at 20 items', () => {
     const input = baseInput()
     for (let i = 0; i < 40; i++) {

@@ -1,8 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { buildOverview } from './overview'
+import { buildOverview, buildLiveOnly } from './overview'
 import type { Section } from '@/lib/types/canvas'
+import type { TabsConfig } from '@/lib/types/tabs'
+
+// Collects every Section a display can hold: the top-level `sections` column
+// plus each tab's own `sections` array (Display.tabs is a separate Json
+// column — see src/lib/types/tabs.ts). Defensive against null/malformed JSON
+// on older rows so a bad `tabs` value never throws.
+function collectAllSections(sections: unknown, tabs: unknown): Section[] {
+  const topLevel = Array.isArray(sections) ? (sections as unknown as Section[]) : []
+
+  let tabSections: Section[] = []
+  try {
+    const config = tabs as TabsConfig | null | undefined
+    if (config && Array.isArray(config.tabs)) {
+      tabSections = config.tabs.flatMap((tab) => (Array.isArray(tab?.sections) ? tab.sections : []))
+    }
+  } catch {
+    tabSections = []
+  }
+
+  return [...topLevel, ...tabSections]
+}
 
 interface Props {
   params: Promise<{ displayId: string }>
@@ -21,7 +42,7 @@ export async function GET(request: NextRequest, { params }: Props) {
     // Get display and verify ownership
     const display = await db.display.findUnique({
       where: { id: displayId },
-      select: { id: true, userId: true, title: true, views: true, sections: true },
+      select: { id: true, userId: true, title: true, views: true, sections: true, tabs: true },
     })
 
     if (!display) {
@@ -37,6 +58,30 @@ export async function GET(request: NextRequest, { params }: Props) {
     const days = parseInt(url.searchParams.get('days') || '30')
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
+
+    // Lightweight live-only mode: the activity feed polls every 20s and only
+    // needs a bounded slice of recent events + follows, not the full
+    // aggregate rebuild (previous-window query, follower counts, breakdowns).
+    if (url.searchParams.get('live') === '1') {
+      const [liveEvents, liveFollows] = await Promise.all([
+        db.analyticsEvent.findMany({
+          where: { displayId, createdAt: { gte: startDate } },
+          select: { eventType: true, country: true, metadata: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        }),
+        db.follow.findMany({
+          where: { followingId: display.userId, createdAt: { gte: startDate } },
+          select: { createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        }),
+      ])
+
+      return NextResponse.json({
+        liveActivity: buildLiveOnly({ recentEvents: liveEvents, recentFollows: liveFollows }),
+      })
+    }
 
     // Get analytics data
     const events = await db.analyticsEvent.findMany({
@@ -67,7 +112,7 @@ export async function GET(request: NextRequest, { params }: Props) {
       }),
     ])
 
-    const sections = Array.isArray(display.sections) ? (display.sections as unknown as Section[]) : []
+    const sections = collectAllSections(display.sections, display.tabs)
 
     const overview = buildOverview({
       currentEvents: events.map((e) => ({
@@ -157,30 +202,6 @@ export async function GET(request: NextRequest, { params }: Props) {
       .slice(0, 10)
       .map(([domain, count]) => ({ domain, count }))
 
-    // Per-day count for the single top referrer domain — powers the referrer sparkline
-    const topDomain = topReferrers[0]?.domain
-    const topReferrerByDay: Record<string, number> = {}
-    if (topDomain) {
-      for (const e of events) {
-        if (e.eventType !== 'view' || !e.referrer) continue
-        let domain = 'direct'
-        try { domain = new URL(e.referrer).hostname } catch { domain = 'direct' }
-        if (domain !== topDomain) continue
-        const day = e.createdAt.toISOString().split('T')[0]
-        topReferrerByDay[day] = (topReferrerByDay[day] || 0) + 1
-      }
-    }
-
-    // Recent events (last 50)
-    const recentEvents = events.slice(0, 50).map((e) => ({
-      id: e.id,
-      eventType: e.eventType,
-      deviceType: e.deviceType,
-      browser: e.browser,
-      referrer: e.referrer,
-      createdAt: e.createdAt,
-    }))
-
     return NextResponse.json({
       display: {
         id: display.id,
@@ -206,8 +227,6 @@ export async function GET(request: NextRequest, { params }: Props) {
       },
       viewsByDay,
       uniqueVisitorsByDay,
-      topReferrerByDay,
-      recentEvents,
       previous: overview.previous,
       health: overview.health,
       liveActivity: overview.liveActivity,

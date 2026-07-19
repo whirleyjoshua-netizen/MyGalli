@@ -53,15 +53,6 @@ interface AnalyticsData {
   }
   viewsByDay: Record<string, number>
   uniqueVisitorsByDay?: Record<string, number>
-  topReferrerByDay?: Record<string, number>
-  recentEvents: {
-    id: string
-    eventType: string
-    deviceType: string | null
-    browser: string | null
-    referrer: string | null
-    createdAt: string
-  }[]
 }
 
 interface DisplayOption {
@@ -93,6 +84,8 @@ function AnalyticsContent() {
   )
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
   const [days, setDays] = useState(30)
   const [activeTab, setActiveTab] = useState<'overview' | 'elements' | 'bulletin'>(
     (() => {
@@ -127,9 +120,14 @@ function AnalyticsContent() {
     fetchDisplays()
   }, [router, selectedDisplayId])
 
-  // Fetch analytics for selected display
+  // Fetch analytics for selected display. Clears stale data + resets error
+  // state on every displayId/days change so a failed fetch never leaves the
+  // previous page's numbers on screen under a new title.
   useEffect(() => {
     if (!selectedDisplayId) return
+
+    setAnalytics(null)
+    setError(false)
 
     async function fetchAnalytics() {
       setLoading(true)
@@ -140,26 +138,35 @@ function AnalyticsContent() {
         if (res.ok) {
           const data = await res.json()
           setAnalytics(data)
+        } else {
+          setError(true)
         }
-      } catch (error) {
-        console.error('Failed to fetch analytics:', error)
+      } catch (err) {
+        console.error('Failed to fetch analytics:', err)
+        setError(true)
       } finally {
         setLoading(false)
       }
     }
 
     fetchAnalytics()
-  }, [selectedDisplayId, days])
+  }, [selectedDisplayId, days, retryCount])
 
+  // Lightweight refresh for the 20s live-activity poll: fetches only the
+  // bounded activity feed (`?live=1`) and merges it into existing state,
+  // instead of re-running the full aggregate rebuild.
   const refreshAnalytics = useCallback(async () => {
     if (!selectedDisplayId) return
     try {
-      const res = await fetch(`/api/analytics/${selectedDisplayId}?days=${days}`)
-      if (res.ok) setAnalytics(await res.json())
+      const res = await fetch(`/api/analytics/${selectedDisplayId}?live=1`)
+      if (res.ok) {
+        const data = await res.json()
+        setAnalytics((prev) => (prev ? { ...prev, liveActivity: data.liveActivity } : prev))
+      }
     } catch (error) {
-      console.error('Failed to refresh analytics:', error)
+      console.error('Failed to refresh live activity:', error)
     }
-  }, [selectedDisplayId, days])
+  }, [selectedDisplayId])
 
   return (
     <div className="min-h-screen bg-background">
@@ -229,6 +236,18 @@ function AnalyticsContent() {
         ) : loading && !analytics ? (
           <div className="flex items-center justify-center py-20">
             <p className="text-muted-foreground">Loading analytics...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-lg font-medium mb-2">Couldn&apos;t load analytics</h2>
+            <p className="text-muted-foreground mb-4">Something went wrong fetching this page&apos;s data.</p>
+            <button
+              onClick={() => setRetryCount((c) => c + 1)}
+              className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Retry
+            </button>
           </div>
         ) : !selectedDisplayId ? (
           <div className="text-center py-20">

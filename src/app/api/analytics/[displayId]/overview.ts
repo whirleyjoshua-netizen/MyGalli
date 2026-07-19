@@ -75,6 +75,53 @@ function interactionRecords(events: OverviewEvent[]): InteractionRecord[] {
   return records
 }
 
+export interface LiveOnlyEvent {
+  eventType: string
+  country: string | null
+  metadata: unknown
+  createdAt: Date
+}
+
+export interface LiveOnlyInput {
+  recentEvents: LiveOnlyEvent[]
+  recentFollows: { createdAt: Date }[]
+}
+
+// Shared by the full overview build and the lightweight `?live=1` mode: turns
+// raw events + follows into the sorted, capped activity feed shape.
+function buildLiveActivity(
+  events: LiveOnlyEvent[],
+  follows: { createdAt: Date }[]
+): LiveActivityItem[] {
+  const raw: RawActivity[] = [
+    ...events.map((event): RawActivity => {
+      const parsed = event.eventType === 'interact' ? parseInteractMetadata(event.metadata) : null
+      return {
+        kind: event.eventType as RawActivity['kind'],
+        elementType: parsed?.elementType,
+        action: parsed?.action,
+        country: event.country,
+        at: event.createdAt.toISOString(),
+      }
+    }),
+    ...follows.map((follow): RawActivity => ({
+      kind: 'follow',
+      country: null,
+      at: follow.createdAt.toISOString(),
+    })),
+  ]
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .slice(0, LIVE_ACTIVITY_LIMIT)
+
+  return liveActivityItems(raw)
+}
+
+// Used by the `?live=1` fast path: just the activity feed, none of the
+// aggregate/health computation the full overview does.
+export function buildLiveOnly(input: LiveOnlyInput): LiveActivityItem[] {
+  return buildLiveActivity(input.recentEvents, input.recentFollows)
+}
+
 export function buildOverview(input: OverviewInput): OverviewResult {
   const summary = countMetrics(input.currentEvents, input.currentFollowers)
   const previous = countMetrics(input.previousEvents, input.previousFollowers)
@@ -94,31 +141,11 @@ export function buildOverview(input: OverviewInput): OverviewResult {
 
   const interactions = interactionRecords(input.currentEvents)
 
-  const raw: RawActivity[] = [
-    ...input.currentEvents.map((event): RawActivity => {
-      const parsed = event.eventType === 'interact' ? parseInteractMetadata(event.metadata) : null
-      return {
-        kind: event.eventType as RawActivity['kind'],
-        elementType: parsed?.elementType,
-        action: parsed?.action,
-        country: event.country,
-        at: event.createdAt.toISOString(),
-      }
-    }),
-    ...input.recentFollows.map((follow): RawActivity => ({
-      kind: 'follow',
-      country: null,
-      at: follow.createdAt.toISOString(),
-    })),
-  ]
-    .sort((a, b) => b.at.localeCompare(a.at))
-    .slice(0, LIVE_ACTIVITY_LIMIT)
-
   return {
     summary,
     previous,
     health,
-    liveActivity: liveActivityItems(raw),
+    liveActivity: buildLiveActivity(input.currentEvents, input.recentFollows),
     widgetPerformance: widgetPerformance(interactions, summary.views),
     sectionEngagement: sectionEngagement(input.sections, interactions),
   }
