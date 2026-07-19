@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Activity } from 'lucide-react'
 import { DataIllustration } from '@/components/analytics/DataIllustration'
 import type { LiveActivityItem } from '@/lib/data-overview'
@@ -25,13 +25,18 @@ export function LiveActivityFeed({
   items: LiveActivityItem[]
   onRefresh: () => void
 }) {
+  const onRefreshRef = useRef(onRefresh)
+  useEffect(() => {
+    onRefreshRef.current = onRefresh
+  }, [onRefresh])
+
   useEffect(() => {
     const id = setInterval(() => {
       // Only poll while the tab is actually being looked at.
-      if (document.visibilityState === 'visible') onRefresh()
+      if (document.visibilityState === 'visible') onRefreshRef.current()
     }, LIVE_POLL_MS)
     return () => clearInterval(id)
-  }, [onRefresh])
+  }, [])
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-soft">

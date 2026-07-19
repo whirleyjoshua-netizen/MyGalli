@@ -40,6 +40,18 @@ describe('LiveActivityFeed', () => {
     expect(onRefresh).not.toHaveBeenCalled()
   })
 
+  it('keeps ticking while hidden and resumes polling once visible again', () => {
+    const onRefresh = vi.fn()
+    const visibilitySpy = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    render(<LiveActivityFeed items={items} onRefresh={onRefresh} />)
+    act(() => { vi.advanceTimersByTime(LIVE_POLL_MS * 3) })
+    expect(onRefresh).not.toHaveBeenCalled()
+
+    visibilitySpy.mockReturnValue('visible')
+    act(() => { vi.advanceTimersByTime(LIVE_POLL_MS) })
+    expect(onRefresh).toHaveBeenCalledTimes(1)
+  })
+
   it('stops polling after unmount', () => {
     const onRefresh = vi.fn()
     const { unmount } = render(<LiveActivityFeed items={items} onRefresh={onRefresh} />)
