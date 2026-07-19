@@ -1,6 +1,7 @@
 'use client'
 
-import { Sparkles, StickyNote, Wrench } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, Sparkles, StickyNote, Wrench, X } from 'lucide-react'
 import type { HubConfig, HubUtilityKey } from '@/lib/types/hub-config'
 import type { StripNote } from '@/lib/hub-notes'
 
@@ -60,9 +61,93 @@ function AiCard() {
   )
 }
 
-// Filled in by Task 4.
-function NotesCard({ }: { hubId: string; notes: StripNote[]; isOwner: boolean; preview?: boolean }) {
-  return <Shell icon={<StickyNote className="h-4 w-4 text-primary" />} title="Notes"><div /></Shell>
+function NotesCard({ hubId, notes: initial, isOwner, preview }: { hubId: string; notes: StripNote[]; isOwner: boolean; preview?: boolean }) {
+  const [notes, setNotes] = useState(initial)
+  const [showAll, setShowAll] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function add() {
+    if (preview || !title.trim()) return
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/hubs/${hubId}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), content: content.trim(), visibility: 'public' }),
+      })
+      if (!res.ok) return
+      const n = await res.json()
+      setNotes((cur) => [{ id: n.id, title: n.title, content: n.content, color: n.color }, ...cur])
+      setTitle(''); setContent(''); setAdding(false)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Shell icon={<StickyNote className="h-4 w-4 text-primary" />} title="Notes">
+      {notes.length === 0 ? (
+        <p className="text-xs text-muted-foreground">No notes yet.</p>
+      ) : (
+        <ul className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">
+          {notes.slice(0, 2).map((n) => (
+            <li key={n.id} className="rounded-lg border-l-2 bg-muted/40 px-2 py-1.5" style={{ borderColor: n.color }}>
+              <p className="truncate text-xs font-medium">{n.title}</p>
+              <p className="truncate text-xs text-muted-foreground">{n.content}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="mt-2 flex items-center justify-between">
+        {notes.length > 2 ? (
+          <button onClick={() => setShowAll(true)} className="text-xs text-primary hover:underline">View all notes →</button>
+        ) : <span />}
+        {isOwner && (
+          <button title="Add note" onClick={() => setAdding(true)} className="rounded p-1 text-muted-foreground hover:bg-muted">
+            <Plus className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {showAll && (
+        <NoteModal title="Notes" onClose={() => setShowAll(false)}>
+          {notes.map((n) => (
+            <div key={n.id} className="mb-2 rounded-lg border-l-2 bg-muted/40 px-3 py-2" style={{ borderColor: n.color }}>
+              <p className="text-sm font-medium">{n.title}</p>
+              <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{n.content}</p>
+            </div>
+          ))}
+        </NoteModal>
+      )}
+
+      {adding && (
+        <NoteModal title="New note" onClose={() => setAdding(false)}>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" maxLength={200} className="mb-2 w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm" />
+          <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write a note for your community…" rows={4} maxLength={5000} className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm" />
+          <button onClick={add} disabled={busy || !title.trim()} className="mt-3 w-full rounded-lg bg-primary py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+            {busy ? 'Saving…' : 'Add note'}
+          </button>
+        </NoteModal>
+      )}
+    </Shell>
+  )
+}
+
+function NoteModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-2xl bg-surface p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-bold">{title}</h2>
+          <button onClick={onClose} className="rounded p-1 text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
 }
 
 // Filled in by Task 7.

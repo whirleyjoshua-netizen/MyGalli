@@ -52,3 +52,37 @@ describe('CommunityUtilityStrip', () => {
     expect(screen.getByText('Coming soon')).toBeInTheDocument()
   })
 })
+
+const notes = [
+  { id: 'n1', title: 'Welcome', content: 'Share ideas and connect.', color: '#FDE047' },
+  { id: 'n2', title: 'Rules', content: 'Be kind.', color: '#FDE047' },
+  { id: 'n3', title: 'Third', content: 'Hidden behind view-all.', color: '#FDE047' },
+]
+
+describe('Notes card', () => {
+  it('shows the first two notes and a view-all affordance', () => {
+    render(<CommunityUtilityStrip {...base} notes={notes} />)
+    expect(screen.getByText('Welcome')).toBeInTheDocument()
+    expect(screen.getByText('Rules')).toBeInTheDocument()
+    expect(screen.queryByText('Third')).toBeNull()
+    expect(screen.getByText('View all notes →')).toBeInTheDocument()
+  })
+
+  it('hides the view-all affordance when everything already fits', () => {
+    render(<CommunityUtilityStrip {...base} notes={notes.slice(0, 1)} />)
+    expect(screen.queryByText('View all notes →')).toBeNull()
+  })
+
+  // The notes route is owner-only; a collaborator or visitor must not see "+".
+  it('shows the add control only to the owner', () => {
+    const { rerender } = render(<CommunityUtilityStrip {...base} notes={notes} isPrivileged />)
+    expect(screen.queryByTitle('Add note')).toBeNull()
+    rerender(<CommunityUtilityStrip {...base} notes={notes} isOwner />)
+    expect(screen.getByTitle('Add note')).toBeInTheDocument()
+  })
+
+  it('invites the owner to write the first note when empty', () => {
+    render(<CommunityUtilityStrip {...base} notes={[]} isOwner />)
+    expect(screen.getByText('No notes yet.')).toBeInTheDocument()
+  })
+})
