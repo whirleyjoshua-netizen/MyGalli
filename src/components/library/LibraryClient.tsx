@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, Trophy, FileText, Heart, Sparkles, Library, Store } from 'lucide-react'
+import { Plus, Trophy, FileText, Heart, Sparkles, Library, Store, Search } from 'lucide-react'
 import { listTemplates } from '@/lib/templates/registry'
 import { listKits } from '@/lib/kits/registry'
 import '@/lib/kits/all'
@@ -61,6 +61,7 @@ export function LibraryClient() {
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
 
   const handleStarterClick = async (s: Starter) => {
     if (s.pro && !pro) { setUpgradeOpen(true); return }
@@ -89,12 +90,29 @@ export function LibraryClient() {
     }
   }
 
+  const q = query.trim().toLowerCase()
+  const activeStarters = (tab === 'templates' ? TEMPLATE_STARTERS : KIT_STARTERS).filter(
+    (s) => !q || s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q),
+  )
+
   return (
     <div className="pb-8">
       <PageHero
         icon={<Library className="w-7 h-7 text-primary" />}
         title="Library"
         subtitle="Apps, templates, and kits to build your pages."
+        controls={
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search library…"
+              aria-label="Search library"
+              className="w-40 rounded-full border border-border bg-surface py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring sm:w-56"
+            />
+          </div>
+        }
         tabs={TABS.map((t) => (
           <button
             key={t.id}
@@ -110,7 +128,7 @@ export function LibraryClient() {
 
       <div className="mx-auto max-w-7xl px-4 sm:px-8">
       {tab === 'apps' ? (
-        <LibraryAppsTab />
+        <LibraryAppsTab query={query} />
       ) : (
         <>
           {error && (
@@ -118,8 +136,11 @@ export function LibraryClient() {
               {error}
             </div>
           )}
+          {activeStarters.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">No {tab} match &ldquo;{query}&rdquo;.</p>
+          ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {(tab === 'templates' ? TEMPLATE_STARTERS : KIT_STARTERS).map((s) => (
+            {activeStarters.map((s) => (
               <div key={s.id} className="flex flex-col rounded-2xl border border-border bg-surface shadow-soft">
                 <div className={`flex h-28 items-center justify-center rounded-t-2xl bg-gradient-to-br ${s.gradient} text-4xl`}>
                   {s.emoji ? <span>{s.emoji}</span> : <LucideIcon name={s.iconName} className="h-9 w-9 text-galli-dark" />}
@@ -145,6 +166,7 @@ export function LibraryClient() {
               </div>
             ))}
           </div>
+          )}
         </>
       )}
 
