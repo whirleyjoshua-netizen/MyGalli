@@ -22,7 +22,7 @@ const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const todayIso = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}` }
 
-interface Props { element: CanvasElement }
+interface Props { element: CanvasElement; displayId?: string }
 
 export function PublicCalendarElement({ element }: Props) {
   const events = element.calendarEvents ?? []

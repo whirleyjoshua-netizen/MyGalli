@@ -448,7 +448,7 @@ export function renderElement(element: CanvasElement, displayId?: string) {
       return <PublicIndexElement element={element} />
 
     case 'calendar':
-      return <PublicCalendarElement element={element} />
+      return <PublicCalendarElement element={element} displayId={displayId || ''} />
 
     case 'appointments':
       return <PublicAppointmentsElement element={element} displayId={displayId || ''} />
@@ -525,7 +525,7 @@ export function renderElement(element: CanvasElement, displayId?: string) {
       return <PublicTimelineElement element={element} />
 
     case 'link-hub':
-      return <PublicLinkHubElement element={element} />
+      return <PublicLinkHubElement element={element} displayId={displayId || ''} />
     case 'gallery':
       return <PublicGalleryElement element={element} />
     case 'map':
@@ -535,7 +535,7 @@ export function renderElement(element: CanvasElement, displayId?: string) {
     case 'before-after':
       return <PublicBeforeAfterElement element={element} />
     case 'tip-jar':
-      return <PublicTipJarElement element={element} />
+      return <PublicTipJarElement element={element} displayId={displayId || ''} />
 
     case 'collection-view':
       return <PublicCollectionView element={element} />
@@ -577,7 +577,7 @@ export function renderElement(element: CanvasElement, displayId?: string) {
       return <PublicBusinessPromoElement element={element} />
 
     case 'audio-player':
-      return <PublicAudioPlayerElement element={element} />
+      return <PublicAudioPlayerElement element={element} displayId={displayId || ''} />
 
     case 'whiteboard':
       return <PublicWhiteboardElement element={element} />

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import type { CanvasElement } from '@/lib/types/canvas'
 import type { RsvpAttending } from '@/lib/rsvp'
 import { CalendarCheck, Check, Users, PartyPopper } from 'lucide-react'
+import { trackInteraction } from '@/lib/analytics'
 
 interface Props {
   element: CanvasElement
@@ -116,6 +117,7 @@ export function PublicRSVPElement({ element, displayId }: Props) {
         setSubmitted(true)
         localStorage.setItem(`form_submitted_${element.id}`, 'true')
         loadBoard()
+        void trackInteraction(displayId, element.id, 'rsvp', 'respond')
       } else {
         setError('Something went wrong. Please try again.')
       }
