@@ -42,7 +42,7 @@ export function PageHero({ icon, title, subtitle, action, controls, tabs }: Page
       </div>
 
       {/* Tabs slot */}
-      {tabs && <div className="relative z-10 mt-6 flex gap-0 border-b border-border">{tabs}</div>}
+      {tabs && <div className="relative z-10 mt-6 flex gap-0 border-b border-border overflow-x-auto scrollbar-hide">{tabs}</div>}
     </div>
   )
 }
