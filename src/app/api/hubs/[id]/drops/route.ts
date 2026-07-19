@@ -23,23 +23,28 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const isPrivileged = !!me && (me.id === hub.userId || collabIds.includes(me.id))
   if (!canViewCommunityHub({ published: hub.published, isPrivileged })) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const before = new URL(request.url).searchParams.get('before')
   const where: any = { hubId: id }
   if (!isPrivileged) where.hidden = false
-  if (before) {
-    const d = new Date(before)
-    if (!isNaN(d.getTime())) where.createdAt = { lt: d }
-  }
+
+  // Cursor is a drop id, not a timestamp: two drops uploaded in the same
+  // millisecond (easy — the picker uploads a whole selection in a loop) share a
+  // `createdAt`, and a `createdAt < cursor` filter would skip the second one.
+  // Ordering by (createdAt, id) makes the sequence total, so nothing is lost.
+  const cursor = new URL(request.url).searchParams.get('cursor')
+  const cursorRow = cursor
+    ? await db.hubDrop.findFirst({ where: { id: cursor, hubId: id }, select: { id: true } })
+    : null
 
   const rows = await db.hubDrop.findMany({
     where,
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: PAGE + 1,
+    ...(cursorRow ? { cursor: { id: cursorRow.id }, skip: 1 } : {}),
     include: { author: { select: { id: true, username: true, name: true, avatar: true } } },
   })
   const hasMore = rows.length > PAGE
   const page = hasMore ? rows.slice(0, PAGE) : rows
-  const nextCursor = hasMore ? page[page.length - 1].createdAt.toISOString() : null
+  const nextCursor = hasMore ? page[page.length - 1].id : null
   return NextResponse.json({ drops: page.map(toDropDTO), nextCursor })
 }
 

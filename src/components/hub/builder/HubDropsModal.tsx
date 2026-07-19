@@ -6,8 +6,28 @@ import type { DropDTO } from '@/lib/hub-drops'
 
 export function HubDropsModal({ hubId, onClose }: { hubId: string; onClose: () => void }) {
   const [drops, setDrops] = useState<DropDTO[]>([])
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const load = () => fetch(`/api/hubs/${hubId}/drops`).then((r) => (r.ok ? r.json() : { drops: [] })).then((d) => setDrops(d.drops ?? []))
+  // Paginated: the owner must be able to reach every drop, or an abusive item
+  // past the first page would be impossible to hide or delete from any UI.
+  const load = async (after?: string | null) => {
+    setLoading(true)
+    try {
+      const qs = after ? `?cursor=${encodeURIComponent(after)}` : ''
+      const res = await fetch(`/api/hubs/${hubId}/drops${qs}`)
+      const d = res.ok ? await res.json() : { drops: [], nextCursor: null }
+      const fresh: DropDTO[] = d.drops ?? []
+      setDrops((cur) => {
+        if (!after) return fresh
+        const seen = new Set(cur.map((x) => x.id))
+        return [...cur, ...fresh.filter((x) => !seen.has(x.id))]
+      })
+      setCursor(d.nextCursor ?? null)
+    } finally {
+      setLoading(false)
+    }
+  }
   useEffect(() => { load() }, [hubId])
 
   async function toggleHide(d: DropDTO) {

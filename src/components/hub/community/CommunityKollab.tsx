@@ -35,7 +35,7 @@ async function captureVideoPoster(file: File): Promise<Blob | null> {
 }
 
 export function CommunityKollab({
-  hubId, canDrop, isPrivileged, currentUserId, enabled, initialDrops, preview,
+  hubId, canDrop, isPrivileged, currentUserId, enabled, initialDrops, total, preview,
 }: {
   hubId: string
   canDrop: boolean
@@ -43,9 +43,14 @@ export function CommunityKollab({
   currentUserId?: string
   enabled: boolean
   initialDrops: DropDTO[]
+  total: number
   preview?: boolean
 }) {
   const [drops, setDrops] = useState<DropDTO[]>(initialDrops)
+  // Tracked in state so uploads/removals don't make "Load more" vanish or linger.
+  const [count, setCount] = useState(total)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [exhausted, setExhausted] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lightbox, setLightbox] = useState<DropDTO | null>(null)
@@ -83,6 +88,7 @@ export function CommunityKollab({
         const { id } = await res.json()
         const me = { userId: currentUserId || '', username: 'you', name: null, avatar: null }
         setDrops((cur) => [{ id, type: isVideo ? 'video' : 'image', url: blob.url, thumbnailUrl, caption: null, mimeType: file.type, width: null, height: null, hidden: false, createdAt: new Date().toISOString(), author: me }, ...cur])
+        setCount((c) => c + 1)
       } catch (e) {
         setError((e as Error).message || 'Upload failed')
       } finally {
@@ -92,11 +98,30 @@ export function CommunityKollab({
     if (fileRef.current) fileRef.current.value = ''
   }
 
+  async function loadMore() {
+    if (preview || loadingMore || !drops.length) return
+    setLoadingMore(true)
+    try {
+      const res = await fetch(`/api/hubs/${hubId}/drops?cursor=${encodeURIComponent(drops[drops.length - 1].id)}`)
+      if (!res.ok) return
+      const d = await res.json()
+      const fresh: DropDTO[] = d.drops ?? []
+      // Guard against a drop arriving in both pages if the pool changed mid-scroll.
+      setDrops((cur) => {
+        const seen = new Set(cur.map((x) => x.id))
+        return [...cur, ...fresh.filter((x) => !seen.has(x.id))]
+      })
+      if (!d.nextCursor) setExhausted(true)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
   async function remove(id: string) {
     if (preview) return
     if (!confirm('Remove this from the pool?')) return
     const res = await fetch(`/api/hubs/${hubId}/drops/${id}`, { method: 'DELETE' })
-    if (res.ok) setDrops((cur) => cur.filter((d) => d.id !== id))
+    if (res.ok) { setDrops((cur) => cur.filter((d) => d.id !== id)); setCount((c) => Math.max(0, c - 1)) }
   }
 
   return (
@@ -149,6 +174,19 @@ export function CommunityKollab({
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {!preview && !exhausted && drops.length < count && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted disabled:opacity-60"
+          >
+            {loadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
+            {loadingMore ? 'Loading…' : 'Load more'}
+          </button>
         </div>
       )}
 

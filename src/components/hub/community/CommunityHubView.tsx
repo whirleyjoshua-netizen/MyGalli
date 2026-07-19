@@ -76,6 +76,7 @@ export function CommunityHubView({
               currentUserId={currentUserId}
               enabled={config.kollab.enabled}
               initialDrops={drops}
+              total={counts.kollab}
               preview={preview}
             />
           </div>
