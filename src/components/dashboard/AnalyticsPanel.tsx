@@ -5,24 +5,11 @@ import Link from 'next/link'
 import { Globe, ExternalLink, MessageSquare, BarChart3, ArrowUpRight } from 'lucide-react'
 import type { DashDisplay } from './PageCard'
 import { BulletinTab } from '@/components/bulletin/BulletinTab'
+import { Sparkline } from '@/components/analytics/Sparkline'
 
 interface AnalyticsData {
   summary: { views: number; uniqueVisitors: number }
   viewsByDay: Record<string, number>
-}
-
-function Sparkline({ values, className }: { values: number[]; className?: string }) {
-  if (values.length < 2) return <div className="h-8" />
-  const max = Math.max(...values, 1)
-  const w = 100
-  const h = 28
-  const step = w / (values.length - 1)
-  const pts = values.map((v, i) => `${i * step},${h - (v / max) * h}`).join(' ')
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className={`w-full h-8 ${className ?? ''}`}>
-      <polyline points={pts} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
 }
 
 function StatTile({ label, value, spark }: { label: string; value: string; spark: number[] }) {

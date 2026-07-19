@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { Settings } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
+import { PageHero } from '@/components/dashboard/PageHero'
 import type { User } from '@/lib/types'
 
 export default function SettingsPage() {
@@ -48,8 +50,9 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="px-6 lg:px-8 py-7 max-w-xl">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground mb-6">Settings</h1>
+    <div className="pb-7">
+      <PageHero icon={<Settings className="w-7 h-7 text-primary" />} title="Settings" />
+      <div className="px-6 lg:px-8 max-w-xl">
       <div className="space-y-5">
         <div>
           <span className="block text-sm font-medium mb-2">Profile photo</span>
@@ -99,6 +102,7 @@ export default function SettingsPage() {
           </button>
           {saved && <span className="text-sm text-green-600">Saved ✓</span>}
         </div>
+      </div>
       </div>
     </div>
   )

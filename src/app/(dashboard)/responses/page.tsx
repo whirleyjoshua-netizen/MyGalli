@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FileText, Trash2, Download, ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatResponseAnswer } from '@/lib/format-response'
+import { PageHero } from '@/components/dashboard/PageHero'
 
 interface FormResponseData {
   id: string
@@ -163,43 +164,36 @@ function ResponsesContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-background px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              <h1 className="text-xl font-bold">Form Responses</h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <select
-              value={selectedDisplayId || ''}
-              onChange={(e) => {
-                setSelectedDisplayId(e.target.value)
-                setPage(1)
-              }}
-              className="px-3 py-2 border border-border rounded-lg bg-background text-sm"
+      <PageHero
+        icon={<FileText className="w-7 h-7 text-primary" />}
+        title="Form Responses"
+        controls={
+          <select
+            value={selectedDisplayId || ''}
+            onChange={(e) => {
+              setSelectedDisplayId(e.target.value)
+              setPage(1)
+            }}
+            className="px-3 py-2 border border-border rounded-lg bg-background text-sm max-w-[200px] truncate"
+          >
+            <option value="" disabled>Select a page</option>
+            {displays.map((d) => (
+              <option key={d.id} value={d.id}>{d.title}</option>
+            ))}
+          </select>
+        }
+        action={
+          data && data.responses.length > 0 ? (
+            <button
+              onClick={exportToCSV}
+              className="flex items-center gap-2 px-3 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 text-sm"
             >
-              <option value="" disabled>Select a page</option>
-              {displays.map((d) => (
-                <option key={d.id} value={d.id}>{d.title}</option>
-              ))}
-            </select>
-
-            {data && data.responses.length > 0 && (
-              <button
-                onClick={exportToCSV}
-                className="flex items-center gap-2 px-3 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 text-sm"
-              >
-                <Download className="w-4 h-4" />
-                Export CSV
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+              <Download className="w-4 h-4" />
+              Export CSV
+            </button>
+          ) : undefined
+        }
+      />
 
       <main className="max-w-6xl mx-auto px-6 py-8">
         {loading && !data ? (

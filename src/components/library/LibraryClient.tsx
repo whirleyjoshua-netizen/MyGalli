@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, Trophy, FileText, Heart, Sparkles, Library, Store } from 'lucide-react'
+import { Plus, Trophy, FileText, Heart, Sparkles, Library, Store, Search } from 'lucide-react'
 import { listTemplates } from '@/lib/templates/registry'
 import { listKits } from '@/lib/kits/registry'
 import '@/lib/kits/all'
@@ -12,6 +12,7 @@ import { useRefreshUser } from '@/lib/use-refresh-user'
 import { ProBadge } from '@/components/pro/ProBadge'
 import { UpgradePrompt } from '@/components/pro/UpgradePrompt'
 import { LibraryAppsTab } from '@/components/library/LibraryAppsTab'
+import { PageHero } from '@/components/dashboard/PageHero'
 
 interface Starter {
   kind: 'template' | 'kit'
@@ -60,6 +61,7 @@ export function LibraryClient() {
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
 
   const handleStarterClick = async (s: Starter) => {
     if (s.pro && !pro) { setUpgradeOpen(true); return }
@@ -88,30 +90,45 @@ export function LibraryClient() {
     }
   }
 
-  return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8">
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight">Library</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Apps, templates, and kits to build your pages.</p>
-      </header>
+  const q = query.trim().toLowerCase()
+  const activeStarters = (tab === 'templates' ? TEMPLATE_STARTERS : KIT_STARTERS).filter(
+    (s) => !q || s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q),
+  )
 
-      <div className="mb-6 flex gap-2 border-b border-border">
-        {TABS.map((t) => (
+  return (
+    <div className="pb-8">
+      <PageHero
+        icon={<Library className="w-7 h-7 text-primary" />}
+        title="Library"
+        subtitle="Apps, templates, and kits to build your pages."
+        controls={
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search library…"
+              aria-label="Search library"
+              className="w-40 rounded-full border border-border bg-surface py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring sm:w-56"
+            />
+          </div>
+        }
+        tabs={TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`relative px-3 py-2 text-sm font-semibold transition ${
-              tab === t.id ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 ${
+              tab === t.id ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {t.label}
-            {tab === t.id && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded bg-galli" />}
           </button>
         ))}
-      </div>
+      />
 
+      <div className="mx-auto max-w-7xl px-4 sm:px-8">
       {tab === 'apps' ? (
-        <LibraryAppsTab />
+        <LibraryAppsTab query={query} />
       ) : (
         <>
           {error && (
@@ -119,8 +136,11 @@ export function LibraryClient() {
               {error}
             </div>
           )}
+          {activeStarters.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">No {tab} match &ldquo;{query}&rdquo;.</p>
+          ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {(tab === 'templates' ? TEMPLATE_STARTERS : KIT_STARTERS).map((s) => (
+            {activeStarters.map((s) => (
               <div key={s.id} className="flex flex-col rounded-2xl border border-border bg-surface shadow-soft">
                 <div className={`flex h-28 items-center justify-center rounded-t-2xl bg-gradient-to-br ${s.gradient} text-4xl`}>
                   {s.emoji ? <span>{s.emoji}</span> : <LucideIcon name={s.iconName} className="h-9 w-9 text-galli-dark" />}
@@ -146,6 +166,7 @@ export function LibraryClient() {
               </div>
             ))}
           </div>
+          )}
         </>
       )}
 
@@ -154,6 +175,7 @@ export function LibraryClient() {
         onClose={() => setUpgradeOpen(false)}
         feature={tab === 'kits' ? 'Kits' : 'Templates'}
       />
+      </div>
     </div>
   )
 }

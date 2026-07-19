@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl
     const category = searchParams.get('category') || ''
     const search = searchParams.get('search') || ''
+    const kind = searchParams.get('kind') || ''
     const sort = searchParams.get('sort') || 'recent'
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
     const limit = Math.min(PAGE_SIZE, Math.max(1, parseInt(searchParams.get('limit') || String(PAGE_SIZE), 10)))
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     const where = {
       published: true,
-      kind: { not: 'profile' },
+      kind: kind === 'page' || kind === 'collection' ? kind : { not: 'profile' },
       ...(category && isValidCategory(category) ? { category } : {}),
       ...searchFilter,
     }
