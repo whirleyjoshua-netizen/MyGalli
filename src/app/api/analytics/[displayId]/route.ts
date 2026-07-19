@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
+import { buildOverview } from './overview'
+import type { Section } from '@/lib/types/canvas'
 
 interface Props {
   params: Promise<{ displayId: string }>
@@ -19,7 +21,7 @@ export async function GET(request: NextRequest, { params }: Props) {
     // Get display and verify ownership
     const display = await db.display.findUnique({
       where: { id: displayId },
-      select: { id: true, userId: true, title: true, views: true },
+      select: { id: true, userId: true, title: true, views: true, sections: true },
     })
 
     if (!display) {
@@ -43,6 +45,43 @@ export async function GET(request: NextRequest, { params }: Props) {
         createdAt: { gte: startDate },
       },
       orderBy: { createdAt: 'desc' },
+    })
+
+    // Previous window of equal length, for period-over-period deltas
+    const previousStart = new Date(startDate)
+    previousStart.setDate(previousStart.getDate() - days)
+
+    const previousEvents = await db.analyticsEvent.findMany({
+      where: { displayId, createdAt: { gte: previousStart, lt: startDate } },
+      select: { eventType: true, sessionId: true, country: true, metadata: true, createdAt: true },
+    })
+
+    const [currentFollowers, previousFollowers, recentFollows] = await Promise.all([
+      db.follow.count({ where: { followingId: display.userId, createdAt: { lt: new Date() } } }),
+      db.follow.count({ where: { followingId: display.userId, createdAt: { lt: startDate } } }),
+      db.follow.findMany({
+        where: { followingId: display.userId, createdAt: { gte: startDate } },
+        select: { createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
+    ])
+
+    const sections = Array.isArray(display.sections) ? (display.sections as unknown as Section[]) : []
+
+    const overview = buildOverview({
+      currentEvents: events.map((e) => ({
+        eventType: e.eventType,
+        sessionId: e.sessionId,
+        country: e.country,
+        metadata: e.metadata,
+        createdAt: e.createdAt,
+      })),
+      previousEvents,
+      currentFollowers,
+      previousFollowers,
+      recentFollows,
+      sections,
     })
 
     // Calculate summary stats
@@ -154,6 +193,9 @@ export async function GET(request: NextRequest, { params }: Props) {
       summary: {
         views: totalViews,
         uniqueVisitors: uniqueSessions,
+        interactions: overview.summary.interactions,
+        shares: overview.summary.shares,
+        followers: overview.summary.followers,
       },
       breakdown: {
         devices: deviceBreakdown,
@@ -164,6 +206,11 @@ export async function GET(request: NextRequest, { params }: Props) {
       uniqueVisitorsByDay,
       topReferrerByDay,
       recentEvents,
+      previous: overview.previous,
+      health: overview.health,
+      liveActivity: overview.liveActivity,
+      widgetPerformance: overview.widgetPerformance,
+      sectionEngagement: overview.sectionEngagement,
     })
   } catch (error) {
     console.error('Analytics fetch error:', error)
