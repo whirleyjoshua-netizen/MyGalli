@@ -8,7 +8,7 @@ vi.mock('@/lib/db', () => ({
     hub: { findUnique: vi.fn() },
     hubCollaborator: { findMany: vi.fn() },
     hubMember: { findUnique: vi.fn(), findMany: vi.fn() },
-    hubDrop: { create: vi.fn(), findMany: vi.fn() },
+    hubDrop: { create: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
   },
 }))
 
@@ -19,7 +19,7 @@ import { GET, POST } from './route'
 
 const ctx = { params: Promise.resolve({ id: 'h1' }) }
 const post = (b: unknown) => new Request('http://localhost/api/hubs/h1/drops', { method: 'POST', body: JSON.stringify(b) }) as any
-const get = (url = 'http://localhost/api/hubs/h1/drops') => new Request(url, { method: 'GET' }) as any
+const get = (qs = '') => new Request(`http://localhost/api/hubs/h1/drops${qs}`, { method: 'GET' }) as any
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -29,6 +29,7 @@ beforeEach(() => {
   ;(db.hubMember.findMany as any).mockResolvedValue([{ userId: 'm1' }])
   ;(db.hubDrop.create as any).mockResolvedValue({ id: 'd1' })
   ;(db.hubDrop.findMany as any).mockResolvedValue([])
+  ;(db.hubDrop.findFirst as any).mockResolvedValue(null)
 })
 
 describe('POST /drops', () => {
@@ -116,5 +117,39 @@ describe('GET /drops', () => {
     await GET(get(), ctx)
     const call = (db.hubDrop.findMany as any).mock.calls[0][0]
     expect(call.where).toMatchObject({ hubId: 'h1', hidden: false })
+  })
+
+  // Same-millisecond drops (the picker uploads a selection in a loop) share a
+  // createdAt, so the ordering must be total or a page boundary drops one.
+  it('orders by createdAt then id', async () => {
+    ;(getUser as any).mockResolvedValue(null)
+    ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true })
+    ;(db.hubDrop.findMany as any).mockResolvedValue([])
+    await GET(get(), ctx)
+    expect((db.hubDrop.findMany as any).mock.calls[0][0].orderBy)
+      .toEqual([{ createdAt: 'desc' }, { id: 'desc' }])
+  })
+
+  it('paginates from a cursor scoped to this hub', async () => {
+    ;(getUser as any).mockResolvedValue(null)
+    ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true })
+    ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'd9' })
+    ;(db.hubDrop.findMany as any).mockResolvedValue([])
+    await GET(get('?cursor=d9'), ctx)
+    expect((db.hubDrop.findFirst as any).mock.calls[0][0].where).toMatchObject({ id: 'd9', hubId: 'h1' })
+    const call = (db.hubDrop.findMany as any).mock.calls[0][0]
+    expect(call.cursor).toEqual({ id: 'd9' })
+    expect(call.skip).toBe(1)
+  })
+
+  it('ignores a cursor belonging to another hub', async () => {
+    ;(getUser as any).mockResolvedValue(null)
+    ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true })
+    ;(db.hubDrop.findFirst as any).mockResolvedValue(null)
+    ;(db.hubDrop.findMany as any).mockResolvedValue([])
+    await GET(get('?cursor=someone-elses-drop'), ctx)
+    const call = (db.hubDrop.findMany as any).mock.calls[0][0]
+    expect(call.cursor).toBeUndefined()
+    expect(call.skip).toBeUndefined()
   })
 })

@@ -44,7 +44,7 @@ export function HubDropsModal({ hubId, onClose }: { hubId: string; onClose: () =
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-surface p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Manage drops ({drops.length})</h2>
+          <h2 className="text-lg font-bold">Manage drops ({drops.length}{cursor ? '+' : ''})</h2>
           <button onClick={onClose} className="rounded-md p-1 text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
         </div>
 
@@ -69,6 +69,18 @@ export function HubDropsModal({ hubId, onClose }: { hubId: string; onClose: () =
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {cursor && (
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => load(cursor)}
+              disabled={loading}
+              className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted disabled:opacity-60"
+            >
+              {loading ? 'Loading…' : 'Load more'}
+            </button>
           </div>
         )}
       </div>
