@@ -80,7 +80,7 @@ export function ExploreClient({
 
   const pickChip = (c: Chip) => { setChip(c); setActiveCategory(null); setSearch('') }
   const pickCategory = (id: string) => { setActiveCategory(id); setChip('all'); setSearch('') }
-  const backToAll = () => { setActiveCategory(null); setSearch('') }
+  const backToAll = () => { setChip('all'); setActiveCategory(null); setSearch('') }
 
   return (
     <div className="relative min-h-screen">
@@ -143,7 +143,7 @@ export function ExploreClient({
             </Section>
 
             {trending.length > 0 && (
-              <ScrollRow title="Trending" subtitle="Most-viewed pages and boards right now." icon={<TrendingUp className="h-4 w-4" />}>
+              <ScrollRow title="Trending" subtitle="Most-viewed pages and boards." icon={<TrendingUp className="h-4 w-4" />}>
                 {trending.map((item) => <TrendingCard key={item.id} item={item} />)}
               </ScrollRow>
             )}
