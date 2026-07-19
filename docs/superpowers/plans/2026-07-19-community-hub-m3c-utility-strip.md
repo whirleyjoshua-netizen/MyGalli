@@ -686,8 +686,7 @@ Create `src/components/hub/builder/HubResourcesModal.test.tsx`:
 
 ```tsx
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { HubResourcesModal } from './HubResourcesModal'
 
 const items = [
@@ -716,9 +715,9 @@ describe('HubResourcesModal', () => {
   it('adds a link through the items API', async () => {
     render(<HubResourcesModal hubId="h1" onClose={() => {}} />)
     await screen.findByText('Welcome Guide.pdf')
-    await userEvent.type(screen.getByPlaceholderText('Title'), 'New Link')
-    await userEvent.type(screen.getByPlaceholderText('https://…'), 'https://new.test')
-    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+    fireEvent.change(screen.getByPlaceholderText('Title'), { target: { value: 'New Link' } })
+    fireEvent.change(screen.getByPlaceholderText('https://…'), { target: { value: 'https://new.test' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
     await waitFor(() => {
       const call = (global.fetch as any).mock.calls.find((c: any[]) => c[1]?.method === 'POST')
       expect(call[0]).toBe('/api/hubs/h1/items')
@@ -968,16 +967,14 @@ git commit -m "feat(m3c): pollNonce opens the composer with a poll block"
 Append to `CommunityUtilityStrip.test.tsx`:
 
 ```tsx
-import userEvent from '@testing-library/user-event'
-
 describe('Tools card', () => {
   it('fires the matching callback for each tool', async () => {
     const onOpenPoll = vi.fn(), onOpenEvents = vi.fn(), onOpenResources = vi.fn()
     render(<CommunityUtilityStrip {...base} isPrivileged onOpenPoll={onOpenPoll} onOpenEvents={onOpenEvents} onOpenResources={onOpenResources} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Polls' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Events' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Files' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Links' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Polls' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Events' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Files' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Links' }))
     expect(onOpenPoll).toHaveBeenCalledTimes(1)
     expect(onOpenEvents).toHaveBeenCalledTimes(1)
     expect(onOpenResources).toHaveBeenCalledTimes(2) // Files and Links share the manager
@@ -985,7 +982,7 @@ describe('Tools card', () => {
 })
 ```
 
-Add `vi` to the vitest import at the top of the file.
+Add `vi` to the vitest import and `fireEvent` to the `@testing-library/react` import at the top of the file.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -1193,8 +1190,7 @@ Create `src/components/hub/builder/WidgetsToolsSection.test.tsx`:
 
 ```tsx
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { WidgetsToolsSection } from './WidgetsToolsSection'
 import { DEFAULT_HUB_CONFIG } from '@/lib/types/hub-config'
 
@@ -1209,7 +1205,7 @@ describe('WidgetsToolsSection', () => {
   it('toggles a card off through onChange', async () => {
     const onChange = vi.fn()
     render(<WidgetsToolsSection config={DEFAULT_HUB_CONFIG} onChange={onChange} hubId="h1" />)
-    await userEvent.click(screen.getAllByRole('checkbox')[0])
+    fireEvent.click(screen.getAllByRole('checkbox')[0])
     expect(onChange).toHaveBeenCalledTimes(1)
     expect(onChange.mock.calls[0][0].utility[0]).toEqual({ key: 'notes', enabled: false })
   })
