@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Globe, FileEdit } from 'lucide-react'
+import { Plus, Globe, FileEdit, Image as ImageIcon } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import type { DashboardPrefs } from '@/lib/types/dashboard'
 import { PageCard, type DashDisplay } from '@/components/dashboard/PageCard'
 import { UpgradePrompt } from '@/components/pro/UpgradePrompt'
+import { PageHero } from '@/components/dashboard/PageHero'
 
 const GRADIENTS = [
   'from-galli/20 via-galli-aqua/10 to-galli-violet/10',
@@ -143,44 +144,42 @@ export default function MyPagesPage() {
   )
 
   return (
-    <div className="px-6 lg:px-8 py-7">
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">Gallery</h1>
-          <p className="text-muted-foreground mt-1">Your pages and boards — live and in progress.</p>
-        </div>
-        {activeTab === 'boards' ? (
-          <button
-            onClick={createBoard}
-            className="inline-flex shrink-0 items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-semibold shadow-soft hover:brightness-105 transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> New board
-          </button>
-        ) : (
-          <button
-            onClick={() => router.push('/editor')}
-            className="inline-flex shrink-0 items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-semibold shadow-soft hover:brightness-105 transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> New page
-          </button>
-        )}
-      </div>
-
-      {/* Tabs */}
-      <div className="flex items-center gap-1 mb-8 border-b border-border">
-        {([['pages', 'Pages', pageCount], ['boards', 'Boards', boardCount]] as const).map(([key, label, count]) => (
+    <div className="pb-7">
+      <PageHero
+        icon={<ImageIcon className="w-7 h-7 text-primary" />}
+        title="Gallery"
+        subtitle="Your pages and boards — live and in progress."
+        action={
+          activeTab === 'boards' ? (
+            <button
+              onClick={createBoard}
+              className="inline-flex shrink-0 items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-semibold shadow-soft hover:brightness-105 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> New board
+            </button>
+          ) : (
+            <button
+              onClick={() => router.push('/editor')}
+              className="inline-flex shrink-0 items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-semibold shadow-soft hover:brightness-105 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> New page
+            </button>
+          )
+        }
+        tabs={([['pages', 'Pages', pageCount], ['boards', 'Boards', boardCount]] as const).map(([key, label, count]) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
-            className={`px-4 py-2.5 -mb-px text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 ${
               activeTab === key ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {label} <span className="font-normal text-muted-foreground">({count})</span>
           </button>
         ))}
-      </div>
+      />
 
+      <div className="px-6 lg:px-8">
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : activeList.length === 0 ? (
@@ -228,6 +227,7 @@ export default function MyPagesPage() {
       )}
 
       <UpgradePrompt isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} feature="Boards" />
+      </div>
     </div>
   )
 }
