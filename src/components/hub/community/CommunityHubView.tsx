@@ -6,6 +6,7 @@ import { CommunityHeader } from './CommunityHeader'
 import { CommunityFeed } from './CommunityFeed'
 import { CommunitySidebar } from './CommunitySidebar'
 import { CommunityKollab } from './CommunityKollab'
+import { CommunityUtilityStrip } from './CommunityUtilityStrip'
 import type { HubConfig } from '@/lib/types/hub-config'
 import type { EventDTO } from '@/lib/hub-events'
 import type { DropDTO } from '@/lib/hub-drops'
@@ -36,6 +37,9 @@ export function CommunityHubView({
 }) {
   const [joined, setJoined] = useState(initialJoined)
   const [count, setCount] = useState(initialCount)
+  const [pollNonce, setPollNonce] = useState(0)
+  const [manageEvents, setManageEvents] = useState(false)
+  const [manageResources, setManageResources] = useState(false)
   const canPost = isPrivileged || joined
 
   async function toggleJoin() {
@@ -47,6 +51,17 @@ export function CommunityHubView({
   return (
     <div className="min-h-screen bg-gradient-to-b from-galli/5 to-transparent">
       <div className="mx-auto max-w-5xl px-4 py-8">
+        <CommunityUtilityStrip
+          hubId={hub.id}
+          config={config}
+          notes={notes ?? []}
+          isOwner={isOwner ?? false}
+          isPrivileged={isPrivileged}
+          preview={preview}
+          onOpenPoll={() => setPollNonce((n) => n + 1)}
+          onOpenEvents={() => setManageEvents(true)}
+          onOpenResources={() => setManageResources(true)}
+        />
         <div className="rounded-3xl border border-border bg-surface p-6 shadow-soft">
           <CommunityHeader
             title={hub.title}
