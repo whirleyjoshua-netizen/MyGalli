@@ -1,3 +1,4 @@
+'use client'
 import { Instagram, Twitter, Youtube, Github, Linkedin, Facebook, Twitch, Music, Mail, Globe, Link as LinkIcon } from 'lucide-react'
 import type { CanvasElement } from '@/lib/types/canvas'
 import { safeHref } from '@/lib/editor/safe-href'

@@ -117,8 +117,12 @@ const plural = (count: number, singular: string, pluralForm: string) =>
 
 const WIDGET_PRIMARY_STAT: Record<string, StatFormatter> = {
   poll: (count, views) => `${views > 0 ? Math.round((count / views) * 100) : 0}% of viewers voted`,
-  rating: (count) => plural(count, 'interaction', 'interactions'),
+  // No 'rating' entry: it would format identically to the generic fallback
+  // below (plural 'interaction'/'interactions'), so it's omitted rather than
+  // duplicated.
   form: (count) => plural(count, 'submission', 'submissions'),
+  // Currently unreachable: no element emits `elementType: 'video'` interaction
+  // events. Left in place for when a video element is added.
   video: (count) => plural(count, 'play', 'plays'),
   // Counts uploaded-file playback only (native <audio> onPlay). Spotify/SoundCloud
   // iframe embeds expose no play event and are never counted here.

@@ -27,7 +27,7 @@ describe('PublicShareBar', () => {
     expect(trackShare).toHaveBeenCalledWith('disp-1', 'twitter')
   })
 
-  it('does not track shares when displayId is empty', () => {
+  it('passes the displayId through to trackShare even when it is an empty string', () => {
     render(<PublicShareBar url="https://galli.page/joshua/my-page" title="My Page" displayId="" />)
     fireEvent.click(screen.getByText('Share this page'))
     fireEvent.click(screen.getByLabelText('Share on X'))

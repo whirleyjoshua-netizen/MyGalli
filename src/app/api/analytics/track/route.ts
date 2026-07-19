@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
-import { isAnalyticsEventType, parseInteractMetadata } from '@/lib/analytics-events'
+import { isAnalyticsEventType, parseInteractMetadata, parseShareChannel } from '@/lib/analytics-events'
 
 // Parse user agent to extract device info
 function parseUserAgent(ua: string | null): {
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       }
       storedMetadata = parsed
     } else if (eventType === 'share') {
-      const channel = typeof metadata?.channel === 'string' ? metadata.channel.trim() : ''
+      const channel = parseShareChannel(metadata)
       storedMetadata = channel ? { channel } : undefined
     }
 

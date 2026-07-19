@@ -1,3 +1,4 @@
+'use client'
 import { Heart } from 'lucide-react'
 import type { CanvasElement } from '@/lib/types/canvas'
 import { safeHref } from '@/lib/editor/safe-href'

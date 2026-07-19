@@ -448,7 +448,7 @@ export function renderElement(element: CanvasElement, displayId?: string) {
       return <PublicIndexElement element={element} />
 
     case 'calendar':
-      return <PublicCalendarElement element={element} displayId={displayId || ''} />
+      return <PublicCalendarElement element={element} />
 
     case 'appointments':
       return <PublicAppointmentsElement element={element} displayId={displayId || ''} />

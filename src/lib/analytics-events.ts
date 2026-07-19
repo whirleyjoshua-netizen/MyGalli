@@ -17,10 +17,13 @@ export interface InteractMetadata {
   action: string
 }
 
+const MAX_METADATA_FIELD_LENGTH = 64
+
 function trimmedString(value: unknown): string | null {
   if (typeof value !== 'string') return null
   const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : null
+  if (trimmed.length === 0 || trimmed.length > MAX_METADATA_FIELD_LENGTH) return null
+  return trimmed
 }
 
 export function parseInteractMetadata(raw: unknown): InteractMetadata | null {
@@ -31,4 +34,12 @@ export function parseInteractMetadata(raw: unknown): InteractMetadata | null {
   const action = trimmedString(source.action)
   if (!elementId || !elementType || !action) return null
   return { elementId, elementType, action }
+}
+
+// Share events carry an optional free-text channel (e.g. 'twitter', 'copy-link').
+// Same length cap as interact metadata fields, for the same reason: the track
+// route is public and unauthenticated, so nothing bounds what a caller sends.
+export function parseShareChannel(raw: unknown): string | null {
+  if (!raw || typeof raw !== 'object') return null
+  return trimmedString((raw as Record<string, unknown>).channel)
 }

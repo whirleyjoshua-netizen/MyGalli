@@ -3,6 +3,7 @@ import {
   ANALYTICS_EVENT_TYPES,
   isAnalyticsEventType,
   parseInteractMetadata,
+  parseShareChannel,
 } from './analytics-events'
 
 describe('isAnalyticsEventType', () => {
@@ -43,5 +44,34 @@ describe('parseInteractMetadata', () => {
   it('trims surrounding whitespace', () => {
     expect(parseInteractMetadata({ elementId: ' el_1 ', elementType: ' poll ', action: ' vote ' }))
       .toEqual({ elementId: 'el_1', elementType: 'poll', action: 'vote' })
+  })
+
+  it('rejects (does not truncate) fields over 64 characters', () => {
+    const long = 'x'.repeat(65)
+    expect(parseInteractMetadata({ elementId: long, elementType: 'poll', action: 'vote' })).toBeNull()
+    expect(parseInteractMetadata({ elementId: 'el_1', elementType: long, action: 'vote' })).toBeNull()
+    expect(parseInteractMetadata({ elementId: 'el_1', elementType: 'poll', action: long })).toBeNull()
+    const exactly64 = 'x'.repeat(64)
+    expect(parseInteractMetadata({ elementId: exactly64, elementType: 'poll', action: 'vote' }))
+      .toEqual({ elementId: exactly64, elementType: 'poll', action: 'vote' })
+  })
+})
+
+describe('parseShareChannel', () => {
+  it('returns the trimmed channel when present', () => {
+    expect(parseShareChannel({ channel: ' twitter ' })).toBe('twitter')
+  })
+
+  it('returns null when absent or not an object', () => {
+    expect(parseShareChannel({})).toBeNull()
+    expect(parseShareChannel(null)).toBeNull()
+    expect(parseShareChannel('nope')).toBeNull()
+  })
+
+  it('rejects (does not truncate) a channel over 64 characters', () => {
+    const long = 'x'.repeat(65)
+    expect(parseShareChannel({ channel: long })).toBeNull()
+    const exactly64 = 'x'.repeat(64)
+    expect(parseShareChannel({ channel: exactly64 })).toBe(exactly64)
   })
 })

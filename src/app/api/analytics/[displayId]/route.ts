@@ -57,8 +57,8 @@ export async function GET(request: NextRequest, { params }: Props) {
     })
 
     const [currentFollowers, previousFollowers, recentFollows] = await Promise.all([
-      db.follow.count({ where: { followingId: display.userId, createdAt: { lt: new Date() } } }),
-      db.follow.count({ where: { followingId: display.userId, createdAt: { lt: startDate } } }),
+      db.follow.count({ where: { followingId: display.userId, createdAt: { gte: startDate } } }),
+      db.follow.count({ where: { followingId: display.userId, createdAt: { gte: previousStart, lt: startDate } } }),
       db.follow.findMany({
         where: { followingId: display.userId, createdAt: { gte: startDate } },
         select: { createdAt: true },
@@ -86,7 +86,9 @@ export async function GET(request: NextRequest, { params }: Props) {
 
     // Calculate summary stats
     const totalViews = events.filter((e) => e.eventType === 'view').length
-    const uniqueSessions = new Set(events.map((e) => e.sessionId).filter(Boolean)).size
+    const uniqueSessions = new Set(
+      events.filter((e) => e.eventType === 'view').map((e) => e.sessionId).filter(Boolean)
+    ).size
 
     // Device breakdown
     const deviceBreakdown = events.reduce(
