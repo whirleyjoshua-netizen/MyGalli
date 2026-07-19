@@ -42,7 +42,7 @@ describe('Data page Overview cockpit', () => {
     render(<AnalyticsPage />)
     // 1,284 renders twice by design: the StatCardRow "Views" card and the
     // ReferrerDonut's totalViews center label share the same summary.views value.
-    await waitFor(() => expect(screen.getAllByText('1,284').length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.getAllByText('1,284').length).toBe(2))
     expect(screen.getByText('Interactions')).toBeTruthy()
     expect(screen.getByText('Page Health')).toBeTruthy()
     expect(screen.getByText('92')).toBeTruthy()
