@@ -1,9 +1,9 @@
 // src/lib/upload-validate.ts
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+export const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const AUDIO_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/ogg', 'audio/wav', 'audio/webm']
 const DOC_TYPES = ['application/pdf']
 export const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime']
-const MAX_IMAGE = 10 * 1024 * 1024
+export const MAX_IMAGE = 10 * 1024 * 1024
 const MAX_AUDIO = 25 * 1024 * 1024
 const MAX_DOC = 25 * 1024 * 1024
 export const MAX_VIDEO = 100 * 1024 * 1024
