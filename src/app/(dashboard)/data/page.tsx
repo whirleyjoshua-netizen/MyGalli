@@ -6,6 +6,7 @@ import { BarChart3, Eye, Users, Monitor, Smartphone, Tablet, Globe, Calendar, In
 import { ElementsTab } from '@/components/analytics/ElementsTab'
 import { BulletinAnalyticsTab } from '@/components/analytics/BulletinAnalyticsTab'
 import { MessagesInbox } from '@/components/dashboard/MessagesInbox'
+import { PageHero } from '@/components/dashboard/PageHero'
 
 interface AnalyticsData {
   display: {
@@ -136,21 +137,14 @@ function AnalyticsContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-background px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-primary shrink-0" />
-              <h1 className="text-xl font-bold">Data</h1>
-            </div>
-          </div>
-
-          {/* Display Selector */}
+      <PageHero
+        icon={<BarChart3 className="w-7 h-7 text-primary" />}
+        title="Data"
+        controls={
           <select
             value={selectedDisplayId || ''}
             onChange={(e) => setSelectedDisplayId(e.target.value)}
-            className="px-3 py-2 border border-border rounded-lg bg-background text-sm min-w-0 max-w-[55%] truncate"
+            className="px-3 py-2 border border-border rounded-lg bg-background text-sm max-w-[200px] truncate"
           >
             <option value="" disabled>
               Select a page
@@ -161,11 +155,9 @@ function AnalyticsContent() {
               </option>
             ))}
           </select>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="max-w-6xl mx-auto mt-4 overflow-x-auto scrollbar-hide -mx-6 px-6">
-          <div className="flex gap-0 w-max">
+        }
+        tabs={
+          <>
             <button
               onClick={() => setActiveTab('overview')}
               className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap shrink-0 ${
@@ -209,9 +201,9 @@ function AnalyticsContent() {
               <Mail className="w-4 h-4" />
               Messages
             </button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main className="max-w-6xl mx-auto px-6 py-8">
         {activeTab === 'messages' ? (

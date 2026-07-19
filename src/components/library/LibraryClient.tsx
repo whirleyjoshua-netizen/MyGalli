@@ -12,6 +12,7 @@ import { useRefreshUser } from '@/lib/use-refresh-user'
 import { ProBadge } from '@/components/pro/ProBadge'
 import { UpgradePrompt } from '@/components/pro/UpgradePrompt'
 import { LibraryAppsTab } from '@/components/library/LibraryAppsTab'
+import { PageHero } from '@/components/dashboard/PageHero'
 
 interface Starter {
   kind: 'template' | 'kit'
@@ -89,27 +90,25 @@ export function LibraryClient() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8">
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight">Library</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Apps, templates, and kits to build your pages.</p>
-      </header>
-
-      <div className="mb-6 flex gap-2 border-b border-border">
-        {TABS.map((t) => (
+    <div className="pb-8">
+      <PageHero
+        icon={<Library className="w-7 h-7 text-primary" />}
+        title="Library"
+        subtitle="Apps, templates, and kits to build your pages."
+        tabs={TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`relative px-3 py-2 text-sm font-semibold transition ${
-              tab === t.id ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 ${
+              tab === t.id ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {t.label}
-            {tab === t.id && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded bg-galli" />}
           </button>
         ))}
-      </div>
+      />
 
+      <div className="mx-auto max-w-7xl px-4 sm:px-8">
       {tab === 'apps' ? (
         <LibraryAppsTab />
       ) : (
@@ -154,6 +153,7 @@ export function LibraryClient() {
         onClose={() => setUpgradeOpen(false)}
         feature={tab === 'kits' ? 'Kits' : 'Templates'}
       />
+      </div>
     </div>
   )
 }

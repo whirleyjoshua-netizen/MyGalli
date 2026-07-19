@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import Image from 'next/image'
 import { Plus, Search, LayoutGrid, List, Database } from 'lucide-react'
+import { PageHero } from '@/components/dashboard/PageHero'
 import { CreateWorkspaceModal } from './CreateWorkspaceModal'
 import { WorkspaceCard, type WorkspaceListItem } from './WorkspaceCard'
 import { FeatureTour, TemplatesComingSoon, TipsRail } from './WorkspacesLandingSections'
@@ -47,23 +47,19 @@ export function WorkspacesListClient() {
   }, [items, search, sort])
 
   return (
-    <div className="px-6 py-7 lg:px-8">
-      {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Workspaces 🌿</h1>
-          <p className="text-muted-foreground">Your data, organized.</p>
-        </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 rounded-lg bg-galli px-4 py-2 font-medium text-white">
-          <Plus size={18} /> New workspace
-        </button>
-      </div>
+    <div className="pb-7">
+      <PageHero
+        icon={<Database className="w-7 h-7 text-primary" />}
+        title="Workspaces"
+        subtitle="Your data, organized."
+        action={
+          <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 rounded-lg bg-galli px-4 py-2 font-medium text-white">
+            <Plus size={18} /> New workspace
+          </button>
+        }
+      />
 
-      {/* Hero banner */}
-      <div className="relative mb-8 h-36 w-full overflow-hidden rounded-2xl border border-border sm:h-44 lg:h-52">
-        <Image src="/workspaces-pond-banner.png" alt="Pond workspace" fill priority className="object-cover" sizes="100vw" />
-      </div>
-
+      <div className="px-6 lg:px-8">
       <FeatureTour />
       <TemplatesComingSoon />
 
@@ -121,6 +117,7 @@ export function WorkspacesListClient() {
           </div>
         )}
       </section>
+      </div>
 
       {showCreate && <CreateWorkspaceModal onClose={() => setShowCreate(false)} />}
     </div>
