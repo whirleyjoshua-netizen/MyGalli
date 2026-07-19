@@ -47,6 +47,23 @@ describe('ReferrerDonut', () => {
     render(<ReferrerDonut referrers={[]} totalViews={0} />)
     expect(screen.getByText(/No referrers yet/i)).toBeTruthy()
   })
+
+  it('renders an arc fraction that agrees with the legend percentage', () => {
+    const { container } = render(<ReferrerDonut referrers={[{ domain: 'instagram.com', count: 32 }, { domain: 'google.com', count: 18 }]} totalViews={100} />)
+    const circles = container.querySelectorAll('circle')
+    const dashArray = circles[0].getAttribute('stroke-dasharray') || ''
+    const dashLength = parseFloat(dashArray.split(' ')[0])
+    const circumference = 2 * Math.PI * 40
+    const arcFraction = dashLength / circumference
+    const legendPercent = parseInt(screen.getByText('32%').textContent || '0', 10)
+    expect(Math.round(arcFraction * 100)).toBeCloseTo(legendPercent, 0)
+  })
+
+  it('renders 0% and not NaN% when totalViews is 0 with referrers present', () => {
+    render(<ReferrerDonut referrers={[{ domain: 'instagram.com', count: 32 }]} totalViews={0} />)
+    expect(screen.getByText('0%')).toBeTruthy()
+    expect(screen.queryByText('NaN%')).toBeFalsy()
+  })
 })
 
 describe('QuickActions', () => {

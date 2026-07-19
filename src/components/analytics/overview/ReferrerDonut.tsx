@@ -15,7 +15,6 @@ export function ReferrerDonut({
   totalViews: number
 }) {
   const top = referrers.slice(0, 5)
-  const total = top.reduce((sum, r) => sum + r.count, 0) || 1
 
   let offset = 0
 
@@ -37,7 +36,7 @@ export function ReferrerDonut({
           <div className="relative mx-auto h-32 w-32">
             <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
               {top.map((referrer, index) => {
-                const fraction = referrer.count / total
+                const fraction = totalViews > 0 ? referrer.count / totalViews : 0
                 const dash = CIRCUMFERENCE * fraction
                 const circle = (
                   <circle
@@ -66,7 +65,9 @@ export function ReferrerDonut({
                   style={{ backgroundColor: SEGMENT_COLORS[index % SEGMENT_COLORS.length] }}
                 />
                 <span className="min-w-0 flex-1 truncate text-muted-foreground">{referrer.domain}</span>
-                <span className="shrink-0 font-medium">{Math.round((referrer.count / totalViews) * 100)}%</span>
+                <span className="shrink-0 font-medium">
+                  {totalViews > 0 ? Math.round((referrer.count / totalViews) * 100) : 0}%
+                </span>
               </li>
             ))}
           </ul>
