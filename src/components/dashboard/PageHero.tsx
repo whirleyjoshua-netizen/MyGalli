@@ -22,7 +22,7 @@ export function PageHero({ icon, title, subtitle, action, controls, tabs }: Page
           sizes="60vw"
           className="object-cover object-right"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/25 to-transparent" />
       </div>
 
       {/* Header row */}

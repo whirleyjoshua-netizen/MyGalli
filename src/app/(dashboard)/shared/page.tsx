@@ -74,7 +74,7 @@ function MyPondContent() {
         title="My Pond"
         subtitle="Communities you&apos;ve joined and pages you collaborate on."
         controls={
-          <div className="flex items-center rounded-xl border border-border overflow-hidden">
+          <div className="flex items-center rounded-xl border border-border overflow-hidden bg-surface/80 backdrop-blur-sm">
             <button aria-label="Grid view" onClick={() => setViewPersist('grid')} className={`p-2 ${view === 'grid' ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}><LayoutGrid className="w-4 h-4" /></button>
             <button aria-label="List view" onClick={() => setViewPersist('list')} className={`p-2 ${view === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}><List className="w-4 h-4" /></button>
           </div>
