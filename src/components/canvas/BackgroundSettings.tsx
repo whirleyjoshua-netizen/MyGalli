@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Palette, Sparkles, Grid3X3, Image, Upload } from 'lucide-react'
+import { X, Palette, Sparkles, Grid3X3, Image } from 'lucide-react'
 import type { BackgroundConfig } from '@/lib/types/background'
 import {
   PRESET_COLORS,
   PRESET_GRADIENTS,
   PRESET_PATTERNS,
 } from '@/lib/types/background'
+import { ImageUploadField } from '@/components/ui/ImageUploadField'
 
 interface BackgroundSettingsProps {
   isOpen: boolean
@@ -185,27 +186,17 @@ export function BackgroundSettingsBody({
           {/* Image */}
           {activeTab === 'image' && (
             <div>
-              <label className="block text-sm font-medium mb-3">
-                Image URL
-              </label>
-              <input
-                type="url"
-                placeholder="https://example.com/image.jpg"
-                value={config.imageUrl || ''}
-                onChange={(e) =>
-                  onChange({ ...config, type: 'image', imageUrl: e.target.value })
+              <ImageUploadField
+                label="Background image"
+                value={config.imageUrl}
+                onChange={(url) =>
+                  onChange({ ...config, type: 'image', imageUrl: url })
                 }
-                className="w-full px-3 py-2 border border-border rounded-lg bg-background mb-4"
+                previewAspect="wide"
               />
 
               {config.imageUrl && (
-                <div className="space-y-4">
-                  {/* Preview */}
-                  <div
-                    className="h-32 rounded-lg border border-border bg-cover bg-center"
-                    style={{ backgroundImage: `url(${config.imageUrl})` }}
-                  />
-
+                <div className="mt-4 space-y-4">
                   {/* Image Mode */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
