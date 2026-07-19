@@ -34,14 +34,14 @@ beforeEach(() => {
 describe('POST /drops', () => {
   it('401 when logged out', async () => {
     ;(getUser as any).mockResolvedValue(null)
-    const res = await POST(post({ type: 'image', url: 'https://x/y.jpg' }), ctx)
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/y.jpg' }), ctx)
     expect(res.status).toBe(401)
   })
 
   it('403 for a non-member', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'stranger', username: 's', name: null, avatar: null })
     ;(db.hubMember.findUnique as any).mockResolvedValue(null)
-    const res = await POST(post({ type: 'image', url: 'https://x/y.jpg' }), ctx)
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/y.jpg' }), ctx)
     expect(res.status).toBe(403)
   })
 
@@ -49,7 +49,7 @@ describe('POST /drops', () => {
     ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: null, avatar: null })
     ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club', config: { kollab: { enabled: true, whoCanDrop: 'owner-only' } }, user: { username: 'o' } })
     ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
-    const res = await POST(post({ type: 'image', url: 'https://x/y.jpg' }), ctx)
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/y.jpg' }), ctx)
     expect(res.status).toBe(403)
   })
 
@@ -57,20 +57,30 @@ describe('POST /drops', () => {
     ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: null, avatar: null })
     ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club', config: { kollab: { enabled: false, whoCanDrop: 'members' } }, user: { username: 'o' } })
     ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
-    const res = await POST(post({ type: 'image', url: 'https://x/y.jpg' }), ctx)
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/y.jpg' }), ctx)
     expect(res.status).toBe(403)
   })
 
   it('201 for a member drop + notifies', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: 'M', avatar: null })
     ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
-    const res = await POST(post({ type: 'image', url: 'https://x/y.jpg', caption: 'hi' }), ctx)
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/y.jpg', caption: 'hi' }), ctx)
     expect(res.status).toBe(201)
     expect(await res.json()).toEqual({ id: 'd1' })
     expect(db.hubDrop.create).toHaveBeenCalled()
     const [targets, input] = (notifyHubMembers as any).mock.calls[0]
     expect([...targets]).toEqual(['owner'])
     expect(input.type).toBe('hub_drop')
+  })
+
+  // A member can skip the Blob token route and POST here directly; an off-host
+  // url would then render as <img src> for every visitor.
+  it('400 for a drop url outside our Blob store', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: 'M', avatar: null })
+    ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
+    const res = await POST(post({ type: 'image', url: 'https://attacker.example/tracker.gif' }), ctx)
+    expect(res.status).toBe(400)
+    expect(db.hubDrop.create).not.toHaveBeenCalled()
   })
 
   it('400 on invalid type', async () => {
