@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
   await createNotification({
     userId: display.userId, type: 'message',
     actor: { id: null, name: senderName || 'Someone' },
-    entityUrl: '/data?tab=messages', contextText: display.title,
+    entityUrl: '/messages', contextText: display.title,
   })
 
   return NextResponse.json({ ok: true }, { status: 201 })
