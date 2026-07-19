@@ -49,6 +49,7 @@ model User {
   hubPostReactions HubPostReaction[]
   hubPostComments HubPostComment[] @relation("HubPostCommentAuthor")
   hubPostResponses HubPostResponse[]
+  hubDrops HubDrop[]
   ownedWorkspaces          Workspace[]       @relation("OwnedWorkspaces")
   workspaceRecordsCreated  WorkspaceRecord[] @relation("WorkspaceRecordsCreated")
   workspaceRecordsUpdated  WorkspaceRecord[] @relation("WorkspaceRecordsUpdated")
@@ -588,6 +589,7 @@ model Hub {
   members     HubMember[]
   posts       HubPost[]
   hubEvents   HubEvent[]
+  drops       HubDrop[]
   @@unique([userId, slug])
   @@index([userId])
   @@index([displayId])
@@ -655,6 +657,24 @@ model HubNoteBookmark {
   createdAt DateTime @default(now())
   @@index([hubId, itemId])
   @@index([noteId])
+}
+
+model HubDrop {
+  id           String   @id @default(cuid())
+  hubId        String
+  hub          Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User     @relation(fields: [authorId], references: [id])
+  type         String
+  url          String
+  thumbnailUrl String?
+  caption      String?
+  mimeType     String?
+  width        Int?
+  height       Int?
+  hidden       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  @@index([hubId, createdAt])
 }
 
 model HubCollaborator {
