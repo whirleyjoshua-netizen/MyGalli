@@ -35,7 +35,7 @@ function VouchArt() {
       <path d="M62.5 40l2.5 2.5 4.5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       {/* name + role lines */}
       <rect x="80" y="42" width="70" height="7" rx="3.5" className="fill-galli-dark/25" />
-      <rect x="80" y="55" width="46" height="6" rx="3" className="fill-galli-dark/12" />
+      <rect x="80" y="55" width="46" height="6" rx="3" className="fill-galli-dark/10" />
       {/* stars */}
       {[0, 1, 2, 3, 4].map((i) => (
         <path
