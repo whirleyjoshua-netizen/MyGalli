@@ -10,6 +10,16 @@ export function visibleNotes<T extends { visibility: string }>(notes: T[], isOwn
   return isOwner ? notes : notes.filter((n) => n.visibility === 'public')
 }
 
+// The strip's Notes card renders these four fields and nothing else. Keeping the
+// DTO narrow means a private note's metadata can never leak through the payload.
+export type StripNote = { id: string; title: string; content: string; color: string }
+
+export function toStripNote(row: {
+  id: string; title: string; content: string; color: string
+}): StripNote {
+  return { id: row.id, title: row.title, content: row.content, color: row.color }
+}
+
 export function resolveNoteLink(
   note: { linkedItemId: string | null },
   items: { id: string; url: string | null }[]

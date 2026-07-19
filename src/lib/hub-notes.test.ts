@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { LINKABLE_ITEM_TYPES, linkableItems, visibleNotes, resolveNoteLink } from './hub-notes'
+import { LINKABLE_ITEM_TYPES, linkableItems, visibleNotes, resolveNoteLink, toStripNote } from './hub-notes'
 
 describe('LINKABLE_ITEM_TYPES', () => {
   it('includes file/link/embed but not note', () => {
@@ -53,5 +53,25 @@ describe('resolveNoteLink', () => {
   })
   it('returns null when the linked item has no url', () => {
     expect(resolveNoteLink({ linkedItemId: 'z' }, items)).toBeNull()
+  })
+})
+
+describe('toStripNote', () => {
+  const row = {
+    id: 'n1', title: 'Welcome', content: 'Share ideas', color: '#FDE047',
+    visibility: 'private', linkedItemId: 'item1', order: 3, minimized: false,
+  }
+
+  it('maps only the fields the strip renders', () => {
+    expect(toStripNote(row)).toEqual({
+      id: 'n1', title: 'Welcome', content: 'Share ideas', color: '#FDE047',
+    })
+  })
+
+  // The DTO crosses to the client; visibility/linkedItemId must not ride along.
+  it('omits visibility and linkedItemId', () => {
+    const dto = toStripNote(row) as Record<string, unknown>
+    expect(dto.visibility).toBeUndefined()
+    expect(dto.linkedItemId).toBeUndefined()
   })
 })

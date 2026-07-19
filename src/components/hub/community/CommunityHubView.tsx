@@ -9,23 +9,26 @@ import { CommunityKollab } from './CommunityKollab'
 import type { HubConfig } from '@/lib/types/hub-config'
 import type { EventDTO } from '@/lib/hub-events'
 import type { DropDTO } from '@/lib/hub-drops'
+import type { StripNote } from '@/lib/hub-notes'
 
 type CommunityMember = { userId: string; username: string; name: string | null; avatar: string | null }
 type CommunityResource = { id: string; type: string; title: string; url: string | null }
 
 export function CommunityHubView({
-  hub, ownerUsername, currentUserId, isPrivileged, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, counts, sharePath, config, preview,
+  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, notes, counts, sharePath, config, preview,
 }: {
   hub: { id: string; title: string; tagline: string | null; description: string | null; coverImage: string | null; heroVideoUrl: string | null }
   ownerUsername: string
   currentUserId?: string
   isPrivileged: boolean
+  isOwner?: boolean
   joined: boolean
   memberCount: number
   members: CommunityMember[]
   resources: CommunityResource[]
   events?: EventDTO[]
   drops: DropDTO[]
+  notes?: StripNote[]
   counts: { posts: number; members: number; resources: number; events: number; kollab: number }
   sharePath: string
   config: HubConfig
