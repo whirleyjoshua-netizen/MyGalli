@@ -53,6 +53,14 @@ describe('POST /drops', () => {
     expect(res.status).toBe(403)
   })
 
+  it('403 for a plain member when the pool is disabled', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: null, avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club', config: { kollab: { enabled: false, whoCanDrop: 'members' } }, user: { username: 'o' } })
+    ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
+    const res = await POST(post({ type: 'image', url: 'https://x/y.jpg' }), ctx)
+    expect(res.status).toBe(403)
+  })
+
   it('201 for a member drop + notifies', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: 'M', avatar: null })
     ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })

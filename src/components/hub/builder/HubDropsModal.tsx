@@ -34,8 +34,12 @@ export function HubDropsModal({ hubId, onClose }: { hubId: string; onClose: () =
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {drops.map((d) => (
               <div key={d.id} className={`relative aspect-square overflow-hidden rounded-lg border border-border bg-muted ${d.hidden ? 'opacity-50' : ''}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={d.thumbnailUrl || (d.type === 'image' ? d.url : '')} alt={d.caption ?? ''} className="h-full w-full object-cover" />
+                {(d.thumbnailUrl || d.type === 'image') ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={d.thumbnailUrl || d.url} alt={d.caption ?? ''} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-black/80 text-xs text-white/40">Video</div>
+                )}
                 <div className="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1.5 py-0.5 text-[10px] text-white">{d.author.name ?? d.author.username}</div>
                 <div className="absolute right-1 top-1 flex gap-1">
                   <button onClick={() => toggleHide(d)} title={d.hidden ? 'Unhide' : 'Hide'} className="rounded bg-black/60 p-1 text-white hover:bg-black/80">

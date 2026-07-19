@@ -59,6 +59,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const isPrivileged = me.id === hub.userId || collabIds.includes(me.id)
   const participates = canParticipate(me.id, hub, collabIds, isMember)
   const config = sanitizeHubConfig(hub.config)
+  if (!config.kollab.enabled && !isPrivileged) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
   if (!canDropToPool({ canParticipate: participates, whoCanDrop: config.kollab.whoCanDrop, isPrivileged })) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
