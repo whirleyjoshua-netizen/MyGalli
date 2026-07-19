@@ -69,7 +69,7 @@ export function deriveSectionLabel(section: Section, index: number): string {
   if (elements.length > 0) {
     const counts = new Map<string, number>()
     for (const el of elements) counts.set(el.type, (counts.get(el.type) || 0) + 1)
-    let dominant = elements[0].type
+    let dominant: string = elements[0].type
     let best = 0
     for (const [type, count] of counts) {
       if (count > best) {
