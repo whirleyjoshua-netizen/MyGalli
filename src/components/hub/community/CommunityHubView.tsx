@@ -5,14 +5,16 @@ import { Leaf, Search } from 'lucide-react'
 import { CommunityHeader } from './CommunityHeader'
 import { CommunityFeed } from './CommunityFeed'
 import { CommunitySidebar } from './CommunitySidebar'
+import { CommunityKollab } from './CommunityKollab'
 import type { HubConfig } from '@/lib/types/hub-config'
 import type { EventDTO } from '@/lib/hub-events'
+import type { DropDTO } from '@/lib/hub-drops'
 
 type CommunityMember = { userId: string; username: string; name: string | null; avatar: string | null }
 type CommunityResource = { id: string; type: string; title: string; url: string | null }
 
 export function CommunityHubView({
-  hub, ownerUsername, currentUserId, isPrivileged, joined: initialJoined, memberCount: initialCount, members, resources, events, counts, sharePath, config, preview,
+  hub, ownerUsername, currentUserId, isPrivileged, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, counts, sharePath, config, preview,
 }: {
   hub: { id: string; title: string; tagline: string | null; description: string | null; coverImage: string | null; heroVideoUrl: string | null }
   ownerUsername: string
@@ -23,7 +25,8 @@ export function CommunityHubView({
   members: CommunityMember[]
   resources: CommunityResource[]
   events?: EventDTO[]
-  counts: { posts: number; members: number; resources: number; events: number }
+  drops: DropDTO[]
+  counts: { posts: number; members: number; resources: number; events: number; kollab: number }
   sharePath: string
   config: HubConfig
   preview?: boolean
@@ -63,6 +66,20 @@ export function CommunityHubView({
             </div>
           </div>
         </div>
+
+        {config.kollab.enabled && (
+          <div className="mt-6">
+            <CommunityKollab
+              hubId={hub.id}
+              canDrop={config.kollab.whoCanDrop === 'owner-only' ? isPrivileged : (isPrivileged || joined)}
+              isPrivileged={isPrivileged}
+              currentUserId={currentUserId}
+              enabled={config.kollab.enabled}
+              initialDrops={drops}
+              preview={preview}
+            />
+          </div>
+        )}
 
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
           <CommunityFeed hubId={hub.id} canPost={canPost} isPrivileged={isPrivileged} currentUserId={currentUserId} config={config} preview={preview} />

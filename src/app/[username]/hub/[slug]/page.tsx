@@ -11,6 +11,7 @@ import { CommunityHubView } from '@/components/hub/community/CommunityHubView'
 import { canViewCommunityHub } from '@/lib/community'
 import { sanitizeHubConfig } from '@/lib/hub-config'
 import { toEventDTO } from '@/lib/hub-events'
+import { toDropDTO } from '@/lib/hub-drops'
 
 interface Props {
   params: Promise<{ username: string; slug: string }>
@@ -67,17 +68,24 @@ export default async function PublicHubPage({ params }: Props) {
   // Community hubs render the community page and gate on their own published flag.
   if (hub.community) {
     if (!canViewCommunityHub({ published: hub.published, isPrivileged })) notFound()
-    const [memberRows, items, postsCount, mine, eventRows, eventsCount] = await Promise.all([
+    const [memberRows, items, postsCount, mine, eventRows, eventsCount, dropRows, dropsCount] = await Promise.all([
       db.hubMember.findMany({ where: { hubId: hub.id }, select: { userId: true, user: { select: { username: true, name: true, avatar: true } } } }),
       db.hubItem.findMany({ where: { hubId: hub.id, visibility: 'public', type: { in: ['file', 'link'] } }, orderBy: { createdAt: 'desc' } }),
       db.hubPost.count({ where: { hubId: hub.id } }),
       viewerUser ? db.hubMember.findUnique({ where: { hubId_userId: { hubId: hub.id, userId: viewerUser.id } }, select: { id: true } }) : Promise.resolve(null),
       db.hubEvent.findMany({ where: { hubId: hub.id, startsAt: { gte: new Date() } }, orderBy: { startsAt: 'asc' }, take: 6 }),
       db.hubEvent.count({ where: { hubId: hub.id, startsAt: { gte: new Date() } } }),
+      db.hubDrop.findMany({
+        where: { hubId: hub.id, hidden: false },
+        orderBy: { createdAt: 'desc' }, take: 24,
+        include: { author: { select: { id: true, username: true, name: true, avatar: true } } },
+      }),
+      db.hubDrop.count({ where: { hubId: hub.id, hidden: false } }),
     ])
     const members = memberRows.map((m) => ({ userId: m.userId, username: m.user.username, name: m.user.name, avatar: m.user.avatar }))
     const resources = items.map((i) => ({ id: i.id, type: i.type, title: i.title, url: i.url }))
     const events = eventRows.map(toEventDTO)
+    const drops = dropRows.map(toDropDTO)
     const config = sanitizeHubConfig(hub.config)
     return (
       <CommunityHubView
@@ -90,7 +98,8 @@ export default async function PublicHubPage({ params }: Props) {
         members={members}
         resources={resources}
         events={events}
-        counts={{ posts: postsCount, members: members.length, resources: resources.length, events: eventsCount }}
+        drops={drops}
+        counts={{ posts: postsCount, members: members.length, resources: resources.length, events: eventsCount, kollab: dropsCount }}
         sharePath={`/${user.username}/hub/${slug}`}
         config={config}
       />
