@@ -8,6 +8,14 @@ import type { DropDTO } from '@/lib/hub-drops'
 async function captureVideoPoster(file: File): Promise<Blob | null> {
   return new Promise((resolve) => {
     try {
+      let settled = false
+      const finish = (result: Blob | null) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timeout)
+        resolve(result)
+      }
+      const timeout = setTimeout(() => finish(null), 3000)
       const video = document.createElement('video')
       video.preload = 'metadata'
       video.muted = true
@@ -17,11 +25,11 @@ async function captureVideoPoster(file: File): Promise<Blob | null> {
         const canvas = document.createElement('canvas')
         canvas.width = video.videoWidth; canvas.height = video.videoHeight
         const ctx = canvas.getContext('2d')
-        if (!ctx) return resolve(null)
+        if (!ctx) return finish(null)
         ctx.drawImage(video, 0, 0)
-        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.8)
+        canvas.toBlob((b) => finish(b), 'image/jpeg', 0.8)
       }
-      video.onerror = () => resolve(null)
+      video.onerror = () => finish(null)
     } catch { resolve(null) }
   })
 }
@@ -83,6 +91,7 @@ export function CommunityKollab({
   }
 
   async function remove(id: string) {
+    if (preview) return
     if (!confirm('Remove this from the pool?')) return
     const res = await fetch(`/api/hubs/${hubId}/drops/${id}`, { method: 'DELETE' })
     if (res.ok) setDrops((cur) => cur.filter((d) => d.id !== id))
@@ -119,8 +128,12 @@ export function CommunityKollab({
           {drops.map((d) => (
             <div key={d.id} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
               <button onClick={() => setLightbox(d)} className="block h-full w-full">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={d.thumbnailUrl || (d.type === 'image' ? d.url : '')} alt={d.caption || ''} className="h-full w-full object-cover" />
+                {(d.thumbnailUrl || d.type === 'image') ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={d.thumbnailUrl || d.url} alt={d.caption || ''} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-black/80 text-xs text-white/40">Video</div>
+                )}
                 {d.type === 'video' && (
                   <span className="absolute inset-0 flex items-center justify-center">
                     <Play className="h-8 w-8 text-white drop-shadow" fill="currentColor" />
