@@ -11,6 +11,7 @@ export function HubResourcesModal({ hubId, onClose }: { hubId: string; onClose: 
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // The hub GET is owner-gated and already returns every item; filter to the two
   // types the public Resources widget renders.
@@ -23,15 +24,15 @@ export function HubResourcesModal({ hubId, onClose }: { hubId: string; onClose: 
   useEffect(() => { load() }, [hubId])
 
   async function add() {
-    if (!title.trim()) return
-    setBusy(true)
+    if (!title.trim() || !url.trim()) return
+    setBusy(true); setError(null)
     try {
       const res = await fetch(`/api/hubs/${hubId}/items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: kind, title: title.trim(), url: url.trim() || null }),
       })
-      if (!res.ok) return
+      if (!res.ok) { setError((await res.json().catch(() => ({}))).error || 'Failed'); return }
       const created = await res.json()
       setItems((cur) => [...cur, { id: created.id, type: created.type, title: created.title, url: created.url }])
       setTitle(''); setUrl('')
@@ -42,8 +43,10 @@ export function HubResourcesModal({ hubId, onClose }: { hubId: string; onClose: 
 
   async function remove(id: string) {
     if (!window.confirm('Remove this resource?')) return
+    setError(null)
     const res = await fetch(`/api/hubs/${hubId}/items/${id}`, { method: 'DELETE' })
     if (res.ok) setItems((cur) => cur.filter((i) => i.id !== id))
+    else setError((await res.json().catch(() => ({}))).error || 'Failed')
   }
 
   return (
@@ -77,7 +80,8 @@ export function HubResourcesModal({ hubId, onClose }: { hubId: string; onClose: 
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="flex-1 rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm" />
           </div>
           <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm" />
-          <button onClick={add} disabled={busy || !title.trim()} className="w-full rounded-lg bg-galli py-2 text-sm font-medium text-white disabled:opacity-50">Add</button>
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <button onClick={add} disabled={busy || !title.trim() || !url.trim()} className="w-full rounded-lg bg-galli py-2 text-sm font-medium text-white disabled:opacity-50">Add</button>
         </div>
       </div>
     </div>

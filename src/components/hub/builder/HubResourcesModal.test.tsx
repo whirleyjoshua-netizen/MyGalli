@@ -43,4 +43,26 @@ describe('HubResourcesModal', () => {
     await screen.findByText('Welcome Guide.pdf')
     expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled()
   })
+
+  it('requires a url before Add is enabled', async () => {
+    render(<HubResourcesModal hubId="h1" onClose={() => {}} />)
+    await screen.findByText('Welcome Guide.pdf')
+    fireEvent.change(screen.getByPlaceholderText('Title'), { target: { value: 'New Link' } })
+    expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled()
+  })
+
+  it('shows an error message when adding fails', async () => {
+    global.fetch = vi.fn(async (url: any, init?: any) => {
+      if (String(url).endsWith('/api/hubs/h1')) return { ok: true, json: async () => ({ items }) } as any
+      if (init?.method === 'POST') return { ok: false, status: 500, json: async () => ({ error: 'Could not add resource' }) } as any
+      return { ok: true, json: async () => ({}) } as any
+    }) as any
+    render(<HubResourcesModal hubId="h1" onClose={() => {}} />)
+    await screen.findByText('Welcome Guide.pdf')
+    fireEvent.change(screen.getByPlaceholderText('Title'), { target: { value: 'New Link' } })
+    fireEvent.change(screen.getByPlaceholderText('https://…'), { target: { value: 'https://new.test' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(await screen.findByText('Could not add resource')).toBeInTheDocument()
+    expect(screen.queryByText('New Link')).toBeNull()
+  })
 })
