@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { canParticipate } from '@/lib/community'
+import { canParticipate, isUserBanned } from '@/lib/community'
 import { rateLimit } from '@/lib/rate-limit'
 import { isHubReactionEmoji, summarizeReactions } from '@/lib/hub-reactions'
 
@@ -30,7 +30,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const isMember = !!(await db.hubMember.findUnique({ where: { hubId_userId: { hubId: id, userId: me.id } }, select: { id: true } }))
   const collabIds = await collaboratorIds(id)
-  if (!canParticipate(me.id, hub, collabIds, isMember)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const isBanned = await isUserBanned(id, me.id)
+  if (!canParticipate(me.id, hub, collabIds, isMember, isBanned)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   await db.hubPostReaction.upsert({
     where: { postId_userId_emoji: { postId, userId: me.id, emoji } },
     create: { postId, userId: me.id, emoji },

@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { createNotification } from '@/lib/notifications'
+import { isUserBanned } from '@/lib/community'
 
 async function loadCommunityHub(id: string) {
   const hub = await db.hub.findUnique({ where: { id }, select: { id: true, userId: true, title: true, community: true } })
@@ -19,6 +20,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const hub = await loadCommunityHub(id)
   if (!hub) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (hub.userId === me.id) return NextResponse.json({ error: 'You own this hub' }, { status: 400 })
+  if (await isUserBanned(id, me.id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const existing = await db.hubMember.findUnique({ where: { hubId_userId: { hubId: id, userId: me.id } }, select: { id: true } })
   if (!existing) {
