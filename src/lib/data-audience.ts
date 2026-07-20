@@ -82,3 +82,86 @@ export function visitorSplit(
     returningVisitors,
   }
 }
+
+// `utcOffsetMinutes` is Date.prototype.getTimezoneOffset(): minutes BEHIND UTC,
+// so UTC-5 is +300. Zones with a sub-hour offset round to the nearest hour.
+export function peakHours(hourCountsUtc: number[], utcOffsetMinutes: number): number[] {
+  const shift = Math.round(-utcOffsetMinutes / 60)
+  const local = new Array<number>(24).fill(0)
+  for (let utcHour = 0; utcHour < 24; utcHour++) {
+    const localHour = (((utcHour + shift) % 24) + 24) % 24
+    local[localHour] += hourCountsUtc[utcHour] ?? 0
+  }
+  return local
+}
+
+export type SourceCategory = 'search' | 'social' | 'direct' | 'community' | 'referral'
+
+export const SOURCE_LABELS: Record<SourceCategory, string> = {
+  search: 'Search',
+  social: 'Social',
+  direct: 'Direct',
+  community: 'Galli community',
+  referral: 'Other sites',
+}
+
+const SEARCH_HOSTS = ['google.', 'bing.', 'duckduckgo.', 'yahoo.', 'ecosia.', 'brave.']
+const SOCIAL_HOSTS = [
+  'instagram.', 'tiktok.', 'facebook.', 'twitter.', 'x.com', 't.co',
+  'linkedin.', 'pinterest.', 'reddit.', 'youtube.', 'threads.',
+]
+
+function matchesHost(host: string, needles: string[]): boolean {
+  return needles.some((needle) => host === needle || host.includes(needle))
+}
+
+export function classifySource(
+  referrer: string | null,
+  utmSource: string | null,
+  ownHost: string
+): SourceCategory {
+  // An explicit campaign tag is more trustworthy than the referrer header.
+  const utm = utmSource?.trim().toLowerCase()
+  if (utm) {
+    if (matchesHost(utm, SEARCH_HOSTS.map((h) => h.replace('.', '')))) return 'search'
+    if (matchesHost(utm, SOCIAL_HOSTS.map((h) => h.replace('.', '')))) return 'social'
+  }
+
+  if (!referrer) return 'direct'
+
+  let host: string
+  try {
+    host = new URL(referrer).hostname.toLowerCase()
+  } catch {
+    // A referrer we cannot parse tells us nothing; do not invent a source.
+    return 'direct'
+  }
+
+  if (host === ownHost.toLowerCase() || host.endsWith(`.${ownHost.toLowerCase()}`)) return 'community'
+  if (matchesHost(host, SEARCH_HOSTS)) return 'search'
+  if (matchesHost(host, SOCIAL_HOSTS)) return 'social'
+  return 'referral'
+}
+
+const COUNTRY_NAMES: Record<string, string> = {
+  US: 'United States', GB: 'United Kingdom', DE: 'Germany', FR: 'France',
+  CA: 'Canada', AU: 'Australia', JP: 'Japan', BR: 'Brazil', IN: 'India',
+  NL: 'Netherlands', ES: 'Spain', IT: 'Italy', SE: 'Sweden', MX: 'Mexico',
+  KR: 'South Korea', IE: 'Ireland', NZ: 'New Zealand', ZA: 'South Africa',
+  NG: 'Nigeria', PL: 'Poland', PT: 'Portugal', NO: 'Norway', DK: 'Denmark',
+  FI: 'Finland', CH: 'Switzerland', AT: 'Austria', BE: 'Belgium', SG: 'Singapore',
+}
+
+// Regional-indicator symbols: 'US' -> 🇺🇸. Only well-formed two-letter codes
+// produce a flag; anything else renders a globe so the row never looks broken.
+export function countryLabel(code: string): { flag: string; name: string } {
+  const upper = (code ?? '').trim().toUpperCase()
+  const name = COUNTRY_NAMES[upper] ?? upper
+
+  if (!/^[A-Z]{2}$/.test(upper)) return { flag: '🌐', name }
+
+  const flag = String.fromCodePoint(
+    ...Array.from(upper).map((ch) => 0x1f1e6 + (ch.charCodeAt(0) - 65))
+  )
+  return { flag, name }
+}
