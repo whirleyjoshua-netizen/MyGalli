@@ -207,4 +207,23 @@ describe('MessagesClient', () => {
     })
     expect(screen.queryByText('this belongs to c1')).not.toBeInTheDocument()
   })
+
+  describe('starting a conversation', () => {
+    it('creates the conversation and selects it', async () => {
+      const created = vi.fn(async () => ({ ok: true, json: async () => ({ id: 'cNew' }) }))
+      global.fetch = vi.fn(async (url: any, init?: any) => {
+        const href = String(url)
+        if (href.endsWith('/api/dm/conversations') && init?.method === 'POST') return created() as any
+        if (href.includes('/messages')) return { ok: true, json: async () => ({ messages: [] }) } as any
+        return { ok: true, json: async () => ({ conversations: [] }) } as any
+      }) as any
+      vi.spyOn(window, 'prompt').mockReturnValue('sarah')
+
+      render(<MessagesClient myId="me" />)
+      fireEvent.click(screen.getByRole('button', { name: /new message/i }))
+
+      await waitFor(() => expect(created).toHaveBeenCalled())
+      await waitFor(() => expect(push).toHaveBeenCalledWith('/messages?c=cNew'))
+    })
+  })
 })

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, PenSquare } from 'lucide-react'
 import { usePolling } from '@/hooks/usePolling'
 import type { DmConversationSummary, DmMessage } from '@/lib/types/dm'
 import { MessagesInbox } from '@/components/dashboard/MessagesInbox'
@@ -169,6 +169,30 @@ export function MessagesClient({ myId }: { myId: string }) {
     void deliver({ ...m, failed: false, pending: true })
   }
 
+  const startConversation = async () => {
+    const username = window.prompt('Message which member? Enter their username.')?.trim()
+    if (!username) return
+    setBusy(true)
+    try {
+      const res = await fetch('/api/dm/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username }),
+      })
+      if (!res.ok) {
+        window.alert(res.status === 404 ? 'No member with that username.' : 'Could not start that conversation.')
+        return
+      }
+      const data = await res.json()
+      await loadConversations()
+      router.push(`/messages?c=${data.id}`)
+    } catch {
+      window.alert('Could not start that conversation.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const setState = async (state: 'accepted' | 'blocked') => {
     if (!activeId) return
     setBusy(true)
@@ -203,6 +227,13 @@ export function MessagesClient({ myId }: { myId: string }) {
             {t.label}
           </button>
         ))}
+        <button
+          onClick={startConversation}
+          disabled={busy}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-galli px-4 py-1.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+        >
+          <PenSquare className="h-4 w-4" /> New Message
+        </button>
       </div>
 
       {failures >= 3 && (
