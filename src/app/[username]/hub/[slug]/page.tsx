@@ -79,13 +79,20 @@ export default async function PublicHubPage({ params }: Props) {
       db.hubEvent.findMany({ where: { hubId: hub.id, startsAt: { gte: new Date() } }, orderBy: { startsAt: 'asc' }, take: 6 }),
       db.hubEvent.count({ where: { hubId: hub.id, startsAt: { gte: new Date() } } }),
       db.hubDrop.findMany({
-        where: { hubId: hub.id, hidden: false },
+        // Mirrors the drops list API: privileged viewers (owner/collaborator) can
+        // see pending (hidden) drops so they have something to moderate/approve.
+        where: isPrivileged ? { hubId: hub.id } : { hubId: hub.id, hidden: false },
         orderBy: { createdAt: 'desc' }, take: 24,
         include: { author: { select: { id: true, username: true, name: true, avatar: true } } },
       }),
-      db.hubDrop.count({ where: { hubId: hub.id, hidden: false } }),
+      // Must apply the same hidden filter as the list above — CommunityKollab
+      // compares drops.length to this count to decide whether to show "Load more".
+      db.hubDrop.count({ where: isPrivileged ? { hubId: hub.id } : { hubId: hub.id, hidden: false } }),
       db.hubNote.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
       db.hubPost.count({ where: { hubId: hub.id, createdAt: { gte: activitySince } } }),
+      // Deliberately always hidden:false here (unlike the list/count above): this
+      // feeds the public "N clips added" activity metric and should not count
+      // unapproved/pending uploads.
       db.hubDrop.count({ where: { hubId: hub.id, hidden: false, createdAt: { gte: activitySince } } }),
       db.hubMember.count({ where: { hubId: hub.id, createdAt: { gte: activitySince } } }),
     ])

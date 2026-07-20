@@ -179,6 +179,11 @@ export function CommunityKollab({
         <div className={`grid gap-2 ${narrow ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'}`}>
           {drops.map((d) => (
             <div key={d.id} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
+              {isPrivileged && d.hidden && (
+                <span className="absolute left-1 top-1 z-10 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
+                  Pending
+                </span>
+              )}
               <button onClick={() => setLightbox(d)} className="block h-full w-full">
                 {(d.thumbnailUrl || d.type === 'image') ? (
                   // eslint-disable-next-line @next/next/no-img-element
