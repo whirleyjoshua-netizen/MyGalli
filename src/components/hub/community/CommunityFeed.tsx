@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { BulletinPostCard, type FeedPost } from '@/components/bulletin/BulletinPostCard'
 import { HubPostComposer } from '@/components/hub/HubPostComposer'
 import { HubPostComments } from '@/components/hub/HubPostComments'
+import { ReportButton } from '@/components/hub/ReportButton'
 import type { HubConfig } from '@/lib/types/hub-config'
 
 export function CommunityFeed({
@@ -43,6 +44,15 @@ export function CommunityFeed({
               canModerate={isPrivileged}
               canReact={canPost}
               onDeleted={(delId) => setPosts((cur) => cur.filter((x) => x.id !== delId))}
+              reportSlot={
+                <ReportButton
+                  hubId={hubId}
+                  targetType="post"
+                  targetId={p.id}
+                  authorId={p.author.id}
+                  currentUserId={currentUserId}
+                />
+              }
             />
             <HubPostComments
               hubId={hubId}

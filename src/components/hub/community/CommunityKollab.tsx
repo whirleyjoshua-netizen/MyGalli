@@ -2,9 +2,10 @@
 
 import { useRef, useState } from 'react'
 import { upload } from '@vercel/blob/client'
-import { ImagePlus, Loader2, Play, X, Trash2 } from 'lucide-react'
+import { ImagePlus, Loader2, Play, X, Trash2, Check } from 'lucide-react'
 import { dropPathPrefix, type DropDTO } from '@/lib/hub-drops'
 import { consentTextFor } from '@/lib/hub-consent'
+import { ReportButton } from '@/components/hub/ReportButton'
 
 async function captureVideoPoster(file: File): Promise<Blob | null> {
   return new Promise((resolve) => {
@@ -135,6 +136,14 @@ export function CommunityKollab({
     if (res.ok) { setDrops((cur) => cur.filter((d) => d.id !== id)); setCount((c) => Math.max(0, c - 1)) }
   }
 
+  async function approve(id: string) {
+    if (preview) return
+    const res = await fetch(`/api/hubs/${hubId}/drops/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hidden: false }),
+    })
+    if (res.ok) setDrops((cur) => cur.map((d) => (d.id === id ? { ...d, hidden: false } : d)))
+  }
+
   return (
     <section className="rounded-2xl border border-border bg-surface p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -170,6 +179,11 @@ export function CommunityKollab({
         <div className={`grid gap-2 ${narrow ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'}`}>
           {drops.map((d) => (
             <div key={d.id} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
+              {isPrivileged && d.hidden && (
+                <span className="absolute left-1 top-1 z-10 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
+                  Pending
+                </span>
+              )}
               <button onClick={() => setLightbox(d)} className="block h-full w-full">
                 {(d.thumbnailUrl || d.type === 'image') ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -183,11 +197,26 @@ export function CommunityKollab({
                   </span>
                 )}
               </button>
-              {(isPrivileged || d.author.userId === currentUserId) && (
-                <button onClick={() => remove(d.id)} title="Remove" className="absolute right-1 top-1 rounded-md bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              )}
+              <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition group-hover:opacity-100">
+                {isPrivileged && d.hidden && (
+                  <button onClick={() => approve(d.id)} title="Approve" className="rounded-md bg-black/60 p-1 text-white hover:bg-black/80">
+                    <Check className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <ReportButton
+                  hubId={hubId}
+                  targetType="drop"
+                  targetId={d.id}
+                  authorId={d.author.userId}
+                  currentUserId={currentUserId}
+                  className="rounded-md bg-black/60 p-1 text-white hover:bg-black/80"
+                />
+                {(isPrivileged || d.author.userId === currentUserId) && (
+                  <button onClick={() => remove(d.id)} title="Remove" className="rounded-md bg-black/60 p-1 text-white hover:bg-black/80">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

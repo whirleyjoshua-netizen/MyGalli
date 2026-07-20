@@ -14,6 +14,7 @@ import { HubProfileSection } from './HubProfileSection'
 import { HubSettingsSection } from './HubSettingsSection'
 import { CommunitySettingsSection } from './CommunitySettingsSection'
 import { WidgetsToolsSection } from './WidgetsToolsSection'
+import { ModerationQueue } from './ModerationQueue'
 
 type HubState = {
   id: string; title: string; tagline: string | null; description: string | null
@@ -74,6 +75,7 @@ export function HubBuilder({ hubId }: { hubId: string }) {
           {section === 'widgets' && <WidgetsToolsSection config={config} onChange={setConfig} hubId={merged.id} />}
           {section === 'profile' && <HubProfileSection hub={merged} onField={setField} />}
           {section === 'community' && <CommunitySettingsSection config={config} onChange={setConfig} />}
+          {section === 'moderation' && <ModerationQueue hubId={merged.id} />}
         </main>
         <aside className="hidden w-[420px] shrink-0 overflow-y-auto border-l border-border bg-muted/30 p-4 xl:block">
           <HubBuilderPreview hub={merged} config={config} />
