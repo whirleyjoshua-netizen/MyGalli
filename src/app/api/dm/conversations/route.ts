@@ -140,6 +140,8 @@ export async function POST(request: NextRequest) {
     where: { followerId: target.id, followingId: user.id },
     select: { id: true },
   })
+  // Conversation.key is unique per user pair, and we only reach here because the query
+  // at line 136 confirmed no conversation exists yet, so there cannot be prior accepted history.
   const recipientState = initialParticipantState({
     recipientFollowsSender: !!follows,
     hasAcceptedHistory: false,
