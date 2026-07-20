@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { usePolling } from './usePolling'
 
 beforeEach(() => vi.useFakeTimers())
@@ -55,9 +55,9 @@ describe('usePolling', () => {
     const fn = vi.fn().mockRejectedValue(new Error('offline'))
     const { result } = renderHook(() => usePolling(fn, { intervalMs: 1000 }))
     await act(async () => { await vi.advanceTimersByTimeAsync(3000) })
-    await waitFor(() => expect(result.current.failures).toBeGreaterThanOrEqual(3))
+    expect(result.current.failures).toBeGreaterThanOrEqual(3)
     fn.mockResolvedValue(undefined)
     await act(async () => { await vi.advanceTimersByTimeAsync(60_000) })
-    await waitFor(() => expect(result.current.failures).toBe(0))
+    expect(result.current.failures).toBe(0)
   })
 })
