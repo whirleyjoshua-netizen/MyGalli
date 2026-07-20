@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { isAnalyticsEventType, parseInteractMetadata } from '@/lib/analytics-events'
-import { countryFromHeaders } from './route'
+import { countryFromHeaders } from './geo'
 
 describe('track route validation helpers', () => {
   it('only allows the three known event types', () => {
