@@ -12,11 +12,40 @@ function getSessionId(): string {
   return sessionId
 }
 
+// Persistent per-browser id. Unlike the session id (sessionStorage, dies with
+// the tab) this survives across visits, which is what makes "returning
+// visitor" answerable. Opaque random value — no PII.
+// Wrapped in try/catch because localStorage throws in some privacy modes;
+// analytics must never break the page.
+function getVisitorId(): string {
+  if (typeof window === 'undefined') return ''
+
+  try {
+    let visitorId = localStorage.getItem('galli_visitor_id')
+    if (!visitorId) {
+      visitorId = `vis_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+      localStorage.setItem('galli_visitor_id', visitorId)
+    }
+    return visitorId
+  } catch {
+    return ''
+  }
+}
+
 // Track a page view
 export async function trackPageView(displayId: string): Promise<void> {
-  try {
-    const sessionId = getSessionId()
+  let sessionId = ''
+  let visitorId = ''
 
+  try {
+    sessionId = getSessionId()
+  } catch (error) {
+    console.error('Analytics tracking failed:', error)
+  }
+
+  visitorId = getVisitorId()
+
+  try {
     await fetch('/api/analytics/track', {
       method: 'POST',
       headers: {
@@ -26,6 +55,7 @@ export async function trackPageView(displayId: string): Promise<void> {
         displayId,
         eventType: 'view',
         sessionId,
+        visitorId,
       }),
     })
   } catch (error) {
@@ -40,9 +70,18 @@ export async function trackEvent(
   eventType: string,
   metadata?: Record<string, unknown>
 ): Promise<void> {
-  try {
-    const sessionId = getSessionId()
+  let sessionId = ''
+  let visitorId = ''
 
+  try {
+    sessionId = getSessionId()
+  } catch (error) {
+    console.error('Analytics tracking failed:', error)
+  }
+
+  visitorId = getVisitorId()
+
+  try {
     await fetch('/api/analytics/track', {
       method: 'POST',
       headers: {
@@ -52,6 +91,7 @@ export async function trackEvent(
         displayId,
         eventType,
         sessionId,
+        visitorId,
         metadata,
       }),
     })
