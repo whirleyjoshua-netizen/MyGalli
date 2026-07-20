@@ -23,10 +23,31 @@ describe('toMemberDTO', () => {
 
 const hub = { userId: 'owner1' }
 describe('canParticipate', () => {
-  it('owner can', () => expect(canParticipate('owner1', hub, [], false)).toBe(true))
-  it('collaborator can', () => expect(canParticipate('c1', hub, ['c1'], false)).toBe(true))
-  it('member can', () => expect(canParticipate('m1', hub, [], true)).toBe(true))
-  it('stranger cannot', () => expect(canParticipate('x1', hub, [], false)).toBe(false))
+  it('owner can', () => expect(canParticipate('owner1', hub, [], false, false)).toBe(true))
+  it('collaborator can', () => expect(canParticipate('c1', hub, ['c1'], false, false)).toBe(true))
+  it('member can', () => expect(canParticipate('m1', hub, [], true, false)).toBe(true))
+  it('stranger cannot', () => expect(canParticipate('x1', hub, [], false, false)).toBe(false))
+})
+
+describe('canParticipate — banned users', () => {
+  const hub = { userId: 'owner' }
+
+  it('refuses a banned member even though a membership row exists', () => {
+    expect(canParticipate('member', hub, [], true, true)).toBe(false)
+  })
+
+  it('still allows an unbanned member', () => {
+    expect(canParticipate('member', hub, [], true, false)).toBe(true)
+  })
+
+  // A ban must never lock the owner out of their own hub.
+  it('never locks out the owner', () => {
+    expect(canParticipate('owner', hub, [], false, true)).toBe(true)
+  })
+
+  it('refuses a banned collaborator', () => {
+    expect(canParticipate('collab', hub, ['collab'], false, true)).toBe(false)
+  })
 })
 describe('canModerate', () => {
   it('owner/collab moderate', () => {

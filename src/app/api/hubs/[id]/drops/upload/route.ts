@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { canParticipate } from '@/lib/community'
+import { canParticipate, isUserBanned } from '@/lib/community'
 import { sanitizeHubConfig, canDropToPool } from '@/lib/hub-config'
 import { blobReadWriteToken } from '@/lib/storage-env'
 import { dropPathPrefix } from '@/lib/hub-drops'
@@ -22,12 +22,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const collabIds = (await db.hubCollaborator.findMany({ where: { hubId: id }, select: { userId: true } })).map((r) => r.userId)
   const isMember = !!(await db.hubMember.findUnique({ where: { hubId_userId: { hubId: id, userId: me.id } }, select: { id: true } }))
+  const isBanned = await isUserBanned(id, me.id)
   const isPrivileged = me.id === hub.userId || collabIds.includes(me.id)
   const config = sanitizeHubConfig(hub.config)
   if (!config.kollab.enabled && !isPrivileged) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
-  const allowed = canDropToPool({ canParticipate: canParticipate(me.id, hub, collabIds, isMember), whoCanDrop: config.kollab.whoCanDrop, isPrivileged })
+  const allowed = canDropToPool({ canParticipate: canParticipate(me.id, hub, collabIds, isMember, isBanned), whoCanDrop: config.kollab.whoCanDrop, isPrivileged })
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = (await request.json()) as HandleUploadBody

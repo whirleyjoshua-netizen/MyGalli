@@ -126,7 +126,7 @@ export function LibraryClient() {
         ))}
       />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-8">
+      <div className="px-6 pb-10 lg:px-8">
       {tab === 'apps' ? (
         <LibraryAppsTab query={query} />
       ) : (

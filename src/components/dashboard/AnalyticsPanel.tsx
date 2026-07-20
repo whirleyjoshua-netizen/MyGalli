@@ -133,7 +133,7 @@ export function AnalyticsPanel({ display, username }: { display: DashDisplay | n
   )
 
   return (
-    <aside className="hidden xl:flex w-[360px] shrink-0 flex-col border-l border-border">
+    <aside className="relative z-10 hidden xl:flex w-[360px] shrink-0 flex-col border-l border-border">
       <div className="flex border-b border-border">
         <button
           onClick={() => setTab('glance')}

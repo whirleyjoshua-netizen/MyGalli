@@ -6,7 +6,7 @@ describe('sanitizeHubConfig — utility strip', () => {
   it('defaults to all three cards enabled, in order', () => {
     expect(sanitizeHubConfig(null).utility).toEqual([
       { key: 'notes', enabled: true },
-      { key: 'ai', enabled: true },
+      { key: 'activity', enabled: true },
       { key: 'tools', enabled: true },
     ])
   })
@@ -22,14 +22,14 @@ describe('sanitizeHubConfig — utility strip', () => {
     expect(sanitizeHubConfig(raw).utility).toEqual([
       { key: 'tools', enabled: false },
       { key: 'notes', enabled: true },
-      { key: 'ai', enabled: true },
+      { key: 'activity', enabled: true },
     ])
   })
 
   it('drops unknown keys and de-dupes, without throwing', () => {
     const raw = { utility: [{ key: 'evil' }, { key: 'notes', enabled: false }, { key: 'notes', enabled: true }] }
     const out = sanitizeHubConfig(raw).utility
-    expect(out.map((w) => w.key)).toEqual(['notes', 'ai', 'tools'])
+    expect(out.map((w) => w.key)).toEqual(['notes', 'activity', 'tools'])
     expect(out[0].enabled).toBe(false)
   })
 
@@ -39,6 +39,16 @@ describe('sanitizeHubConfig — utility strip', () => {
   })
 
   it('exports exactly the three keys', () => {
-    expect([...HUB_UTILITY_KEYS]).toEqual(['notes', 'ai', 'tools'])
+    expect([...HUB_UTILITY_KEYS]).toEqual(['notes', 'activity', 'tools'])
+  })
+
+  // Hubs saved while the strip still had a Kollab AI slot must not break.
+  it('drops a legacy ai key and appends activity', () => {
+    const legacy = { utility: [{ key: 'notes', enabled: true }, { key: 'ai', enabled: true }, { key: 'tools', enabled: false }] }
+    expect(sanitizeHubConfig(legacy).utility).toEqual([
+      { key: 'notes', enabled: true },
+      { key: 'tools', enabled: false },
+      { key: 'activity', enabled: true },
+    ])
   })
 })

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Check, Trash2, ShieldCheck, Share2, Blocks, Puzzle, Link2, Users, Sprout, HelpCircle } from 'lucide-react'
+import { Plus, Check, Trash2, ShieldCheck, Share2, Blocks, Puzzle, Link2, Users, Sprout, Code2 } from 'lucide-react'
 import { listedApps } from '@/lib/cards/registry'
 import { useAuthStore } from '@/lib/store'
 import { isPro } from '@/lib/plan'
@@ -268,18 +268,20 @@ export function LibraryAppsTab({ query = '' }: { query?: string }) {
           <div className="flex flex-col items-start justify-between gap-3 rounded-2xl border border-border bg-surface p-5 shadow-soft sm:flex-row sm:items-center">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                <HelpCircle className="h-5 w-5" />
+                <Code2 className="h-5 w-5" />
               </span>
               <div>
-                <h3 className="text-sm font-bold">Can&apos;t find what you&apos;re looking for?</h3>
-                <p className="text-sm text-muted-foreground">A developer portal to build and request apps is on the way.</p>
+                <h3 className="text-sm font-bold">Developer Community · Coming Soon</h3>
+                <p className="text-sm text-muted-foreground">
+                  Build apps for My Galli, publish them to the Library, and help decide what gets made next.
+                </p>
               </div>
             </div>
             <button
               disabled
               className="shrink-0 cursor-not-allowed rounded-full border border-border px-4 py-2 text-sm font-semibold text-muted-foreground"
             >
-              Request an App · Coming soon
+              Join the Community · Coming soon
             </button>
           </div>
         </>

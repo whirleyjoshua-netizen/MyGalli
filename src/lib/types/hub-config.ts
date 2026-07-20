@@ -1,7 +1,7 @@
 export const HUB_SIDEBAR_KEYS = ['video', 'members', 'events', 'resources'] as const
 export type HubSidebarKey = (typeof HUB_SIDEBAR_KEYS)[number]
 export type HubSidebarWidget = { key: HubSidebarKey; enabled: boolean }
-export const HUB_UTILITY_KEYS = ['notes', 'ai', 'tools'] as const
+export const HUB_UTILITY_KEYS = ['notes', 'activity', 'tools'] as const
 export type HubUtilityKey = (typeof HUB_UTILITY_KEYS)[number]
 export type HubUtilityWidget = { key: HubUtilityKey; enabled: boolean }
 export type HubWhoCanPost = 'members' | 'owner-only'
@@ -12,7 +12,7 @@ export type HubConfig = {
   utility: HubUtilityWidget[]
   feed: { composerEnabled: boolean; loadMoreEnabled: boolean; emptyStateText?: string }
   access: { whoCanPost: HubWhoCanPost }
-  kollab: { enabled: boolean; whoCanDrop: HubWhoCanDrop }
+  kollab: { enabled: boolean; whoCanDrop: HubWhoCanDrop; requireApproval: boolean }
 }
 
 export const DEFAULT_HUB_CONFIG: HubConfig = {
@@ -24,10 +24,10 @@ export const DEFAULT_HUB_CONFIG: HubConfig = {
   ],
   utility: [
     { key: 'notes', enabled: true },
-    { key: 'ai', enabled: true },
+    { key: 'activity', enabled: true },
     { key: 'tools', enabled: true },
   ],
   feed: { composerEnabled: true, loadMoreEnabled: true },
   access: { whoCanPost: 'members' },
-  kollab: { enabled: true, whoCanDrop: 'members' },
+  kollab: { enabled: true, whoCanDrop: 'members', requireApproval: false },
 }

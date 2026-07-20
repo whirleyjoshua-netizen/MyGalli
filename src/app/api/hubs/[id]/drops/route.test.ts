@@ -8,6 +8,7 @@ vi.mock('@/lib/db', () => ({
     hub: { findUnique: vi.fn() },
     hubCollaborator: { findMany: vi.fn() },
     hubMember: { findUnique: vi.fn(), findMany: vi.fn() },
+    hubBan: { findUnique: vi.fn() },
     hubDrop: { create: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
   },
 }))
@@ -27,6 +28,7 @@ beforeEach(() => {
   ;(db.hubCollaborator.findMany as any).mockResolvedValue([])
   ;(db.hubMember.findUnique as any).mockResolvedValue(null)
   ;(db.hubMember.findMany as any).mockResolvedValue([{ userId: 'm1' }])
+  ;(db.hubBan.findUnique as any).mockResolvedValue(null)
   ;(db.hubDrop.create as any).mockResolvedValue({ id: 'd1' })
   ;(db.hubDrop.findMany as any).mockResolvedValue([])
   ;(db.hubDrop.findFirst as any).mockResolvedValue(null)
@@ -92,6 +94,26 @@ describe('POST /drops', () => {
     const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/avatars/victim.jpg' }), ctx)
     expect(res.status).toBe(400)
     expect(db.hubDrop.create).not.toHaveBeenCalled()
+  })
+
+  it('sets hidden and snapshots consentText for a member drop when approval is required', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: 'M', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club', config: { kollab: { enabled: true, whoCanDrop: 'members', requireApproval: true } }, user: { username: 'o' } })
+    ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1/y.jpg' }), ctx)
+    expect(res.status).toBe(201)
+    const data = (db.hubDrop.create as any).mock.calls[0][0].data
+    expect(data.hidden).toBe(true)
+    expect(data.consentText).toContain('Club')
+  })
+
+  it('does not gate a privileged user by their own approval requirement', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club', config: { kollab: { enabled: true, whoCanDrop: 'members', requireApproval: true } }, user: { username: 'o' } })
+    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1/y.jpg' }), ctx)
+    expect(res.status).toBe(201)
+    const data = (db.hubDrop.create as any).mock.calls[0][0].data
+    expect(data.hidden).toBe(false)
   })
 
   it('400 on invalid type', async () => {
