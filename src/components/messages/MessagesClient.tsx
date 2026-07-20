@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { usePolling } from '@/hooks/usePolling'
@@ -39,6 +39,14 @@ export function MessagesClient({ myId }: { myId: string }) {
 
   const active = conversations.find((c) => c.id === activeId) || null
 
+  // Tracks the currently-selected conversation so in-flight fetches can tell,
+  // after their await resolves, whether the user has since switched away.
+  // A closed-over `activeId` would be stale; this ref is always current.
+  const activeIdRef = useRef(activeId)
+  useEffect(() => {
+    activeIdRef.current = activeId
+  }, [activeId])
+
   const loadConversations = useCallback(async () => {
     const res = await fetch(`/api/dm/conversations?filter=${tab === 'visitor' ? 'all' : tab}`, {
       cache: 'no-store',
@@ -50,7 +58,12 @@ export function MessagesClient({ myId }: { myId: string }) {
 
   const loadThread = useCallback(async () => {
     if (!activeId) return
+    const requestedFor = activeId
     const res = await fetch(`/api/dm/conversations/${activeId}/messages`, { cache: 'no-store' })
+    // The selection may have moved on while this request was in flight; a
+    // response for a conversation the user is no longer viewing must never
+    // overwrite the thread they're now looking at.
+    if (activeIdRef.current !== requestedFor) return
     // A stale or hand-typed ?c= must not leave the reader staring at a blank
     // column — say so and drop the selection.
     if (res.status === 404) {
@@ -60,6 +73,7 @@ export function MessagesClient({ myId }: { myId: string }) {
     if (!res.ok) throw new Error('thread failed')
     setMissing(false)
     const data = await res.json()
+    if (activeIdRef.current !== requestedFor) return
     setMessages(Array.isArray(data.messages) ? data.messages : [])
   }, [activeId])
 
@@ -67,11 +81,14 @@ export function MessagesClient({ myId }: { myId: string }) {
   // is not re-fetched every 5 seconds.
   const pollThread = useCallback(async () => {
     if (!activeId) return
+    const requestedFor = activeId
     const newest = [...messages].reverse().find((m) => !m.pending && !m.failed)
     const qs = newest ? `?after=${encodeURIComponent(newest.createdAt)}` : ''
     const res = await fetch(`/api/dm/conversations/${activeId}/messages${qs}`, { cache: 'no-store' })
+    if (activeIdRef.current !== requestedFor) return
     if (!res.ok) throw new Error('poll failed')
     const data = await res.json()
+    if (activeIdRef.current !== requestedFor) return
     const incoming: DmMessage[] = Array.isArray(data.messages) ? data.messages : []
     if (incoming.length === 0) return
     setMessages((prev) => {
@@ -114,7 +131,14 @@ export function MessagesClient({ myId }: { myId: string }) {
         })
         if (!res.ok) throw new Error('send failed')
         const data = await res.json()
-        setMessages((prev) => prev.map((m) => (m.id === optimistic.id ? data.message : m)))
+        setMessages((prev) => {
+          // A poll may have already inserted this same server message while
+          // the POST was in flight. Drop that copy before swapping in the
+          // optimistic entry so exactly one entry for this id survives, in
+          // the optimistic entry's position.
+          const withoutServerCopy = prev.filter((m) => m.id !== data.message.id)
+          return withoutServerCopy.map((m) => (m.id === optimistic.id ? data.message : m))
+        })
       } catch {
         setMessages((prev) =>
           prev.map((m) => (m.id === optimistic.id ? { ...m, pending: false, failed: true } : m))
