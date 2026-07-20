@@ -1,19 +1,27 @@
+import { cookies } from 'next/headers'
+import { Suspense } from 'react'
 import { Mail } from 'lucide-react'
+import { verifyAuth } from '@/lib/auth'
+import { AUTH_COOKIE } from '@/lib/constants'
 import { PageHero } from '@/components/dashboard/PageHero'
-import { MessagesInbox } from '@/components/dashboard/MessagesInbox'
+import { MessagesClient } from '@/components/messages/MessagesClient'
 
-export default function MessagesPage() {
+export default async function MessagesPage() {
+  const token = (await cookies()).get(AUTH_COOKIE)?.value
+  const auth = token ? await verifyAuth(token) : null
+
   return (
     <div className="min-h-screen bg-background">
       <PageHero
         icon={<Mail className="w-7 h-7 text-primary" />}
         title="Messages"
-        subtitle="Written and voice messages from your visitors, all in one inbox."
+        subtitle="Conversations with members, plus written and voice notes from your visitors."
       />
-
-      <main className="w-full px-4 py-8 sm:px-6">
-        <MessagesInbox />
-      </main>
+      {/* useSearchParams needs a Suspense boundary to avoid opting the whole
+          route into client-side rendering at build time. */}
+      <Suspense fallback={<p className="px-6 py-8 text-sm text-muted-foreground lg:px-8">Loading…</p>}>
+        <MessagesClient myId={auth?.id ?? ''} />
+      </Suspense>
     </div>
   )
 }
