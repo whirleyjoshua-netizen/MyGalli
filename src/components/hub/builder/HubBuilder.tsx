@@ -13,6 +13,7 @@ import { LayoutSectionsSection } from './LayoutSectionsSection'
 import { HubProfileSection } from './HubProfileSection'
 import { HubSettingsSection } from './HubSettingsSection'
 import { CommunitySettingsSection } from './CommunitySettingsSection'
+import { WidgetsToolsSection } from './WidgetsToolsSection'
 
 type HubState = {
   id: string; title: string; tagline: string | null; description: string | null
@@ -70,6 +71,7 @@ export function HubBuilder({ hubId }: { hubId: string }) {
         <main className="min-w-0 flex-1 overflow-y-auto p-6">
           {section === 'settings' && <HubSettingsSection hub={merged} onField={setField} />}
           {section === 'layout' && <LayoutSectionsSection config={config} onChange={setConfig} hubId={merged.id} />}
+          {section === 'widgets' && <WidgetsToolsSection config={config} onChange={setConfig} hubId={merged.id} />}
           {section === 'profile' && <HubProfileSection hub={merged} onField={setField} />}
           {section === 'community' && <CommunitySettingsSection config={config} onChange={setConfig} />}
         </main>

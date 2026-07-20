@@ -1,8 +1,10 @@
 import {
   HUB_SIDEBAR_KEYS,
+  HUB_UTILITY_KEYS,
   DEFAULT_HUB_CONFIG,
   type HubConfig,
   type HubSidebarKey,
+  type HubUtilityKey,
   type HubWhoCanPost,
   type HubWhoCanDrop,
 } from './types/hub-config'
@@ -31,6 +33,21 @@ export function sanitizeHubConfig(raw: unknown): HubConfig {
     if (!seen.has(key)) sidebar.push({ key, enabled: true })
   }
 
+  const seenUtility = new Set<HubUtilityKey>()
+  const utility: HubConfig['utility'] = []
+  if (Array.isArray(r.utility)) {
+    for (const w of r.utility) {
+      const key = w?.key
+      if ((HUB_UTILITY_KEYS as readonly string[]).includes(key) && !seenUtility.has(key)) {
+        seenUtility.add(key)
+        utility.push({ key, enabled: bool(w?.enabled, true) })
+      }
+    }
+  }
+  for (const key of HUB_UTILITY_KEYS) {
+    if (!seenUtility.has(key)) utility.push({ key, enabled: true })
+  }
+
   const feedRaw = (r.feed && typeof r.feed === 'object' ? r.feed : {}) as Record<string, any>
   const emptyStateText =
     typeof feedRaw.emptyStateText === 'string' ? feedRaw.emptyStateText.slice(0, 200) : undefined
@@ -42,6 +59,7 @@ export function sanitizeHubConfig(raw: unknown): HubConfig {
 
   return {
     sidebar,
+    utility,
     feed: {
       composerEnabled: bool(feedRaw.composerEnabled, DEFAULT_HUB_CONFIG.feed.composerEnabled),
       loadMoreEnabled: bool(feedRaw.loadMoreEnabled, DEFAULT_HUB_CONFIG.feed.loadMoreEnabled),

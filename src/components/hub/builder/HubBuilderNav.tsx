@@ -2,17 +2,17 @@
 
 import { Settings, LayoutGrid, User, Users, Palette, Boxes, Search } from 'lucide-react'
 
-export type BuilderSection = 'settings' | 'layout' | 'profile' | 'community'
+export type BuilderSection = 'settings' | 'layout' | 'profile' | 'community' | 'widgets'
 
 const ITEMS: { key: BuilderSection; label: string; sub: string; icon: any; enabled: boolean }[] = [
   { key: 'settings', label: 'Hub Settings', sub: 'Manage the basics', icon: Settings, enabled: true },
   { key: 'layout', label: 'Layout & Sections', sub: 'Customize what appears', icon: LayoutGrid, enabled: true },
+  { key: 'widgets', label: 'Widgets & Tools', sub: 'Top utility widgets', icon: Boxes, enabled: true },
   { key: 'profile', label: 'Hub Profile', sub: "Your hub's identity", icon: User, enabled: true },
   { key: 'community', label: 'Community Settings', sub: 'Permissions & access', icon: Users, enabled: true },
 ]
 const SOON: { label: string; sub: string; icon: any }[] = [
   { label: 'Appearance', sub: 'Themes, colors & visuals', icon: Palette },
-  { label: 'Widgets & Tools', sub: 'Top utility widgets', icon: Boxes },
   { label: 'SEO & Sharing', sub: 'Optimize & share', icon: Search },
 ]
 

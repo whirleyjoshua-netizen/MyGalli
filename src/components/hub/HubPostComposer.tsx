@@ -1,16 +1,24 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CanvasElement } from '@/lib/types/canvas'
 import { makeBlock, BlockEditor } from '@/components/bulletin/BlockEditor'
 import { BarChart3, Star, MessageSquareText } from 'lucide-react'
 
-export function HubPostComposer({ hubId, onPosted }: { hubId: string; onPosted: () => void }) {
+export function HubPostComposer({ hubId, onPosted, pollNonce }: { hubId: string; onPosted: () => void; pollNonce?: number }) {
   const [text, setText] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [block, setBlock] = useState<CanvasElement | null>(null)
   const [revealAfterAnswer, setReveal] = useState(false)
   const [liveTally, setLive] = useState(true)
   const [busy, setBusy] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  // Driven by the Tools card. A counter (not a boolean) so repeat presses re-fire.
+  useEffect(() => {
+    if (!pollNonce) return
+    setBlock(makeBlock('poll'))
+    rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [pollNonce])
 
   async function submit() {
     if (!text.trim() && !imageUrl && !block) return
@@ -28,7 +36,7 @@ export function HubPostComposer({ hubId, onPosted }: { hubId: string; onPosted: 
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div ref={rootRef} className="rounded-xl border border-border bg-surface p-4">
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
