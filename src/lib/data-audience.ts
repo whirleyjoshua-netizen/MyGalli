@@ -113,12 +113,28 @@ const SOCIAL_BRANDS = [
 // Too generic to match as a domain label (`t`, `x`) — matched as exact hosts instead.
 const SOCIAL_EXACT_HOSTS = ['t.co', 'x.com']
 
-// True when any dot-separated label of `host` exactly equals a brand name.
-// This is what stops `student.com` from matching `t.co`-style substrings and
-// `mygoogle.com` from matching `google` — a label must be the WHOLE segment.
+// Common second-level public suffixes (e.g. `co.uk`) — when the second-to-last
+// label is one of these, the real registrable-domain label is one further back.
+const CC_SECOND_LEVEL_LABELS = ['co', 'com', 'org', 'net', 'ac', 'gov', 'edu']
+
+// Resolves the single label of `host` that represents the registrable brand
+// name — e.g. `facebook` for `m.facebook.com`, `google` for `google.co.uk`.
+// Only this one label is matched against brand lists, never the whole array,
+// so `facebook.evil.com` (whose registrable label is `evil`) is rejected.
+function registrableLabel(host: string): string | null {
+  const labels = host.split('.').filter(Boolean)
+  if (labels.length < 2) return null
+  const sld = labels[labels.length - 2]
+  if (CC_SECOND_LEVEL_LABELS.includes(sld) && labels.length >= 3) {
+    return labels[labels.length - 3]
+  }
+  return sld
+}
+
+// True when the host's registrable-domain label exactly equals a brand name.
 function hasLabelMatch(host: string, brands: string[]): boolean {
-  const labels = host.split('.')
-  return brands.some((brand) => labels.includes(brand))
+  const label = registrableLabel(host)
+  return label !== null && brands.includes(label)
 }
 
 function isExactHost(host: string, hosts: string[]): boolean {

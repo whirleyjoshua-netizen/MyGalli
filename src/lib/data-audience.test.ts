@@ -223,6 +223,19 @@ describe('classifySource', () => {
       expect(SOURCE_LABELS[category]).toBeTruthy()
     }
   })
+
+  it('does not misclassify a brand used as a leading subdomain of an unrelated host', () => {
+    expect(classifySource('https://facebook.evil.com/x', null, own)).toBe('referral')
+    expect(classifySource('https://google.evil.com/x', null, own)).toBe('referral')
+  })
+
+  it('still matches a brand behind a country-code second-level domain', () => {
+    expect(classifySource('https://google.co.uk/search?q=x', null, own)).toBe('search')
+  })
+
+  it('does not throw on a bare hostname with no dot', () => {
+    expect(() => classifySource('https://localhost/x', null, own)).not.toThrow()
+  })
 })
 
 describe('countryLabel', () => {
