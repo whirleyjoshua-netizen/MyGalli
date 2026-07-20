@@ -13,12 +13,13 @@ import type { HubConfig } from '@/lib/types/hub-config'
 import type { EventDTO } from '@/lib/hub-events'
 import type { DropDTO } from '@/lib/hub-drops'
 import type { StripNote } from '@/lib/hub-notes'
+import type { ActivityCounts } from '@/lib/hub-activity'
 
 type CommunityMember = { userId: string; username: string; name: string | null; avatar: string | null }
 type CommunityResource = { id: string; type: string; title: string; url: string | null }
 
 export function CommunityHubView({
-  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, notes, counts, sharePath, config, preview,
+  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, notes, counts, activity, sharePath, config, preview,
 }: {
   hub: { id: string; title: string; tagline: string | null; description: string | null; coverImage: string | null; heroVideoUrl: string | null }
   ownerUsername: string
@@ -33,6 +34,7 @@ export function CommunityHubView({
   drops: DropDTO[]
   notes?: StripNote[]
   counts: { posts: number; members: number; resources: number; events: number; kollab: number }
+  activity?: ActivityCounts
   sharePath: string
   config: HubConfig
   preview?: boolean
@@ -60,6 +62,9 @@ export function CommunityHubView({
           isOwner={isOwner ?? false}
           isPrivileged={isPrivileged}
           preview={preview}
+          activity={activity ?? { newPosts: 0, newDrops: 0, newMembers: 0 }}
+          joined={joined}
+          onToggleJoin={toggleJoin}
           onOpenPoll={() => setPollNonce((n) => n + 1)}
           onOpenEvents={() => setManageEvents(true)}
           onOpenResources={() => setManageResources(true)}

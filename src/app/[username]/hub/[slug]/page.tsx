@@ -68,7 +68,10 @@ export default async function PublicHubPage({ params }: Props) {
   // Community hubs render the community page and gate on their own published flag.
   if (hub.community) {
     if (!canViewCommunityHub({ published: hub.published, isPrivileged })) notFound()
-    const [memberRows, items, postsCount, mine, eventRows, eventsCount, dropRows, dropsCount, noteRows] = await Promise.all([
+    // 7-day rolling window. "Since your last visit" would need a lastSeenAt on
+    // HubMember (a migration) for marginal extra value — see the design spec.
+    const activitySince = new Date(Date.now() - 7 * 864e5)
+    const [memberRows, items, postsCount, mine, eventRows, eventsCount, dropRows, dropsCount, noteRows, newPostsCount, newDropsCount, newMembersCount] = await Promise.all([
       db.hubMember.findMany({ where: { hubId: hub.id }, select: { userId: true, user: { select: { username: true, name: true, avatar: true } } } }),
       db.hubItem.findMany({ where: { hubId: hub.id, visibility: 'public', type: { in: ['file', 'link'] } }, orderBy: { createdAt: 'desc' } }),
       db.hubPost.count({ where: { hubId: hub.id } }),
@@ -82,6 +85,9 @@ export default async function PublicHubPage({ params }: Props) {
       }),
       db.hubDrop.count({ where: { hubId: hub.id, hidden: false } }),
       db.hubNote.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
+      db.hubPost.count({ where: { hubId: hub.id, createdAt: { gte: activitySince } } }),
+      db.hubDrop.count({ where: { hubId: hub.id, hidden: false, createdAt: { gte: activitySince } } }),
+      db.hubMember.count({ where: { hubId: hub.id, createdAt: { gte: activitySince } } }),
     ])
     const members = memberRows.map((m) => ({ userId: m.userId, username: m.user.username, name: m.user.name, avatar: m.user.avatar }))
     const resources = items.map((i) => ({ id: i.id, type: i.type, title: i.title, url: i.url }))
@@ -105,6 +111,7 @@ export default async function PublicHubPage({ params }: Props) {
         drops={drops}
         notes={notes}
         counts={{ posts: postsCount, members: members.length, resources: resources.length, events: eventsCount, kollab: dropsCount }}
+        activity={{ newPosts: newPostsCount, newDrops: newDropsCount, newMembers: newMembersCount }}
         sharePath={`/${user.username}/hub/${slug}`}
         config={config}
       />
