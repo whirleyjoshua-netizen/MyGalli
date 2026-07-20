@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { canParticipate, canViewCommunityHub, postNotifyTargets } from '@/lib/community'
+import { canParticipate, canViewCommunityHub, postNotifyTargets, isUserBanned } from '@/lib/community'
 import { sanitizeHubConfig, canDropToPool } from '@/lib/hub-config'
 import { rateLimit } from '@/lib/rate-limit'
 import { notifyHubMembers } from '@/lib/notifications'
 import { validateDropInput, toDropDTO } from '@/lib/hub-drops'
+import { consentTextFor } from '@/lib/hub-consent'
 
 const PAGE = 24
 
@@ -61,8 +62,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const collabIds = await collaboratorIds(id)
   const isMember = !!(await db.hubMember.findUnique({ where: { hubId_userId: { hubId: id, userId: me.id } }, select: { id: true } }))
+  const isBanned = await isUserBanned(id, me.id)
   const isPrivileged = me.id === hub.userId || collabIds.includes(me.id)
-  const participates = canParticipate(me.id, hub, collabIds, isMember)
+  const participates = canParticipate(me.id, hub, collabIds, isMember, isBanned)
   const config = sanitizeHubConfig(hub.config)
   if (!config.kollab.enabled && !isPrivileged) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -84,6 +86,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       mimeType: v.mimeType,
       width: v.width,
       height: v.height,
+      hidden: config.kollab.requireApproval && !isPrivileged,
+      consentText: consentTextFor(hub.title),
     },
   })
   const memberIds = (await db.hubMember.findMany({ where: { hubId: id }, select: { userId: true } })).map((m) => m.userId)

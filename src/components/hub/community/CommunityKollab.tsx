@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { upload } from '@vercel/blob/client'
 import { ImagePlus, Loader2, Play, X, Trash2 } from 'lucide-react'
 import { dropPathPrefix, type DropDTO } from '@/lib/hub-drops'
+import { consentTextFor } from '@/lib/hub-consent'
 
 async function captureVideoPoster(file: File): Promise<Blob | null> {
   return new Promise((resolve) => {
@@ -35,13 +36,15 @@ async function captureVideoPoster(file: File): Promise<Blob | null> {
 }
 
 export function CommunityKollab({
-  hubId, canDrop, isPrivileged, currentUserId, enabled, initialDrops, total, preview, narrow,
+  hubId, hubTitle, canDrop, isPrivileged, currentUserId, enabled, requireApproval, initialDrops, total, preview, narrow,
 }: {
   hubId: string
+  hubTitle: string
   canDrop: boolean
   isPrivileged: boolean
   currentUserId?: string
   enabled: boolean
+  requireApproval?: boolean
   initialDrops: DropDTO[]
   total: number
   preview?: boolean
@@ -54,6 +57,7 @@ export function CommunityKollab({
   const [exhausted, setExhausted] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [lightbox, setLightbox] = useState<DropDTO | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -64,6 +68,7 @@ export function CommunityKollab({
   async function handleFiles(files: FileList | null) {
     if (!files || preview) return
     setError(null)
+    setNotice(null)
     for (const file of Array.from(files)) {
       const isVideo = file.type.startsWith('video/')
       const isImage = file.type.startsWith('image/')
@@ -87,9 +92,14 @@ export function CommunityKollab({
         })
         if (!res.ok) { setError((await res.json()).error || 'Upload failed'); continue }
         const { id } = await res.json()
-        const me = { userId: currentUserId || '', username: 'you', name: null, avatar: null }
-        setDrops((cur) => [{ id, type: isVideo ? 'video' : 'image', url: blob.url, thumbnailUrl, caption: null, mimeType: file.type, width: null, height: null, hidden: false, createdAt: new Date().toISOString(), author: me }, ...cur])
-        setCount((c) => c + 1)
+        const pendingApproval = !!requireApproval && !isPrivileged
+        if (pendingApproval) {
+          setNotice('Uploaded — pending review before it appears in the pool.')
+        } else {
+          const me = { userId: currentUserId || '', username: 'you', name: null, avatar: null }
+          setDrops((cur) => [{ id, type: isVideo ? 'video' : 'image', url: blob.url, thumbnailUrl, caption: null, mimeType: file.type, width: null, height: null, hidden: false, createdAt: new Date().toISOString(), author: me }, ...cur])
+          setCount((c) => c + 1)
+        }
       } catch (e) {
         setError((e as Error).message || 'Upload failed')
       } finally {
@@ -144,8 +154,13 @@ export function CommunityKollab({
         )}
       </div>
 
+      {canDrop && (
+        <p className="mb-3 text-xs text-muted-foreground">{consentTextFor(hubTitle)}</p>
+      )}
+
       <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
       {error && <p className="mb-3 text-xs text-destructive">{error}</p>}
+      {notice && <p className="mb-3 text-xs text-primary">{notice}</p>}
 
       {drops.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">

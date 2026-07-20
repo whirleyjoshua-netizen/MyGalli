@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { canParticipate } from '@/lib/community'
+import { canParticipate, isUserBanned } from '@/lib/community'
 import { firstBlock } from '@/lib/bulletin'
 import { rateLimit } from '@/lib/rate-limit'
 import { aggregateBlock, toRecords } from '@/lib/element-aggregate'
@@ -34,7 +34,8 @@ export async function POST(request: NextRequest, { params }: Props) {
 
     const collabIds = (await db.hubCollaborator.findMany({ where: { hubId: id }, select: { userId: true } })).map((r) => r.userId)
     const isMember = !!(await db.hubMember.findUnique({ where: { hubId_userId: { hubId: id, userId: me.id } }, select: { id: true } }))
-    if (!canParticipate(me.id, hub, collabIds, isMember)) {
+    const isBanned = await isUserBanned(id, me.id)
+    if (!canParticipate(me.id, hub, collabIds, isMember, isBanned)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

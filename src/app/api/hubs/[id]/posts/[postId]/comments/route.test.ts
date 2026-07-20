@@ -8,6 +8,7 @@ vi.mock('@/lib/db', () => ({
     hub: { findUnique: vi.fn() },
     hubMember: { findUnique: vi.fn(), findMany: vi.fn() },
     hubCollaborator: { findMany: vi.fn() },
+    hubBan: { findUnique: vi.fn() },
     hubPost: { findFirst: vi.fn() },
     hubPostComment: { create: vi.fn(), findMany: vi.fn() },
     display: { findUnique: vi.fn() },
@@ -32,6 +33,7 @@ beforeEach(() => {
   ;(db.hubPost.findFirst as any).mockResolvedValue(POST_ROW)
   ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem' })
   ;(db.hubCollaborator.findMany as any).mockResolvedValue([])
+  ;(db.hubBan.findUnique as any).mockResolvedValue(null)
   ;(db.hubPostComment.create as any).mockResolvedValue({
     id: 'c1',
     text: 'nice',

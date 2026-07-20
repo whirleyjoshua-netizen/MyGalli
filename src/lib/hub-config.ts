@@ -69,6 +69,7 @@ export function sanitizeHubConfig(raw: unknown): HubConfig {
     kollab: {
       enabled: bool(kollabRaw.enabled, DEFAULT_HUB_CONFIG.kollab.enabled),
       whoCanDrop,
+      requireApproval: bool(kollabRaw.requireApproval, DEFAULT_HUB_CONFIG.kollab.requireApproval),
     },
   }
 }

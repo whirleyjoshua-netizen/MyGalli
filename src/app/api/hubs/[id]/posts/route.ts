@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { canParticipate, postNotifyTargets, canViewCommunityHub } from '@/lib/community'
+import { canParticipate, postNotifyTargets, canViewCommunityHub, isUserBanned } from '@/lib/community'
 import { rateLimit } from '@/lib/rate-limit'
 import { notifyHubMembers } from '@/lib/notifications'
 import { normalizeSettings, resultsVisible, firstBlock, isBulletinBlockType, isEmptyPost } from '@/lib/bulletin'
@@ -100,9 +100,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   })
   if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const isMember = !!(await db.hubMember.findUnique({ where: { hubId_userId: { hubId: id, userId: me.id } }, select: { id: true } }))
+  const isBanned = await isUserBanned(id, me.id)
   const collabIds = await collaboratorIds(id)
   const isPrivileged = me.id === hub.userId || collabIds.includes(me.id)
-  const base = canParticipate(me.id, hub, collabIds, isMember)
+  const base = canParticipate(me.id, hub, collabIds, isMember, isBanned)
   const whoCanPost = sanitizeHubConfig(hub.config).access.whoCanPost
   if (!canPostWithAccess({ canParticipate: base, whoCanPost, isPrivileged })) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

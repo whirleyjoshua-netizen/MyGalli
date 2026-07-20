@@ -1,3 +1,5 @@
+import { db } from '@/lib/db'
+
 export type MemberDTO = {
   userId: string
   username: string
@@ -30,8 +32,20 @@ export function canParticipate(
   hub: { userId: string },
   collaboratorIds: string[],
   isMember: boolean,
+  isBanned: boolean,
 ): boolean {
-  return userId === hub.userId || collaboratorIds.includes(userId) || isMember
+  // The owner can never be banned out of their own hub.
+  if (userId === hub.userId) return true
+  if (isBanned) return false
+  return collaboratorIds.includes(userId) || isMember
+}
+
+export async function isUserBanned(hubId: string, userId: string): Promise<boolean> {
+  const row = await db.hubBan.findUnique({
+    where: { hubId_userId: { hubId, userId } },
+    select: { id: true },
+  })
+  return !!row
 }
 
 export function canModerate(

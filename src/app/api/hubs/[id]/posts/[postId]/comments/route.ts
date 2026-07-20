@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
-import { canParticipate, canViewCommunityHub } from '@/lib/community'
+import { canParticipate, canViewCommunityHub, isUserBanned } from '@/lib/community'
 import { createNotification } from '@/lib/notifications'
 
 type Params = { params: Promise<{ id: string; postId: string }> }
@@ -60,7 +60,8 @@ export async function POST(request: NextRequest, { params }: Params) {
   const post = await db.hubPost.findFirst({ where: { id: postId, hubId: id }, select: { id: true, authorId: true } })
   if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const isMember = !!(await db.hubMember.findUnique({ where: { hubId_userId: { hubId: id, userId: me.id } }, select: { id: true } }))
-  if (!canParticipate(me.id, hub, await collaboratorIds(id), isMember)) {
+  const isBanned = await isUserBanned(id, me.id)
+  if (!canParticipate(me.id, hub, await collaboratorIds(id), isMember, isBanned)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   const body = await request.json().catch(() => ({}))

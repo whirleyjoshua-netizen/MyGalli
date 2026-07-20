@@ -12,7 +12,7 @@ export type HubConfig = {
   utility: HubUtilityWidget[]
   feed: { composerEnabled: boolean; loadMoreEnabled: boolean; emptyStateText?: string }
   access: { whoCanPost: HubWhoCanPost }
-  kollab: { enabled: boolean; whoCanDrop: HubWhoCanDrop }
+  kollab: { enabled: boolean; whoCanDrop: HubWhoCanDrop; requireApproval: boolean }
 }
 
 export const DEFAULT_HUB_CONFIG: HubConfig = {
@@ -29,5 +29,5 @@ export const DEFAULT_HUB_CONFIG: HubConfig = {
   ],
   feed: { composerEnabled: true, loadMoreEnabled: true },
   access: { whoCanPost: 'members' },
-  kollab: { enabled: true, whoCanDrop: 'members' },
+  kollab: { enabled: true, whoCanDrop: 'members', requireApproval: false },
 }
