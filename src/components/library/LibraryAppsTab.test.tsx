@@ -19,10 +19,11 @@ describe('LibraryAppsTab', () => {
     expect(screen.getByText('Coming soon')).toBeInTheDocument() // KollabShare pill
   })
 
-  it('shows the "More coming soon" panel and a disabled Request-an-App CTA', () => {
+  it('shows the "More coming soon" panel and a disabled Developer Community CTA', () => {
     render(<LibraryAppsTab />)
     expect(screen.getByText('More coming soon!')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Request an App/i })).toBeDisabled()
+    expect(screen.getByText(/Developer Community/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Join the Community/i })).toBeDisabled()
   })
 
   it('filters out non-matching apps and hides static panels while searching', () => {
