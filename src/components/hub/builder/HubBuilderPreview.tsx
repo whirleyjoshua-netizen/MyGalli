@@ -62,7 +62,8 @@ export function HubBuilderPreview({ hub, config }: { hub: PreviewHub; config: Hu
             memberCount={0}
             members={[]}
             resources={[]}
-            counts={{ posts: 0, members: 0, resources: 0, events: 0 }}
+            drops={[]}
+            counts={{ posts: 0, members: 0, resources: 0, events: 0, kollab: 0 }}
             sharePath={`/${hub.username}/hub/${hub.slug}`}
             preview
           />

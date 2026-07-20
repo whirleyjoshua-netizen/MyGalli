@@ -7,6 +7,13 @@
 export function isAllowedMessageMedia(url: string): boolean {
   if (!url) return true // no media — allowed
   if (url.startsWith('/api/upload/messages/')) return true
+  return isVercelBlobUrl(url)
+}
+
+// An asset we uploaded to our own Vercel Blob store, e.g.
+// `https://<id>.public.blob.vercel-storage.com/...`. The leading dot matters:
+// `https://public.blob.vercel-storage.com.evil.test/` must not pass.
+export function isVercelBlobUrl(url: string): boolean {
   try {
     const u = new URL(url)
     return u.protocol === 'https:' && u.hostname.endsWith('.public.blob.vercel-storage.com')

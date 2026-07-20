@@ -4,11 +4,14 @@ import { useState } from 'react'
 import { ArrowUp, ArrowDown, GripVertical } from 'lucide-react'
 import type { HubConfig, HubSidebarKey } from '@/lib/types/hub-config'
 import { HubEventsModal } from './HubEventsModal'
+import { HubDropsModal } from './HubDropsModal'
 
 const LABELS: Record<HubSidebarKey, string> = { members: 'Members', resources: 'Resources', video: 'Video hero', events: 'Upcoming events' }
 
 export function LayoutSectionsSection({ config, onChange, hubId }: { config: HubConfig; onChange: (c: HubConfig) => void; hubId: string }) {
   const [manageEvents, setManageEvents] = useState(false)
+  const [manageDrops, setManageDrops] = useState(false)
+  const setKollab = (patch: Partial<HubConfig['kollab']>) => onChange({ ...config, kollab: { ...config.kollab, ...patch } })
   const move = (i: number, dir: -1 | 1) => {
     const j = i + dir
     if (j < 0 || j >= config.sidebar.length) return
@@ -47,6 +50,33 @@ export function LayoutSectionsSection({ config, onChange, hubId }: { config: Hub
       </section>
 
       <section>
+        <h2 className="text-lg font-bold">Kollab pool</h2>
+        <p className="mb-3 text-sm text-muted-foreground">Let members drop photos/videos into a shared pool on the community page.</p>
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3">
+          <span className="flex-1 text-sm font-medium">Enable Kollab pool</span>
+          <button onClick={() => setManageDrops(true)} className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground">Manage drops</button>
+          <label className="relative inline-flex cursor-pointer items-center">
+            <input type="checkbox" checked={config.kollab.enabled} onChange={(e) => setKollab({ enabled: e.target.checked })} className="peer sr-only" />
+            <div className="h-5 w-9 rounded-full bg-muted peer-checked:bg-galli after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-4" />
+          </label>
+        </div>
+        {config.kollab.enabled && (
+          <div className="mt-2 flex items-center justify-between rounded-xl border border-border bg-surface p-3">
+            <label htmlFor="kollab-who" className="text-sm">Who can drop</label>
+            <select
+              id="kollab-who"
+              value={config.kollab.whoCanDrop}
+              onChange={(e) => setKollab({ whoCanDrop: e.target.value as HubConfig['kollab']['whoCanDrop'] })}
+              className="rounded-lg border border-border bg-transparent px-2 py-1 text-sm"
+            >
+              <option value="members">Members</option>
+              <option value="owner-only">Owner only</option>
+            </select>
+          </div>
+        )}
+      </section>
+
+      <section>
         <h2 className="text-lg font-bold">Feed</h2>
         <div className="mt-3 space-y-3">
           <Row label="Allow members to post" checked={config.feed.composerEnabled} onChange={(v) => setFeed({ composerEnabled: v })} />
@@ -57,6 +87,7 @@ export function LayoutSectionsSection({ config, onChange, hubId }: { config: Hub
         </div>
       </section>
       {manageEvents && <HubEventsModal hubId={hubId} onClose={() => setManageEvents(false)} />}
+      {manageDrops && <HubDropsModal hubId={hubId} onClose={() => setManageDrops(false)} />}
     </div>
   )
 }

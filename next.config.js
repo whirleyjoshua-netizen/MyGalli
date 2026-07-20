@@ -7,7 +7,10 @@ const csp = [
   "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com https://images.unsplash.com https://ui-avatars.com https://lh3.googleusercontent.com https://www.gstatic.com https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com",
   "media-src 'self' blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' blob: data: https://*.public.blob.vercel-storage.com https://accounts.google.com https://apis.google.com https://oauth2.googleapis.com https://nominatim.openstreetmap.org",
+  // Client-direct Blob uploads (@vercel/blob `upload()`, used by the Kollab pool)
+  // negotiate through https://vercel.com/api/blob and store on *.vercel-storage.com.
+  // `*.public.blob.vercel-storage.com` alone matches neither, so uploads were blocked.
+  "connect-src 'self' blob: data: https://vercel.com https://*.vercel-storage.com https://accounts.google.com https://apis.google.com https://oauth2.googleapis.com https://nominatim.openstreetmap.org",
   "worker-src 'self' blob:",
   "frame-src 'self' https://accounts.google.com https://open.spotify.com https://w.soundcloud.com https://www.youtube.com https://player.vimeo.com",
   "object-src 'none'",
