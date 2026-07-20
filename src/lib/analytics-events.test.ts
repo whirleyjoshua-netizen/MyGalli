@@ -4,6 +4,7 @@ import {
   isAnalyticsEventType,
   parseInteractMetadata,
   parseShareChannel,
+  parseVisitorId,
 } from './analytics-events'
 
 describe('isAnalyticsEventType', () => {
@@ -73,5 +74,29 @@ describe('parseShareChannel', () => {
     expect(parseShareChannel({ channel: long })).toBeNull()
     const exactly64 = 'x'.repeat(64)
     expect(parseShareChannel({ channel: exactly64 })).toBe(exactly64)
+  })
+})
+
+describe('parseVisitorId', () => {
+  it('accepts a normal id', () => {
+    expect(parseVisitorId('vis_abc123')).toBe('vis_abc123')
+  })
+
+  it('trims surrounding whitespace', () => {
+    expect(parseVisitorId('  vis_abc123  ')).toBe('vis_abc123')
+  })
+
+  it('rejects a missing, empty or non-string value', () => {
+    expect(parseVisitorId(undefined)).toBeNull()
+    expect(parseVisitorId(null)).toBeNull()
+    expect(parseVisitorId('')).toBeNull()
+    expect(parseVisitorId('   ')).toBeNull()
+    expect(parseVisitorId(42)).toBeNull()
+    expect(parseVisitorId({ id: 'x' })).toBeNull()
+  })
+
+  it('rejects rather than truncates an over-length id', () => {
+    expect(parseVisitorId('v'.repeat(64))).toBe('v'.repeat(64))
+    expect(parseVisitorId('v'.repeat(65))).toBeNull()
   })
 })

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
-import { isAnalyticsEventType, parseInteractMetadata, parseShareChannel } from '@/lib/analytics-events'
+import { isAnalyticsEventType, parseInteractMetadata, parseShareChannel, parseVisitorId } from '@/lib/analytics-events'
 import { countryFromHeaders } from './geo'
 
 // Parse user agent to extract device info
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { displayId, eventType = 'view', sessionId, metadata } = body
+    const { displayId, eventType = 'view', sessionId, visitorId, metadata } = body
 
     if (!displayId) {
       return NextResponse.json({ error: 'displayId is required' }, { status: 400 })
@@ -85,6 +85,11 @@ export async function POST(request: NextRequest) {
       const channel = parseShareChannel(metadata)
       storedMetadata = channel ? { channel } : undefined
     }
+
+    // Absent or malformed ids are simply not recorded — never a 400, since an
+    // older client or a browser with localStorage disabled must still be able
+    // to send events.
+    const storedVisitorId = parseVisitorId(visitorId)
 
     // Verify display exists
     const display = await db.display.findUnique({
@@ -114,6 +119,7 @@ export async function POST(request: NextRequest) {
         displayId,
         eventType,
         sessionId,
+        visitorId: storedVisitorId,
         referrer,
         userAgent,
         deviceType,

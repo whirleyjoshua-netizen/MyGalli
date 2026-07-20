@@ -43,3 +43,10 @@ export function parseShareChannel(raw: unknown): string | null {
   if (!raw || typeof raw !== 'object') return null
   return trimmedString((raw as Record<string, unknown>).channel)
 }
+
+// Persistent per-browser id supplied by the client. Same rejection-not-
+// truncation policy as interact metadata: this arrives from a public,
+// unauthenticated endpoint.
+export function parseVisitorId(raw: unknown): string | null {
+  return trimmedString(raw)
+}
