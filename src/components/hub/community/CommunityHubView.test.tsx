@@ -28,8 +28,11 @@ describe('CommunityHubView layout', () => {
     expect(container.querySelector('.lg\\:grid-cols-\\[1fr_320px\\]')).toBeTruthy()
   })
 
-  it('widens the container for three columns', () => {
+  it('fills the viewport width rather than centring in a fixed column', () => {
     const { container } = render(<CommunityHubView {...base} />)
-    expect(container.querySelector('.max-w-7xl')).toBeTruthy()
+    // Full-bleed: gutters only, no max-width cap that would leave dead space
+    // on either side of the three-column layout on a wide screen.
+    expect(container.querySelector('.w-full.px-4')).toBeTruthy()
+    expect(container.querySelector('.max-w-7xl')).toBeNull()
   })
 })
