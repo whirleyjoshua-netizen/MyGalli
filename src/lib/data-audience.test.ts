@@ -204,6 +204,20 @@ describe('classifySource', () => {
     expect(classifySource('https://m.facebook.com/x', null, own)).toBe('social')
   })
 
+  it('does not misclassify unrelated domains that contain a brand as a substring', () => {
+    expect(classifySource('https://student.com/x', null, own)).not.toBe('social')
+    expect(classifySource('https://mygoogle.com/x', null, own)).not.toBe('search')
+  })
+
+  it('matches the generic-label exact hosts t.co and x.com as social', () => {
+    expect(classifySource('https://t.co/abc', null, own)).toBe('social')
+    expect(classifySource('https://x.com/abc', null, own)).toBe('social')
+  })
+
+  it('matches a brand label within a multi-part TLD', () => {
+    expect(classifySource('https://www.google.co.uk/search?q=x', null, own)).toBe('search')
+  })
+
   it('has a label for every category', () => {
     for (const category of ['search', 'social', 'direct', 'community', 'referral'] as const) {
       expect(SOURCE_LABELS[category]).toBeTruthy()

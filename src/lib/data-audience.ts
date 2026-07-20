@@ -105,14 +105,24 @@ export const SOURCE_LABELS: Record<SourceCategory, string> = {
   referral: 'Other sites',
 }
 
-const SEARCH_HOSTS = ['google.', 'bing.', 'duckduckgo.', 'yahoo.', 'ecosia.', 'brave.']
-const SOCIAL_HOSTS = [
-  'instagram.', 'tiktok.', 'facebook.', 'twitter.', 'x.com', 't.co',
-  'linkedin.', 'pinterest.', 'reddit.', 'youtube.', 'threads.',
+const SEARCH_BRANDS = ['google', 'bing', 'duckduckgo', 'yahoo', 'ecosia', 'brave']
+const SOCIAL_BRANDS = [
+  'instagram', 'tiktok', 'facebook', 'twitter', 'linkedin',
+  'pinterest', 'reddit', 'youtube', 'threads',
 ]
+// Too generic to match as a domain label (`t`, `x`) — matched as exact hosts instead.
+const SOCIAL_EXACT_HOSTS = ['t.co', 'x.com']
 
-function matchesHost(host: string, needles: string[]): boolean {
-  return needles.some((needle) => host === needle || host.includes(needle))
+// True when any dot-separated label of `host` exactly equals a brand name.
+// This is what stops `student.com` from matching `t.co`-style substrings and
+// `mygoogle.com` from matching `google` — a label must be the WHOLE segment.
+function hasLabelMatch(host: string, brands: string[]): boolean {
+  const labels = host.split('.')
+  return brands.some((brand) => labels.includes(brand))
+}
+
+function isExactHost(host: string, hosts: string[]): boolean {
+  return hosts.includes(host)
 }
 
 export function classifySource(
@@ -123,8 +133,8 @@ export function classifySource(
   // An explicit campaign tag is more trustworthy than the referrer header.
   const utm = utmSource?.trim().toLowerCase()
   if (utm) {
-    if (matchesHost(utm, SEARCH_HOSTS.map((h) => h.replace('.', '')))) return 'search'
-    if (matchesHost(utm, SOCIAL_HOSTS.map((h) => h.replace('.', '')))) return 'social'
+    if (SEARCH_BRANDS.includes(utm)) return 'search'
+    if (SOCIAL_BRANDS.includes(utm) || isExactHost(utm, SOCIAL_EXACT_HOSTS)) return 'social'
   }
 
   if (!referrer) return 'direct'
@@ -138,8 +148,8 @@ export function classifySource(
   }
 
   if (host === ownHost.toLowerCase() || host.endsWith(`.${ownHost.toLowerCase()}`)) return 'community'
-  if (matchesHost(host, SEARCH_HOSTS)) return 'search'
-  if (matchesHost(host, SOCIAL_HOSTS)) return 'social'
+  if (hasLabelMatch(host, SEARCH_BRANDS)) return 'search'
+  if (hasLabelMatch(host, SOCIAL_BRANDS) || isExactHost(host, SOCIAL_EXACT_HOSTS)) return 'social'
   return 'referral'
 }
 
