@@ -49,7 +49,7 @@ export function ProfileActionCards({
       {cards.map((c) => {
         if (c.key === 'mailbox') {
           return (
-            <Link key={c.key} href="/data?tab=messages" className={`${cardCls} cursor-pointer`}>
+            <Link key={c.key} href="/messages" className={`${cardCls} cursor-pointer`}>
               <Mail className="w-5 h-5 text-primary shrink-0" />
               <Body label={c.label} sublabel={c.sublabel} />
             </Link>

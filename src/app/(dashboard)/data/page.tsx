@@ -1,14 +1,21 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { BarChart3, Eye, Users, Monitor, Smartphone, Tablet, Globe, Calendar, Inbox, Megaphone, Mail, Link2, Clock, Lightbulb, TrendingUp, Target } from 'lucide-react'
+import { BarChart3, Calendar, Inbox, Megaphone } from 'lucide-react'
 import { ElementsTab } from '@/components/analytics/ElementsTab'
 import { BulletinAnalyticsTab } from '@/components/analytics/BulletinAnalyticsTab'
-import { MessagesInbox } from '@/components/dashboard/MessagesInbox'
 import { PageHero } from '@/components/dashboard/PageHero'
-import { Sparkline } from '@/components/analytics/Sparkline'
-import { DataIllustration, type DataIllustrationVariant } from '@/components/analytics/DataIllustration'
+import { StatCardRow } from '@/components/analytics/overview/StatCardRow'
+import { HealthGauge } from '@/components/analytics/overview/HealthGauge'
+import { LiveActivityFeed } from '@/components/analytics/overview/LiveActivityFeed'
+import { SectionEngagementBars } from '@/components/analytics/overview/SectionEngagementBars'
+import { WidgetPerformanceTable } from '@/components/analytics/overview/WidgetPerformanceTable'
+import { AudienceBreakdowns } from '@/components/analytics/overview/AudienceBreakdowns'
+import { ReferrerDonut } from '@/components/analytics/overview/ReferrerDonut'
+import { QuickActions } from '@/components/analytics/overview/QuickActions'
+import type { HealthResult } from '@/lib/data-health'
+import type { LiveActivityItem, SectionEngagementRow, WidgetPerformanceRow } from '@/lib/data-overview'
 
 interface AnalyticsData {
   display: {
@@ -24,7 +31,21 @@ interface AnalyticsData {
   summary: {
     views: number
     uniqueVisitors: number
+    followers: number
+    shares: number
+    interactions: number
   }
+  previous: {
+    views: number
+    uniqueVisitors: number
+    followers: number
+    shares: number
+    interactions: number
+  }
+  health: HealthResult
+  liveActivity: LiveActivityItem[]
+  widgetPerformance: WidgetPerformanceRow[]
+  sectionEngagement: SectionEngagementRow[]
   breakdown: {
     devices: Record<string, number>
     browsers: Record<string, number>
@@ -32,15 +53,6 @@ interface AnalyticsData {
   }
   viewsByDay: Record<string, number>
   uniqueVisitorsByDay?: Record<string, number>
-  topReferrerByDay?: Record<string, number>
-  recentEvents: {
-    id: string
-    eventType: string
-    deviceType: string | null
-    browser: string | null
-    referrer: string | null
-    createdAt: string
-  }[]
 }
 
 interface DisplayOption {
@@ -72,13 +84,16 @@ function AnalyticsContent() {
   )
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
   const [days, setDays] = useState(30)
-  const [activeTab, setActiveTab] = useState<'overview' | 'elements' | 'bulletin' | 'messages'>(
+  const [activeTab, setActiveTab] = useState<'overview' | 'elements' | 'bulletin'>(
     (() => {
       const t = searchParams.get('tab')
-      return t === 'elements' || t === 'bulletin' || t === 'messages' ? t : 'overview'
+      return t === 'elements' || t === 'bulletin' ? t : 'overview'
     })()
   )
+  const [username, setUsername] = useState<string | null>(null)
 
   // Fetch user's displays
   useEffect(() => {
@@ -92,6 +107,8 @@ function AnalyticsContent() {
           if (!selectedDisplayId && data.length > 0) {
             setSelectedDisplayId(data[0].id)
           }
+          const me = await fetch('/api/profile').then((r) => (r.ok ? r.json() : null))
+          setUsername(me?.username ?? null)
         }
       } catch (error) {
         console.error('Failed to fetch displays:', error)
@@ -103,9 +120,14 @@ function AnalyticsContent() {
     fetchDisplays()
   }, [router, selectedDisplayId])
 
-  // Fetch analytics for selected display
+  // Fetch analytics for selected display. Clears stale data + resets error
+  // state on every displayId/days change so a failed fetch never leaves the
+  // previous page's numbers on screen under a new title.
   useEffect(() => {
     if (!selectedDisplayId) return
+
+    setAnalytics(null)
+    setError(false)
 
     async function fetchAnalytics() {
       setLoading(true)
@@ -116,28 +138,35 @@ function AnalyticsContent() {
         if (res.ok) {
           const data = await res.json()
           setAnalytics(data)
+        } else {
+          setError(true)
         }
-      } catch (error) {
-        console.error('Failed to fetch analytics:', error)
+      } catch (err) {
+        console.error('Failed to fetch analytics:', err)
+        setError(true)
       } finally {
         setLoading(false)
       }
     }
 
     fetchAnalytics()
-  }, [selectedDisplayId, days])
+  }, [selectedDisplayId, days, retryCount])
 
-  // Device icon
-  const DeviceIcon = ({ type }: { type: string }) => {
-    switch (type) {
-      case 'mobile':
-        return <Smartphone className="w-4 h-4" />
-      case 'tablet':
-        return <Tablet className="w-4 h-4" />
-      default:
-        return <Monitor className="w-4 h-4" />
+  // Lightweight refresh for the 20s live-activity poll: fetches only the
+  // bounded activity feed (`?live=1`) and merges it into existing state,
+  // instead of re-running the full aggregate rebuild.
+  const refreshAnalytics = useCallback(async () => {
+    if (!selectedDisplayId) return
+    try {
+      const res = await fetch(`/api/analytics/${selectedDisplayId}?live=1&days=${days}`)
+      if (res.ok) {
+        const data = await res.json()
+        setAnalytics((prev) => (prev ? { ...prev, liveActivity: data.liveActivity } : prev))
+      }
+    } catch (error) {
+      console.error('Failed to refresh live activity:', error)
     }
-  }
+  }, [selectedDisplayId, days])
 
   return (
     <div className="min-h-screen bg-background">
@@ -195,31 +224,30 @@ function AnalyticsContent() {
               <Megaphone className="w-4 h-4" />
               Bulletin
             </button>
-            <button
-              onClick={() => setActiveTab('messages')}
-              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${
-                activeTab === 'messages'
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Mail className="w-4 h-4" />
-              Messages
-            </button>
           </>
         }
       />
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        {activeTab === 'messages' ? (
-          <MessagesInbox />
-        ) : activeTab === 'bulletin' ? (
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {activeTab === 'bulletin' ? (
           <BulletinAnalyticsTab />
         ) : activeTab === 'elements' ? (
           <ElementsTab displayId={selectedDisplayId} />
         ) : loading && !analytics ? (
           <div className="flex items-center justify-center py-20">
             <p className="text-muted-foreground">Loading analytics...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-lg font-medium mb-2">Couldn&apos;t load analytics</h2>
+            <p className="text-muted-foreground mb-4">Something went wrong fetching this page&apos;s data.</p>
+            <button
+              onClick={() => setRetryCount((c) => c + 1)}
+              className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Retry
+            </button>
           </div>
         ) : !selectedDisplayId ? (
           <div className="text-center py-20">
@@ -248,215 +276,46 @@ function AnalyticsContent() {
               </div>
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <StatCard tone="aqua" icon={<Eye className="h-5 w-5" />} label="Total Views" value={String(analytics.display.totalViews)} subline={`${analytics.summary.views} in last ${days} days`} byDay={analytics.viewsByDay} />
-              <StatCard tone="green" icon={<Users className="h-5 w-5" />} label="Unique Visitors" value={String(analytics.summary.uniqueVisitors)} subline={`In last ${days} days`} byDay={analytics.uniqueVisitorsByDay ?? {}} />
-              <StatCard tone="violet" icon={<Globe className="h-5 w-5" />} label="Top Referrer" value={analytics.breakdown.referrers[0]?.domain || 'Direct'} subline={`${analytics.breakdown.referrers[0]?.count || 0} visits`} byDay={analytics.topReferrerByDay ?? {}} />
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+              <div className="space-y-6">
+                <StatCardRow
+                  metrics={analytics.summary}
+                  previous={analytics.previous}
+                  series={{
+                    views: Object.keys(analytics.viewsByDay).sort().map((d) => analytics.viewsByDay[d]),
+                    uniqueVisitors: Object.keys(analytics.uniqueVisitorsByDay ?? {}).sort().map((d) => (analytics.uniqueVisitorsByDay ?? {})[d]),
+                  }}
+                />
+
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <LiveActivityFeed items={analytics.liveActivity} onRefresh={refreshAnalytics} />
+                  <SectionEngagementBars rows={analytics.sectionEngagement} />
+                </div>
+
+                <WidgetPerformanceTable rows={analytics.widgetPerformance} />
+
+                <AudienceBreakdowns
+                  devices={analytics.breakdown.devices}
+                  browsers={analytics.breakdown.browsers}
+                />
+              </div>
+
+              <aside className="space-y-6">
+                <HealthGauge health={analytics.health} />
+                <QuickActions
+                  username={username}
+                  slug={displays.find((d) => d.id === selectedDisplayId)?.slug ?? null}
+                  displayId={selectedDisplayId}
+                />
+                <ReferrerDonut
+                  referrers={analytics.breakdown.referrers}
+                  totalViews={analytics.summary.views}
+                />
+              </aside>
             </div>
-
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <OverviewCard icon={<Monitor className="h-4 w-4" />} title="Device Breakdown">
-                {Object.entries(analytics.breakdown.devices).length > 0 ? (
-                  <div className="space-y-3">
-                    {Object.entries(analytics.breakdown.devices)
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([device, count]) => {
-                        const total = Object.values(analytics.breakdown.devices).reduce((a, b) => a + b, 0)
-                        const percentage = Math.round((count / total) * 100)
-                        return (
-                          <div key={device} className="flex items-center gap-3">
-                            <DeviceIcon type={device} />
-                            <span className="capitalize text-sm flex-1">{device}</span>
-                            <span className="text-sm text-muted-foreground">{count}</span>
-                            <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                              <div className="h-full bg-primary rounded-full" style={{ width: `${percentage}%` }} />
-                            </div>
-                            <span className="text-sm text-muted-foreground w-10 text-right">{percentage}%</span>
-                          </div>
-                        )
-                      })}
-                  </div>
-                ) : (
-                  <EmptyState variant="device" text="Once visitors interact with your page, device data will appear here." />
-                )}
-              </OverviewCard>
-
-              <OverviewCard icon={<Globe className="h-4 w-4" />} title="Browser Breakdown">
-                {Object.entries(analytics.breakdown.browsers).length > 0 ? (
-                  <div className="space-y-3">
-                    {Object.entries(analytics.breakdown.browsers)
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([browser, count]) => {
-                        const total = Object.values(analytics.breakdown.browsers).reduce((a, b) => a + b, 0)
-                        const percentage = Math.round((count / total) * 100)
-                        return (
-                          <div key={browser} className="flex items-center gap-3">
-                            <span className="capitalize text-sm flex-1">{browser}</span>
-                            <span className="text-sm text-muted-foreground">{count}</span>
-                            <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                              <div className="h-full bg-green-500 rounded-full" style={{ width: `${percentage}%` }} />
-                            </div>
-                            <span className="text-sm text-muted-foreground w-10 text-right">{percentage}%</span>
-                          </div>
-                        )
-                      })}
-                  </div>
-                ) : (
-                  <EmptyState variant="browser" text="Once visitors interact with your page, browser data will appear here." />
-                )}
-              </OverviewCard>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <OverviewCard icon={<Link2 className="h-4 w-4" />} title="Top Referrers">
-                {analytics.breakdown.referrers.length > 0 ? (
-                  <div className="space-y-2">
-                    {analytics.breakdown.referrers.map((ref, i) => (
-                      <div
-                        key={ref.domain}
-                        className="flex items-center justify-between py-2 border-b border-border last:border-0"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-muted-foreground w-6">{i + 1}.</span>
-                          <span className="text-sm">{ref.domain}</span>
-                        </div>
-                        <span className="text-sm text-muted-foreground">{ref.count} visits</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState variant="referrer" text="We'll show you which sites bring the most visitors to your page." />
-                )}
-              </OverviewCard>
-
-              <OverviewCard icon={<Clock className="h-4 w-4" />} title="Recent Activity">
-                {analytics.recentEvents.length > 0 ? (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {analytics.recentEvents.map((event) => (
-                      <div
-                        key={event.id}
-                        className="flex items-center justify-between py-2 border-b border-border last:border-0"
-                      >
-                        <div className="flex items-center gap-3">
-                          <DeviceIcon type={event.deviceType || 'desktop'} />
-                          <span className="text-sm capitalize">{event.browser || 'Unknown'}</span>
-                          {event.referrer && (
-                            <span className="text-xs text-muted-foreground">
-                              from {new URL(event.referrer).hostname}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(event.createdAt).toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState variant="activity" text="Recent events and interactions will appear here." />
-                )}
-              </OverviewCard>
-            </div>
-
-            <InsightsPanel />
           </div>
         ) : null}
       </main>
-    </div>
-  )
-}
-
-const STAT_TONE = {
-  aqua: { chip: 'bg-galli-aqua/10 text-galli-aqua', line: 'text-galli-aqua' },
-  green: { chip: 'bg-galli/15 text-galli-dark', line: 'text-galli' },
-  violet: { chip: 'bg-galli-violet/10 text-galli-violet', line: 'text-galli-violet' },
-} as const
-
-function StatCard({
-  icon, tone, label, value, subline, byDay,
-}: {
-  icon: React.ReactNode
-  tone: keyof typeof STAT_TONE
-  label: string
-  value: string
-  subline: string
-  byDay: Record<string, number>
-}) {
-  const spark = Object.keys(byDay).sort().map((d) => byDay[d])
-  const t = STAT_TONE[tone]
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="mb-3 flex items-center gap-2">
-            <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${t.chip}`}>{icon}</span>
-            <span className="text-sm text-muted-foreground">{label}</span>
-          </div>
-          <p className="truncate text-3xl font-bold">{value}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{subline}</p>
-        </div>
-        <div className={`w-24 shrink-0 self-end ${t.line}`}>
-          <Sparkline values={spark} />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function OverviewCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-6 shadow-soft">
-      <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold">
-        <span className="text-muted-foreground">{icon}</span> {title}
-      </h3>
-      {children}
-    </div>
-  )
-}
-
-function EmptyState({ variant, text }: { variant: DataIllustrationVariant; text: string }) {
-  return (
-    <div className="flex items-center gap-4">
-      <DataIllustration variant={variant} className="h-20 w-28 shrink-0" />
-      <div>
-        <p className="text-sm font-semibold">No data yet</p>
-        <p className="text-sm text-muted-foreground">{text}</p>
-      </div>
-    </div>
-  )
-}
-
-const INSIGHTS = [
-  { icon: Users, title: 'Grow Your Audience', text: 'Share your page and invite collaborators to expand your community.' },
-  { icon: Eye, title: 'Create Engaging Content', text: 'Consistent, valuable content drives more views and engagement.' },
-  { icon: TrendingUp, title: 'Analyze & Optimize', text: 'Use data insights to understand what works best for your audience.' },
-  { icon: Target, title: 'Achieve Your Goals', text: 'Keep building, keep sharing, and watch your pond flourish.' },
-]
-
-function InsightsPanel() {
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-galli/20 bg-galli/5 p-6">
-      <div className="mb-5 flex items-start gap-2">
-        <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-galli-dark" />
-        <div>
-          <h3 className="font-bold">Insights</h3>
-          <p className="text-sm text-muted-foreground">Track your growth and discover opportunities.</p>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:pr-36">
-        {INSIGHTS.map((it) => (
-          <div key={it.title}>
-            <span className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-galli-dark">
-              <it.icon className="h-4 w-4" />
-            </span>
-            <h4 className="text-sm font-bold">{it.title}</h4>
-            <p className="mt-0.5 text-sm text-muted-foreground">{it.text}</p>
-          </div>
-        ))}
-      </div>
-      <DataIllustration variant="sprout" className="pointer-events-none absolute bottom-0 right-2 hidden h-28 w-32 lg:block" />
     </div>
   )
 }

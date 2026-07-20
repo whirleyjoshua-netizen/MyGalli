@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { CanvasElement } from '@/lib/types/canvas'
 import { Check } from 'lucide-react'
+import { trackInteraction } from '@/lib/analytics'
 
 interface Props {
   element: CanvasElement
@@ -67,6 +68,7 @@ export function PublicMCQElement({ element, displayId }: Props) {
       if (res.ok) {
         setSubmitted(true)
         localStorage.setItem(`form_submitted_${element.id}`, 'true')
+        void trackInteraction(displayId, element.id, 'form', 'submit')
       }
     } catch (error) {
       console.error('Failed to submit MCQ:', error)

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Play, Pause, Volume2, VolumeX, Music } from 'lucide-react'
 import type { CanvasElement } from '@/lib/types/canvas'
 import { spotifyEmbedUrl, soundcloudEmbedUrl } from '@/lib/audio-embed'
+import { trackInteraction } from '@/lib/analytics'
 
 function fmt(s: number): string {
   if (!isFinite(s) || s < 0) return '0:00'
@@ -20,7 +21,7 @@ function Placeholder() {
   )
 }
 
-export function PublicAudioPlayerElement({ element }: { element: CanvasElement }) {
+export function PublicAudioPlayerElement({ element, displayId }: { element: CanvasElement; displayId?: string }) {
   const type = element.audioSourceType || 'file'
 
   if (type === 'spotify') {
@@ -35,10 +36,10 @@ export function PublicAudioPlayerElement({ element }: { element: CanvasElement }
       <iframe title="SoundCloud player" src={src} className="w-full rounded-xl border-0" height={166} allow="autoplay" loading="lazy" />
     ) : <Placeholder />
   }
-  return <FilePlayer element={element} />
+  return <FilePlayer element={element} displayId={displayId} />
 }
 
-function FilePlayer({ element }: { element: CanvasElement }) {
+function FilePlayer({ element, displayId }: { element: CanvasElement; displayId?: string }) {
   const url = element.audioUrl
   const ref = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
@@ -116,7 +117,7 @@ function FilePlayer({ element }: { element: CanvasElement }) {
         ref={ref}
         src={url}
         loop={!!element.audioLoop}
-        onPlay={() => setPlaying(true)}
+        onPlay={() => { setPlaying(true); if (displayId) void trackInteraction(displayId, element.id, 'audio-player', 'play') }}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
         onTimeUpdate={(e) => setCur(e.currentTarget.currentTime)}

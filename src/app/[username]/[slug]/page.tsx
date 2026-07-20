@@ -25,6 +25,7 @@ import { deriveFriend } from '@/lib/social'
 import { CreatorChip } from '@/components/social/CreatorChip'
 import { BackButton } from '@/components/ui/BackButton'
 import { LastUpdatedBadge } from '@/components/ui/LastUpdatedBadge'
+import { PublicShareBar } from '@/components/share/PublicShareBar'
 
 interface Props {
   params: Promise<{ username: string; slug: string }>
@@ -203,6 +204,10 @@ export default async function PublicDisplayPage({ params }: Props) {
   const space = getSpacingStyles(spacing)
   const containerStyle = getContainerStyle(spacing)
 
+  // Same canonical-URL derivation as generateMetadata above.
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://galli.page'
+  const pageUrl = `${appUrl}/${username}/${slug}`
+
   // When tabs are enabled, PublicTabView is the entire page
   if (tabsConfig?.enabled && tabsConfig.tabs.length > 0) {
     const hydratedTabs = await Promise.all(
@@ -228,6 +233,9 @@ export default async function PublicDisplayPage({ params }: Props) {
           <footer className="pb-8 text-center">{lastUpdatedBadge}</footer>
         )}
         {creatorChip}
+        <div className="px-4 pb-8">
+          <PublicShareBar url={pageUrl} title={display.title} displayId={display.id} />
+        </div>
       </>
     )
   }
@@ -301,6 +309,8 @@ export default async function PublicDisplayPage({ params }: Props) {
               </Link>
             </p>
           </footer>
+
+          <PublicShareBar url={pageUrl} title={display.title} displayId={display.id} />
         </div>
       </main>
       {creatorChip}

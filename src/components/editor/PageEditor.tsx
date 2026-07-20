@@ -43,9 +43,10 @@ import { UpgradePrompt } from '@/components/pro/UpgradePrompt'
 
 interface PageEditorProps {
   pageId?: string
+  openShare?: boolean
 }
 
-export function PageEditor({ pageId }: PageEditorProps) {
+export function PageEditor({ pageId, openShare }: PageEditorProps) {
   const router = useRouter()
   const { user } = useAuthStore()
 
@@ -81,7 +82,7 @@ export function PageEditor({ pageId }: PageEditorProps) {
   const [currentColumn, setCurrentColumn] = useState<string | null>(null)
 
   // Share dialog state
-  const [showShareDialog, setShowShareDialog] = useState(false)
+  const [showShareDialog, setShowShareDialog] = useState(!!openShare)
 
   // Collaboration state
   const [version, setVersion] = useState(0)

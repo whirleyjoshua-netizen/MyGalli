@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { BarChart3, Check } from 'lucide-react'
 import type { CanvasElement } from '@/lib/types/canvas'
+import { trackInteraction } from '@/lib/analytics'
 
 interface PublicPollElementProps {
   element: CanvasElement
@@ -88,6 +89,7 @@ export function PublicPollElement({ element, displayId }: PublicPollElementProps
         setHasVoted(true)
         setShowResults(true)
         localStorage.setItem(`poll_voted_${element.id}`, 'true')
+        void trackInteraction(displayId, element.id, 'poll', 'vote')
         // Re-fetch results
         const data = await fetch(`/api/displays/${displayId}/poll?elementId=${element.id}`).then(r => r.json())
         if (data.votes) setVotes(data.votes)

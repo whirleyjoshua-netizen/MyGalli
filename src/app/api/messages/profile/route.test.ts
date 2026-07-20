@@ -28,7 +28,7 @@ describe('POST /api/messages/profile', () => {
     expect(db.message.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ displayId: null, ownerId: 'owner1', elementId: 'profile-mailbox', kind: 'text', body: 'hi' }),
     }))
-    expect(createNotification).toHaveBeenCalledWith(expect.objectContaining({ userId: 'owner1', type: 'message', entityUrl: '/data?tab=messages' }))
+    expect(createNotification).toHaveBeenCalledWith(expect.objectContaining({ userId: 'owner1', type: 'message', entityUrl: '/messages' }))
   })
 
   it('honeypot filled → 200 and nothing persisted', async () => {

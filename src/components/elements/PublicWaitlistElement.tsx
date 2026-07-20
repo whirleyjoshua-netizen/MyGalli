@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { CanvasElement } from '@/lib/types/canvas'
 import { isFull, progressPercent, spotsRemaining, waitlistCountdownParts } from '@/lib/waitlist'
+import { trackInteraction } from '@/lib/analytics'
 
 export function PublicWaitlistElement({ element, displayId }: { element: CanvasElement; displayId: string }) {
   const capacity = element.waitlistCapacity ?? null
@@ -39,6 +40,7 @@ export function PublicWaitlistElement({ element, displayId }: { element: CanvasE
       if (res.ok) {
         if (typeof data.count === 'number') setCount(data.count)
         setJoined(true)
+        void trackInteraction(displayId, element.id, 'waitlist', 'join')
       } else {
         setError(data.error || 'Something went wrong')
         if (typeof data.count === 'number') setCount(data.count)
