@@ -4,10 +4,10 @@ import { useState } from 'react'
 import type { HubConfig, HubUtilityKey } from '@/lib/types/hub-config'
 import { HubResourcesModal } from './HubResourcesModal'
 
-const LABELS: Record<HubUtilityKey, string> = { notes: 'Notes', ai: 'Kollab AI', tools: 'Tools' }
+const LABELS: Record<HubUtilityKey, string> = { notes: 'Notes', activity: 'Activity', tools: 'Tools' }
 const SUBS: Record<HubUtilityKey, string> = {
   notes: 'Pinned notes for your community',
-  ai: 'Reserved for Kollab AI — coming soon',
+  activity: "What's happened lately",
   tools: 'Quick actions, visible only to you',
 }
 

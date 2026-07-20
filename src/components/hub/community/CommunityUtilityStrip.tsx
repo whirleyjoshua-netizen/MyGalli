@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { BarChart3, CalendarDays, FolderOpen, Link2, Plus, Sparkles, StickyNote, Wrench, X } from 'lucide-react'
+import { Activity, BarChart3, CalendarDays, FolderOpen, Link2, Plus, StickyNote, UsersRound, Wrench, X } from 'lucide-react'
 import type { HubConfig, HubUtilityKey } from '@/lib/types/hub-config'
 import type { StripNote } from '@/lib/hub-notes'
+import { activityRows, isQuiet, type ActivityCounts } from '@/lib/hub-activity'
 
 export function CommunityUtilityStrip({
-  hubId, config, notes, isOwner, isPrivileged, preview, onOpenPoll, onOpenEvents, onOpenResources,
+  hubId, config, notes, isOwner, isPrivileged, preview, activity, joined, memberCount, tagline, nextEvent, onToggleJoin, onOpenPoll, onOpenEvents, onOpenResources,
 }: {
   hubId: string
   config: HubConfig
@@ -14,6 +15,12 @@ export function CommunityUtilityStrip({
   isOwner: boolean
   isPrivileged: boolean
   preview?: boolean
+  activity: ActivityCounts
+  joined: boolean
+  memberCount: number
+  tagline: string | null
+  nextEvent?: { title: string; startsAt: string } | null
+  onToggleJoin: () => void
   onOpenPoll: () => void
   onOpenEvents: () => void
   onOpenResources: () => void
@@ -27,7 +34,7 @@ export function CommunityUtilityStrip({
 
   const card = (key: HubUtilityKey) => {
     if (key === 'notes') return <NotesCard key="notes" hubId={hubId} notes={notes} isOwner={isOwner} preview={preview} />
-    if (key === 'ai') return <AiCard key="ai" />
+    if (key === 'activity') return <ActivityCard key="activity" activity={activity} joined={joined} isPrivileged={isPrivileged} memberCount={memberCount} tagline={tagline} nextEvent={nextEvent} preview={preview} onToggleJoin={onToggleJoin} />
     return <ToolsCard key="tools" isOwner={isOwner} onOpenPoll={onOpenPoll} onOpenEvents={onOpenEvents} onOpenResources={onOpenResources} />
   }
 
@@ -47,19 +54,68 @@ function Shell({ icon, title, children }: { icon: React.ReactNode; title: string
   )
 }
 
-function AiCard() {
+function ActivityCard({
+  activity, joined, isPrivileged, memberCount, tagline, nextEvent, preview, onToggleJoin,
+}: {
+  activity: ActivityCounts
+  joined: boolean
+  isPrivileged: boolean
+  memberCount: number
+  tagline: string | null
+  nextEvent?: { title: string; startsAt: string } | null
+  preview?: boolean
+  onToggleJoin: () => void
+}) {
+  // A delta list means nothing to someone with no history here, so a visitor
+  // gets orientation instead.
+  if (!joined && !isPrivileged) {
+    return (
+      <Shell icon={<UsersRound className="h-4 w-4 text-primary" />} title="Community">
+        {tagline && <p className="mb-2 line-clamp-2 text-xs text-muted-foreground">{tagline}</p>}
+        <p className="mb-2 text-xs text-muted-foreground">{memberCount} {memberCount === 1 ? 'member' : 'members'}</p>
+        <button
+          onClick={() => { if (!preview) onToggleJoin() }}
+          className="mt-auto w-full rounded-lg bg-primary py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+        >
+          Join community
+        </button>
+      </Shell>
+    )
+  }
+
+  const rows = activityRows(activity)
   return (
-    <Shell icon={<Sparkles className="h-4 w-4 text-galli-violet" />} title="Kollab AI">
-      <p className="mb-2 text-xs text-muted-foreground">Ask, brainstorm, get ideas.</p>
-      <input
-        disabled
-        placeholder="Ask Kollab AI anything…"
-        className="w-full cursor-not-allowed rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm"
-      />
-      <span className="mt-2 self-start rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Coming soon</span>
+    <Shell icon={<Activity className="h-4 w-4 text-primary" />} title="This week">
+      {isQuiet(activity) ? (
+        <p className="text-xs text-muted-foreground">It&apos;s been quiet — share something.</p>
+      ) : (
+        <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto">
+          {rows.map((r) => (
+            <li key={r.key}>
+              <button
+                onClick={() => document.getElementById(jumpTargetId(r.key))?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+              >
+                {r.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {nextEvent && (
+        <p className="mt-2 truncate text-xs text-muted-foreground">
+          Next: {nextEvent.title} · {formatEventDate(nextEvent.startsAt)}
+        </p>
+      )}
     </Shell>
   )
 }
+
+const formatEventDate = (iso: string): string =>
+  new Date(iso).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+
+const jumpTargetId = (key: 'posts' | 'clips' | 'members'): string =>
+  key === 'clips' ? 'hub-kollab' : key === 'members' ? 'hub-members' : 'hub-feed'
 
 function NotesCard({ hubId, notes: initial, isOwner, preview }: { hubId: string; notes: StripNote[]; isOwner: boolean; preview?: boolean }) {
   const [notes, setNotes] = useState(initial)

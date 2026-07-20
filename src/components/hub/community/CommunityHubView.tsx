@@ -13,12 +13,13 @@ import type { HubConfig } from '@/lib/types/hub-config'
 import type { EventDTO } from '@/lib/hub-events'
 import type { DropDTO } from '@/lib/hub-drops'
 import type { StripNote } from '@/lib/hub-notes'
+import type { ActivityCounts } from '@/lib/hub-activity'
 
 type CommunityMember = { userId: string; username: string; name: string | null; avatar: string | null }
 type CommunityResource = { id: string; type: string; title: string; url: string | null }
 
 export function CommunityHubView({
-  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, notes, counts, sharePath, config, preview,
+  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, notes, counts, activity, sharePath, config, preview,
 }: {
   hub: { id: string; title: string; tagline: string | null; description: string | null; coverImage: string | null; heroVideoUrl: string | null }
   ownerUsername: string
@@ -33,6 +34,7 @@ export function CommunityHubView({
   drops: DropDTO[]
   notes?: StripNote[]
   counts: { posts: number; members: number; resources: number; events: number; kollab: number }
+  activity?: ActivityCounts
   sharePath: string
   config: HubConfig
   preview?: boolean
@@ -43,6 +45,7 @@ export function CommunityHubView({
   const [manageEvents, setManageEvents] = useState(false)
   const [manageResources, setManageResources] = useState(false)
   const canPost = isPrivileged || joined
+  const nextEvent = events && events.length > 0 ? { title: events[0].title, startsAt: events[0].startsAt } : null
 
   async function toggleJoin() {
     const res = await fetch(`/api/hubs/${hub.id}/join`, { method: joined ? 'DELETE' : 'POST' })
@@ -60,6 +63,12 @@ export function CommunityHubView({
           isOwner={isOwner ?? false}
           isPrivileged={isPrivileged}
           preview={preview}
+          activity={activity ?? { newPosts: 0, newDrops: 0, newMembers: 0 }}
+          joined={joined}
+          memberCount={count}
+          tagline={hub.tagline}
+          nextEvent={nextEvent}
+          onToggleJoin={toggleJoin}
           onOpenPoll={() => setPollNonce((n) => n + 1)}
           onOpenEvents={() => setManageEvents(true)}
           onOpenResources={() => setManageResources(true)}
@@ -89,7 +98,7 @@ export function CommunityHubView({
 
         <div className={`mt-6 grid grid-cols-1 gap-6 ${config.kollab.enabled ? 'lg:grid-cols-[260px_1fr_320px]' : 'lg:grid-cols-[1fr_320px]'}`}>
           {config.kollab.enabled && (
-            <div className="order-2 lg:order-none">
+            <div id="hub-kollab" className="order-2 lg:order-none">
               <CommunityKollab
                 hubId={hub.id}
                 canDrop={config.kollab.whoCanDrop === 'owner-only' ? isPrivileged : (isPrivileged || joined)}
@@ -103,10 +112,10 @@ export function CommunityHubView({
               />
             </div>
           )}
-          <div className="order-1 lg:order-none">
+          <div id="hub-feed" className="order-1 lg:order-none">
             <CommunityFeed hubId={hub.id} canPost={canPost} isPrivileged={isPrivileged} currentUserId={currentUserId} config={config} preview={preview} pollNonce={pollNonce} />
           </div>
-          <div className="order-3 lg:order-none">
+          <div id="hub-members" className="order-3 lg:order-none">
             <CommunitySidebar config={config} heroVideoUrl={hub.heroVideoUrl} members={members} resources={resources} events={events} />
           </div>
         </div>

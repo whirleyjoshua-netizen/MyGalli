@@ -7,7 +7,8 @@ describe('WidgetsToolsSection', () => {
   it('lists the three utility cards with labels', () => {
     render(<WidgetsToolsSection config={DEFAULT_HUB_CONFIG} onChange={() => {}} hubId="h1" />)
     expect(screen.getByText('Notes')).toBeInTheDocument()
-    expect(screen.getByText('Kollab AI')).toBeInTheDocument()
+    expect(screen.getByText('Activity')).toBeInTheDocument()
+    expect(screen.queryByText('Kollab AI')).toBeNull()
     expect(screen.getByText('Tools')).toBeInTheDocument()
   })
 
