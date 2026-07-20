@@ -36,8 +36,20 @@ export function MessagesClient({ myId }: { myId: string }) {
   const [loadingList, setLoadingList] = useState(true)
   const [busy, setBusy] = useState(false)
   const [missing, setMissing] = useState(false)
+  // Retains the last conversation summary the user was actually viewing, so
+  // that a filtered list (Unread/Requests) dropping the row out from under
+  // the reader does not blank the open thread mid-read.
+  const [retainedActive, setRetainedActive] = useState<DmConversationSummary | null>(null)
 
-  const active = conversations.find((c) => c.id === activeId) || null
+  const filteredActive = conversations.find((c) => c.id === activeId) || null
+  const active =
+    filteredActive ||
+    (retainedActive && retainedActive.id === activeId ? retainedActive : null)
+
+  useEffect(() => {
+    if (filteredActive) setRetainedActive(filteredActive)
+    else if (!activeId) setRetainedActive(null)
+  }, [filteredActive, activeId])
 
   // Tracks the currently-selected conversation so in-flight fetches can tell,
   // after their await resolves, whether the user has since switched away.
@@ -95,6 +107,11 @@ export function MessagesClient({ myId }: { myId: string }) {
       const seen = new Set(prev.map((m) => m.id))
       return [...prev, ...incoming.filter((m) => !seen.has(m.id))]
     })
+    // Re-stamp lastReadAt so a thread the reader is actively watching stays
+    // marked read as new messages arrive, not just at the moment it's opened.
+    if (!document.hidden) {
+      fetch(`/api/dm/conversations/${requestedFor}/read`, { method: 'POST' }).catch(() => {})
+    }
   }, [activeId, messages])
 
   useEffect(() => {
@@ -131,6 +148,9 @@ export function MessagesClient({ myId }: { myId: string }) {
         })
         if (!res.ok) throw new Error('send failed')
         const data = await res.json()
+        // If the user has since navigated away from this conversation, the
+        // messages array no longer belongs to it -- do not write into it.
+        if (activeIdRef.current !== optimistic.conversationId) return
         setMessages((prev) => {
           // A poll may have already inserted this same server message while
           // the POST was in flight. Drop that copy before swapping in the
@@ -140,6 +160,13 @@ export function MessagesClient({ myId }: { myId: string }) {
           return withoutServerCopy.map((m) => (m.id === optimistic.id ? data.message : m))
         })
       } catch {
+        if (activeIdRef.current !== optimistic.conversationId) {
+          // The user navigated away before the send failed. There is no
+          // pending bubble left to mark failed -- surface it so the failure
+          // is not silently dropped.
+          console.error('Message failed to send after navigating away from the conversation.')
+          return
+        }
         setMessages((prev) =>
           prev.map((m) => (m.id === optimistic.id ? { ...m, pending: false, failed: true } : m))
         )
@@ -184,8 +211,10 @@ export function MessagesClient({ myId }: { myId: string }) {
         return
       }
       const data = await res.json()
-      await loadConversations()
+      // Navigate first: the conversation was already created successfully,
+      // so a blip refreshing the list must not surface a create-failed error.
       router.push(`/messages?c=${data.id}`)
+      loadConversations().catch(() => {})
     } catch {
       window.alert('Could not start that conversation.')
     } finally {
@@ -203,6 +232,9 @@ export function MessagesClient({ myId }: { myId: string }) {
         body: JSON.stringify({ state }),
       })
       if (state === 'blocked') clearSelection()
+      // An accepted request no longer matches the Requests filter; move to
+      // All so the just-accepted thread stays visible instead of vanishing.
+      if (state === 'accepted') setTab('all')
       await loadConversations()
     } catch {
       // The row stays as-is; the next poll reconciles.

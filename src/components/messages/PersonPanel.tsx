@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { User as UserIcon } from 'lucide-react'
 import { isOnline } from '@/lib/dm'
 import type { DmConversationSummary } from '@/lib/types/dm'
+import { initials } from './ConversationRow'
 
 export function PersonPanel({ conversation }: { conversation: DmConversationSummary }) {
   const { other } = conversation
@@ -18,7 +19,7 @@ export function PersonPanel({ conversation }: { conversation: DmConversationSumm
           <img src={other.avatar} alt="" className="h-16 w-16 rounded-full object-cover" />
         ) : (
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-galli/15 text-lg font-bold text-galli-dark">
-            {display.slice(0, 2).toUpperCase()}
+            {initials(other.name, other.username)}
           </span>
         )}
         <p className="mt-3 text-base font-bold">{display}</p>

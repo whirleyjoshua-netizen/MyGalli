@@ -8,7 +8,7 @@ export function MessagesEmpty({ variant }: { variant: 'inbox' | 'thread' }) {
       ? {
           Icon: Inbox,
           title: 'No conversations yet',
-          body: 'Start one from someone&apos;s profile, or wait for a message to arrive.',
+          body: 'Tap New Message to start a conversation, or wait for one to arrive.',
         }
       : {
           Icon: MessageSquare,

@@ -4,11 +4,12 @@ import { getUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   const user = await getUser(request)
-  if (!user) return NextResponse.json({ count: 0 })
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const rows = await db.conversationParticipant.findMany({
     where: { userId: user.id, state: 'accepted' },
     select: { conversationId: true, lastReadAt: true },
+    orderBy: { conversation: { lastMessageAt: 'desc' } },
     take: 100,
   })
 

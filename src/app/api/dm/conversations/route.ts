@@ -70,8 +70,13 @@ export async function GET(request: NextRequest) {
   )
 
   const conversations: DmConversationSummary[] = rows.map((row, i) => {
-    const other = row.conversation.participants[0]?.user
+    const otherParticipant = row.conversation.participants[0]
+    const other = otherParticipant?.user
     const last = row.conversation.messages[0]
+    // A conversation the creator unilaterally started is visible to the
+    // creator even before the recipient accepts. Until the other participant
+    // has actually accepted, do not leak their presence through it.
+    const otherAccepted = otherParticipant?.state === 'accepted'
     return {
       id: row.conversationId,
       state: row.state as DmParticipantState,
@@ -84,7 +89,7 @@ export async function GET(request: NextRequest) {
         username: other?.username ?? '',
         name: other?.name ?? null,
         avatar: other?.avatar ?? null,
-        lastSeenAt: other?.lastSeenAt ? other.lastSeenAt.toISOString() : null,
+        lastSeenAt: other?.lastSeenAt && otherAccepted ? other.lastSeenAt.toISOString() : null,
         followsYou: other ? followers.has(other.id) : false,
       },
       preview: last

@@ -92,6 +92,34 @@ describe('GET /api/dm/conversations', () => {
     )
     expect(data.conversations[0].other.followsYou).toBe(true)
   })
+
+  it('hides lastSeenAt when the other participant has not accepted', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.conversationParticipant.findMany as any).mockResolvedValue([
+      {
+        conversationId: 'c1',
+        state: 'accepted',
+        starred: false,
+        muted: false,
+        lastReadAt: null,
+        conversation: {
+          lastMessageAt: new Date('2026-07-20T10:00:00Z'),
+          participants: [
+            {
+              userId: 'them',
+              state: 'requested',
+              user: { id: 'them', username: 'sarah', name: 'Sarah', avatar: null, lastSeenAt: new Date('2026-07-20T10:00:00Z') },
+            },
+          ],
+          messages: [],
+        },
+      },
+    ])
+
+    const res = await GET(get())
+    const data = await res.json()
+    expect(data.conversations[0].other.lastSeenAt).toBeNull()
+  })
 })
 
 describe('POST /api/dm/conversations', () => {

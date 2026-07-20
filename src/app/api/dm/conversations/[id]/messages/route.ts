@@ -154,7 +154,9 @@ export async function POST(request: NextRequest, { params }: Ctx) {
       type: 'message',
       actor: { id: user.id, name: user.name || user.username },
       entityUrl: `/messages?c=${id}`,
-      contextText: body.slice(0, 80),
+      // No message content goes into the notification: contextText is
+      // formatted as a page title ("sent you a message on <title>"), and
+      // Notification rows aren't covered by DirectMessage's soft delete.
     })
   }
 

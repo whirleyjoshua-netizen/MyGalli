@@ -15,7 +15,7 @@ export function relativeTime(iso: string, now: Date = new Date()): string {
   return then.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-function initials(name: string | null, username: string): string {
+export function initials(name: string | null, username: string): string {
   const source = name?.trim() || username
   return source
     .split(/\s+/)
@@ -55,6 +55,7 @@ export function ConversationRow({
         )}
         {online && (
           <span
+            role="img"
             aria-label="Online"
             className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background bg-galli"
           />

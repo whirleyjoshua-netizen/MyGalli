@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { groupByDay, dayLabel, isOnline } from '@/lib/dm'
 import type { DmConversationSummary, DmMessage } from '@/lib/types/dm'
 import { MessageBubble } from './MessageBubble'
+import { initials } from './ConversationRow'
 
 export function MessageThread({
   messages,
@@ -45,7 +46,7 @@ export function MessageThread({
           <img src={other.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
         ) : (
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-galli/15 text-xs font-bold text-galli-dark">
-            {display.slice(0, 2).toUpperCase()}
+            {initials(other.name, other.username)}
           </span>
         )}
         <div className="min-w-0">
