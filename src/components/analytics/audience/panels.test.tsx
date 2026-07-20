@@ -36,6 +36,17 @@ describe('GeographyList', () => {
     )
     expect(container.textContent).not.toMatch(/NaN/)
   })
+
+  it('discloses how many countries are hidden past the cap of 10', () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({ country: `C${i}`, count: 12 - i }))
+    render(<GeographyList geography={many} unknownCountryEvents={0} />)
+    expect(screen.getByText(/2 more countries are not shown/i)).toBeTruthy()
+  })
+
+  it('says nothing about hidden rows when everything fits', () => {
+    render(<GeographyList geography={geography} unknownCountryEvents={0} />)
+    expect(screen.queryByText(/not shown/i)).toBeNull()
+  })
 })
 
 describe('SourcesBreakdown', () => {

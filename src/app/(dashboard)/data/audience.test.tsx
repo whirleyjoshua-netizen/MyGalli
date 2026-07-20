@@ -84,4 +84,51 @@ describe('Data page Audience tab', () => {
       expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/audience'))).toBe(true)
     })
   })
+
+  it('does not show the previous display\'s numbers after switching display, before the new response resolves', async () => {
+    const audienceTwo = {
+      ...audience,
+      summary: { ...audience.summary, visitors: 999 },
+    }
+
+    // Deferred promise for display d2's audience response, so we control
+    // exactly when it resolves and can assert during the gap.
+    let resolveSecond: (value: unknown) => void = () => {}
+    const secondResponse = new Promise((resolve) => { resolveSecond = resolve })
+
+    vi.unstubAllGlobals()
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      if (url.startsWith('/api/displays')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([
+            { id: 'd1', title: 'My Page', slug: 'my-page', views: 1 },
+            { id: 'd2', title: 'Other Page', slug: 'other-page', views: 1 },
+          ]),
+        })
+      }
+      if (url.includes('/d1/audience')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(audience) })
+      }
+      if (url.includes('/d2/audience')) {
+        return secondResponse.then((data) => ({ ok: true, json: () => Promise.resolve(data) }))
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+    }))
+
+    render(<AnalyticsPage />)
+    await waitFor(() => expect(screen.getByText('412')).toBeTruthy())
+
+    const select = screen.getByDisplayValue('My Page') as HTMLSelectElement
+    fireEvent.change(select, { target: { value: 'd2' } })
+
+    // While d2's request is still in flight, the old display's number must
+    // be gone (either loading state, or simply not "412" anymore).
+    await waitFor(() => {
+      expect(screen.queryByText('412')).toBeNull()
+    })
+
+    resolveSecond(audienceTwo)
+    await waitFor(() => expect(screen.getByText('999')).toBeTruthy())
+  })
 })

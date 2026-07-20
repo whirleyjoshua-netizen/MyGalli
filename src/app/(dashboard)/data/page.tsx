@@ -117,6 +117,7 @@ function AnalyticsContent() {
     if (activeTab !== 'audience' || !selectedDisplayId) return
     let cancelled = false
     setAudienceLoading(true)
+    setAudience(null)
     fetch(`/api/analytics/${selectedDisplayId}/audience?days=${days}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => { if (!cancelled) setAudience(data && data.summary ? data : null) })

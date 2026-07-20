@@ -49,6 +49,12 @@ export function GeographyList({
             })}
           </ul>
 
+          {geography.length > 10 && (
+            <p className="mt-4 text-xs text-muted-foreground">
+              {(geography.length - 10).toLocaleString()} more {geography.length - 10 === 1 ? 'country is' : 'countries are'} not shown.
+            </p>
+          )}
+
           {unknownCountryEvents > 0 && (
             <p className="mt-4 text-xs text-muted-foreground">
               {unknownCountryEvents.toLocaleString()} visits couldn&apos;t be located and are not
