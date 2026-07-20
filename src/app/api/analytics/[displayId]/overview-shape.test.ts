@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildOverview, type OverviewInput } from './overview'
-import { collectAllSections } from './route'
+import { collectAllSections } from './sections'
 
 const baseInput = (): OverviewInput => ({
   currentEvents: [

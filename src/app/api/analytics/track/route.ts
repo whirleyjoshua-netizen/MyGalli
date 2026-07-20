@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { isAnalyticsEventType, parseInteractMetadata, parseShareChannel } from '@/lib/analytics-events'
+import { countryFromHeaders } from './geo'
 
 // Parse user agent to extract device info
 function parseUserAgent(ua: string | null): {
@@ -53,15 +54,6 @@ function parseUtmParams(referrer: string | null): {
   } catch {
     return {}
   }
-}
-
-// Vercel populates this header at the edge for every request. Country-level
-// only — we deliberately never read or store city or IP.
-export function countryFromHeaders(headers: Headers): string | null {
-  const raw = headers.get('x-vercel-ip-country')
-  if (!raw) return null
-  const code = raw.trim().toUpperCase()
-  return /^[A-Z]{2}$/.test(code) ? code : null
 }
 
 export async function POST(request: NextRequest) {
