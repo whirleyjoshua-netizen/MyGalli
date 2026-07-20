@@ -8,6 +8,7 @@ import { getUserFromCookies } from '@/lib/get-user-from-cookies'
 import { visibleNotes, toStripNote } from '@/lib/hub-notes'
 import { visibleBookmarks } from '@/lib/hub-highlight'
 import { CommunityHubView } from '@/components/hub/community/CommunityHubView'
+import { GalliTopBar } from '@/components/nav/GalliTopBar'
 import { canViewCommunityHub } from '@/lib/community'
 import { sanitizeHubConfig } from '@/lib/hub-config'
 import { toEventDTO } from '@/lib/hub-events'
@@ -104,7 +105,12 @@ export default async function PublicHubPage({ params }: Props) {
     const notes = visibleNotes(noteRows, viewer === 'owner').map(toStripNote)
     const config = sanitizeHubConfig(hub.config)
     return (
-      <CommunityHubView
+      <>
+        {/* Community hubs are standalone pages, so they carry no app chrome of
+            their own — without this a visitor has no way back to Galli and no
+            profile access. Same bar the public profile page uses. */}
+        <GalliTopBar tone="light" />
+        <CommunityHubView
         hub={{ id: hub.id, title: hub.title, tagline: hub.tagline, description: hub.description, coverImage: hub.coverImage, heroVideoUrl: hub.heroVideoUrl }}
         ownerUsername={user.username}
         currentUserId={viewerUser?.id}
@@ -121,7 +127,8 @@ export default async function PublicHubPage({ params }: Props) {
         activity={{ newPosts: newPostsCount, newDrops: newDropsCount, newMembers: newMembersCount }}
         sharePath={`/${user.username}/hub/${slug}`}
         config={config}
-      />
+        />
+      </>
     )
   }
 
