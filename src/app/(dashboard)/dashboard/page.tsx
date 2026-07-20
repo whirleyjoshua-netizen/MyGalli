@@ -3,9 +3,10 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Plus, Globe, FileText, LayoutGrid } from 'lucide-react'
+import { Search, Plus, Globe, FileText, LayoutGrid, Home } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import type { DashboardPrefs } from '@/lib/types/dashboard'
+import { PageHero } from '@/components/dashboard/PageHero'
 import { ScrollRow } from '@/components/dashboard/ScrollRow'
 import { PageCard, type DashDisplay } from '@/components/dashboard/PageCard'
 import { FeedCard, type FeedItem } from '@/components/dashboard/FeedCard'
@@ -171,17 +172,23 @@ export default function DashboardPage() {
   const selected = displays.find((d) => d.id === selectedId) || sortedDisplays[0] || null
 
   return (
-    <div className="flex">
+    <div className="relative flex min-h-screen">
+      {/* Decorative frog watermark — matches Explore */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/gallio-frog.svg"
+        alt=""
+        aria-hidden
+        className="pointer-events-none fixed -bottom-12 -right-12 z-0 w-[26rem] max-w-[45vw] opacity-[0.05]"
+      />
+
       {/* Center column */}
-      <div className="flex-1 min-w-0 px-6 lg:px-8 py-7">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Your Personal Gallery
-            </h1>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
+      <div className="relative z-10 flex-1 min-w-0">
+        <PageHero
+          icon={<Home className="w-7 h-7 text-primary" />}
+          title="Your Personal Gallery"
+          subtitle="Everything you're building, and what the pond is up to."
+          controls={
             <div className="hidden sm:flex items-center gap-2 px-3.5 h-10 rounded-full border border-border bg-surface text-muted-foreground w-56">
               <Search className="w-4 h-4 shrink-0" />
               <input
@@ -190,10 +197,11 @@ export default function DashboardPage() {
                 className="bg-transparent outline-none text-sm w-full placeholder:text-muted-foreground"
               />
             </div>
-            <NotificationBell />
-          </div>
-        </div>
+          }
+          action={<NotificationBell />}
+        />
 
+        <div className="px-6 lg:px-8 pb-10">
         {/* Public feed */}
         <ScrollRow
           title={feedLabel === 'follow' ? 'Public feed' : 'Explore'}
@@ -209,6 +217,9 @@ export default function DashboardPage() {
             feed.map((item, i) => <FeedCard key={item.id} item={item} index={i} />)
           )}
         </ScrollRow>
+
+        {/* Row divider */}
+        <hr className="mb-8 border-t border-border" />
 
         {/* My pages */}
         <ScrollRow
@@ -263,6 +274,7 @@ export default function DashboardPage() {
         {loading && displays.length === 0 && (
           <p className="text-sm text-muted-foreground">Loading your pages…</p>
         )}
+        </div>
       </div>
 
       {/* Right analytics panel */}
