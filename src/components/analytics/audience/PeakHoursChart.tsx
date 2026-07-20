@@ -22,7 +22,7 @@ export function PeakHoursChart({ hourCountsUtc }: { hourCountsUtc: number[] }) {
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
       <div className="mb-1 flex items-center gap-2">
         <Clock className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-bold">Hours</h3>
+        <h3 className="text-sm font-bold">Peak Hours</h3>
       </div>
       <p className="mb-4 text-xs text-muted-foreground">Shown in your time</p>
 

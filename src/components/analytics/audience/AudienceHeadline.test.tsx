@@ -51,7 +51,8 @@ describe('PeakHoursChart', () => {
     const counts = Array.from({ length: 24 }, (_, h) => (h === 18 ? 40 : 1))
     const { container } = render(<PeakHoursChart hourCountsUtc={counts} />)
     expect(container.querySelectorAll('[data-hour]')).toHaveLength(24)
-    expect(screen.getByText(/peak/i)).toBeTruthy()
+    expect(screen.getByText('Peak Hours')).toBeTruthy()
+    expect(screen.getByText('Peak', { exact: true })).toBeTruthy()
   })
 
   it('shows an empty state when there is no traffic', () => {
