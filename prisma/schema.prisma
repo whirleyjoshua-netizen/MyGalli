@@ -339,6 +339,11 @@ model AnalyticsEvent {
   // Session tracking (anonymous visitor identification)
   sessionId   String?
 
+  // Persistent per-browser id (localStorage). Distinguishes a returning person
+  // from a new tab: sessionId is per-tab and dies with it. Null on every event
+  // recorded before 2026-07-20 — reads fall back to sessionId for those.
+  visitorId   String?
+
   // Traffic source
   referrer    String?
   utmSource   String?
@@ -363,6 +368,7 @@ model AnalyticsEvent {
   @@index([displayId])
   @@index([displayId, createdAt])
   @@index([sessionId])
+  @@index([displayId, visitorId])
 }
 
 model FormResponse {
