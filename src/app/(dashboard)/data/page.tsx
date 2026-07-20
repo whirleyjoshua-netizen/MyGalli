@@ -228,7 +228,7 @@ function AnalyticsContent() {
         }
       />
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="w-full px-4 py-8 sm:px-6">
         {activeTab === 'bulletin' ? (
           <BulletinAnalyticsTab />
         ) : activeTab === 'elements' ? (

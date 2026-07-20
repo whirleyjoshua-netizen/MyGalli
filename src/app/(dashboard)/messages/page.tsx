@@ -11,7 +11,7 @@ export default function MessagesPage() {
         subtitle="Written and voice messages from your visitors, all in one inbox."
       />
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="w-full px-4 py-8 sm:px-6">
         <MessagesInbox />
       </main>
     </div>

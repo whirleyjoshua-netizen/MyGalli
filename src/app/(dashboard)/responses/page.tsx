@@ -195,7 +195,7 @@ function ResponsesContent() {
         }
       />
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="w-full px-4 py-8 sm:px-6">
         {loading && !data ? (
           <div className="flex items-center justify-center py-20">
             <p className="text-muted-foreground">Loading responses...</p>
