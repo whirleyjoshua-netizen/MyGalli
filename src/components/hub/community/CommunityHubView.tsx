@@ -45,6 +45,7 @@ export function CommunityHubView({
   const [manageEvents, setManageEvents] = useState(false)
   const [manageResources, setManageResources] = useState(false)
   const canPost = isPrivileged || joined
+  const nextEvent = events && events.length > 0 ? { title: events[0].title, startsAt: events[0].startsAt } : null
 
   async function toggleJoin() {
     const res = await fetch(`/api/hubs/${hub.id}/join`, { method: joined ? 'DELETE' : 'POST' })
@@ -66,6 +67,7 @@ export function CommunityHubView({
           joined={joined}
           memberCount={count}
           tagline={hub.tagline}
+          nextEvent={nextEvent}
           onToggleJoin={toggleJoin}
           onOpenPoll={() => setPollNonce((n) => n + 1)}
           onOpenEvents={() => setManageEvents(true)}

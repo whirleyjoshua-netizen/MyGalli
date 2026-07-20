@@ -125,6 +125,27 @@ describe('Activity card', () => {
     fireEvent.click(screen.getByRole('button', { name: /join/i }))
     expect(onToggleJoin).not.toHaveBeenCalled()
   })
+
+  it('shows a Next event line to a member when an upcoming event exists', () => {
+    render(<CommunityUtilityStrip {...base} activity={activity} joined nextEvent={{ title: 'Community Picnic', startsAt: '2026-08-01T18:00:00.000Z' }} />)
+    expect(screen.getByText(/Next: Community Picnic/)).toBeInTheDocument()
+  })
+
+  it('shows no Next event line to a member when there is no upcoming event', () => {
+    render(<CommunityUtilityStrip {...base} activity={activity} joined nextEvent={null} />)
+    expect(screen.queryByText(/^Next:/)).toBeNull()
+  })
+
+  it('shows the Next event line in the quiet state too', () => {
+    render(<CommunityUtilityStrip {...base} activity={{ newPosts: 0, newDrops: 0, newMembers: 0 }} joined nextEvent={{ title: 'Community Picnic', startsAt: '2026-08-01T18:00:00.000Z' }} />)
+    expect(screen.getByText(/it's been quiet/i)).toBeInTheDocument()
+    expect(screen.getByText(/Next: Community Picnic/)).toBeInTheDocument()
+  })
+
+  it('does not show the Next event line to a visitor', () => {
+    render(<CommunityUtilityStrip {...base} activity={activity} joined={false} nextEvent={{ title: 'Community Picnic', startsAt: '2026-08-01T18:00:00.000Z' }} />)
+    expect(screen.queryByText(/Next:/)).toBeNull()
+  })
 })
 
 describe('Tools card', () => {

@@ -7,7 +7,7 @@ import type { StripNote } from '@/lib/hub-notes'
 import { activityRows, isQuiet, type ActivityCounts } from '@/lib/hub-activity'
 
 export function CommunityUtilityStrip({
-  hubId, config, notes, isOwner, isPrivileged, preview, activity, joined, memberCount, tagline, onToggleJoin, onOpenPoll, onOpenEvents, onOpenResources,
+  hubId, config, notes, isOwner, isPrivileged, preview, activity, joined, memberCount, tagline, nextEvent, onToggleJoin, onOpenPoll, onOpenEvents, onOpenResources,
 }: {
   hubId: string
   config: HubConfig
@@ -19,6 +19,7 @@ export function CommunityUtilityStrip({
   joined: boolean
   memberCount: number
   tagline: string | null
+  nextEvent?: { title: string; startsAt: string } | null
   onToggleJoin: () => void
   onOpenPoll: () => void
   onOpenEvents: () => void
@@ -33,7 +34,7 @@ export function CommunityUtilityStrip({
 
   const card = (key: HubUtilityKey) => {
     if (key === 'notes') return <NotesCard key="notes" hubId={hubId} notes={notes} isOwner={isOwner} preview={preview} />
-    if (key === 'activity') return <ActivityCard key="activity" activity={activity} joined={joined} isPrivileged={isPrivileged} memberCount={memberCount} tagline={tagline} preview={preview} onToggleJoin={onToggleJoin} />
+    if (key === 'activity') return <ActivityCard key="activity" activity={activity} joined={joined} isPrivileged={isPrivileged} memberCount={memberCount} tagline={tagline} nextEvent={nextEvent} preview={preview} onToggleJoin={onToggleJoin} />
     return <ToolsCard key="tools" isOwner={isOwner} onOpenPoll={onOpenPoll} onOpenEvents={onOpenEvents} onOpenResources={onOpenResources} />
   }
 
@@ -54,13 +55,14 @@ function Shell({ icon, title, children }: { icon: React.ReactNode; title: string
 }
 
 function ActivityCard({
-  activity, joined, isPrivileged, memberCount, tagline, preview, onToggleJoin,
+  activity, joined, isPrivileged, memberCount, tagline, nextEvent, preview, onToggleJoin,
 }: {
   activity: ActivityCounts
   joined: boolean
   isPrivileged: boolean
   memberCount: number
   tagline: string | null
+  nextEvent?: { title: string; startsAt: string } | null
   preview?: boolean
   onToggleJoin: () => void
 }) {
@@ -100,9 +102,17 @@ function ActivityCard({
           ))}
         </ul>
       )}
+      {nextEvent && (
+        <p className="mt-2 truncate text-xs text-muted-foreground">
+          Next: {nextEvent.title} · {formatEventDate(nextEvent.startsAt)}
+        </p>
+      )}
     </Shell>
   )
 }
+
+const formatEventDate = (iso: string): string =>
+  new Date(iso).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 
 const jumpTargetId = (key: 'posts' | 'clips' | 'members'): string =>
   key === 'clips' ? 'hub-kollab' : key === 'members' ? 'hub-members' : 'hub-feed'
