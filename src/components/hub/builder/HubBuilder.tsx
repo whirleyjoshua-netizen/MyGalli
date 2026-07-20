@@ -14,6 +14,7 @@ import { HubProfileSection } from './HubProfileSection'
 import { HubSettingsSection } from './HubSettingsSection'
 import { CommunitySettingsSection } from './CommunitySettingsSection'
 import { WidgetsToolsSection } from './WidgetsToolsSection'
+import { ModerationQueue } from './ModerationQueue'
 
 type HubState = {
   id: string; title: string; tagline: string | null; description: string | null

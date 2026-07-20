@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Heart, Trash2 } from 'lucide-react'
 import type { ElementAggregate } from '@/lib/element-aggregate'
 import { BulletinBlock } from './BulletinBlock'
@@ -32,6 +32,7 @@ export function BulletinPostCard({
   basePath = '/api/bulletin',
   canModerate,
   canReact,
+  reportSlot,
 }: {
   post: FeedPost
   currentUserId?: string
@@ -39,6 +40,10 @@ export function BulletinPostCard({
   basePath?: string
   canModerate?: boolean
   canReact?: boolean
+  // Optional render-slot so a host surface (e.g. Hub communities) can attach a
+  // ReportButton without coupling this shared card to hub-only concepts. Bulletin's
+  // own usage passes nothing and renders unchanged.
+  reportSlot?: ReactNode
 }) {
   const [liked, setLiked] = useState(post.likedByMe ?? false)
   const [likeCount, setLikeCount] = useState(post.likeCount ?? 0)
@@ -88,6 +93,7 @@ export function BulletinPostCard({
           <p className="truncate text-sm font-semibold text-foreground">{name}</p>
           <p className="text-xs text-muted-foreground">@{post.author.username} · {timeAgo(post.createdAt)}</p>
         </div>
+        {reportSlot}
         {(currentUserId === post.author.id || canModerate) && (
           <button onClick={del} title="Delete" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
         )}
