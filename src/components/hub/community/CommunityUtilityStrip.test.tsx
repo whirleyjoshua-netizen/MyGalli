@@ -88,9 +88,9 @@ describe('Notes card', () => {
 })
 
 describe('Tools card', () => {
-  it('fires the matching callback for each tool', async () => {
+  it('fires the matching callback for each tool for the owner', async () => {
     const onOpenPoll = vi.fn(), onOpenEvents = vi.fn(), onOpenResources = vi.fn()
-    render(<CommunityUtilityStrip {...base} isPrivileged onOpenPoll={onOpenPoll} onOpenEvents={onOpenEvents} onOpenResources={onOpenResources} />)
+    render(<CommunityUtilityStrip {...base} isPrivileged isOwner onOpenPoll={onOpenPoll} onOpenEvents={onOpenEvents} onOpenResources={onOpenResources} />)
     fireEvent.click(screen.getByRole('button', { name: 'Polls' }))
     fireEvent.click(screen.getByRole('button', { name: 'Events' }))
     fireEvent.click(screen.getByRole('button', { name: 'Files' }))
@@ -98,5 +98,15 @@ describe('Tools card', () => {
     expect(onOpenPoll).toHaveBeenCalledTimes(1)
     expect(onOpenEvents).toHaveBeenCalledTimes(1)
     expect(onOpenResources).toHaveBeenCalledTimes(2) // Files and Links share the manager
+  })
+
+  // Files/Links open a manager gated on ownHub server-side; a collaborator only
+  // gets a working modal for Polls and Events.
+  it('shows only Polls and Events to a non-owner collaborator', () => {
+    render(<CommunityUtilityStrip {...base} isPrivileged isOwner={false} />)
+    expect(screen.getByRole('button', { name: 'Polls' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Events' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Files' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Links' })).toBeNull()
   })
 })

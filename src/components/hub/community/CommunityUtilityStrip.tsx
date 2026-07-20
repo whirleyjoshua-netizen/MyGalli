@@ -28,7 +28,7 @@ export function CommunityUtilityStrip({
   const card = (key: HubUtilityKey) => {
     if (key === 'notes') return <NotesCard key="notes" hubId={hubId} notes={notes} isOwner={isOwner} preview={preview} />
     if (key === 'ai') return <AiCard key="ai" />
-    return <ToolsCard key="tools" onOpenPoll={onOpenPoll} onOpenEvents={onOpenEvents} onOpenResources={onOpenResources} />
+    return <ToolsCard key="tools" isOwner={isOwner} onOpenPoll={onOpenPoll} onOpenEvents={onOpenEvents} onOpenResources={onOpenResources} />
   }
 
   return (
@@ -150,16 +150,20 @@ function NoteModal({ title, onClose, children }: { title: string; onClose: () =>
   )
 }
 
-function ToolsCard({ onOpenPoll, onOpenEvents, onOpenResources }: { onOpenPoll: () => void; onOpenEvents: () => void; onOpenResources: () => void }) {
+function ToolsCard({ isOwner, onOpenPoll, onOpenEvents, onOpenResources }: { isOwner: boolean; onOpenPoll: () => void; onOpenEvents: () => void; onOpenResources: () => void }) {
   const tools = [
     { label: 'Polls', icon: <BarChart3 className="h-4 w-4" />, onClick: onOpenPoll },
     { label: 'Events', icon: <CalendarDays className="h-4 w-4" />, onClick: onOpenEvents },
-    { label: 'Files', icon: <FolderOpen className="h-4 w-4" />, onClick: onOpenResources },
-    { label: 'Links', icon: <Link2 className="h-4 w-4" />, onClick: onOpenResources },
+    ...(isOwner
+      ? [
+          { label: 'Files', icon: <FolderOpen className="h-4 w-4" />, onClick: onOpenResources },
+          { label: 'Links', icon: <Link2 className="h-4 w-4" />, onClick: onOpenResources },
+        ]
+      : []),
   ]
   return (
     <Shell icon={<Wrench className="h-4 w-4 text-primary" />} title="Tools">
-      <div className="grid grid-cols-4 gap-2">
+      <div className={`grid gap-2 ${isOwner ? 'grid-cols-4' : 'grid-cols-2'}`}>
         {tools.map((t) => (
           <button
             key={t.label}
