@@ -50,6 +50,8 @@ model User {
   hubPostComments HubPostComment[] @relation("HubPostCommentAuthor")
   hubPostResponses HubPostResponse[]
   hubDrops HubDrop[]
+  hubReports HubReport[] @relation("HubReportReporter")
+  hubBans HubBan[] @relation("HubBanUser")
   ownedWorkspaces          Workspace[]       @relation("OwnedWorkspaces")
   workspaceRecordsCreated  WorkspaceRecord[] @relation("WorkspaceRecordsCreated")
   workspaceRecordsUpdated  WorkspaceRecord[] @relation("WorkspaceRecordsUpdated")
@@ -590,6 +592,8 @@ model Hub {
   posts       HubPost[]
   hubEvents   HubEvent[]
   drops       HubDrop[]
+  hubReports  HubReport[]
+  hubBans     HubBan[]
   @@unique([userId, slug])
   @@index([userId])
   @@index([displayId])
@@ -673,8 +677,40 @@ model HubDrop {
   width        Int?
   height       Int?
   hidden       Boolean  @default(false)
+  consentText  String?
   createdAt    DateTime @default(now())
   @@index([hubId, createdAt])
+}
+
+model HubReport {
+  id           String    @id @default(cuid())
+  hubId        String
+  hub          Hub       @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  reporterId   String
+  reporter     User      @relation("HubReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType   String
+  targetId     String
+  reason       String
+  note         String?
+  status       String    @default("open")
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+  @@unique([hubId, reporterId, targetType, targetId])
+  @@index([hubId, status])
+}
+
+model HubBan {
+  id         String   @id @default(cuid())
+  hubId      String
+  hub        Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation("HubBanUser", fields: [userId], references: [id], onDelete: Cascade)
+  bannedById String
+  reason     String?
+  createdAt  DateTime @default(now())
+  @@unique([hubId, userId])
+  @@index([hubId])
 }
 
 model HubCollaborator {
