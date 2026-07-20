@@ -101,10 +101,12 @@ export function CommunityHubView({
             <div id="hub-kollab" className="order-2 lg:order-none">
               <CommunityKollab
                 hubId={hub.id}
+                hubTitle={hub.title}
                 canDrop={config.kollab.whoCanDrop === 'owner-only' ? isPrivileged : (isPrivileged || joined)}
                 isPrivileged={isPrivileged}
                 currentUserId={currentUserId}
                 enabled={config.kollab.enabled}
+                requireApproval={config.kollab.requireApproval}
                 initialDrops={drops}
                 total={counts.kollab}
                 narrow

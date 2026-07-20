@@ -6,6 +6,7 @@ import { sanitizeHubConfig, canDropToPool } from '@/lib/hub-config'
 import { rateLimit } from '@/lib/rate-limit'
 import { notifyHubMembers } from '@/lib/notifications'
 import { validateDropInput, toDropDTO } from '@/lib/hub-drops'
+import { consentTextFor } from '@/lib/hub-consent'
 
 const PAGE = 24
 
@@ -85,6 +86,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       mimeType: v.mimeType,
       width: v.width,
       height: v.height,
+      hidden: config.kollab.requireApproval && !isPrivileged,
+      consentText: consentTextFor(hub.title),
     },
   })
   const memberIds = (await db.hubMember.findMany({ where: { hubId: id }, select: { userId: true } })).map((m) => m.userId)
