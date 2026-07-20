@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { buildOverview, buildLiveOnly, collectAllSections } from './overview'
+import { buildOverview, buildLiveOnly } from './overview'
+import { collectAllSections } from './sections'
 
 interface Props {
   params: Promise<{ displayId: string }>
