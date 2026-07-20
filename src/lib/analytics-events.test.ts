@@ -5,6 +5,7 @@ import {
   parseInteractMetadata,
   parseShareChannel,
   parseVisitorId,
+  parseSessionId,
 } from './analytics-events'
 
 describe('isAnalyticsEventType', () => {
@@ -98,5 +99,23 @@ describe('parseVisitorId', () => {
   it('rejects rather than truncates an over-length id', () => {
     expect(parseVisitorId('v'.repeat(64))).toBe('v'.repeat(64))
     expect(parseVisitorId('v'.repeat(65))).toBeNull()
+  })
+})
+
+describe('parseSessionId', () => {
+  it('accepts a normal id', () => {
+    expect(parseSessionId('sess_abc123')).toBe('sess_abc123')
+  })
+
+  it('rejects a missing, empty or non-string value — never stores an empty string', () => {
+    expect(parseSessionId(undefined)).toBeNull()
+    expect(parseSessionId(null)).toBeNull()
+    expect(parseSessionId('')).toBeNull()
+    expect(parseSessionId('   ')).toBeNull()
+    expect(parseSessionId(42)).toBeNull()
+  })
+
+  it('rejects rather than truncates an over-length id', () => {
+    expect(parseSessionId('s'.repeat(65))).toBeNull()
   })
 })

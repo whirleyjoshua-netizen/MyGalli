@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
-import { isAnalyticsEventType, parseInteractMetadata, parseShareChannel, parseVisitorId } from '@/lib/analytics-events'
+import { isAnalyticsEventType, parseInteractMetadata, parseShareChannel, parseVisitorId, parseSessionId } from '@/lib/analytics-events'
 import { countryFromHeaders } from './geo'
 
 // Parse user agent to extract device info
@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
     // older client or a browser with localStorage disabled must still be able
     // to send events.
     const storedVisitorId = parseVisitorId(visitorId)
+    const storedSessionId = parseSessionId(sessionId)
 
     // Verify display exists
     const display = await db.display.findUnique({
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
       data: {
         displayId,
         eventType,
-        sessionId,
+        sessionId: storedSessionId,
         visitorId: storedVisitorId,
         referrer,
         userAgent,

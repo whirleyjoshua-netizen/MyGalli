@@ -72,6 +72,22 @@ describe('sessionStats', () => {
     expect(out.avgSessionSeconds).toBeNull()
     expect(out.bounceRate).toBe(0)
   })
+
+  it('handles a session with 200,000 events without throwing (no Math.max/min spread)', () => {
+    const start = new Date('2026-07-20T00:00:00Z').getTime()
+    const events: AudienceEvent[] = []
+    for (let i = 0; i < 200_000; i++) {
+      events.push(ev('s1', new Date(start + i * 1000).toISOString()))
+    }
+    // Shuffle-ish: put an out-of-order timestamp at the very end too.
+    events.push(ev('s1', new Date(start - 5000).toISOString()))
+
+    let out: ReturnType<typeof sessionStats> | undefined
+    expect(() => { out = sessionStats(events) }).not.toThrow()
+    // Duration is last minus first: (start + 199999*1000) - (start - 5000), in seconds.
+    expect(out!.avgSessionSeconds).toBe(199999 + 5)
+    expect(out!.measuredSessions).toBe(1)
+  })
 })
 
 describe('identityKey', () => {

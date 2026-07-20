@@ -32,9 +32,10 @@ describe('AudienceHeadline', () => {
     expect(screen.queryByText('0s')).toBeNull()
   })
 
-  it('shows the returning share', () => {
+  it('shows the returning count with the share as its sub-caption', () => {
     render(<AudienceHeadline summary={summary} identityFallback={false} />)
-    expect(screen.getByText('38.1%')).toBeTruthy()
+    expect(screen.getByText('157')).toBeTruthy()
+    expect(screen.getByText(/38\.1% came back/)).toBeTruthy()
   })
 
   it('discloses the identity fallback only when it applies', () => {

@@ -16,6 +16,7 @@ export interface AudienceRow {
   deviceType: string | null
   browser: string | null
   createdAt: Date
+  eventType: string
 }
 
 export interface AudienceInput {
@@ -68,6 +69,17 @@ export function buildAudience(input: AudienceInput): AudienceResult {
   let identityFallback = false
 
   for (const event of input.events) {
+    if (event.sessionId) sessions.add(event.sessionId)
+    if (!event.visitorId) identityFallback = true
+
+    // Geography/sources/devices/browsers/hourCountsUtc describe VISITS, not
+    // events — a single visitor clicking a poll 40 times must not swamp these
+    // breakdowns. `interact`/`share` events are excluded; sessionStats and
+    // visitorSplit above intentionally still see every event, since a
+    // session's duration legitimately spans interactions and identity is
+    // identity regardless of event type.
+    if (event.eventType !== 'view') continue
+
     hourCountsUtc[event.createdAt.getUTCHours()] += 1
 
     if (event.country) tally(countries, event.country)
@@ -76,9 +88,6 @@ export function buildAudience(input: AudienceInput): AudienceResult {
     tally(sources, classifySource(event.referrer, event.utmSource, input.ownHost))
     tally(devices, event.deviceType)
     tally(browsers, event.browser)
-
-    if (event.sessionId) sessions.add(event.sessionId)
-    if (!event.visitorId) identityFallback = true
   }
 
   return {

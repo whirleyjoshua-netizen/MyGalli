@@ -34,7 +34,7 @@ export function AudienceHeadline({
     { key: 'visitors', label: 'Visitors', icon: Users, value: summary.visitors.toLocaleString(), sub: 'people' },
     { key: 'sessions', label: 'Sessions', icon: MousePointerClick, value: summary.sessions.toLocaleString(), sub: 'visits' },
     { key: 'new', label: 'New', icon: UserPlus, value: summary.newVisitors.toLocaleString(), sub: 'first time here' },
-    { key: 'returning', label: 'Returning', icon: Repeat, value: `${returningShare.toFixed(1)}%`, sub: `${summary.returningVisitors.toLocaleString()} came back` },
+    { key: 'returning', label: 'Returning', icon: Repeat, value: summary.returningVisitors.toLocaleString(), sub: `${returningShare.toFixed(1)}% came back` },
     { key: 'avg', label: 'Avg session', icon: Timer, value: formatDuration(summary.avgSessionSeconds), sub: summary.measuredSessions > 0 ? `over ${summary.measuredSessions.toLocaleString()} sessions` : 'not enough data' },
     { key: 'bounce', label: 'Bounce rate', icon: LogOut, value: `${summary.bounceRate.toFixed(0)}%`, sub: 'left after one action' },
   ]
@@ -58,8 +58,10 @@ export function AudienceHeadline({
 
       {identityFallback && (
         <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          Some visits in this range were recorded before we could tell repeat visitors apart. Those
-          count each visit separately, so the visitor numbers above overcount slightly.
+          Some visits in this range couldn&apos;t be tied to a returning person — the visit happened
+          before we could tell repeat visitors apart, the visitor&apos;s browser blocked the storage
+          we use to recognize them, or they asked not to be tracked. Those count as new each time,
+          so the visitor numbers above overcount slightly.
         </p>
       )}
     </div>

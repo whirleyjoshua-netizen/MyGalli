@@ -12,7 +12,9 @@ function formatHour(hour: number): string {
 
 export function PeakHoursChart({ hourCountsUtc }: { hourCountsUtc: number[] }) {
   // Drawn in the viewer's own timezone: "most active at 6pm" is only actionable
-  // if 6pm means 6pm where the owner is.
+  // if 6pm means 6pm where the owner is. Uses TODAY's UTC offset for the whole
+  // window, so a range spanning a DST transition is skewed by an hour for the
+  // days on the other side of the change.
   const local = peakHours(hourCountsUtc, new Date().getTimezoneOffset())
   const total = local.reduce((sum, n) => sum + n, 0)
   const max = Math.max(...local, 1)

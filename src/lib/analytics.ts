@@ -12,13 +12,47 @@ function getSessionId(): string {
   return sessionId
 }
 
+// Narrow local type for the handful of non-standard privacy-signal properties
+// browsers expose on navigator/window. Deliberately NOT widened onto the
+// global Navigator interface — kept as a local assertion so it can't leak
+// into (or mask a real conflicting type from) other modules.
+interface PrivacySignalNavigator {
+  globalPrivacyControl?: boolean
+  doNotTrack?: string | null
+}
+interface PrivacySignalWindow {
+  doNotTrack?: string | null
+}
+
+// True when the visitor has signalled an opt-out via Global Privacy Control
+// or Do Not Track, in any of the several places browsers have historically
+// exposed it. Defensive: hostile/unusual browsers must never throw into the
+// page just because we looked at navigator/window properties.
+function hasPrivacyOptOut(): boolean {
+  try {
+    const nav = navigator as unknown as PrivacySignalNavigator
+    const win = window as unknown as PrivacySignalWindow
+    if (nav.globalPrivacyControl === true) return true
+    if (nav.doNotTrack === '1') return true
+    if (win.doNotTrack === '1') return true
+    if ((navigator as unknown as { msDoNotTrack?: string }).msDoNotTrack === '1') return true
+  } catch {
+    return false
+  }
+  return false
+}
+
 // Persistent per-browser id. Unlike the session id (sessionStorage, dies with
 // the tab) this survives across visits, which is what makes "returning
 // visitor" answerable. Opaque random value — no PII.
 // Wrapped in try/catch because localStorage throws in some privacy modes;
 // analytics must never break the page.
+// Honours GPC/DNT: when the visitor has opted out, localStorage is never
+// touched at all (not even to clear the existing key) and an empty string is
+// returned so no persistent id is sent. The event itself still fires.
 function getVisitorId(): string {
   if (typeof window === 'undefined') return ''
+  if (hasPrivacyOptOut()) return ''
 
   try {
     let visitorId = localStorage.getItem('galli_visitor_id')
@@ -34,16 +68,16 @@ function getVisitorId(): string {
 
 // Track a page view
 export async function trackPageView(displayId: string): Promise<void> {
-  let sessionId = ''
-  let visitorId = ''
+  let sessionId: string | undefined
+  let visitorId: string | undefined
 
   try {
-    sessionId = getSessionId()
+    sessionId = getSessionId() || undefined
   } catch (error) {
     console.error('Analytics tracking failed:', error)
   }
 
-  visitorId = getVisitorId()
+  visitorId = getVisitorId() || undefined
 
   try {
     await fetch('/api/analytics/track', {
@@ -70,16 +104,16 @@ export async function trackEvent(
   eventType: string,
   metadata?: Record<string, unknown>
 ): Promise<void> {
-  let sessionId = ''
-  let visitorId = ''
+  let sessionId: string | undefined
+  let visitorId: string | undefined
 
   try {
-    sessionId = getSessionId()
+    sessionId = getSessionId() || undefined
   } catch (error) {
     console.error('Analytics tracking failed:', error)
   }
 
-  visitorId = getVisitorId()
+  visitorId = getVisitorId() || undefined
 
   try {
     await fetch('/api/analytics/track', {

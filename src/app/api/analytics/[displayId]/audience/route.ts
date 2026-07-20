@@ -40,18 +40,31 @@ export async function GET(request: NextRequest, { params }: Props) {
         select: {
           sessionId: true, visitorId: true, country: true, referrer: true,
           utmSource: true, deviceType: true, browser: true, createdAt: true,
+          eventType: true,
         },
       }),
       // Identities seen before the window define who counts as "returning".
+      // Capped at 10000 distinct identities and ordered most-recent-first so
+      // a display with more history than the cap still gets its most
+      // recently active prior visitors — an arbitrary (unordered) sample
+      // would make the returning-visitor count non-deterministic between
+      // refreshes.
       db.analyticsEvent.findMany({
         where: { displayId, createdAt: { lt: startDate } },
         select: { sessionId: true, visitorId: true },
         distinct: ['visitorId', 'sessionId'],
+        orderBy: { createdAt: 'desc' },
         take: 10000,
       }),
     ])
 
-    const ownHost = new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://mygalli.com').hostname
+    const DEFAULT_HOST = 'https://galli.page'
+    let ownHost: string
+    try {
+      ownHost = new URL(process.env.NEXT_PUBLIC_APP_URL || DEFAULT_HOST).hostname
+    } catch {
+      ownHost = new URL(DEFAULT_HOST).hostname
+    }
 
     return NextResponse.json(
       buildAudience({ events, priorKeys: priorKeysFrom(priorRows), ownHost })

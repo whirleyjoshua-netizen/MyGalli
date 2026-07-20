@@ -292,9 +292,7 @@ function AnalyticsContent() {
                   unknownCountryEvents={audience.unknownCountryEvents}
                 />
                 <SourcesBreakdown sources={audience.sources} />
-                <div className="lg:col-span-1">
-                  <AudienceBreakdowns devices={audience.devices} browsers={audience.browsers} />
-                </div>
+                <AudienceBreakdowns devices={audience.devices} browsers={audience.browsers} />
               </div>
             </div>
           )

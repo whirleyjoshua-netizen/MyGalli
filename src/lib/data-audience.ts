@@ -49,8 +49,17 @@ export function sessionStats(events: AudienceEvent[]): SessionStats {
       bounces += 1
       continue
     }
-    // Do not assume arrival order.
-    totalSeconds += (Math.max(...times) - Math.min(...times)) / 1000
+    // Do not assume arrival order. Single-pass min/max instead of
+    // Math.max(...times)/Math.min(...times) — spreading a large array into
+    // Math.max throws `RangeError: Maximum call stack size exceeded` above
+    // roughly 100k arguments, which a heavily-clicked session can reach.
+    let min = times[0]
+    let max = times[0]
+    for (const t of times) {
+      if (t < min) min = t
+      if (t > max) max = t
+    }
+    totalSeconds += (max - min) / 1000
     measuredSessions += 1
   }
 

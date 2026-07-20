@@ -50,3 +50,11 @@ export function parseShareChannel(raw: unknown): string | null {
 export function parseVisitorId(raw: unknown): string | null {
   return trimmedString(raw)
 }
+
+// Per-tab session id supplied by the client. Same validation as
+// parseVisitorId (reject rather than truncate) — an empty or malformed
+// sessionId must never be stored as `''`, since the aggregator treats a
+// present-but-empty sessionId as a real identity bucket.
+export function parseSessionId(raw: unknown): string | null {
+  return trimmedString(raw)
+}

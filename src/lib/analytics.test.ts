@@ -101,4 +101,80 @@ describe('visitor id', () => {
     expect(fetchMock).toHaveBeenCalled()
     spy.mockRestore()
   })
+
+  it('sends sessionId as undefined rather than an empty string when sessionStorage throws', async () => {
+    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked')
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    await trackPageView('disp_1')
+    expect(fetchMock).toHaveBeenCalled()
+    const body = bodyOf(0)
+    expect(body.sessionId).toBeUndefined()
+    expect(body).not.toHaveProperty('sessionId', '')
+    spy.mockRestore()
+  })
+
+  it('sends visitorId as undefined rather than an empty string when localStorage throws', async () => {
+    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked')
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    await trackPageView('disp_1')
+    expect(fetchMock).toHaveBeenCalled()
+    const body = bodyOf(0)
+    expect(body.visitorId).toBeUndefined()
+    expect(body).not.toHaveProperty('visitorId', '')
+    spy.mockRestore()
+  })
+})
+
+describe('privacy opt-out (GPC / Do Not Track)', () => {
+  let fetchMock: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+    localStorage.clear()
+    sessionStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    delete (navigator as unknown as { globalPrivacyControl?: boolean }).globalPrivacyControl
+    Object.defineProperty(navigator, 'doNotTrack', { value: undefined, configurable: true })
+  })
+
+  function bodyOf(call: number) {
+    return JSON.parse(fetchMock.mock.calls[call][1].body as string)
+  }
+
+  it('sends no visitorId and writes nothing to localStorage when globalPrivacyControl is set', async () => {
+    Object.defineProperty(navigator, 'globalPrivacyControl', { value: true, configurable: true })
+
+    await trackPageView('disp_1')
+
+    expect(fetchMock).toHaveBeenCalled()
+    expect(bodyOf(0).visitorId).toBeUndefined()
+    expect(localStorage.getItem('galli_visitor_id')).toBeNull()
+  })
+
+  it('sends no visitorId and writes nothing to localStorage when doNotTrack is "1"', async () => {
+    Object.defineProperty(navigator, 'doNotTrack', { value: '1', configurable: true })
+
+    await trackPageView('disp_1')
+
+    expect(fetchMock).toHaveBeenCalled()
+    expect(bodyOf(0).visitorId).toBeUndefined()
+    expect(localStorage.getItem('galli_visitor_id')).toBeNull()
+  })
+
+  it('generates and sends a visitorId as normal when no privacy signal is present', async () => {
+    await trackPageView('disp_1')
+
+    expect(fetchMock).toHaveBeenCalled()
+    expect(bodyOf(0).visitorId).toMatch(/^vis_/)
+    expect(localStorage.getItem('galli_visitor_id')).toBe(bodyOf(0).visitorId)
+  })
 })
