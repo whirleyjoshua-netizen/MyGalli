@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { BarChart3, Calendar, Inbox, Megaphone } from 'lucide-react'
+import { BarChart3, Calendar, Inbox, Megaphone, Users } from 'lucide-react'
 import { ElementsTab } from '@/components/analytics/ElementsTab'
 import { BulletinAnalyticsTab } from '@/components/analytics/BulletinAnalyticsTab'
 import { PageHero } from '@/components/dashboard/PageHero'
@@ -11,11 +11,16 @@ import { HealthGauge } from '@/components/analytics/overview/HealthGauge'
 import { LiveActivityFeed } from '@/components/analytics/overview/LiveActivityFeed'
 import { SectionEngagementBars } from '@/components/analytics/overview/SectionEngagementBars'
 import { WidgetPerformanceTable } from '@/components/analytics/overview/WidgetPerformanceTable'
-import { AudienceBreakdowns } from '@/components/analytics/overview/AudienceBreakdowns'
 import { ReferrerDonut } from '@/components/analytics/overview/ReferrerDonut'
 import { QuickActions } from '@/components/analytics/overview/QuickActions'
+import { AudienceBreakdowns } from '@/components/analytics/audience/AudienceBreakdowns'
+import { AudienceHeadline, type AudienceSummary } from '@/components/analytics/audience/AudienceHeadline'
+import { PeakHoursChart } from '@/components/analytics/audience/PeakHoursChart'
+import { GeographyList } from '@/components/analytics/audience/GeographyList'
+import { SourcesBreakdown } from '@/components/analytics/audience/SourcesBreakdown'
 import type { HealthResult } from '@/lib/data-health'
 import type { LiveActivityItem, SectionEngagementRow, WidgetPerformanceRow } from '@/lib/data-overview'
+import type { SourceCategory } from '@/lib/data-audience'
 
 interface AnalyticsData {
   display: {
@@ -62,6 +67,17 @@ interface DisplayOption {
   views: number
 }
 
+interface AudienceData {
+  summary: AudienceSummary
+  identityFallback: boolean
+  hourCountsUtc: number[]
+  geography: { country: string; count: number }[]
+  unknownCountryEvents: number
+  sources: { source: SourceCategory; count: number }[]
+  devices: Record<string, number>
+  browsers: Record<string, number>
+}
+
 // Wrapper component to handle Suspense boundary for useSearchParams
 export default function AnalyticsPage() {
   return (
@@ -87,13 +103,27 @@ function AnalyticsContent() {
   const [error, setError] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const [days, setDays] = useState(30)
-  const [activeTab, setActiveTab] = useState<'overview' | 'elements' | 'bulletin'>(
+  const [activeTab, setActiveTab] = useState<'overview' | 'audience' | 'elements' | 'bulletin'>(
     (() => {
       const t = searchParams.get('tab')
-      return t === 'elements' || t === 'bulletin' ? t : 'overview'
+      return t === 'audience' || t === 'elements' || t === 'bulletin' ? t : 'overview'
     })()
   )
   const [username, setUsername] = useState<string | null>(null)
+  const [audience, setAudience] = useState<AudienceData | null>(null)
+  const [audienceLoading, setAudienceLoading] = useState(false)
+
+  useEffect(() => {
+    if (activeTab !== 'audience' || !selectedDisplayId) return
+    let cancelled = false
+    setAudienceLoading(true)
+    fetch(`/api/analytics/${selectedDisplayId}/audience?days=${days}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (!cancelled) setAudience(data && data.summary ? data : null) })
+      .catch(() => { if (!cancelled) setAudience(null) })
+      .finally(() => { if (!cancelled) setAudienceLoading(false) })
+    return () => { cancelled = true }
+  }, [activeTab, selectedDisplayId, days])
 
   // Fetch user's displays
   useEffect(() => {
@@ -203,6 +233,17 @@ function AnalyticsContent() {
               Overview
             </button>
             <button
+              onClick={() => setActiveTab('audience')}
+              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${
+                activeTab === 'audience'
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Audience
+            </button>
+            <button
               onClick={() => setActiveTab('elements')}
               className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'elements'
@@ -231,6 +272,31 @@ function AnalyticsContent() {
       <main className="w-full px-4 py-8 sm:px-6">
         {activeTab === 'bulletin' ? (
           <BulletinAnalyticsTab />
+        ) : activeTab === 'audience' ? (
+          audienceLoading && !audience ? (
+            <div className="flex items-center justify-center py-20">
+              <p className="text-muted-foreground">Loading audience…</p>
+            </div>
+          ) : !audience ? (
+            <div className="py-20 text-center">
+              <p className="text-muted-foreground">Couldn&apos;t load audience data.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <AudienceHeadline summary={audience.summary} identityFallback={audience.identityFallback} />
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <PeakHoursChart hourCountsUtc={audience.hourCountsUtc} />
+                <GeographyList
+                  geography={audience.geography}
+                  unknownCountryEvents={audience.unknownCountryEvents}
+                />
+                <SourcesBreakdown sources={audience.sources} />
+                <div className="lg:col-span-1">
+                  <AudienceBreakdowns devices={audience.devices} browsers={audience.browsers} />
+                </div>
+              </div>
+            </div>
+          )
         ) : activeTab === 'elements' ? (
           <ElementsTab displayId={selectedDisplayId} />
         ) : loading && !analytics ? (
@@ -293,11 +359,6 @@ function AnalyticsContent() {
                 </div>
 
                 <WidgetPerformanceTable rows={analytics.widgetPerformance} />
-
-                <AudienceBreakdowns
-                  devices={analytics.breakdown.devices}
-                  browsers={analytics.breakdown.browsers}
-                />
               </div>
 
               <aside className="space-y-6">
