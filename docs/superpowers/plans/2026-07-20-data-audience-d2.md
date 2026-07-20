@@ -70,34 +70,47 @@ ALTER TABLE "AnalyticsEvent" ADD COLUMN "visitorId" TEXT;
 CREATE INDEX "AnalyticsEvent_displayId_visitorId_idx" ON "AnalyticsEvent"("displayId", "visitorId");
 ```
 
-- [ ] **Step 3: Apply it and regenerate the client**
+- [ ] **Step 3: Regenerate the Prisma client**
 
-Run:
+**Do NOT run `migrate deploy` against the local dev database.** That database is shared across several
+concurrent branches and its migration history has diverged from this checkout — it contains a
+migration that was later renamed locally, and it is several migrations behind. Repairing it is
+another branch's business and is explicitly out of scope here. Your migration file will be applied to
+production by the deploy pipeline (`prisma migrate deploy && next build`), where the history is clean.
 
-```bash
-DATABASE_URL="postgresql://pages:pages@127.0.0.1:5434/pages" pnpm exec prisma migrate deploy
-DATABASE_URL="postgresql://pages:pages@127.0.0.1:5434/pages" pnpm exec prisma generate
-```
-
-Expected: migrate reports the new migration applied; generate completes.
-
-If `prisma generate` fails with `EPERM`, a dev server is holding the engine DLL — stop it and retry.
-
-- [ ] **Step 4: Verify there is no schema drift**
-
-Run:
+`prisma generate` reads `prisma/schema.prisma`, not the database, so the typed client picks up the
+new field regardless of local database state. Prisma also requires BOTH connection variables here —
+omitting `DATABASE_URL_UNPOOLED` fails validation with `P1012`:
 
 ```bash
-DATABASE_URL="postgresql://pages:pages@127.0.0.1:5434/pages" pnpm exec prisma migrate status
+DATABASE_URL="postgresql://pages:pages@127.0.0.1:5434/pages" \
+DATABASE_URL_UNPOOLED="postgresql://pages:pages@127.0.0.1:5434/pages" \
+pnpm exec prisma generate
 ```
 
-Expected: reports the database is up to date, no pending migrations. Then confirm the client picked up the field:
+Expected: `Generated Prisma Client`.
+
+If it fails with `EPERM`, a dev server is holding the engine DLL — stop it and retry.
+
+- [ ] **Step 4: Verify the client picked up the field**
+
+Confirm the generated client now types `visitorId`:
 
 ```bash
 pnpm exec tsc --noEmit
 ```
 
 Expected: no output.
+
+Then verify your migration SQL contains ONLY your two statements and nothing belonging to another
+branch:
+
+```bash
+cat prisma/migrations/20260720000000_analytics_visitor_id/migration.sql
+```
+
+Expected: exactly the `ALTER TABLE` and `CREATE INDEX` shown in Step 2 — no `DROP` statements, no
+other tables.
 
 - [ ] **Step 5: Commit**
 
@@ -1929,15 +1942,19 @@ pnpm exec vitest run
 
 Expected: all suites pass. Report — do not silently fix — any failure unrelated to this work.
 
-- [ ] **Step 5: Confirm no schema drift**
+- [ ] **Step 5: Confirm the migration is well-formed**
 
-Run:
+The local dev database is shared and its history has diverged from this checkout, so `migrate status`
+will report differences that are NOT caused by this branch. Do not try to repair it. Instead confirm
+the migration file itself is additive and self-contained:
 
 ```bash
-DATABASE_URL="postgresql://pages:pages@127.0.0.1:5434/pages" pnpm exec prisma migrate status
+cat prisma/migrations/20260720000000_analytics_visitor_id/migration.sql
 ```
 
-Expected: database up to date, no pending migrations.
+Expected: exactly one `ALTER TABLE ... ADD COLUMN "visitorId" TEXT;` and one `CREATE INDEX`. Any
+`DROP`, or any statement touching a table other than `AnalyticsEvent`, means the file was generated
+rather than hand-authored — regenerate it by hand.
 
 - [ ] **Step 6: Manual browser verification**
 
