@@ -66,4 +66,48 @@ describe('MessageThread', () => {
     render(<MessageThread messages={[]} myId="me" conversation={conversation} onRetry={() => {}} />)
     expect(screen.getByText(/No messages yet/i)).toBeInTheDocument()
   })
+
+  it('auto-scrolls to the bottom when a new message arrives while pinned to the bottom', () => {
+    const first = [msg({ id: 'm1' })]
+    const { container, rerender } = render(
+      <MessageThread messages={first} myId="me" conversation={conversation} onRetry={() => {}} />
+    )
+    const scrollEl = container.querySelector('.overflow-y-auto') as HTMLDivElement
+    expect(scrollEl).toBeTruthy()
+
+    // Simulate layout: reader is at the very bottom.
+    Object.defineProperty(scrollEl, 'scrollHeight', { configurable: true, value: 500 })
+    Object.defineProperty(scrollEl, 'clientHeight', { configurable: true, value: 300 })
+    scrollEl.scrollTop = 200 // 500 - 200 - 300 = 0 < 80 => pinned
+    fireEvent.scroll(scrollEl)
+
+    // A new message arrives and grows the content.
+    const second = [...first, msg({ id: 'm2', body: 'Second message' })]
+    Object.defineProperty(scrollEl, 'scrollHeight', { configurable: true, value: 800 })
+    rerender(<MessageThread messages={second} myId="me" conversation={conversation} onRetry={() => {}} />)
+
+    expect(scrollEl.scrollTop).toBe(800)
+  })
+
+  it('does not yank the reader down when they have scrolled up into history', () => {
+    const first = [msg({ id: 'm1' })]
+    const { container, rerender } = render(
+      <MessageThread messages={first} myId="me" conversation={conversation} onRetry={() => {}} />
+    )
+    const scrollEl = container.querySelector('.overflow-y-auto') as HTMLDivElement
+    expect(scrollEl).toBeTruthy()
+
+    // Simulate layout: reader has scrolled well up into history.
+    Object.defineProperty(scrollEl, 'scrollHeight', { configurable: true, value: 1000 })
+    Object.defineProperty(scrollEl, 'clientHeight', { configurable: true, value: 300 })
+    scrollEl.scrollTop = 100 // 1000 - 100 - 300 = 600 >= 80 => not pinned
+    fireEvent.scroll(scrollEl)
+
+    // A new message arrives and grows the content.
+    const second = [...first, msg({ id: 'm2', body: 'Second message' })]
+    Object.defineProperty(scrollEl, 'scrollHeight', { configurable: true, value: 1300 })
+    rerender(<MessageThread messages={second} myId="me" conversation={conversation} onRetry={() => {}} />)
+
+    expect(scrollEl.scrollTop).toBe(100)
+  })
 })
