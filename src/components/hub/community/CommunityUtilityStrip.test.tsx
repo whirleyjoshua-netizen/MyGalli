@@ -6,14 +6,16 @@ import { DEFAULT_HUB_CONFIG } from '@/lib/types/hub-config'
 const base = {
   hubId: 'h1', config: DEFAULT_HUB_CONFIG, notes: [], isOwner: false,
   isPrivileged: false, preview: true,
+  activity: { newPosts: 0, newDrops: 0, newMembers: 0 }, joined: false,
+  memberCount: 0, tagline: null, onToggleJoin: () => {},
   onOpenPoll: () => {}, onOpenEvents: () => {}, onOpenResources: () => {},
 }
 
 describe('CommunityUtilityStrip', () => {
-  it('renders Notes and Kollab AI for a visitor', () => {
+  it('renders Notes and the activity card for a visitor', () => {
     render(<CommunityUtilityStrip {...base} />)
     expect(screen.getByText('Notes')).toBeInTheDocument()
-    expect(screen.getByText('Kollab AI')).toBeInTheDocument()
+    expect(screen.getByText('Community')).toBeInTheDocument()
   })
 
   // Tools actions are owner surfaces; a visitor must not see the card at all.
@@ -27,29 +29,22 @@ describe('CommunityUtilityStrip', () => {
   it('respects per-card config toggles', () => {
     const config = { ...DEFAULT_HUB_CONFIG, utility: [
       { key: 'notes' as const, enabled: false },
-      { key: 'ai' as const, enabled: true },
+      { key: 'activity' as const, enabled: true },
       { key: 'tools' as const, enabled: true },
     ] }
     render(<CommunityUtilityStrip {...base} config={config} isPrivileged />)
     expect(screen.queryByText('Notes')).toBeNull()
-    expect(screen.getByText('Kollab AI')).toBeInTheDocument()
+    expect(screen.getByText('This week')).toBeInTheDocument()
   })
 
   it('renders nothing when every card is disabled', () => {
     const config = { ...DEFAULT_HUB_CONFIG, utility: [
       { key: 'notes' as const, enabled: false },
-      { key: 'ai' as const, enabled: false },
+      { key: 'activity' as const, enabled: false },
       { key: 'tools' as const, enabled: false },
     ] }
     const { container } = render(<CommunityUtilityStrip {...base} config={config} />)
     expect(container).toBeEmptyDOMElement()
-  })
-
-  // The M4 slot must read as deliberate, not broken.
-  it('shows the AI prompt as disabled with a coming-soon label', () => {
-    render(<CommunityUtilityStrip {...base} />)
-    expect(screen.getByPlaceholderText('Ask Kollab AI anything…')).toBeDisabled()
-    expect(screen.getByText('Coming soon')).toBeInTheDocument()
   })
 })
 
@@ -84,6 +79,42 @@ describe('Notes card', () => {
   it('invites the owner to write the first note when empty', () => {
     render(<CommunityUtilityStrip {...base} notes={[]} isOwner />)
     expect(screen.getByText('No notes yet.')).toBeInTheDocument()
+  })
+})
+
+const activity = { newPosts: 4, newDrops: 7, newMembers: 2 }
+
+describe('Activity card', () => {
+  it('shows orientation and a join control to a visitor, not a pulse', () => {
+    render(<CommunityUtilityStrip {...base} activity={activity} joined={false} memberCount={12} tagline="A test community" />)
+    expect(screen.getByRole('button', { name: /join/i })).toBeInTheDocument()
+    expect(screen.getByText('A test community')).toBeInTheDocument()
+    expect(screen.queryByText('4 new posts')).toBeNull()
+  })
+
+  it('shows the pulse to a member', () => {
+    render(<CommunityUtilityStrip {...base} activity={activity} joined />)
+    expect(screen.getByText('4 new posts')).toBeInTheDocument()
+    expect(screen.getByText('7 clips added')).toBeInTheDocument()
+    expect(screen.getByText('2 new members')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /join/i })).toBeNull()
+  })
+
+  it('shows the pulse to an owner even though they are not "joined"', () => {
+    render(<CommunityUtilityStrip {...base} activity={activity} joined={false} isPrivileged isOwner />)
+    expect(screen.getByText('4 new posts')).toBeInTheDocument()
+  })
+
+  it('invites a member to post when the week was quiet', () => {
+    render(<CommunityUtilityStrip {...base} activity={{ newPosts: 0, newDrops: 0, newMembers: 0 }} joined />)
+    expect(screen.getByText(/it's been quiet/i)).toBeInTheDocument()
+  })
+
+  it('calls the shared join handler rather than its own fetch', () => {
+    const onToggleJoin = vi.fn()
+    render(<CommunityUtilityStrip {...base} activity={activity} joined={false} onToggleJoin={onToggleJoin} />)
+    fireEvent.click(screen.getByRole('button', { name: /join/i }))
+    expect(onToggleJoin).toHaveBeenCalledTimes(1)
   })
 })
 
