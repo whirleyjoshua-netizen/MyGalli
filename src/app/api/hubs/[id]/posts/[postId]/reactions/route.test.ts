@@ -8,6 +8,7 @@ vi.mock('@/lib/db', () => ({
     hubPost: { findFirst: vi.fn() },
     hubMember: { findUnique: vi.fn() },
     hubCollaborator: { findMany: vi.fn() },
+    hubBan: { findUnique: vi.fn() },
     hubPostReaction: { upsert: vi.fn(), deleteMany: vi.fn(), findMany: vi.fn() },
   },
 }))
@@ -25,6 +26,7 @@ beforeEach(() => {
   ;(db.hubPost.findFirst as any).mockResolvedValue({ id: 'p1' })
   ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'm' })
   ;(db.hubCollaborator.findMany as any).mockResolvedValue([])
+  ;(db.hubBan.findUnique as any).mockResolvedValue(null)
   ;(db.hubPostReaction.upsert as any).mockResolvedValue({})
   ;(db.hubPostReaction.deleteMany as any).mockResolvedValue({})
   ;(db.hubPostReaction.findMany as any).mockResolvedValue([{ emoji: '❤️', userId: 'me' }])

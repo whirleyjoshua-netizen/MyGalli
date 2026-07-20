@@ -8,6 +8,7 @@ vi.mock('@/lib/db', () => ({
     hub: { findUnique: vi.fn() },
     hubMember: { findUnique: vi.fn(), findMany: vi.fn() },
     hubCollaborator: { findMany: vi.fn() },
+    hubBan: { findUnique: vi.fn() },
     hubPost: { create: vi.fn(), findMany: vi.fn() },
     hubPostResponse: { findMany: vi.fn() },
     hubPostReaction: { findMany: vi.fn() },
@@ -31,6 +32,7 @@ beforeEach(() => {
   ;(db.hubCollaborator.findMany as any).mockResolvedValue([])
   ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem' }) // caller is a member
   ;(db.hubMember.findMany as any).mockResolvedValue([{ userId: 'm1' }, { userId: 'm2' }])
+  ;(db.hubBan.findUnique as any).mockResolvedValue(null)
   ;(db.hubPost.create as any).mockResolvedValue({ id: 'p1' })
   ;(db.hubPostResponse.findMany as any).mockResolvedValue([])
   ;(db.hubPostReaction.findMany as any).mockResolvedValue([])
@@ -217,6 +219,13 @@ describe('POST /api/hubs/[id]/posts — who-can-post', () => {
     ;(db.hub.findUnique as any).mockResolvedValue({ ...HUB, config: { access: { whoCanPost: 'owner-only' } } })
     const res = await POST(req({ text: 'hi' }), ctx)
     expect(res.status).toBe(201)
+  })
+  it('403 when the caller is banned from the hub', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'm1', name: 'M1', username: 'm1', avatar: null })
+    ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem' }) // is a member
+    ;(db.hubBan.findUnique as any).mockResolvedValue({ id: 'ban1', hubId: 'h1', userId: 'm1' })
+    const res = await POST(req({ text: 'hi' }), ctx)
+    expect(res.status).toBe(403)
   })
 })
 
