@@ -64,6 +64,50 @@ describe('GET messages', () => {
       })
     )
   })
+
+  it('400 for an invalid after value', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.conversationParticipant.findUnique as any).mockResolvedValue(meParticipant)
+    const res = await GET(get('http://localhost/api/dm/conversations/c1/messages?after=garbage'), ctx('c1'))
+    expect(res.status).toBe(400)
+    expect(db.directMessage.findMany).not.toHaveBeenCalled()
+  })
+
+  it('400 for an invalid cursor value', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.conversationParticipant.findUnique as any).mockResolvedValue(meParticipant)
+    const res = await GET(get('http://localhost/api/dm/conversations/c1/messages?cursor=garbage'), ctx('c1'))
+    expect(res.status).toBe(400)
+    expect(db.directMessage.findMany).not.toHaveBeenCalled()
+  })
+
+  it('200 and ascending order for a valid after', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.conversationParticipant.findUnique as any).mockResolvedValue(meParticipant)
+    const res = await GET(
+      get('http://localhost/api/dm/conversations/c1/messages?after=2026-07-20T10:00:00Z'),
+      ctx('c1')
+    )
+    expect(res.status).toBe(200)
+    expect(db.directMessage.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { createdAt: 'asc' } })
+    )
+  })
+
+  it('poll mode wins when both after and cursor are supplied (no lt filter)', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.conversationParticipant.findUnique as any).mockResolvedValue(meParticipant)
+    await GET(
+      get(
+        'http://localhost/api/dm/conversations/c1/messages?after=2026-07-20T10:00:00Z&cursor=2026-07-19T10:00:00Z'
+      ),
+      ctx('c1')
+    )
+    const call = (db.directMessage.findMany as any).mock.calls[0][0]
+    expect(call.where.createdAt).not.toHaveProperty('lt')
+    expect(call.where.createdAt).toHaveProperty('gt')
+    expect(call.orderBy).toEqual({ createdAt: 'asc' })
+  })
 })
 
 describe('POST message', () => {

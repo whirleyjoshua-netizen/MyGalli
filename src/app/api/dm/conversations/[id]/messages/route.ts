@@ -48,19 +48,42 @@ export async function GET(request: NextRequest, { params }: Ctx) {
   const after = sp.get('after')
   const cursor = sp.get('cursor')
 
+  let afterDate: Date | null = null
+  if (after) {
+    afterDate = new Date(after)
+    if (Number.isNaN(afterDate.getTime())) {
+      return NextResponse.json({ error: 'Invalid after' }, { status: 400 })
+    }
+  }
+
+  let cursorDate: Date | null = null
+  if (cursor) {
+    cursorDate = new Date(cursor)
+    if (Number.isNaN(cursorDate.getTime())) {
+      return NextResponse.json({ error: 'Invalid cursor' }, { status: 400 })
+    }
+  }
+
+  // after and cursor are mutually exclusive modes: after = poll for new
+  // messages (ascending), cursor = page backwards through history
+  // (descending, then reversed). If both are supplied, after wins and
+  // cursor is ignored entirely.
   const rows = await db.directMessage.findMany({
     where: {
       conversationId: id,
       deletedAt: null,
-      ...(after ? { createdAt: { gt: new Date(after) } } : {}),
-      ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
+      ...(afterDate
+        ? { createdAt: { gt: afterDate } }
+        : cursorDate
+          ? { createdAt: { lt: cursorDate } }
+          : {}),
     },
-    orderBy: { createdAt: after ? 'asc' : 'desc' },
+    orderBy: { createdAt: afterDate ? 'asc' : 'desc' },
     take: PAGE_SIZE,
   })
 
   // Always hand the client oldest-first; only the query direction differs.
-  const ordered = after ? rows : [...rows].reverse()
+  const ordered = afterDate ? rows : [...rows].reverse()
   return NextResponse.json({ messages: ordered.map(toWire) })
 }
 
