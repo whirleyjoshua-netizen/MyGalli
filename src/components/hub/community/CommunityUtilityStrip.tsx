@@ -72,7 +72,7 @@ function ActivityCard({
         {tagline && <p className="mb-2 line-clamp-2 text-xs text-muted-foreground">{tagline}</p>}
         <p className="mb-2 text-xs text-muted-foreground">{memberCount} {memberCount === 1 ? 'member' : 'members'}</p>
         <button
-          onClick={onToggleJoin}
+          onClick={() => { if (!preview) onToggleJoin() }}
           className="mt-auto w-full rounded-lg bg-primary py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
         >
           Join community

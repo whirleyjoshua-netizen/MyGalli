@@ -112,9 +112,18 @@ describe('Activity card', () => {
 
   it('calls the shared join handler rather than its own fetch', () => {
     const onToggleJoin = vi.fn()
-    render(<CommunityUtilityStrip {...base} activity={activity} joined={false} onToggleJoin={onToggleJoin} />)
+    render(<CommunityUtilityStrip {...base} preview={false} activity={activity} joined={false} onToggleJoin={onToggleJoin} />)
     fireEvent.click(screen.getByRole('button', { name: /join/i }))
     expect(onToggleJoin).toHaveBeenCalledTimes(1)
+  })
+
+  // Preview contexts (e.g. the Hub Builder preview pane) must never trigger the
+  // real join fetch just because the button happens to be clickable.
+  it('does not call the join handler while in preview mode', () => {
+    const onToggleJoin = vi.fn()
+    render(<CommunityUtilityStrip {...base} preview activity={activity} joined={false} onToggleJoin={onToggleJoin} />)
+    fireEvent.click(screen.getByRole('button', { name: /join/i }))
+    expect(onToggleJoin).not.toHaveBeenCalled()
   })
 })
 
