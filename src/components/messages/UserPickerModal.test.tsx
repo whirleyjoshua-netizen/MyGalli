@@ -68,6 +68,9 @@ describe('UserPickerModal', () => {
   it('closes when the close button is clicked', async () => {
     const onClose = vi.fn()
     render(<UserPickerModal myUsername="me" onSelect={vi.fn()} onClose={onClose} />)
+    // Let the two list fetches settle first, so the click is not racing a
+    // state update that would land after the assertion.
+    await waitFor(() => expect(screen.getByText('@sarah')).toBeInTheDocument())
     fireEvent.click(screen.getByRole('button', { name: /close/i }))
     expect(onClose).toHaveBeenCalled()
   })
