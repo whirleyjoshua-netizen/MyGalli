@@ -1540,16 +1540,23 @@ export async function GET(request: NextRequest) {
   if (displayIds.length) {
     const grouped = { by: ['displayId', 'elementId'] as const, _count: { _all: true }, _max: { createdAt: true } }
     const where = { displayId: { in: displayIds } }
-    const [forms, messages, waitlist, bookings, jerseys] = await Promise.all([
-      db.formResponse.findMany({
-        where: { ...where, submittedAt: { gte: startOfToday } },
-        select: { displayId: true, responses: true, submittedAt: true },
-      }),
-      db.message.groupBy({ ...grouped, where: { ...where, ownerId: user.id } }),
-      db.waitlistSignup.groupBy({ ...grouped, where }),
-      db.booking.groupBy({ ...grouped, where }),
-      db.jerseySignature.groupBy({ ...grouped, where }),
-    ])
+    const todayWhere = { ...where, createdAt: { gte: startOfToday } }
+    const countOnly = { by: ['displayId', 'elementId'] as const, _count: { _all: true } }
+    const [forms, messages, waitlist, bookings, jerseys, messagesToday, waitlistToday, bookingsToday, jerseysToday] =
+      await Promise.all([
+        db.formResponse.findMany({
+          where: { ...where, submittedAt: { gte: startOfToday } },
+          select: { displayId: true, responses: true, submittedAt: true },
+        }),
+        db.message.groupBy({ ...grouped, where: { ...where, ownerId: user.id } }),
+        db.waitlistSignup.groupBy({ ...grouped, where }),
+        db.booking.groupBy({ ...grouped, where }),
+        db.jerseySignature.groupBy({ ...grouped, where }),
+        db.message.groupBy({ ...countOnly, where: { ...todayWhere, ownerId: user.id } }),
+        db.waitlistSignup.groupBy({ ...countOnly, where: todayWhere }),
+        db.booking.groupBy({ ...countOnly, where: todayWhere }),
+        db.jerseySignature.groupBy({ ...countOnly, where: todayWhere }),
+      ])
 
     for (const row of forms) {
       const answers = (row.responses ?? {}) as Record<string, unknown>
@@ -1557,10 +1564,19 @@ export async function GET(request: NextRequest) {
         bump(`${row.displayId}:${elementId}`, publishedById.get(row.displayId) ?? false, row.submittedAt, 1)
       }
     }
+    // An aggregate carries ONE timestamp and MANY rows, so "is the newest one
+    // from today" says nothing about how many of them are — inferring today's
+    // count from _max would report all 623 wait-list signups as today's.
+    // The all-time query supplies lastResponseAt; a today-scoped COUNT
+    // supplies todayCount.
     for (const g of [...messages, ...waitlist, ...bookings, ...jerseys]) {
       const at = g._max?.createdAt
       if (!at) continue
-      bump(`${g.displayId}:${g.elementId}`, publishedById.get(g.displayId) ?? false, at, at >= startOfToday ? (g._count?._all ?? 0) : 0)
+      bump(`${g.displayId}:${g.elementId}`, publishedById.get(g.displayId) ?? false, at, 0)
+    }
+    for (const g of [...messagesToday, ...waitlistToday, ...bookingsToday, ...jerseysToday]) {
+      const cur = activity.get(`${g.displayId}:${g.elementId}`)
+      if (cur) cur.today += g._count?._all ?? 0
     }
   }
 
