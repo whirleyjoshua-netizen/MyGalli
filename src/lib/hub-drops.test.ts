@@ -173,4 +173,16 @@ describe('toDropDTO status', () => {
     expect(dto.caption).toBe('my video')
     expect(dto.mimeType).toBe('video/mp4')
   })
+
+  // Any status that is neither 'approved' nor 'pending' — including a value
+  // that should never occur, like a typo'd enum or a raw DB corruption — is
+  // masked exactly like 'rejected' rather than passed through with an open
+  // cast, since the alternative risks emitting a purged asset's URL.
+  it('masks the url/caption/mimeType for an unexpected status value', () => {
+    const dto = toDropDTO(row({ status: 'weird-unexpected-value', url: 'https://x.public.blob.vercel-storage.com/hub-drops/h1/a.jpg', caption: 'c', mimeType: 'video/mp4' }))
+    expect(dto.status).toBe('rejected')
+    expect(dto.url).toBe('')
+    expect(dto.caption).toBeNull()
+    expect(dto.mimeType).toBeNull()
+  })
 })

@@ -13,7 +13,12 @@ vi.mock('@/lib/db', () => ({
   db: {
     hub: { findUnique: vi.fn() },
     hubCollaborator: { findMany: vi.fn(async () => []) },
-    hubDrop: { findFirst: vi.fn(), delete: vi.fn(async () => ({})), update: vi.fn(async () => ({})) },
+    hubDrop: {
+      findFirst: vi.fn(),
+      delete: vi.fn(async () => ({})),
+      update: vi.fn(async () => ({})),
+      updateMany: vi.fn(async () => ({ count: 1 })),
+    },
     hubMember: { findMany: vi.fn(async () => []) },
   },
 }))
@@ -80,11 +85,13 @@ it('PATCH approve stamps the reviewer and notifies the author', async () => {
   ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'pending' })
   const res = await PATCH(req({ action: 'approve' }), params)
   expect(res.status).toBe(200)
-  const data = (db.hubDrop.update as any).mock.calls[0][0].data
-  expect(data.status).toBe('approved')
-  expect(data.hidden).toBe(false)
-  expect(data.reviewedById).toBe('owner')
-  expect(data.reviewedAt).toBeInstanceOf(Date)
+  const call = (db.hubDrop.updateMany as any).mock.calls[0][0]
+  expect(call.where).toEqual({ id: 'drop1', status: 'pending' })
+  expect(call.data.status).toBe('approved')
+  expect(call.data.hidden).toBe(false)
+  expect(call.data.reviewedById).toBe('owner')
+  expect(call.data.reviewedAt).toBeInstanceOf(Date)
+  expect(db.hubDrop.update).not.toHaveBeenCalled()
   expect(del).not.toHaveBeenCalled()
   expect((createNotification as any).mock.calls[0][0].type).toBe('hub_drop_approved')
 })
@@ -99,12 +106,14 @@ it('PATCH reject purges only this hub-s own assets', async () => {
   const res = await PATCH(req({ action: 'reject' }), params)
   expect(res.status).toBe(200)
   expect(del).toHaveBeenCalledWith([OWN], { token: 'tok' })
-  // First write persists the rejection itself; only after the purge succeeds
-  // does a second, small write record assetDeleted — so a mid-flight failure
-  // between the two never leaves a row claiming pending/undeleted over a gone file.
-  const firstData = (db.hubDrop.update as any).mock.calls[0][0].data
-  expect(firstData.status).toBe('rejected')
-  expect((db.hubDrop.update as any).mock.calls[1][0]).toEqual({ where: { id: 'drop1' }, data: { assetDeleted: true } })
+  // The atomic conditional write persists the rejection itself; only after the
+  // purge succeeds does a second, small write record assetDeleted — so a
+  // mid-flight failure between the two never leaves a row claiming
+  // pending/undeleted over a gone file.
+  const firstCall = (db.hubDrop.updateMany as any).mock.calls[0][0]
+  expect(firstCall.where).toEqual({ id: 'drop1', status: 'pending' })
+  expect(firstCall.data.status).toBe('rejected')
+  expect((db.hubDrop.update as any).mock.calls[0][0]).toEqual({ where: { id: 'drop1' }, data: { assetDeleted: true } })
   expect((createNotification as any).mock.calls[0][0].type).toBe('hub_drop_rejected')
 })
 
@@ -116,9 +125,10 @@ it('PATCH reject still succeeds when the blob purge throws', async () => {
   ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'pending' })
   const res = await PATCH(req({ action: 'reject' }), params)
   expect(res.status).toBe(200)
-  // Row is still rejected, but no follow-up write claims the purge succeeded.
-  expect((db.hubDrop.update as any).mock.calls[0][0].data.status).toBe('rejected')
-  expect((db.hubDrop.update as any).mock.calls.length).toBe(1)
+  // Row is still rejected via the atomic write, but no follow-up write claims
+  // the purge succeeded.
+  expect((db.hubDrop.updateMany as any).mock.calls[0][0].data.status).toBe('rejected')
+  expect(db.hubDrop.update).not.toHaveBeenCalled()
   expect(warnSpy).toHaveBeenCalled()
   warnSpy.mockRestore()
 })
@@ -130,6 +140,7 @@ it('PATCH approve on an already-approved drop returns 409 and fires no notificat
   const res = await PATCH(req({ action: 'approve' }), params)
   expect(res.status).toBe(409)
   expect(db.hubDrop.update).not.toHaveBeenCalled()
+  expect(db.hubDrop.updateMany).not.toHaveBeenCalled()
   expect(createNotification).not.toHaveBeenCalled()
   expect(notifyHubMembers).not.toHaveBeenCalled()
 })
@@ -141,6 +152,22 @@ it('PATCH approve on a rejected drop returns 409 (resurrection guard)', async ()
   const res = await PATCH(req({ action: 'approve' }), params)
   expect(res.status).toBe(409)
   expect(db.hubDrop.update).not.toHaveBeenCalled()
+  expect(db.hubDrop.updateMany).not.toHaveBeenCalled()
+})
+
+it('PATCH returns 409 and purges nothing when the atomic transition matches no row (lost race)', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+  ;(db.hub.findUnique as any).mockResolvedValue(hub)
+  // The read-based guard sees `pending` (another moderator hasn't committed
+  // yet), but the conditional write itself matches nothing because the other
+  // request already flipped the row.
+  ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'pending' })
+  ;(db.hubDrop.updateMany as any).mockResolvedValueOnce({ count: 0 })
+  const res = await PATCH(req({ action: 'reject' }), params)
+  expect(res.status).toBe(409)
+  expect(del).not.toHaveBeenCalled()
+  expect(db.hubDrop.update).not.toHaveBeenCalled()
+  expect(createNotification).not.toHaveBeenCalled()
 })
 
 it('PATCH reject on a pending drop still succeeds (regression guard)', async () => {
@@ -161,4 +188,30 @@ it('PATCH approve notifies members but excludes the author from the hub-wide pin
   const call = (notifyHubMembers as any).mock.calls.find((c: any) => c[1].type === 'hub_drop')
   expect(call[0]).toEqual(expect.arrayContaining(['member1']))
   expect(call[0]).not.toContain('author')
+})
+
+it('PATCH approve excludes the acting moderator from the hub-wide "new clips" ping', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+  ;(db.hub.findUnique as any).mockResolvedValue(hub)
+  ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'pending' })
+  // owner (the acting moderator) is also a hub member.
+  ;(db.hubMember.findMany as any).mockResolvedValue([{ userId: 'member1' }, { userId: 'owner' }])
+  const res = await PATCH(req({ action: 'approve' }), params)
+  expect(res.status).toBe(200)
+  const call = (notifyHubMembers as any).mock.calls.find((c: any) => c[1].type === 'hub_drop')
+  expect(call[0]).toEqual(expect.arrayContaining(['member1']))
+  expect(call[0]).not.toContain('owner')
+})
+
+it('PATCH approve dedupes a user who is both a collaborator and a member', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+  ;(db.hub.findUnique as any).mockResolvedValue(hub)
+  ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'pending' })
+  ;(db.hubCollaborator.findMany as any).mockResolvedValue([{ userId: 'collab1' }])
+  ;(db.hubMember.findMany as any).mockResolvedValue([{ userId: 'collab1' }, { userId: 'member1' }])
+  const res = await PATCH(req({ action: 'approve' }), params)
+  expect(res.status).toBe(200)
+  const call = (notifyHubMembers as any).mock.calls.find((c: any) => c[1].type === 'hub_drop')
+  expect(call[0].filter((u: string) => u === 'collab1').length).toBe(1)
+  expect(call[0]).toEqual(expect.arrayContaining(['collab1', 'member1']))
 })

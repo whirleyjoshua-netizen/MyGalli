@@ -48,7 +48,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string; dropId: string }> }): Promise<NextResponse> {
   const { id, dropId } = await params
-  const limited = await rateLimit(request, { limit: 20, windowMs: 60_000, prefix: 'hub-drop-review' })
+  // The Pending queue pages at 24 items; a moderator clearing a full page in
+  // one sitting issues 24 PATCHes in well under a minute. 60/60s clears two
+  // full pages (and two moderators behind one NAT) while still bounding abuse
+  // on an endpoint that is moderator-only and does a Blob delete.
+  const limited = await rateLimit(request, { limit: 60, windowMs: 60_000, prefix: 'hub-drop-review' })
   if (limited) return limited
   const me = await getUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -63,33 +67,35 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   }
 
-  // A drop can be reviewed exactly once. Without this a rejected drop (its
-  // file already purged) can be re-approved and enter the public pool with a
-  // dead URL, and an already-approved drop can be re-approved to replay the
-  // author + hub-wide notifications with no rate limit backstop on either.
+  // Cheap early rejection off the read we already did. It saves a write on the
+  // common case, but it is NOT what actually guards the race below — two
+  // moderators clicking at the same instant can both pass this check.
   if (r.drop.status !== 'pending') {
     return NextResponse.json({ error: 'This drop has already been reviewed' }, { status: 409 })
   }
 
   const status = action === 'approve' ? 'approved' : 'rejected'
 
-  if (action === 'approve') {
-    await db.hubDrop.update({
-      where: { id: dropId },
-      data: { status, hidden: false, reviewedAt: new Date(), reviewedById: me.id },
-    })
-  } else {
-    // Write the row first, then purge, then persist the purge outcome — if the
-    // purge resolves but a later write fails, the row must not still claim
-    // `pending`/`assetDeleted:false` over a file that is already gone.
-    await db.hubDrop.update({
-      where: { id: dropId },
-      data: { status, hidden: true, reviewedAt: new Date(), reviewedById: me.id },
-    })
+  // A drop can be reviewed exactly once. The transition itself must be atomic:
+  // only a write that finds the row still `pending` may flip it, so of two
+  // racing requests exactly one wins. Losing must be cheap and side-effect
+  // free — in particular the reject path below must never purge a file for a
+  // transition that lost this race.
+  const transitioned = await db.hubDrop.updateMany({
+    where: { id: dropId, status: 'pending' },
+    data: { status, hidden: action === 'approve' ? false : true, reviewedAt: new Date(), reviewedById: me.id },
+  })
+  if (transitioned.count === 0) {
+    return NextResponse.json({ error: 'This drop has already been reviewed' }, { status: 409 })
+  }
 
-    // Reject destroys the file. `del` runs with the app-wide RW token over a store
-    // shared with avatars, page images and message media — hand it only URLs that
-    // are provably this hub's own drop assets, whatever ended up on the row.
+  if (action === 'reject') {
+    // The row is already committed to `rejected` above (we genuinely won the
+    // transition) — now purge, then persist the purge outcome. If this
+    // follow-up write throws, swallow it: `assetDeleted` is bookkeeping only,
+    // and failing the request here would 500 after the file is already gone,
+    // skip the author's notification, and leave the client re-showing an item
+    // that 409s on every retry.
     let assetDeleted = false
     const token = blobReadWriteToken()
     const owned = [r.drop.url, r.drop.thumbnailUrl].filter((u): u is string => !!u && isOwnDropAsset(id, u))
@@ -100,7 +106,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       assetDeleted = await del(owned, { token }).then(() => true).catch(() => false)
     }
     if (assetDeleted) {
-      await db.hubDrop.update({ where: { id: dropId }, data: { assetDeleted: true } })
+      await db.hubDrop.update({ where: { id: dropId }, data: { assetDeleted: true } }).catch(() => {})
     } else {
       console.warn(`hub-drop reject: purge skipped or failed for hub ${id} drop ${dropId}`)
     }
@@ -125,7 +131,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   // deduped, minus the author (who already got hub_drop_approved above).
   if (action === 'approve') {
     const memberIds = (await db.hubMember.findMany({ where: { hubId: id }, select: { userId: true } })).map((m) => m.userId)
-    const targets = [...new Set([r.hub.userId, ...r.collabIds, ...memberIds])].filter((uid) => uid !== r.drop.authorId)
+    // Exclude both the author (already notified above) and the acting
+    // moderator (who does not need a "new clips" ping for the clip they just
+    // approved themselves).
+    const targets = [...new Set([r.hub.userId, ...r.collabIds, ...memberIds])].filter(
+      (uid) => uid !== r.drop.authorId && uid !== me.id,
+    )
     await notifyHubMembers(targets, { type: 'hub_drop', actor, entityUrl, contextText: r.hub.title })
   }
 

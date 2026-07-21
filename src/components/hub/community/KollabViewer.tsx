@@ -37,6 +37,7 @@ export function KollabViewer({
   const [busy, setBusy] = useState(false)
   const [lightbox, setLightbox] = useState<DropDTO | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [pendingError, setPendingError] = useState<string | null>(null)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -62,8 +63,17 @@ export function KollabViewer({
         setPending(d.drops ?? [])
         setPendingCursor(d.nextCursor ?? null)
         if (!d.nextCursor) setPendingExhausted(true)
+        setPendingError(null)
+        // Only a genuinely successful fetch may mark Pending loaded — otherwise
+        // the empty local array renders as "Nothing waiting for review." and a
+        // moderator could mistake a failed request for an empty queue while the
+        // badge silently drops to 0.
+        setPendingLoaded(true)
+      } else {
+        setPendingError('Couldn’t load the pending queue. Try again.')
       }
-      setPendingLoaded(true)
+    } catch {
+      setPendingError('Couldn’t load the pending queue. Try again.')
     } finally {
       setBusy(false)
     }
@@ -134,6 +144,13 @@ export function KollabViewer({
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }),
     })
     if (!res.ok) {
+      if (res.status === 409) {
+        // Someone else already reviewed this drop between our fetch and this
+        // click. It's genuinely gone from Pending now — restoring it would
+        // just have the moderator retry into the same 409 forever.
+        setError('Someone else already reviewed that one.')
+        return
+      }
       setPending((cur) => [item, ...cur])
       setPendingBadge((c) => c + 1)
       onPendingCountChange(1)
@@ -188,6 +205,10 @@ export function KollabViewer({
           {error && <p className="mb-3 text-xs text-destructive">{error}</p>}
           {busy && !pendingLoaded && tab === 'pending' ? (
             <div className="py-12 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></div>
+          ) : tab === 'pending' && !pendingLoaded && pendingError ? (
+            <div className="rounded-xl border border-dashed border-destructive/40 py-12 text-center text-sm text-destructive">
+              {pendingError}
+            </div>
           ) : (
             <KollabGrid
               drops={tab === 'approved' ? approved : pending}

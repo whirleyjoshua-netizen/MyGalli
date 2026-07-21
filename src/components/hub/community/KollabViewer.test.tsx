@@ -118,6 +118,50 @@ describe('KollabViewer', () => {
     })
   })
 
+  it('leaves an item out of Pending on a 409 (another moderator already reviewed it) instead of restoring it', async () => {
+    ;(global.fetch as any) = vi.fn(async (url: string, init?: any) => {
+      if (init?.method === 'PATCH') return { ok: false, status: 409, json: async () => ({ error: 'already reviewed' }) }
+      return { ok: true, json: async () => ({ drops: [drop({ id: 'p1', status: 'pending' })], nextCursor: null }) }
+    })
+    render(<KollabViewer {...base} isPrivileged />)
+    fireEvent.click(screen.getByRole('tab', { name: /pending/i }))
+    await screen.findByRole('button', { name: /approve/i })
+    fireEvent.click(screen.getByRole('button', { name: /approve/i }))
+    await waitFor(() => {
+      expect(screen.getByText('Someone else already reviewed that one.')).toBeInTheDocument()
+    })
+    // Unlike a 500, a 409 must NOT put the item back into Pending.
+    expect(screen.queryByRole('button', { name: /approve/i })).not.toBeInTheDocument()
+    expect(screen.getByText('Nothing waiting for review.')).toBeInTheDocument()
+  })
+
+  it('still restores an item to Pending on a plain 500, distinct from the 409 case', async () => {
+    ;(global.fetch as any) = vi.fn(async (url: string, init?: any) => {
+      if (init?.method === 'PATCH') return { ok: false, status: 500, json: async () => ({}) }
+      return { ok: true, json: async () => ({ drops: [drop({ id: 'p1', status: 'pending' })], nextCursor: null }) }
+    })
+    render(<KollabViewer {...base} isPrivileged />)
+    fireEvent.click(screen.getByRole('tab', { name: /pending/i }))
+    await screen.findByRole('button', { name: /approve/i })
+    fireEvent.click(screen.getByRole('button', { name: /approve/i }))
+    await waitFor(() => {
+      expect(screen.getByText('That didn’t go through. Try again.')).toBeInTheDocument()
+    })
+    expect(screen.getByRole('button', { name: /approve/i })).toBeInTheDocument()
+  })
+
+  it('shows an error instead of the empty-queue copy when the pending fetch fails', async () => {
+    ;(global.fetch as any) = vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) }))
+    render(<KollabViewer {...base} isPrivileged pendingCount={3} />)
+    fireEvent.click(screen.getByRole('tab', { name: /pending/i }))
+    await waitFor(() => {
+      expect(screen.getByText(/couldn.t load the pending queue/i)).toBeInTheDocument()
+    })
+    expect(screen.queryByText('Nothing waiting for review.')).not.toBeInTheDocument()
+    // The badge must keep showing the real (pre-fetch) count, not drop to 0.
+    expect(screen.getByRole('tab', { name: /pending \(3\)/i })).toBeInTheDocument()
+  })
+
   it('does not call PATCH when the reject confirmation is cancelled', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false)
     ;(global.fetch as any) = vi.fn(async (url: string, init?: any) => {
