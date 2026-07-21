@@ -141,9 +141,19 @@ describe('GET /api/data/elements/pulse', () => {
   })
 
   it('bounds the bulletin response fetch to the live window', async () => {
-    ;(getUser as any).mockResolvedValue({ id: 'me' })
-    await GET(req())
-    const arg = (db.bulletinPost.findMany as any).mock.calls[0][0]
-    expect(arg.select.responses.where.createdAt.gte).toBeInstanceOf(Date)
+    const frozen = new Date()
+    frozen.setHours(12, 0, 0, 0)
+    vi.useFakeTimers()
+    vi.setSystemTime(frozen)
+    try {
+      ;(getUser as any).mockResolvedValue({ id: 'me' })
+      await GET(req())
+      const arg = (db.bulletinPost.findMany as any).mock.calls[0][0]
+      const gte = arg.select.responses.where.createdAt.gte.getTime()
+      // Same 24h horizon the form-response query uses — not merely "a Date".
+      expect(gte).toBe(frozen.getTime() - 24 * 3600 * 1000)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
