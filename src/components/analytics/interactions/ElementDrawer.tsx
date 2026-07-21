@@ -8,10 +8,15 @@ export type DrawerTab = 'responses' | 'analytics'
 
 interface DetailPayload {
   element: { elementId: string; type: string; title: string }
-  responses: { answer: unknown; submittedAt: string }[]
+  responses: { answer: unknown; submittedAt: string | null; who?: string }[]
   series: { date: string; count: number }[]
   responsesTruncated?: boolean
   responseCount?: number
+}
+
+interface BulletinPost {
+  id: string
+  results?: { respondents?: { user?: { name?: string | null }; answer: unknown }[] } | null
 }
 
 export function ElementDrawer({
@@ -50,7 +55,24 @@ export function ElementDrawer({
     fetch(url)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!cancelled) setData(d)
+        if (cancelled) return
+        if (!d) return setData(null)
+        if (element.source === 'bulletin') {
+          const posts = (d.posts ?? []) as BulletinPost[]
+          const post = posts.find((p) => p.id === element.pageId)
+          const respondents = post?.results?.respondents ?? []
+          setData({
+            element: { elementId: element.elementId, type: element.type, title: element.title },
+            responses: respondents.map((r) => ({
+              answer: r.answer,
+              submittedAt: null,
+              who: r.user?.name ?? undefined,
+            })),
+            series: [],
+          })
+          return
+        }
+        setData(d)
       })
       .catch(() => {
         if (!cancelled) setData(null)
@@ -113,14 +135,20 @@ export function ElementDrawer({
                   {data.responses.map((r, i) => (
                     <li key={i} className="rounded-lg border border-border p-3">
                       <p className="text-sm">{Array.isArray(r.answer) ? r.answer.join(', ') : String(r.answer ?? '')}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {new Date(r.submittedAt).toLocaleString()}
-                      </p>
+                      {(r.who || r.submittedAt) && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {r.who ?? (r.submittedAt ? new Date(r.submittedAt).toLocaleString() : '')}
+                        </p>
+                      )}
                     </li>
                   ))}
                 </ul>
               </>
             )
+          ) : element.source === 'bulletin' ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              Per-day activity isn&apos;t available for bulletin instruments.
+            </p>
           ) : !data?.series?.length ? (
             <p className="py-10 text-center text-sm text-muted-foreground">No activity in the last 30 days.</p>
           ) : (

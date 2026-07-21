@@ -78,4 +78,39 @@ describe('ElementDrawer', () => {
     render(<ElementDrawer element={el} tab="responses" onTabChange={() => {}} onClose={() => {}} />)
     await waitFor(() => expect(screen.getByText('Showing the most recent 200 of 431 responses.')).toBeTruthy())
   })
+
+  it('maps the bulletin payload into responses with the responder name', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        posts: [
+          { id: 'p1', createdAt: '2026-07-12T00:00:00.000Z', text: null,
+            results: { elementId: 'e1', type: 'poll', question: 'Best?', options: ['A'], allowMultiple: false,
+              totalVoters: 1, distribution: [{ option: 'A', count: 1, percentage: 100 }],
+              respondents: [{ user: { userId: 'u1', name: 'Amy', avatar: null }, answer: ['A'] }] } },
+        ],
+      }),
+    }))
+    render(
+      <ElementDrawer
+        element={{ ...el, key: 'bulletin:p1:e1', source: 'bulletin', pageId: 'p1' }}
+        tab="responses" onTabChange={() => {}} onClose={() => {}}
+      />
+    )
+    await waitFor(() => expect(screen.getByText('Amy')).toBeTruthy())
+    expect(screen.queryByText(/invalid date/i)).toBeNull()
+  })
+
+  it('explains that per-day activity is unavailable for bulletin instruments', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ posts: [] }) }))
+    render(
+      <ElementDrawer
+        element={{ ...el, key: 'bulletin:p1:e1', source: 'bulletin', pageId: 'p1' }}
+        tab="analytics" onTabChange={() => {}} onClose={() => {}}
+      />
+    )
+    await waitFor(() =>
+      expect(screen.getByText("Per-day activity isn't available for bulletin instruments.")).toBeTruthy()
+    )
+  })
 })
