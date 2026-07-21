@@ -62,6 +62,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             followerCount={followerCount}
             followingCount={followingCount}
             isOwner={isMe}
+            isLoggedIn={!!meId}
             isFollowing={isFollowing}
             isFriend={isFriend}
           />

@@ -507,7 +507,9 @@ If this errors with `EPERM` on the query engine DLL, stop `next dev` first — i
 export DATABASE_URL="postgresql://pages:pages@127.0.0.1:5434/pages"
 export DATABASE_URL_UNPOOLED="$DATABASE_URL"
 npx prisma generate
-npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url "$DATABASE_URL" --script
+# The shadow database is RESET by Prisma. Never point it at the dev database.
+docker exec pages-mvp-postgres-1 psql -U pages -d postgres -c "DROP DATABASE IF EXISTS pages_shadow;" -c "CREATE DATABASE pages_shadow OWNER pages;"
+npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url "postgresql://pages:pages@127.0.0.1:5434/pages_shadow" --script
 ```
 
 Expected: the diff prints no `CREATE`/`ALTER`/`DROP` statements. Any output here means the migration and the schema disagree — fix the SQL before continuing, because a drifted baseline causes P2022 500s on a fresh production database.
