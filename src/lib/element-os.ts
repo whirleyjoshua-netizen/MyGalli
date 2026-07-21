@@ -129,3 +129,48 @@ export function collectDataElements(
   }
   return out
 }
+
+export type ElementStatus = 'needs-attention' | 'live' | 'draft' | 'idle'
+
+export const MIN_VIEWERS_FOR_ENGAGEMENT = 20
+export const LIVE_WINDOW_MS = 24 * 60 * 60 * 1000
+export const IDLE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
+
+export interface StatusInput {
+  published: boolean
+  lastResponseAt: string | null
+  unreadCount: number
+  pendingCount: number
+  /** From localStorage — the server cannot see this, so status finalises client-side. */
+  lastSeenAt: string | null
+  now: Date
+}
+
+// Order matters: first match wins. needs-attention outranks everything because
+// it is the only status that asks the owner to do something.
+export function deriveStatus(input: StatusInput): ElementStatus {
+  const { published, lastResponseAt, unreadCount, pendingCount, lastSeenAt, now } = input
+  const last = lastResponseAt ? Date.parse(lastResponseAt) : NaN
+  const hasLast = Number.isFinite(last)
+
+  const unseen = hasLast && lastSeenAt && last > Date.parse(lastSeenAt)
+  if (published && (unreadCount > 0 || pendingCount > 0 || unseen)) return 'needs-attention'
+  if (!published) return 'draft'
+  if (hasLast && now.getTime() - last < LIVE_WINDOW_MS) return 'live'
+  return 'idle'
+}
+
+// Share of the page's unique visitors who responded to this element.
+// Returns null below the viewer floor: a page with three views must not be
+// allowed to display "100% engagement".
+export function computeEngagement({
+  responders,
+  pageViewers,
+}: {
+  responders: number
+  pageViewers: number
+}): number | null {
+  if (pageViewers < MIN_VIEWERS_FOR_ENGAGEMENT) return null
+  const pct = Math.round((responders / pageViewers) * 100)
+  return Math.max(0, Math.min(100, pct))
+}

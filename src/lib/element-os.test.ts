@@ -94,3 +94,82 @@ describe('keys', () => {
     expect(bulletinElementKey('p1', 'e1')).toBe('bulletin:p1:e1')
   })
 })
+
+import { deriveStatus, computeEngagement, MIN_VIEWERS_FOR_ENGAGEMENT } from './element-os'
+
+const NOW = new Date('2026-07-21T12:00:00.000Z')
+const hoursAgo = (h: number) => new Date(NOW.getTime() - h * 3600_000).toISOString()
+const daysAgo = (d: number) => hoursAgo(d * 24)
+
+const base = {
+  published: true,
+  lastResponseAt: null as string | null,
+  unreadCount: 0,
+  pendingCount: 0,
+  lastSeenAt: null as string | null,
+  now: NOW,
+}
+
+describe('deriveStatus', () => {
+  it('flags unread mailbox messages as needs-attention', () => {
+    expect(deriveStatus({ ...base, unreadCount: 3, lastResponseAt: hoursAgo(1) })).toBe('needs-attention')
+  })
+
+  it('flags pending RSVP/waitlist entries as needs-attention', () => {
+    expect(deriveStatus({ ...base, pendingCount: 2 })).toBe('needs-attention')
+  })
+
+  it('flags responses newer than the last-seen stamp as needs-attention', () => {
+    expect(deriveStatus({ ...base, lastResponseAt: hoursAgo(1), lastSeenAt: hoursAgo(5) })).toBe('needs-attention')
+  })
+
+  it('does not flag responses older than the last-seen stamp', () => {
+    expect(deriveStatus({ ...base, lastResponseAt: hoursAgo(5), lastSeenAt: hoursAgo(1) })).toBe('live')
+  })
+
+  it('needs-attention outranks live', () => {
+    expect(deriveStatus({ ...base, unreadCount: 1, lastResponseAt: hoursAgo(1) })).toBe('needs-attention')
+  })
+
+  it('is live when published with a response inside 24h', () => {
+    expect(deriveStatus({ ...base, lastResponseAt: hoursAgo(23) })).toBe('live')
+  })
+
+  it('is not live at exactly the 24h boundary', () => {
+    expect(deriveStatus({ ...base, lastResponseAt: hoursAgo(24) })).not.toBe('live')
+  })
+
+  it('is draft when the page is unpublished, even with recent responses', () => {
+    expect(deriveStatus({ ...base, published: false, lastResponseAt: hoursAgo(1) })).toBe('draft')
+  })
+
+  it('is idle when published with no response in 30 days', () => {
+    expect(deriveStatus({ ...base, lastResponseAt: daysAgo(31) })).toBe('idle')
+  })
+
+  it('is idle when published and never responded to', () => {
+    expect(deriveStatus({ ...base, lastResponseAt: null })).toBe('idle')
+  })
+})
+
+describe('computeEngagement', () => {
+  it('returns a rounded percentage', () => {
+    expect(computeEngagement({ responders: 42, pageViewers: 50 })).toBe(84)
+  })
+
+  it('returns null below the viewer floor so small samples cannot read 100%', () => {
+    expect(computeEngagement({ responders: 3, pageViewers: MIN_VIEWERS_FOR_ENGAGEMENT - 1 })).toBeNull()
+  })
+
+  it('returns null when there are no viewers', () => {
+    expect(computeEngagement({ responders: 0, pageViewers: 0 })).toBeNull()
+  })
+
+  it('clamps to 100 when responders exceed viewers', () => {
+    expect(computeEngagement({ responders: 80, pageViewers: 40 })).toBe(100)
+  })
+
+  it('never returns a negative value', () => {
+    expect(computeEngagement({ responders: -5, pageViewers: 40 })).toBe(0)
+  })
+})
