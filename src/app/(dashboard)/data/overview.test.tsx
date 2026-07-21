@@ -41,7 +41,10 @@ describe('Data page Overview cockpit', () => {
     // 1,284 renders twice by design: the StatCardRow "Views" card and the
     // ReferrerDonut's totalViews center label share the same summary.views value.
     await waitFor(() => expect(screen.getAllByText('1,284').length).toBe(2))
-    expect(screen.getByText('Interactions')).toBeTruthy()
+    // "Interactions" is now both a tab button and an Overview stat card
+    // label. This assertion is about the stat card, so exclude the tab.
+    const interactionsMatches = screen.getAllByText('Interactions')
+    expect(interactionsMatches.some((el) => el.closest('button') === null)).toBe(true)
     expect(screen.getByText('Page Health')).toBeTruthy()
     expect(screen.getByText('92')).toBeTruthy()
     expect(screen.getByText('Live Activity')).toBeTruthy()

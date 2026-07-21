@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { BarChart3, Calendar, Inbox, Megaphone, Users } from 'lucide-react'
-import { ElementsTab } from '@/components/analytics/ElementsTab'
-import { BulletinAnalyticsTab } from '@/components/analytics/BulletinAnalyticsTab'
+import { BarChart3, Calendar, Inbox, Users } from 'lucide-react'
+import { InteractionsTab } from '@/components/analytics/interactions/InteractionsTab'
+import { resolveTab, type DataTab } from '@/lib/element-os'
 import { PageHero } from '@/components/dashboard/PageHero'
 import { StatCardRow } from '@/components/analytics/overview/StatCardRow'
 import { HealthGauge } from '@/components/analytics/overview/HealthGauge'
@@ -103,12 +103,7 @@ function AnalyticsContent() {
   const [error, setError] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const [days, setDays] = useState(30)
-  const [activeTab, setActiveTab] = useState<'overview' | 'audience' | 'elements' | 'bulletin'>(
-    (() => {
-      const t = searchParams.get('tab')
-      return t === 'audience' || t === 'elements' || t === 'bulletin' ? t : 'overview'
-    })()
-  )
+  const [activeTab, setActiveTab] = useState<DataTab>(resolveTab(searchParams.get('tab')))
   const [username, setUsername] = useState<string | null>(null)
   const [audience, setAudience] = useState<AudienceData | null>(null)
   const [audienceLoading, setAudienceLoading] = useState(false)
@@ -206,20 +201,22 @@ function AnalyticsContent() {
         title="Data"
         subtitle="Insights and analytics to help you understand and grow."
         controls={
-          <select
-            value={selectedDisplayId || ''}
-            onChange={(e) => setSelectedDisplayId(e.target.value)}
-            className="px-3 py-2 border border-border rounded-lg bg-background text-sm max-w-[200px] truncate"
-          >
-            <option value="" disabled>
-              Select a page
-            </option>
-            {displays.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.title}
+          activeTab === 'interactions' ? null : (
+            <select
+              value={selectedDisplayId || ''}
+              onChange={(e) => setSelectedDisplayId(e.target.value)}
+              className="px-3 py-2 border border-border rounded-lg bg-background text-sm max-w-[200px] truncate"
+            >
+              <option value="" disabled>
+                Select a page
               </option>
-            ))}
-          </select>
+              {displays.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.title}
+                </option>
+              ))}
+            </select>
+          )
         }
         tabs={
           <>
@@ -245,34 +242,23 @@ function AnalyticsContent() {
               Audience
             </button>
             <button
-              onClick={() => setActiveTab('elements')}
+              onClick={() => setActiveTab('interactions')}
               className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${
-                activeTab === 'elements'
+                activeTab === 'interactions'
                   ? 'border-primary text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               <Inbox className="w-4 h-4" />
-              Elements
-            </button>
-            <button
-              onClick={() => setActiveTab('bulletin')}
-              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${
-                activeTab === 'bulletin'
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Megaphone className="w-4 h-4" />
-              Bulletin
+              Interactions
             </button>
           </>
         }
       />
 
       <main className="w-full px-4 py-8 sm:px-6">
-        {activeTab === 'bulletin' ? (
-          <BulletinAnalyticsTab />
+        {activeTab === 'interactions' ? (
+          <InteractionsTab />
         ) : activeTab === 'audience' ? (
           audienceLoading && !audience ? (
             <div className="flex items-center justify-center py-20">
@@ -296,8 +282,6 @@ function AnalyticsContent() {
               </div>
             </div>
           )
-        ) : activeTab === 'elements' ? (
-          <ElementsTab displayId={selectedDisplayId} />
         ) : loading && !analytics ? (
           <div className="flex items-center justify-center py-20">
             <p className="text-muted-foreground">Loading analytics...</p>

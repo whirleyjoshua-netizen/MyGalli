@@ -52,11 +52,12 @@ describe('Data page Audience tab', () => {
     expect(screen.getByText('Traffic Sources')).toBeTruthy()
   })
 
-  it('offers exactly the built tabs and no placeholders for future phases', async () => {
+  it('offers exactly the built tabs (Overview, Audience, Interactions) and no placeholders for future phases', async () => {
     render(<AnalyticsPage />)
     await waitFor(() => expect(screen.getByText('Overview')).toBeTruthy())
-    expect(screen.getByText('Audience')).toBeTruthy()
-    for (const notYet of ['Interactions', 'Insights', 'Automation']) {
+    expect(screen.getByRole('button', { name: /Audience/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Interactions/ })).toBeTruthy()
+    for (const notYet of ['Insights', 'Automation']) {
       expect(screen.queryByRole('button', { name: notYet })).toBeNull()
     }
   })

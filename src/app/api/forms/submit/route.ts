@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'displayId is required' }, { status: 400 })
     }
 
-    if (!responses || typeof responses !== 'object') {
+    if (!responses || typeof responses !== 'object' || Array.isArray(responses)) {
       return NextResponse.json({ error: 'responses is required' }, { status: 400 })
     }
 
