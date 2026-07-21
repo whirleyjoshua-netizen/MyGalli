@@ -48,25 +48,35 @@ them, preserving the audit trail that makes a receipt worth having.
 ```prisma
 model Acknowledgment {
   id        String   @id @default(cuid())
-  elementId String              // the acknowledgment element's id
-  displayId String?             // page context; exactly one of displayId/hubPostId is set
+  scopeKey  String              // "display:<displayId>:<elementId>" or "hubpost:<hubPostId>:<elementId>"
+  elementId String              // retained for querying and display
+  displayId String?             // exactly one of displayId/hubPostId is set
   hubPostId String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   round     Int      @default(0)
   createdAt DateTime @default(now())
 
-  @@unique([elementId, userId, round])
-  @@index([elementId, round])
+  @@unique([scopeKey, userId, round])
+  @@index([scopeKey, round])
   @@index([userId])
 }
 
 model AcknowledgmentRound {
-  elementId String   @id        // no row means round 0
-  round     Int      @default(0)
-  resetAt   DateTime @updatedAt
+  scopeKey String   @id         // no row means round 0
+  round    Int      @default(0)
+  resetAt  DateTime @updatedAt
 }
 ```
+
+**Why `scopeKey` rather than a composite unique on `elementId`:** `makeBlock()` in
+`src/components/bulletin/BlockEditor.tsx` assigns *deterministic* block ids derived from the
+block type, so every hub post carrying an acknowledgment block would share one `elementId`.
+Element ids are therefore only unique within their containing page or post. A composite
+`@@unique([elementId, hubPostId, userId, round])` does not fix this either: `hubPostId` is
+NULL for page elements, and Postgres treats NULLs as distinct, which would silently disable
+the constraint on the page surface. Folding the container into a single non-null `scopeKey`
+makes uniqueness enforceable on both surfaces with one constraint.
 
 `round` lives in its own table rather than in the element's JSON config because bumping it
 through the `Display.sections` blob would collide with the collaboration `version`/409 logic
@@ -109,9 +119,9 @@ All routes live under `src/app/api/acknowledgments/`. Per the broken-main lesson
 | Route | Auth | Behavior |
 |---|---|---|
 | `POST /api/acknowledgments` | Logged-in user | Body `{ elementId, displayId? , hubPostId? }`. Writes at the element's current round. Idempotent via the unique constraint — a repeat submit returns the existing record, not an error. |
-| `GET /api/acknowledgments/[elementId]` | Public | Returns `{ count, round, mine }`. Adds the named `roster` only when the caller owns the element **and** is Pro. |
-| `POST /api/acknowledgments/[elementId]/reset` | Owner + Pro | Increments the round, upserting `AcknowledgmentRound`. |
-| `GET /api/acknowledgments/[elementId]/export` | Owner + Pro | CSV of the roster: name, username, acknowledged-at, round. |
+| `GET /api/acknowledgments/[elementId]` | Public | Requires a `?displayId=` or `?hubPostId=` query param to resolve the scope. Returns `{ count, round, mine }`. Adds the named `roster` only when the caller owns the element **and** is Pro. |
+| `POST /api/acknowledgments/[elementId]/reset` | Owner + Pro | Same context param. Increments the round, upserting `AcknowledgmentRound`. |
+| `GET /api/acknowledgments/[elementId]/export` | Owner + Pro | Same context param. CSV of the roster: name, username, acknowledged-at, round. |
 
 **Ownership** resolves through `displayId` → `Display.userId`, or `hubPostId` → `HubPost.hub.userId`.
 Pro is checked with the existing `isPro()` gate in `src/lib/plan.ts`.
