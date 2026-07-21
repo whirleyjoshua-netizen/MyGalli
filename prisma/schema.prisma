@@ -32,6 +32,7 @@ model User {
   dashboardPrefs Json?
   createdAt      DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  lastSeenAt DateTime?
   displays    Display[]
   bulletinPosts     BulletinPost[]     @relation("BulletinAuthor")
   bulletinLikes     BulletinLike[]
@@ -42,6 +43,8 @@ model User {
   collaborations DisplayCollaborator[]
   verificationTokens VerificationToken[]
   notifications Notification[] @relation("UserNotifications")
+  conversations  ConversationParticipant[] @relation("UserConversations")
+  directMessages DirectMessage[]           @relation("UserDirectMessages")
   hubs Hub[] @relation("UserHubs")
   hubCollaborations HubCollaborator[] @relation("UserHubCollaborations")
   hubMemberships HubMember[] @relation("UserHubMemberships")
@@ -812,4 +815,47 @@ model HubPostResponse {
 
   @@unique([postId, userId])
   @@index([postId])
+}
+
+model Conversation {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  participants ConversationParticipant[]
+  messages     DirectMessage[]
+
+  @@index([lastMessageAt])
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation("UserConversations", fields: [userId], references: [id], onDelete: Cascade)
+  state          String       @default("accepted")
+  lastReadAt     DateTime?
+  starred        Boolean      @default(false)
+  muted          Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId, state])
+}
+
+model DirectMessage {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("UserDirectMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  kind           String       @default("text")
+  body           String?
+  mediaUrl       String?
+  createdAt      DateTime     @default(now())
+  deletedAt      DateTime?
+
+  @@index([conversationId, createdAt])
 }

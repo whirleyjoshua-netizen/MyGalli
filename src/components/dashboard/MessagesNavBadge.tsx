@@ -2,14 +2,28 @@
 
 import { useEffect, useState } from 'react'
 
+function fetchCount(url: string): Promise<number | null> {
+  return fetch(url, { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => (d ? Number(d.count) || 0 : null))
+    .catch(() => null)
+}
+
 export function MessagesNavBadge() {
   const [count, setCount] = useState(0)
   useEffect(() => {
     let cancelled = false
-    const load = () => fetch('/api/messages/unread-count', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : { count: 0 }))
-      .then((d) => { if (!cancelled) setCount(Number(d.count) || 0) })
-      .catch(() => {})
+    const load = () => {
+      // Both endpoints are fetched independently so a failure or an
+      // unauthenticated response from one still lets the other's count show.
+      Promise.all([
+        fetchCount('/api/messages/unread-count'),
+        fetchCount('/api/dm/unread-count'),
+      ]).then(([visitor, dm]) => {
+        if (cancelled) return
+        setCount((visitor ?? 0) + (dm ?? 0))
+      })
+    }
     load()
     const t = setInterval(load, 45000)
     return () => { cancelled = true; clearInterval(t) }
