@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { collectDataElements, elementTitle, pageElementKey, bulletinElementKey } from './element-os'
+import { collectDataElements, elementTitle, pageElementKey, bulletinElementKey, deriveStatus, computeEngagement, MIN_VIEWERS_FOR_ENGAGEMENT } from './element-os'
 import type { Section } from '@/lib/types/canvas'
 import type { TabsConfig } from '@/lib/types/tabs'
 
@@ -95,8 +95,6 @@ describe('keys', () => {
   })
 })
 
-import { deriveStatus, computeEngagement, MIN_VIEWERS_FOR_ENGAGEMENT } from './element-os'
-
 const NOW = new Date('2026-07-21T12:00:00.000Z')
 const hoursAgo = (h: number) => new Date(NOW.getTime() - h * 3600_000).toISOString()
 const daysAgo = (d: number) => hoursAgo(d * 24)
@@ -132,19 +130,31 @@ describe('deriveStatus', () => {
   })
 
   it('is live when published with a response inside 24h', () => {
-    expect(deriveStatus({ ...base, lastResponseAt: hoursAgo(23) })).toBe('live')
+    expect(deriveStatus({ ...base, lastResponseAt: hoursAgo(23), lastSeenAt: NOW.toISOString() })).toBe('live')
   })
 
   it('is not live at exactly the 24h boundary', () => {
     expect(deriveStatus({ ...base, lastResponseAt: hoursAgo(24) })).not.toBe('live')
   })
 
-  it('is draft when the page is unpublished, even with recent responses', () => {
-    expect(deriveStatus({ ...base, published: false, lastResponseAt: hoursAgo(1) })).toBe('draft')
+  it('flags unread messages on an unpublished page rather than hiding them as draft', () => {
+    expect(deriveStatus({ ...base, published: false, unreadCount: 3 })).toBe('needs-attention')
+  })
+
+  it('flags pending entries on an unpublished page', () => {
+    expect(deriveStatus({ ...base, published: false, pendingCount: 2 })).toBe('needs-attention')
+  })
+
+  it('is still draft when an unpublished page has nothing pending', () => {
+    expect(deriveStatus({ ...base, published: false, lastResponseAt: null })).toBe('draft')
+  })
+
+  it('is draft when an unpublished page with unseen recent responses needs attention', () => {
+    expect(deriveStatus({ ...base, published: false, lastResponseAt: hoursAgo(1), lastSeenAt: null })).toBe('needs-attention')
   })
 
   it('is idle when published with no response in 30 days', () => {
-    expect(deriveStatus({ ...base, lastResponseAt: daysAgo(31) })).toBe('idle')
+    expect(deriveStatus({ ...base, lastResponseAt: daysAgo(31), lastSeenAt: NOW.toISOString() })).toBe('idle')
   })
 
   it('is idle when published and never responded to', () => {
