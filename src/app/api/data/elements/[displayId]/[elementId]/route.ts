@@ -6,6 +6,7 @@ import type { Section } from '@/lib/types/canvas'
 import type { TabsConfig } from '@/lib/types/tabs'
 
 const SERIES_DAYS = 30
+const MAX_RESPONSES = 200
 
 export async function GET(
   request: NextRequest,
@@ -46,18 +47,37 @@ export async function GET(
     return elementId in answers
   })
 
+  // Local calendar day, matching the local-midnight "today" boundary the
+  // inventory route and the cards use. toISOString() would bucket by UTC and
+  // disagree with the Today count for responses near midnight.
+  const dayKey = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
   const byDay = new Map<string, number>()
   for (const r of mine) {
-    const day = r.submittedAt.toISOString().slice(0, 10)
+    const day = dayKey(r.submittedAt)
     byDay.set(day, (byDay.get(day) ?? 0) + 1)
+  }
+
+  const responsesTruncated = mine.length > MAX_RESPONSES
+  if (responsesTruncated) {
+    console.warn(
+      `[data/elements/detail] element ${elementId} on ${displayId} has ${mine.length} responses; returning the most recent ${MAX_RESPONSES}`
+    )
   }
 
   return NextResponse.json({
     element: { elementId: element.elementId, type: element.type, title: element.title },
-    responses: mine.slice(0, 200).map((r) => ({
+    responses: mine.slice(0, MAX_RESPONSES).map((r) => ({
       answer: ((r.responses ?? {}) as Record<string, { answer?: unknown }>)[elementId]?.answer ?? null,
       submittedAt: r.submittedAt.toISOString(),
     })),
+    responseCount: mine.length,
+    responsesTruncated,
     series: [...byDay.entries()].sort().map(([date, count]) => ({ date, count })),
   })
 }

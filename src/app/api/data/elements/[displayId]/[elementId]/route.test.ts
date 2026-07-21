@@ -64,4 +64,52 @@ describe('GET /api/data/elements/[displayId]/[elementId]', () => {
     expect(body.responses).toHaveLength(2)
     expect(body.series.find((d: any) => d.date === '2026-07-20').count).toBe(2)
   })
+
+  it('buckets the series by local calendar day, not UTC', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findUnique as any).mockResolvedValue(display)
+    // 00:30 LOCAL today — under UTC bucketing in a negative-offset timezone
+    // this would land on yesterday's key.
+    const localToday = new Date()
+    localToday.setHours(0, 30, 0, 0)
+    ;(db.formResponse.findMany as any).mockResolvedValue([
+      { responses: { e1: { type: 'poll', answer: 'A' } }, submittedAt: localToday },
+    ])
+    const body = await (await GET(req(), ctx)).json()
+    const y = localToday.getFullYear()
+    const m = String(localToday.getMonth() + 1).padStart(2, '0')
+    const d = String(localToday.getDate()).padStart(2, '0')
+    expect(body.series[0].date).toBe(`${y}-${m}-${d}`)
+  })
+
+  it('surfaces truncation instead of silently dropping responses', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      ;(getUser as any).mockResolvedValue({ id: 'me' })
+      ;(db.display.findUnique as any).mockResolvedValue(display)
+      ;(db.formResponse.findMany as any).mockResolvedValue(
+        Array.from({ length: 250 }, () => ({
+          responses: { e1: { type: 'poll', answer: 'A' } },
+          submittedAt: new Date(),
+        }))
+      )
+      const body = await (await GET(req(), ctx)).json()
+      expect(body.responses).toHaveLength(200)
+      expect(body.responsesTruncated).toBe(true)
+      expect(body.responseCount).toBe(250)
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
+
+  it('does not flag truncation when everything fits', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findUnique as any).mockResolvedValue(display)
+    ;(db.formResponse.findMany as any).mockResolvedValue([
+      { responses: { e1: { type: 'poll', answer: 'A' } }, submittedAt: new Date() },
+    ])
+    const body = await (await GET(req(), ctx)).json()
+    expect(body.responsesTruncated).toBe(false)
+    expect(body.responseCount).toBe(1)
+  })
 })
