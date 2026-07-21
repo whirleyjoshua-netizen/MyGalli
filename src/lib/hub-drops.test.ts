@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateDropInput, toDropDTO, dropPathPrefix, isOwnDropAsset } from './hub-drops'
+import { validateDropInput, toDropDTO, dropPathPrefix, isOwnDropAsset, nextStatusFor, canReviewDrop } from './hub-drops'
 
 const BLOB = 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1'
 
@@ -117,13 +117,50 @@ describe('toDropDTO', () => {
   it('maps a row + author to a DTO with iso date', () => {
     const dto = toDropDTO({
       id: 'd1', type: 'video', url: 'u', thumbnailUrl: 't', caption: 'c', mimeType: 'video/mp4',
-      width: 1, height: 2, hidden: false, createdAt: new Date('2026-07-19T00:00:00.000Z'),
+      width: 1, height: 2, status: 'approved', createdAt: new Date('2026-07-19T00:00:00.000Z'),
       author: { id: 'u1', username: 'joe', name: 'Joe', avatar: null },
     })
     expect(dto).toEqual({
       id: 'd1', type: 'video', url: 'u', thumbnailUrl: 't', caption: 'c', mimeType: 'video/mp4',
-      width: 1, height: 2, hidden: false, createdAt: '2026-07-19T00:00:00.000Z',
+      width: 1, height: 2, status: 'approved', createdAt: '2026-07-19T00:00:00.000Z',
       author: { userId: 'u1', username: 'joe', name: 'Joe', avatar: null },
     })
+  })
+})
+
+const row = (over: Record<string, any> = {}) => ({
+  id: 'd1', type: 'image', url: 'https://x.public.blob.vercel-storage.com/hub-drops/h1/a.jpg',
+  thumbnailUrl: null, caption: null, mimeType: null, width: null, height: null,
+  status: 'approved', createdAt: new Date('2026-07-21T00:00:00Z'),
+  author: { id: 'u1', username: 'sam', name: null, avatar: null },
+  ...over,
+})
+
+describe('nextStatusFor', () => {
+  it('auto-approves a privileged uploader', () => {
+    expect(nextStatusFor(true)).toBe('approved')
+  })
+  it('holds a member upload for review', () => {
+    expect(nextStatusFor(false)).toBe('pending')
+  })
+})
+
+describe('canReviewDrop', () => {
+  it('allows a moderator', () => {
+    expect(canReviewDrop({ isPrivileged: true })).toBe(true)
+  })
+  it('refuses a plain member', () => {
+    expect(canReviewDrop({ isPrivileged: false })).toBe(false)
+  })
+})
+
+describe('toDropDTO status', () => {
+  it('carries the status through', () => {
+    expect(toDropDTO(row({ status: 'pending' })).status).toBe('pending')
+  })
+  it('never emits the asset URL of a rejected drop', () => {
+    const dto = toDropDTO(row({ status: 'rejected', thumbnailUrl: 'https://x.public.blob.vercel-storage.com/hub-drops/h1/t.jpg' }))
+    expect(dto.url).toBe('')
+    expect(dto.thumbnailUrl).toBeNull()
   })
 })

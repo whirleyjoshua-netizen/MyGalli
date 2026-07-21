@@ -52,6 +52,17 @@ export function validateDropInput(hubId: string, raw: unknown): { ok: true; valu
 
 export type DropAuthor = { userId: string; username: string; name: string | null; avatar: string | null }
 
+export type DropStatus = 'pending' | 'approved' | 'rejected'
+
+/** A drop from a moderator lands live; anyone else's waits for review. */
+export function nextStatusFor(isPrivileged: boolean): DropStatus {
+  return isPrivileged ? 'approved' : 'pending'
+}
+
+export function canReviewDrop(input: { isPrivileged: boolean }): boolean {
+  return input.isPrivileged
+}
+
 export type DropDTO = {
   id: string
   type: DropType
@@ -61,26 +72,30 @@ export type DropDTO = {
   mimeType: string | null
   width: number | null
   height: number | null
-  hidden: boolean
+  status: DropStatus
   createdAt: string
   author: DropAuthor
 }
 
 export function toDropDTO(row: {
   id: string; type: string; url: string; thumbnailUrl: string | null; caption: string | null
-  mimeType: string | null; width: number | null; height: number | null; hidden: boolean; createdAt: Date
+  mimeType: string | null; width: number | null; height: number | null; status: string; createdAt: Date
   author: { id: string; username: string; name: string | null; avatar: string | null }
 }): DropDTO {
+  const status = row.status as DropStatus
+  // A rejected drop's asset is deleted from Blob storage; emitting the dead URL
+  // would leak what was uploaded via the pathname and 404 in every renderer.
+  const rejected = status === 'rejected'
   return {
     id: row.id,
     type: row.type as DropType,
-    url: row.url,
-    thumbnailUrl: row.thumbnailUrl,
+    url: rejected ? '' : row.url,
+    thumbnailUrl: rejected ? null : row.thumbnailUrl,
     caption: row.caption,
     mimeType: row.mimeType,
     width: row.width,
     height: row.height,
-    hidden: row.hidden,
+    status,
     createdAt: row.createdAt.toISOString(),
     author: { userId: row.author.id, username: row.author.username, name: row.author.name, avatar: row.author.avatar },
   }
