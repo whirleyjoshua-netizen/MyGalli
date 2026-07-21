@@ -61,6 +61,7 @@ import {
   Gauge,
   Rocket,
   LibraryBig,
+  BadgeCheck,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -111,6 +112,7 @@ const commands: Command[] = [
   // Social
   { id: 'comment', label: 'Comments', icon: MessageSquare, description: 'Visitor comment section', category: 'Social' },
   { id: 'poll', label: 'Poll', icon: BarChart3, description: 'Vote on options', category: 'Social' },
+  { id: 'acknowledgment', label: 'Acknowledgment', icon: BadgeCheck, description: 'Ask readers to confirm they have read this', category: 'Social' },
 
   // Kit
   { id: 'tracker', label: 'Tracker', icon: TrendingUp, description: 'Track metrics over time', category: 'Kit' },

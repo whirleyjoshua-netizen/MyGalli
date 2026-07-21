@@ -119,3 +119,7 @@ export { PublicIndexElement } from './PublicIndexElement'
 // Workspaces
 export { WorkspaceKpiElement } from './WorkspaceKpiElement'
 export { PublicWorkspaceKpiElement } from './PublicWorkspaceKpiElement'
+
+// Acknowledgment
+export { AcknowledgmentElement } from './AcknowledgmentElement'
+export { PublicAcknowledgmentElement } from './PublicAcknowledgmentElement'

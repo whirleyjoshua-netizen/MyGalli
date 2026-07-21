@@ -105,9 +105,11 @@ import {
   PublicWhiteboardElement,
   HubElement,
   PublicHubElement,
+  AcknowledgmentElement,
 } from '@/components/elements'
 import { PublicCommentSection } from '@/components/elements/PublicCommentSection'
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
+import { PublicAcknowledgmentElement } from '@/components/elements/PublicAcknowledgmentElement'
 import { LiveFeedElement } from '@/components/elements/LiveFeedElement'
 import { PublicLiveFeedElement } from '@/components/elements/PublicLiveFeedElement'
 import { FlowchartElement } from '@/components/elements/FlowchartElement'
@@ -790,6 +792,20 @@ export function ColumnCanvas({
         }
         return (
           <PollElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'acknowledgment':
+        if (isPreviewMode && displayId) {
+          return <PublicAcknowledgmentElement element={element} displayId={displayId} />
+        }
+        return (
+          <AcknowledgmentElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
