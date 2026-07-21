@@ -100,7 +100,7 @@ const commands: Command[] = [
   { id: 'embed', label: 'Embed', icon: Play, description: 'YouTube, Vimeo, or links', category: 'Media' },
   { id: 'button', label: 'Button', icon: MousePointer, description: 'Call-to-action button', category: 'Media' },
   { id: 'slideshow', label: 'Slideshow', icon: GalleryHorizontal, description: 'Image carousel with text overlays', category: 'Media' },
-  { id: 'whiteboard', label: 'Whiteboard', icon: PenTool, description: 'Draw & design on a board', category: 'Media', pro: true },
+  { id: 'whiteboard', label: 'Whiteboard', icon: PenTool, description: 'Draw & design on a board', category: 'Media' },
 
   // Form Elements
   { id: 'mcq', label: 'Multiple Choice', icon: CircleDot, description: 'Question with options', category: 'Forms' },
@@ -165,7 +165,7 @@ const commands: Command[] = [
   { id: 'live-feed', label: 'Live Feed', icon: Radio, description: 'Live counter/score you control from your phone', category: 'Live' },
   { id: 'hub', label: 'Hub', icon: Boxes, description: 'A deep-linked collection of files, links & demos', category: 'Media' },
   { id: 'calendar', label: 'Calendar', icon: Calendar, description: 'Mark events on a monthly calendar', category: 'Scheduling' },
-  { id: 'appointments', label: 'Appointments', icon: CalendarClock, description: 'Let visitors book a time with you', category: 'Scheduling', pro: true },
+  { id: 'appointments', label: 'Appointments', icon: CalendarClock, description: 'Let visitors book a time with you', category: 'Scheduling' },
   { id: 'product-list', label: 'Product List', icon: ShoppingBag, description: 'A shoppable list of products with images & buy links', category: 'Commerce' },
   { id: 'waitlist', label: 'Wait List', icon: Rocket, description: 'Collect signups before a launch, with a live count', category: 'Commerce' },
 ]
