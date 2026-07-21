@@ -117,13 +117,33 @@ describe('GET /api/data/elements/pulse', () => {
   })
 
   it('queries form responses over the 24h live window, not just since midnight', async () => {
+    // Freeze at 00:30 local — the exact window where a "since midnight" query
+    // would wrongly exclude a response from 11:50pm yesterday.
+    const frozen = new Date()
+    frozen.setHours(0, 30, 0, 0)
+    vi.useFakeTimers()
+    vi.setSystemTime(frozen)
+    try {
+      ;(getUser as any).mockResolvedValue({ id: 'me' })
+      ;(db.display.findMany as any).mockResolvedValue([{ id: 'd1', published: true }])
+      await GET(req())
+      const arg = (db.formResponse.findMany as any).mock.calls[0][0]
+      const gte = arg.where.submittedAt.gte.getTime()
+      const startOfToday = new Date(frozen)
+      startOfToday.setHours(0, 0, 0, 0)
+      // Exactly 24h back from the frozen now — and strictly BEFORE midnight,
+      // which is what a reverted `gte: startOfToday` would fail.
+      expect(gte).toBe(frozen.getTime() - 24 * 3600 * 1000)
+      expect(gte).toBeLessThan(startOfToday.getTime())
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('bounds the bulletin response fetch to the live window', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'me' })
-    ;(db.display.findMany as any).mockResolvedValue([{ id: 'd1', published: true }])
-    const startOfToday = new Date()
-    startOfToday.setHours(0, 0, 0, 0)
     await GET(req())
-    const arg = (db.formResponse.findMany as any).mock.calls[0][0]
-    expect(arg.where.submittedAt.gte.getTime()).toBeLessThanOrEqual(Date.now() - 23 * 3600 * 1000)
-    expect(arg.where.submittedAt.gte.getTime()).toBeLessThan(startOfToday.getTime() + 1)
+    const arg = (db.bulletinPost.findMany as any).mock.calls[0][0]
+    expect(arg.select.responses.where.createdAt.gte).toBeInstanceOf(Date)
   })
 })

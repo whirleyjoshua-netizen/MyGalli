@@ -124,7 +124,13 @@ export async function GET(request: NextRequest) {
 
   const bulletinPosts = await db.bulletinPost.findMany({
     where: { authorId: user.id },
-    select: { id: true, responses: { select: { createdAt: true, responses: true } } },
+    select: {
+      id: true,
+      responses: {
+        where: { createdAt: { gte: liveHorizon } },
+        select: { createdAt: true, responses: true },
+      },
+    },
   })
   for (const post of bulletinPosts) {
     for (const r of post.responses) {
