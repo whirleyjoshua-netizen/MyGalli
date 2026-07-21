@@ -110,6 +110,8 @@ describe('POST /drops', () => {
     expect(res.status).toBe(201)
     expect((db.hubDrop.create as any).mock.calls[0][0].data.status).toBe('pending')
     expect((db.hubDrop.create as any).mock.calls[0][0].data.hidden).toBe(true)
+    const created = (db.hubDrop.create as any).mock.calls[0][0].data
+    expect(created.consentText).toEqual(expect.stringContaining('Club'))
   })
 
   it('POST auto-approves a privileged uploader', async () => {
