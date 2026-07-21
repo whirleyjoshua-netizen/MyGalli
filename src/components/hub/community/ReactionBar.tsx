@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { HUB_REACTION_EMOJI, type ReactionSummary } from '@/lib/hub-reactions'
 
 export function ReactionBar({
@@ -18,12 +18,28 @@ export function ReactionBar({
   const [mine, setMine] = useState<string[]>(initial.mine)
   const [open, setOpen] = useState(false)
 
+  // True from the moment the user taps until their own request settles. While
+  // set, incoming prop syncs are ignored: a poll already in flight returns
+  // pre-tap data and would visibly revert the reaction they just pressed.
+  const busyRef = useRef(false)
+
+  // `initial` is a fresh object every parent render, so depend on a serialised
+  // key rather than the object identity — otherwise this effect fires forever.
+  const initialKey = JSON.stringify(initial)
+  useEffect(() => {
+    if (busyRef.current) return
+    setCounts(initial.counts)
+    setMine(initial.mine)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialKey])
+
   async function toggle(emoji: string) {
     if (disabled) return
     const prevCounts = counts
     const prevMine = mine
     const has = mine.includes(emoji)
     const method = has ? 'DELETE' : 'POST'
+    busyRef.current = true
     // optimistic
     setMine((m) => (has ? m.filter((e) => e !== emoji) : [...m, emoji]))
     setCounts((c) => ({ ...c, [emoji]: Math.max(0, (c[emoji] || 0) + (has ? -1 : 1)) }))
@@ -45,6 +61,8 @@ export function ReactionBar({
     } catch {
       setCounts(prevCounts)
       setMine(prevMine)
+    } finally {
+      busyRef.current = false
     }
     setOpen(false)
   }
