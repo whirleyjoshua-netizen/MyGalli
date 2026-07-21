@@ -137,4 +137,14 @@ describe('KollabViewer', () => {
     render(<KollabViewer {...base} isPrivileged pendingCount={3} />)
     expect(screen.getByRole('tab', { name: /pending \(3\)/i })).toBeInTheDocument()
   })
+
+  it('hides Load more once the server reports the pool exhausted, even if total says more remain', async () => {
+    ;(global.fetch as any) = vi.fn(async () => ({ ok: true, json: async () => ({ drops: [], nextCursor: null }) }))
+    render(<KollabViewer {...base} total={5} />)
+    const loadMore = screen.getByRole('button', { name: /load more/i })
+    fireEvent.click(loadMore)
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /load more/i })).not.toBeInTheDocument()
+    })
+  })
 })

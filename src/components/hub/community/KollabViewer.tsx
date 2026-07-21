@@ -27,6 +27,7 @@ export function KollabViewer({
   const [pendingLoaded, setPendingLoaded] = useState(false)
   const [pendingBadge, setPendingBadge] = useState(pendingCount)
   const [cursor, setCursor] = useState<string | null>(initialDrops[initialDrops.length - 1]?.id ?? null)
+  const [exhausted, setExhausted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [lightbox, setLightbox] = useState<DropDTO | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -73,6 +74,7 @@ export function KollabViewer({
         return [...cur, ...fresh.filter((x) => !seen.has(x.id))]
       })
       setCursor(d.nextCursor ?? null)
+      if (!d.nextCursor) setExhausted(true)
     } finally {
       setBusy(false)
     }
@@ -163,7 +165,7 @@ export function KollabViewer({
             />
           )}
 
-          {tab === 'approved' && approved.length < approvedTotal && (
+          {tab === 'approved' && !exhausted && approved.length < approvedTotal && (
             <div className="mt-4 text-center">
               <button onClick={loadMoreApproved} disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted disabled:opacity-60">
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />}
