@@ -134,7 +134,13 @@ describe('deriveStatus', () => {
   })
 
   it('is not live at exactly the 24h boundary', () => {
-    expect(deriveStatus({ ...base, lastResponseAt: hoursAgo(24) })).not.toBe('live')
+    // lastSeenAt newer than the response so `unseen` is false and the
+    // live-window comparison is what decides the result.
+    expect(deriveStatus({ ...base, lastResponseAt: hoursAgo(24), lastSeenAt: hoursAgo(1) })).toBe('idle')
+  })
+
+  it('is live just inside the 24h boundary', () => {
+    expect(deriveStatus({ ...base, lastResponseAt: hoursAgo(23), lastSeenAt: hoursAgo(1) })).toBe('live')
   })
 
   it('flags unread messages on an unpublished page rather than hiding them as draft', () => {
@@ -149,7 +155,7 @@ describe('deriveStatus', () => {
     expect(deriveStatus({ ...base, published: false, lastResponseAt: null })).toBe('draft')
   })
 
-  it('is draft when an unpublished page with unseen recent responses needs attention', () => {
+  it('flags an unpublished page with unseen recent responses as needs-attention, not draft', () => {
     expect(deriveStatus({ ...base, published: false, lastResponseAt: hoursAgo(1), lastSeenAt: null })).toBe('needs-attention')
   })
 
