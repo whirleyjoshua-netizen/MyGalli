@@ -47,7 +47,7 @@ export function KollabGrid({
               )}
             </button>
             {mode === 'approved' && (
-              <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition group-hover:opacity-100">
+              <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
                 <ReportButton
                   hubId={hubId}
                   targetType="drop"
