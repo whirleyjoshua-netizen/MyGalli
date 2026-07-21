@@ -2,10 +2,10 @@
 
 import { useRef, useState } from 'react'
 import { upload } from '@vercel/blob/client'
-import { ImagePlus, Loader2, Play, X, Trash2, Check } from 'lucide-react'
 import { dropPathPrefix, type DropDTO } from '@/lib/hub-drops'
 import { consentTextFor } from '@/lib/hub-consent'
-import { ReportButton } from '@/components/hub/ReportButton'
+import { KollabTile } from './KollabTile'
+import { KollabViewer } from './KollabViewer'
 
 async function captureVideoPoster(file: File): Promise<Blob | null> {
   return new Promise((resolve) => {
@@ -37,7 +37,7 @@ async function captureVideoPoster(file: File): Promise<Blob | null> {
 }
 
 export function CommunityKollab({
-  hubId, hubTitle, canDrop, isPrivileged, currentUserId, enabled, requireApproval, initialDrops, total, preview, narrow,
+  hubId, hubTitle, canDrop, isPrivileged, currentUserId, enabled, initialDrops, total, pendingCount, preview,
 }: {
   hubId: string
   hubTitle: string
@@ -45,21 +45,20 @@ export function CommunityKollab({
   isPrivileged: boolean
   currentUserId?: string
   enabled: boolean
-  requireApproval?: boolean
   initialDrops: DropDTO[]
   total: number
+  pendingCount: number
   preview?: boolean
+  /** Retained for call-site compatibility; the tile is the same at any width. */
   narrow?: boolean
 }) {
   const [drops, setDrops] = useState<DropDTO[]>(initialDrops)
-  // Tracked in state so uploads/removals don't make "Load more" vanish or linger.
   const [count, setCount] = useState(total)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [exhausted, setExhausted] = useState(false)
+  const [pending, setPending] = useState(pendingCount)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-  const [lightbox, setLightbox] = useState<DropDTO | null>(null)
+  const [viewerOpen, setViewerOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   if (!enabled) return null
@@ -92,14 +91,16 @@ export function CommunityKollab({
           body: JSON.stringify({ type: isVideo ? 'video' : 'image', url: blob.url, thumbnailUrl, mimeType: file.type }),
         })
         if (!res.ok) { setError((await res.json()).error || 'Upload failed'); continue }
-        const { id } = await res.json()
-        const pendingApproval = !!requireApproval && !isPrivileged
-        if (pendingApproval) {
-          setNotice('Uploaded — pending review before it appears in the pool.')
-        } else {
+        // The server decides the status — never assume from the client's own
+        // idea of who is privileged.
+        const { id, status } = await res.json()
+        if (status === 'approved') {
           const me = { userId: currentUserId || '', username: 'you', name: null, avatar: null }
-          setDrops((cur) => [{ id, type: isVideo ? 'video' : 'image', url: blob.url, thumbnailUrl, caption: null, mimeType: file.type, width: null, height: null, hidden: false, createdAt: new Date().toISOString(), author: me }, ...cur])
+          setDrops((cur) => [{ id, type: isVideo ? 'video' : 'image', url: blob.url, thumbnailUrl, caption: null, mimeType: file.type, width: null, height: null, status: 'approved', createdAt: new Date().toISOString(), author: me }, ...cur])
           setCount((c) => c + 1)
+        } else {
+          setNotice('Uploaded — the owner will review it before it appears.')
+          if (isPrivileged) setPending((p) => p + 1)
         }
       } catch (e) {
         setError((e as Error).message || 'Upload failed')
@@ -110,145 +111,36 @@ export function CommunityKollab({
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  async function loadMore() {
-    if (preview || loadingMore || !drops.length) return
-    setLoadingMore(true)
-    try {
-      const res = await fetch(`/api/hubs/${hubId}/drops?cursor=${encodeURIComponent(drops[drops.length - 1].id)}`)
-      if (!res.ok) return
-      const d = await res.json()
-      const fresh: DropDTO[] = d.drops ?? []
-      // Guard against a drop arriving in both pages if the pool changed mid-scroll.
-      setDrops((cur) => {
-        const seen = new Set(cur.map((x) => x.id))
-        return [...cur, ...fresh.filter((x) => !seen.has(x.id))]
-      })
-      if (!d.nextCursor) setExhausted(true)
-    } finally {
-      setLoadingMore(false)
-    }
-  }
-
-  async function remove(id: string) {
-    if (preview) return
-    if (!confirm('Remove this from the pool?')) return
-    const res = await fetch(`/api/hubs/${hubId}/drops/${id}`, { method: 'DELETE' })
-    if (res.ok) { setDrops((cur) => cur.filter((d) => d.id !== id)); setCount((c) => Math.max(0, c - 1)) }
-  }
-
-  async function approve(id: string) {
-    if (preview) return
-    const res = await fetch(`/api/hubs/${hubId}/drops/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hidden: false }),
-    })
-    if (res.ok) setDrops((cur) => cur.map((d) => (d.id === id ? { ...d, hidden: false } : d)))
-  }
-
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-lg font-bold">Kollab</h2>
-          <p className="text-sm text-muted-foreground">Drop your clips &amp; photos into the community pool.</p>
-        </div>
-        {canDrop && (
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
-          >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-            {uploading ? 'Uploading…' : 'Drop content'}
-          </button>
-        )}
-      </div>
-
-      {canDrop && (
-        <p className="mb-3 text-xs text-muted-foreground">{consentTextFor(hubTitle)}</p>
-      )}
+    <>
+      <KollabTile
+        count={count}
+        pendingCount={pending}
+        canDrop={canDrop}
+        isPrivileged={isPrivileged}
+        uploading={uploading}
+        onDrop={() => fileRef.current?.click()}
+        onSee={() => setViewerOpen(true)}
+      />
 
       <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
-      {error && <p className="mb-3 text-xs text-destructive">{error}</p>}
-      {notice && <p className="mb-3 text-xs text-primary">{notice}</p>}
+      {canDrop && <p className="mt-2 text-center text-[11px] text-muted-foreground">{consentTextFor(hubTitle)}</p>}
+      {error && <p className="mt-2 text-center text-xs text-destructive">{error}</p>}
+      {notice && <p className="mt-2 text-center text-xs text-[#FF6B3D]">{notice}</p>}
 
-      {drops.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
-          {canDrop ? 'Be the first to drop a clip or photo.' : 'Nothing in the pool yet.'}
-        </div>
-      ) : (
-        <div className={`grid gap-2 ${narrow ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'}`}>
-          {drops.map((d) => (
-            <div key={d.id} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
-              {isPrivileged && d.hidden && (
-                <span className="absolute left-1 top-1 z-10 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
-                  Pending
-                </span>
-              )}
-              <button onClick={() => setLightbox(d)} className="block h-full w-full">
-                {(d.thumbnailUrl || d.type === 'image') ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={d.thumbnailUrl || d.url} alt={d.caption || ''} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-black/80 text-xs text-white/40">Video</div>
-                )}
-                {d.type === 'video' && (
-                  <span className="absolute inset-0 flex items-center justify-center">
-                    <Play className="h-8 w-8 text-white drop-shadow" fill="currentColor" />
-                  </span>
-                )}
-              </button>
-              <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition group-hover:opacity-100">
-                {isPrivileged && d.hidden && (
-                  <button onClick={() => approve(d.id)} title="Approve" className="rounded-md bg-black/60 p-1 text-white hover:bg-black/80">
-                    <Check className="h-3.5 w-3.5" />
-                  </button>
-                )}
-                <ReportButton
-                  hubId={hubId}
-                  targetType="drop"
-                  targetId={d.id}
-                  authorId={d.author.userId}
-                  currentUserId={currentUserId}
-                  className="rounded-md bg-black/60 p-1 text-white hover:bg-black/80"
-                />
-                {(isPrivileged || d.author.userId === currentUserId) && (
-                  <button onClick={() => remove(d.id)} title="Remove" className="rounded-md bg-black/60 p-1 text-white hover:bg-black/80">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+      {viewerOpen && !preview && (
+        <KollabViewer
+          hubId={hubId}
+          isPrivileged={isPrivileged}
+          currentUserId={currentUserId}
+          initialDrops={drops}
+          total={count}
+          pendingCount={pending}
+          onClose={() => setViewerOpen(false)}
+          onApprovedCountChange={(d) => setCount((c) => Math.max(0, c + d))}
+          onPendingCountChange={(d) => setPending((p) => Math.max(0, p + d))}
+        />
       )}
-
-      {!preview && !exhausted && drops.length < count && (
-        <div className="mt-4 text-center">
-          <button
-            onClick={loadMore}
-            disabled={loadingMore}
-            className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted disabled:opacity-60"
-          >
-            {loadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
-            {loadingMore ? 'Loading…' : 'Load more'}
-          </button>
-        </div>
-      )}
-
-      {lightbox && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setLightbox(null)}>
-          <button className="absolute right-4 top-4 text-white" onClick={() => setLightbox(null)}><X className="h-6 w-6" /></button>
-          <div className="max-h-[90vh] max-w-3xl" onClick={(e) => e.stopPropagation()}>
-            {lightbox.type === 'video' ? (
-              <video src={lightbox.url} controls autoPlay className="max-h-[80vh] w-full rounded-lg" />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={lightbox.url} alt={lightbox.caption || ''} className="max-h-[80vh] w-full rounded-lg object-contain" />
-            )}
-            <p className="mt-2 text-center text-sm text-white/80">{lightbox.caption} <span className="text-white/50">· {lightbox.author.name || lightbox.author.username}</span></p>
-          </div>
-        </div>
-      )}
-    </section>
+    </>
   )
 }

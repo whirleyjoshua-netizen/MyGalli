@@ -19,7 +19,7 @@ type CommunityMember = { userId: string; username: string; name: string | null; 
 type CommunityResource = { id: string; type: string; title: string; url: string | null }
 
 export function CommunityHubView({
-  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, notes, counts, activity, sharePath, config, preview,
+  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, pendingCount = 0, notes, counts, activity, sharePath, config, preview,
 }: {
   hub: { id: string; title: string; tagline: string | null; description: string | null; coverImage: string | null; heroVideoUrl: string | null }
   ownerUsername: string
@@ -32,6 +32,8 @@ export function CommunityHubView({
   resources: CommunityResource[]
   events?: EventDTO[]
   drops: DropDTO[]
+  /** Pending drops awaiting review. Server sends 0 to anyone who can't moderate. */
+  pendingCount?: number
   notes?: StripNote[]
   counts: { posts: number; members: number; resources: number; events: number; kollab: number }
   activity?: ActivityCounts
@@ -106,7 +108,7 @@ export function CommunityHubView({
                 isPrivileged={isPrivileged}
                 currentUserId={currentUserId}
                 enabled={config.kollab.enabled}
-                requireApproval={config.kollab.requireApproval}
+                pendingCount={pendingCount}
                 initialDrops={drops}
                 total={counts.kollab}
                 narrow
