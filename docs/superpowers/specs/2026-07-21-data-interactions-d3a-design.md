@@ -58,6 +58,13 @@ Included, because they have a real response store:
 | jersey | `JerseySignature` |
 | bulletin poll / rating / question | `BulletinResponse` via `BulletinPost` |
 
+**`Comment` is page-scoped, not element-scoped.** It has no `elementId` column, so
+comments cannot be attributed to a specific comment wall. A page's comment total is
+shown on the *first* comment element on that page; a second comment element on the same
+page reads the same rows and shows 0 rather than double-counting into
+`totals.responses`. Comment counts also refresh on full load rather than on the 30s
+pulse, since attributing them requires section parsing the pulse endpoint avoids.
+
 Excluded and why:
 
 - **tip-jar** — no store exists; it can only ever report clicks.
@@ -116,8 +123,17 @@ All logic lives here so it is testable without a database (the local dev DB is
 `db push`-drifted and unreliable).
 
 - `collectDataElements(sections, tabs)` → `{key, elementId, type, title, pageId,
-  sectionName, tabLabel}[]`. Walks main sections **and every tab's sections**. D2's
+  sectionIndex, tabLabel}[]`. Walks main sections **and every tab's sections**. D2's
   review caught section engagement silently ignoring tabbed pages; this must not repeat.
+
+  **Sections have no names.** `Section` is `{id, layout, columns}` — there is no title
+  field, so the mockup's "Hero Section" is not derivable. The location line renders as
+  `Page title · Section 2`, or `Page title · Tab label · Section 2` for tabbed pages,
+  using the 1-based position.
+
+  **Elements have no creation date.** Nothing records when an element was added, so
+  "Created July 10" is not implementable and sort modes are activity-based rather than
+  age-based: most active, least active, recent activity, longest idle.
 - `deriveStatus({published, lastResponseAt, unreadCount, pendingCount, lastSeenAt, now})`
   → runs on the client, since `lastSeenAt` comes from `localStorage`
 - `computeEngagement({responders, pageViewers})` → `number | null`
