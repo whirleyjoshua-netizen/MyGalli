@@ -8,7 +8,7 @@ import { KollabGrid } from './KollabGrid'
 type Tab = 'approved' | 'pending'
 
 export function KollabViewer({
-  hubId, isPrivileged, currentUserId, initialDrops, total, onClose, onApprovedCountChange, onPendingCountChange,
+  hubId, isPrivileged, currentUserId, initialDrops, total, onClose, onApprovedCountChange, onPendingCountChange, pendingCount = 0,
 }: {
   hubId: string
   isPrivileged: boolean
@@ -18,13 +18,15 @@ export function KollabViewer({
   onClose: () => void
   onApprovedCountChange: (delta: number) => void
   onPendingCountChange: (delta: number) => void
+  pendingCount?: number
 }) {
   const [tab, setTab] = useState<Tab>('approved')
   const [approved, setApproved] = useState<DropDTO[]>(initialDrops)
   const [approvedTotal, setApprovedTotal] = useState(total)
   const [pending, setPending] = useState<DropDTO[]>([])
   const [pendingLoaded, setPendingLoaded] = useState(false)
-  const [cursor, setCursor] = useState<string | null>(initialDrops.length < total ? initialDrops[initialDrops.length - 1]?.id ?? null : null)
+  const [pendingBadge, setPendingBadge] = useState(pendingCount)
+  const [cursor, setCursor] = useState<string | null>(initialDrops[initialDrops.length - 1]?.id ?? null)
   const [busy, setBusy] = useState(false)
   const [lightbox, setLightbox] = useState<DropDTO | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -58,10 +60,11 @@ export function KollabViewer({
   }
 
   async function loadMoreApproved() {
-    if (!cursor || busy) return
+    if (approved.length >= approvedTotal || busy) return
     setBusy(true)
     try {
-      const res = await fetch(`/api/hubs/${hubId}/drops?status=approved&cursor=${encodeURIComponent(cursor)}`)
+      const qs = cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''
+      const res = await fetch(`/api/hubs/${hubId}/drops?status=approved${qs}`)
       if (!res.ok) return
       const d = await res.json()
       const fresh: DropDTO[] = d.drops ?? []
@@ -81,6 +84,7 @@ export function KollabViewer({
     if (!item) return
     // Optimistic: pull it out of Pending first, put it back if the call fails.
     setPending((cur) => cur.filter((d) => d.id !== id))
+    setPendingBadge((c) => Math.max(0, c - 1))
     onPendingCountChange(-1)
     if (action === 'approve') {
       setApproved((cur) => [{ ...item, status: 'approved' }, ...cur])
@@ -92,6 +96,7 @@ export function KollabViewer({
     })
     if (!res.ok) {
       setPending((cur) => [item, ...cur])
+      setPendingBadge((c) => c + 1)
       onPendingCountChange(1)
       if (action === 'approve') {
         setApproved((cur) => cur.filter((d) => d.id !== id))
@@ -131,7 +136,7 @@ export function KollabViewer({
             </button>
             {isPrivileged && (
               <button role="tab" aria-selected={tab === 'pending'} onClick={openPending} className={tabClass(tab === 'pending')}>
-                Pending ({pending.length})
+                Pending ({pendingLoaded ? pending.length : pendingBadge})
               </button>
             )}
           </div>
@@ -158,7 +163,7 @@ export function KollabViewer({
             />
           )}
 
-          {tab === 'approved' && cursor && (
+          {tab === 'approved' && approved.length < approvedTotal && (
             <div className="mt-4 text-center">
               <button onClick={loadMoreApproved} disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted disabled:opacity-60">
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />}

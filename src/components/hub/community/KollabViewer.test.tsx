@@ -62,4 +62,79 @@ describe('KollabViewer', () => {
     })
     expect(screen.getByRole('tab', { name: /approved \(2\)/i })).toBeInTheDocument()
   })
+
+  it('rolls back an approve when the PATCH fails', async () => {
+    ;(global.fetch as any) = vi.fn(async (url: string, init?: any) => {
+      if (init?.method === 'PATCH') return { ok: false, json: async () => ({}) }
+      return { ok: true, json: async () => ({ drops: [drop({ id: 'p1', status: 'pending' })], nextCursor: null }) }
+    })
+    render(<KollabViewer {...base} isPrivileged />)
+    fireEvent.click(screen.getByRole('tab', { name: /pending/i }))
+    await screen.findByRole('button', { name: /approve/i })
+    fireEvent.click(screen.getByRole('button', { name: /approve/i }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /approve/i })).toBeInTheDocument()
+    })
+    expect(screen.getByRole('tab', { name: /approved \(1\)/i })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: /approved/i }))
+    expect(screen.queryByText(/p1/)).not.toBeInTheDocument()
+  })
+
+  it('rejects a pending drop after confirmation', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    ;(global.fetch as any) = vi.fn(async (url: string, init?: any) => {
+      if (init?.method === 'PATCH') return { ok: true, json: async () => ({ ok: true }) }
+      return { ok: true, json: async () => ({ drops: [drop({ id: 'p1', status: 'pending' })], nextCursor: null }) }
+    })
+    render(<KollabViewer {...base} isPrivileged />)
+    fireEvent.click(screen.getByRole('tab', { name: /pending/i }))
+    await screen.findByRole('button', { name: /reject/i })
+    fireEvent.click(screen.getByRole('button', { name: /reject/i }))
+    await waitFor(() => {
+      expect(screen.getByText('Nothing waiting for review.')).toBeInTheDocument()
+    })
+    const patchCall = (global.fetch as any).mock.calls.find((c: any[]) => c[1]?.method === 'PATCH')
+    expect(patchCall).toBeTruthy()
+    expect(JSON.parse(patchCall[1].body)).toEqual({ action: 'reject' })
+    fireEvent.click(screen.getByRole('tab', { name: /approved/i }))
+    expect(screen.queryByText(/p1/)).not.toBeInTheDocument()
+  })
+
+  it('rolls back a reject when the PATCH fails', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    ;(global.fetch as any) = vi.fn(async (url: string, init?: any) => {
+      if (init?.method === 'PATCH') return { ok: false, json: async () => ({}) }
+      return { ok: true, json: async () => ({ drops: [drop({ id: 'p1', status: 'pending' })], nextCursor: null }) }
+    })
+    render(<KollabViewer {...base} isPrivileged />)
+    fireEvent.click(screen.getByRole('tab', { name: /pending/i }))
+    await screen.findByRole('button', { name: /reject/i })
+    fireEvent.click(screen.getByRole('button', { name: /reject/i }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /reject/i })).toBeInTheDocument()
+    })
+  })
+
+  it('does not call PATCH when the reject confirmation is cancelled', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    ;(global.fetch as any) = vi.fn(async (url: string, init?: any) => {
+      if (init?.method === 'PATCH') return { ok: true, json: async () => ({ ok: true }) }
+      return { ok: true, json: async () => ({ drops: [drop({ id: 'p1', status: 'pending' })], nextCursor: null }) }
+    })
+    render(<KollabViewer {...base} isPrivileged />)
+    fireEvent.click(screen.getByRole('tab', { name: /pending/i }))
+    await screen.findByRole('button', { name: /reject/i })
+    fireEvent.click(screen.getByRole('button', { name: /reject/i }))
+    await waitFor(() => {
+      expect(window.confirm).toHaveBeenCalled()
+    })
+    const patchCall = (global.fetch as any).mock.calls.find((c: any[]) => c[1]?.method === 'PATCH')
+    expect(patchCall).toBeFalsy()
+    expect(screen.getByRole('button', { name: /reject/i })).toBeInTheDocument()
+  })
+
+  it('shows the pendingCount prop before the Pending tab has loaded', () => {
+    render(<KollabViewer {...base} isPrivileged pendingCount={3} />)
+    expect(screen.getByRole('tab', { name: /pending \(3\)/i })).toBeInTheDocument()
+  })
 })
