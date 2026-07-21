@@ -213,8 +213,14 @@ async function loadResponses({
             'Comments are stored per page, not per element. This page’s comments are shown on its first comment wall.',
         }
       }
+      // No `since` filter here: the drawer is the only moderation surface for
+      // comments (the legacy CommentCard is dead code), so a pending comment
+      // older than the 30-day window must still show up and stay approvable.
+      // Approved comments could in principle be windowed to match the other
+      // response types, but a single unfiltered query is simplest and correct
+      // for both approved and pending rows, so it applies to all of them.
       const comments = await db.comment.findMany({
-        where: { displayId, createdAt: { gte: since } },
+        where: { displayId },
         select: { id: true, authorName: true, content: true, approved: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
       })

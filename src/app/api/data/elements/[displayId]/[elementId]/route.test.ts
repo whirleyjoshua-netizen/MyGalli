@@ -218,6 +218,21 @@ describe('per-type response stores', () => {
     })
   })
 
+  it('returns a pending comment older than the 30-day series window, so it stays approvable', async () => {
+    ;(db.display.findUnique as any).mockResolvedValue(pageWith({ id: 'e1', type: 'comment', commentTitle: 'Wall' }))
+    const old = new Date('2020-01-01T00:00:00Z')
+    ;(db.comment.findMany as any).mockResolvedValue([
+      { id: 'c-old', authorName: 'Lee', content: 'ancient but unapproved', approved: false, createdAt: old },
+    ])
+    const body = await (await GET(req(), ctx)).json()
+    const where = (db.comment.findMany as any).mock.calls[0][0].where
+    // No createdAt/since filter on the comment query — a pending comment from
+    // any age must still reach the only moderation surface for comments.
+    expect(where.createdAt).toBeUndefined()
+    expect(body.responses).toHaveLength(1)
+    expect(body.responses[0]).toMatchObject({ id: 'c-old', approved: false, answer: 'ancient but unapproved' })
+  })
+
   it('attributes a page’s comments to the FIRST comment wall, like the inventory route', async () => {
     ;(db.display.findUnique as any).mockResolvedValue(
       pageWith({ id: 'e0', type: 'comment', commentTitle: 'First' }, [
