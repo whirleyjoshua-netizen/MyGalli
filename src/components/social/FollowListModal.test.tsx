@@ -30,8 +30,24 @@ describe('FollowListModal', () => {
   })
 
   it('renders nothing when closed', () => {
-    const { container } = render(<FollowListModal isOpen={false} onClose={vi.fn()} username="josh" mode="followers" />)
-    expect(container).toBeEmptyDOMElement()
+    render(<FollowListModal isOpen={false} onClose={vi.fn()} username="josh" mode="followers" />)
+    expect(screen.queryByRole('heading', { name: /followers/i })).not.toBeInTheDocument()
+  })
+
+  // Regression: the dashboard sidebar is `position: sticky`, which ALWAYS
+  // creates a stacking context. Rendered in place, the fixed overlay stayed
+  // trapped beneath the main content — page cards painted over the dialog and
+  // the backdrop dimmed nothing. Portalling to <body> is what fixes it, so
+  // assert the dialog is NOT a descendant of the caller's subtree.
+  it('escapes the caller subtree so a stacking-context ancestor cannot trap it', async () => {
+    const { container } = render(
+      <div style={{ position: 'sticky' }}>
+        <FollowListModal isOpen onClose={vi.fn()} username="josh" mode="followers" />
+      </div>
+    )
+    await waitFor(() => expect(screen.getByText('Sarah Johnson')).toBeInTheDocument())
+    expect(container.querySelector('.fixed')).toBeNull()
+    expect(document.body.querySelector('.fixed')).not.toBeNull()
   })
 
   it('shows no Message button by default', async () => {

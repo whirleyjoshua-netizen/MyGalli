@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { X, MessageSquare } from 'lucide-react'
 import { FollowButton } from '@/components/social/FollowButton'
@@ -34,6 +35,9 @@ export function FollowListModal({
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [messaging, setMessaging] = useState<Row | null>(null)
+  // Portals need a DOM target, which doesn't exist during SSR.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   useEffect(() => {
     if (!isOpen) return
@@ -45,11 +49,16 @@ export function FollowListModal({
       .finally(() => setLoading(false))
   }, [isOpen, username, mode])
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
   const initialOf = (r: Row) => (r.name || r.username).charAt(0).toUpperCase()
 
-  return (
+  // Portalled to <body> on purpose. Callers include the dashboard sidebar,
+  // which is `position: sticky` — and sticky ALWAYS creates a stacking
+  // context, so a `fixed z-50` overlay rendered inside it stays trapped below
+  // the main content: page cards paint over the dialog and the backdrop never
+  // dims anything. The portal escapes that stacking context.
+  return createPortal(
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div className="w-full max-w-sm bg-surface border border-border rounded-2xl shadow-soft-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -112,6 +121,7 @@ export function FollowListModal({
           onSent={() => setMessaging(null)}
         />
       )}
-    </>
+    </>,
+    document.body
   )
 }
