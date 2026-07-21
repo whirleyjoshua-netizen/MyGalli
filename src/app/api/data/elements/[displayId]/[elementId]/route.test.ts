@@ -6,6 +6,11 @@ vi.mock('@/lib/db', () => ({
   db: {
     display: { findUnique: vi.fn() },
     formResponse: { findMany: vi.fn().mockResolvedValue([]) },
+    waitlistSignup: { findMany: vi.fn().mockResolvedValue([]) },
+    message: { findMany: vi.fn().mockResolvedValue([]) },
+    booking: { findMany: vi.fn().mockResolvedValue([]) },
+    jerseySignature: { findMany: vi.fn().mockResolvedValue([]) },
+    comment: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }))
 
@@ -23,6 +28,12 @@ const display = {
   sections: [{ id: 's1', layout: 'single', columns: [{ id: 'c1', elements: [{ id: 'e1', type: 'poll', pollQuestion: 'Best?' }] }] }],
   tabs: null,
 }
+
+// A display whose single element is `el`, so each per-type branch can be driven.
+const pageWith = (el: Record<string, unknown>, extra: Record<string, unknown>[] = []) => ({
+  ...display,
+  sections: [{ id: 's1', layout: 'single', columns: [{ id: 'c1', elements: [el, ...extra] }] }],
+})
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -102,6 +113,14 @@ describe('GET /api/data/elements/[displayId]/[elementId]', () => {
     }
   })
 
+  it('does not read FormResponse for a store-backed type', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findUnique as any).mockResolvedValue(pageWith({ id: 'e1', type: 'waitlist', waitlistTitle: 'List' }))
+    ;(db.waitlistSignup.findMany as any).mockResolvedValue([])
+    await GET(req(), ctx)
+    expect(db.formResponse.findMany).not.toHaveBeenCalled()
+  })
+
   it('does not flag truncation when everything fits', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'me' })
     ;(db.display.findUnique as any).mockResolvedValue(display)
@@ -111,5 +130,103 @@ describe('GET /api/data/elements/[displayId]/[elementId]', () => {
     const body = await (await GET(req(), ctx)).json()
     expect(body.responsesTruncated).toBe(false)
     expect(body.responseCount).toBe(1)
+  })
+})
+
+// Every one of these types is counted by the inventory route from its OWN store.
+// Reading FormResponse for them returned [], so the drawer rendered
+// "No responses yet." directly under a header claiming hundreds of responses.
+describe('per-type response stores', () => {
+  beforeEach(() => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+  })
+
+  it('reads WaitlistSignup for a waitlist, scoped to the display and element', async () => {
+    ;(db.display.findUnique as any).mockResolvedValue(pageWith({ id: 'e1', type: 'waitlist', waitlistTitle: 'List' }))
+    ;(db.waitlistSignup.findMany as any).mockResolvedValue([
+      { email: 'a@b.com', name: 'Ada', createdAt: new Date() },
+    ])
+    const body = await (await GET(req(), ctx)).json()
+    expect((db.waitlistSignup.findMany as any).mock.calls[0][0].where).toMatchObject({
+      displayId: 'd1',
+      elementId: 'e1',
+    })
+    expect(body.responses[0]).toMatchObject({ answer: 'a@b.com', who: 'Ada' })
+    expect(Number.isNaN(Date.parse(body.responses[0].submittedAt))).toBe(false)
+    expect(body.series).toHaveLength(1)
+  })
+
+  it('reads Message for a mailbox and scopes it to the owner', async () => {
+    ;(db.display.findUnique as any).mockResolvedValue(pageWith({ id: 'e1', type: 'mailbox', mailboxTitle: 'Inbox' }))
+    ;(db.message.findMany as any).mockResolvedValue([
+      { kind: 'text', body: 'hello', senderName: 'Sam', senderEmail: null, read: false, createdAt: new Date() },
+      { kind: 'audio', body: null, senderName: null, senderEmail: 'v@x.com', read: true, createdAt: new Date() },
+    ])
+    const body = await (await GET(req(), ctx)).json()
+    expect((db.message.findMany as any).mock.calls[0][0].where).toMatchObject({
+      ownerId: 'me',
+      displayId: 'd1',
+      elementId: 'e1',
+    })
+    expect(body.responses[0]).toMatchObject({ answer: 'hello', who: 'Sam', meta: 'Unread' })
+    // An audio message has no body; it must say so rather than render blank.
+    expect(body.responses[1].answer).toContain('Voice message')
+    expect(body.responses[1].meta).toBeUndefined()
+  })
+
+  it('reads Booking for appointments and surfaces the start time', async () => {
+    ;(db.display.findUnique as any).mockResolvedValue(pageWith({ id: 'e1', type: 'appointments', apptTitle: 'Slots' }))
+    const start = new Date('2026-08-01T15:00:00Z')
+    ;(db.booking.findMany as any).mockResolvedValue([
+      { name: 'Rey', email: 'r@x.com', start, note: 'first visit', createdAt: new Date() },
+    ])
+    const body = await (await GET(req(), ctx)).json()
+    expect((db.booking.findMany as any).mock.calls[0][0].where).toMatchObject({
+      displayId: 'd1',
+      elementId: 'e1',
+    })
+    expect(body.responses[0].answer).toEqual({ name: 'Rey', email: 'r@x.com', note: 'first visit' })
+    expect(body.responses[0].submittedAt).toBe(start.toISOString())
+    expect(body.responses[0].dateLabel).toBe('Booked for')
+  })
+
+  it('reads JerseySignature for a jersey', async () => {
+    ;(db.display.findUnique as any).mockResolvedValue(pageWith({ id: 'e1', type: 'jersey', jerseyName: 'Team' }))
+    ;(db.jerseySignature.findMany as any).mockResolvedValue([{ name: 'Nia', createdAt: new Date() }])
+    const body = await (await GET(req(), ctx)).json()
+    expect((db.jerseySignature.findMany as any).mock.calls[0][0].where).toMatchObject({
+      displayId: 'd1',
+      elementId: 'e1',
+    })
+    expect(body.responses[0].answer).toBe('Nia')
+  })
+
+  it('reads Comment by displayId only, since Comment has no elementId column', async () => {
+    ;(db.display.findUnique as any).mockResolvedValue(pageWith({ id: 'e1', type: 'comment', commentTitle: 'Wall' }))
+    ;(db.comment.findMany as any).mockResolvedValue([
+      { id: 'c1', authorName: 'Kim', content: 'nice work', approved: false, createdAt: new Date() },
+    ])
+    const body = await (await GET(req(), ctx)).json()
+    const where = (db.comment.findMany as any).mock.calls[0][0].where
+    expect(where.displayId).toBe('d1')
+    expect(where.elementId).toBeUndefined()
+    expect(body.responses[0]).toMatchObject({
+      id: 'c1',
+      answer: 'nice work',
+      who: 'Kim',
+      approved: false,
+    })
+  })
+
+  it('attributes a page’s comments to the FIRST comment wall, like the inventory route', async () => {
+    ;(db.display.findUnique as any).mockResolvedValue(
+      pageWith({ id: 'e0', type: 'comment', commentTitle: 'First' }, [
+        { id: 'e1', type: 'comment', commentTitle: 'Second' },
+      ])
+    )
+    const body = await (await GET(req(), ctx)).json()
+    expect(db.comment.findMany).not.toHaveBeenCalled()
+    expect(body.responses).toHaveLength(0)
+    expect(body.notice).toContain('first comment wall')
   })
 })
