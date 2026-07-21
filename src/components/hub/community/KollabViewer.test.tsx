@@ -13,6 +13,9 @@ const drop = (over: Partial<DropDTO> = {}): DropDTO => ({
 
 const base = {
   hubId: 'hub1', currentUserId: 'owner', initialDrops: [drop()], total: 1,
+  // Default to the unprivileged case so a test that forgets to say which viewer
+  // it is gets the safer one; every moderator test passes `isPrivileged` itself.
+  isPrivileged: false,
   onClose: () => {}, onApprovedCountChange: () => {}, onPendingCountChange: () => {},
 }
 
