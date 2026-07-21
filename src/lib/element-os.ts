@@ -255,3 +255,13 @@ export function filterElements(elements: ElementSummary[], filter: ElementFilter
     return true
   })
 }
+
+export type DataTab = 'overview' | 'audience' | 'interactions'
+
+// 'elements' and 'bulletin' were retired into 'interactions'; keep old links,
+// bookmarks and in-app hrefs working rather than dumping people on Overview.
+export function resolveTab(param: string | null | undefined): DataTab {
+  if (param === 'audience') return 'audience'
+  if (param === 'interactions' || param === 'elements' || param === 'bulletin') return 'interactions'
+  return 'overview'
+}
