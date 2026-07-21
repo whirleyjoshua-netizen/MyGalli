@@ -3,7 +3,7 @@
 
 import type { CanvasElement } from '@/lib/types/canvas'
 
-export const BULLETIN_BLOCK_TYPES = ['poll', 'rating', 'shortanswer'] as const
+export const BULLETIN_BLOCK_TYPES = ['poll', 'rating', 'shortanswer', 'acknowledgment'] as const
 export type BulletinBlockType = (typeof BULLETIN_BLOCK_TYPES)[number]
 
 export interface BulletinSettings {
