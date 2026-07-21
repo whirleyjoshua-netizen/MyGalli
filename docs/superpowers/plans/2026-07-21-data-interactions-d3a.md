@@ -1545,7 +1545,12 @@ export async function GET(request: NextRequest) {
     const [forms, messages, waitlist, bookings, jerseys, messagesToday, waitlistToday, bookingsToday, jerseysToday] =
       await Promise.all([
         db.formResponse.findMany({
-          where: { ...where, submittedAt: { gte: startOfToday } },
+          // The live window is 24h, NOT "since midnight" — a response from
+          // 11:50pm yesterday is still live at 00:30 today. Querying from
+          // midnight drops form-backed elements out of the payload at the day
+          // boundary, so their live state can never be refreshed. Fetch the
+          // whole live window and split today out of it in memory.
+          where: { ...where, submittedAt: { gte: liveHorizon } },
           select: { displayId: true, responses: true, submittedAt: true },
         }),
         db.message.groupBy({ ...grouped, where: { ...where, ownerId: user.id } }),
@@ -1580,9 +1585,19 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Bounded to the live horizon like every other query here — this runs every
+  // 30 seconds, so fetching every bulletin response ever received is not an
+  // option. The `where` goes on the `responses` relation, not the outer post
+  // query, which would drop posts entirely instead of filtering their rows.
   const bulletinPosts = await db.bulletinPost.findMany({
     where: { authorId: user.id },
-    select: { id: true, responses: { select: { createdAt: true, responses: true } } },
+    select: {
+      id: true,
+      responses: {
+        where: { createdAt: { gte: liveHorizon } },
+        select: { createdAt: true, responses: true },
+      },
+    },
   })
   for (const post of bulletinPosts) {
     for (const r of post.responses) {
