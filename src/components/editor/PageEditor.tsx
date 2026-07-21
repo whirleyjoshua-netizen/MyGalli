@@ -880,7 +880,6 @@ export function PageEditor({ pageId, openShare }: PageEditorProps) {
         ]
         break
       case 'whiteboard':
-        if (!isPro(user)) { setShowSlashMenu(false); setUpgradeOpen(true); return }
         Object.assign(newElement, createElement('whiteboard'))
         break
       default: {

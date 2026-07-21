@@ -100,4 +100,53 @@ describe('ProfileDmModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /close/i }))
     expect(onClose).toHaveBeenCalled()
   })
+
+  describe('when onSent is provided', () => {
+    const okFetch = () =>
+      vi.fn(async (url: any) => {
+        const href = String(url)
+        if (href.endsWith('/api/dm/conversations')) return { ok: true, json: async () => ({ id: 'cNew' }) } as any
+        return { ok: true, json: async () => ({ message: {} }) } as any
+      }) as any
+
+    it('calls onSent instead of navigating away', async () => {
+      global.fetch = okFetch()
+      const onSent = vi.fn()
+      render(<ProfileDmModal username="sarah" name="Sarah" onClose={vi.fn()} onSent={onSent} />)
+      fireEvent.change(screen.getByPlaceholderText(/write a message/i), { target: { value: 'hi' } })
+      fireEvent.click(screen.getByRole('button', { name: /send/i }))
+
+      await waitFor(() => expect(onSent).toHaveBeenCalled())
+      expect(push).not.toHaveBeenCalled()
+    })
+
+    it('still sends the message through both endpoints', async () => {
+      const calls: string[] = []
+      global.fetch = vi.fn(async (url: any) => {
+        const href = String(url)
+        calls.push(href)
+        if (href.endsWith('/api/dm/conversations')) return { ok: true, json: async () => ({ id: 'cNew' }) } as any
+        return { ok: true, json: async () => ({ message: {} }) } as any
+      }) as any
+
+      render(<ProfileDmModal username="sarah" name="Sarah" onClose={vi.fn()} onSent={vi.fn()} />)
+      fireEvent.change(screen.getByPlaceholderText(/write a message/i), { target: { value: 'hi' } })
+      fireEvent.click(screen.getByRole('button', { name: /send/i }))
+
+      await waitFor(() =>
+        expect(calls).toEqual(['/api/dm/conversations', '/api/dm/conversations/cNew/messages'])
+      )
+    })
+
+    it('does not call onSent when the send fails', async () => {
+      global.fetch = vi.fn(async () => ({ ok: false, status: 500 })) as any
+      const onSent = vi.fn()
+      render(<ProfileDmModal username="sarah" name="Sarah" onClose={vi.fn()} onSent={onSent} />)
+      fireEvent.change(screen.getByPlaceholderText(/write a message/i), { target: { value: 'nope' } })
+      fireEvent.click(screen.getByRole('button', { name: /send/i }))
+
+      await waitFor(() => expect(screen.getByText(/could not send/i)).toBeInTheDocument())
+      expect(onSent).not.toHaveBeenCalled()
+    })
+  })
 })

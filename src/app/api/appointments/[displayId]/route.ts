@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
-import { isPro } from '@/lib/plan'
 import { generateSlots, isSlotBookable } from '@/lib/appointments'
 import { loadApptContext, elementToConfig } from '@/lib/appointments-server'
 import { sendEmail, bookingConfirmedEmail, bookingReceivedEmail } from '@/lib/email'
@@ -19,7 +18,6 @@ export async function GET(request: NextRequest, { params }: Params) {
 
   const ctx = await loadApptContext(displayId, elementId)
   if (!ctx || !ctx.display.published) return NextResponse.json({ slots: [], available: false })
-  if (!isPro(ctx.display.user)) return NextResponse.json({ slots: [], available: false })
 
   const config = elementToConfig(ctx.el)
   const now = new Date()
@@ -63,7 +61,6 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   const ctx = await loadApptContext(displayId, elementId)
   if (!ctx || !ctx.display.published) return NextResponse.json({ error: 'Not available' }, { status: 404 })
-  if (!isPro(ctx.display.user)) return NextResponse.json({ error: 'Booking unavailable' }, { status: 403 })
 
   const config = elementToConfig(ctx.el)
   if (!isSlotBookable(config, startUTC, new Date())) {

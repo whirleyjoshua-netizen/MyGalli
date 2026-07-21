@@ -1,9 +1,6 @@
 'use client'
-import Link from 'next/link'
-import { Trash2, CalendarClock, Lock } from 'lucide-react'
+import { Trash2, CalendarClock } from 'lucide-react'
 import type { CanvasElement, ApptRule } from '@/lib/types/canvas'
-import { isPro } from '@/lib/plan'
-import { useAuthStore } from '@/lib/store'
 
 interface Props {
   element: CanvasElement
@@ -15,8 +12,6 @@ interface Props {
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export function AppointmentsElement({ element, onChange, onDelete, isSelected, onSelect }: Props) {
-  const { user } = useAuthStore()
-  const pro = isPro(user)
   const rules = element.apptWeeklyRules ?? []
 
   const setRuleForDay = (day: number, enabled: boolean) => {
@@ -25,23 +20,6 @@ export function AppointmentsElement({ element, onChange, onDelete, isSelected, o
   }
   const updateRule = (day: number, patch: Partial<ApptRule>) =>
     onChange({ apptWeeklyRules: rules.map((r) => (r.day === day ? { ...r, ...patch } : r)) })
-
-  if (!pro) {
-    return (
-      <div className={`relative rounded-xl border-2 border-dashed border-[#6C63FF]/40 bg-[#6C63FF]/5 p-6 text-center ${isSelected ? 'ring-2 ring-[#6C63FF]' : ''}`}
-        onClick={(e) => { e.stopPropagation(); onSelect() }}>
-        <Lock className="w-6 h-6 text-[#6C63FF] mx-auto mb-2" />
-        <p className="text-sm font-semibold text-foreground">Appointments is a Pro feature</p>
-        <p className="text-xs text-muted-foreground mt-1">Upgrade to let visitors book time with you.</p>
-        <Link href="/enterprise" className="inline-block mt-3 text-xs font-semibold text-[#6C63FF] underline">Upgrade to Pro</Link>
-        {isSelected && (
-          <button onClick={(e) => { e.stopPropagation(); onDelete() }} className="absolute -top-3 -right-3 p-1.5 bg-background border border-border rounded-md shadow-sm hover:bg-destructive hover:text-destructive-foreground">
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </div>
-    )
-  }
 
   return (
     <div className={`relative rounded-xl border bg-background transition-all ${isSelected ? 'ring-2 ring-[#39D98A] border-[#39D98A]/30' : 'border-border'}`}

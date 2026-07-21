@@ -3,10 +3,16 @@ import { render, screen } from '@testing-library/react'
 import { SlashCommandMenu } from './SlashCommandMenu'
 
 describe('SlashCommandMenu whiteboard entry', () => {
-  it('shows the Whiteboard command with a Pro badge', () => {
+  it('offers the Whiteboard command to everyone, with no Pro badge', () => {
     render(<SlashCommandMenu position={{ x: 0, y: 0 }} onSelect={() => {}} onClose={() => {}} />)
     expect(screen.getByText('Whiteboard')).toBeInTheDocument()
-    // Pro badge rendered somewhere in the menu
-    expect(screen.getAllByText('Pro').length).toBeGreaterThan(0)
+    // Whiteboard and Appointments were the only Pro-gated commands; both are
+    // now free, so no Pro badge should render anywhere in the menu.
+    expect(screen.queryAllByText('Pro')).toHaveLength(0)
+  })
+
+  it('offers the Appointments command to everyone', () => {
+    render(<SlashCommandMenu position={{ x: 0, y: 0 }} onSelect={() => {}} onClose={() => {}} />)
+    expect(screen.getByText('Appointments')).toBeInTheDocument()
   })
 })

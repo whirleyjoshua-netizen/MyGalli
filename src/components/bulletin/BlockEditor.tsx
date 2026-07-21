@@ -3,11 +3,17 @@
 import { X } from 'lucide-react'
 import type { CanvasElement } from '@/lib/types/canvas'
 import type { BulletinBlockType } from '@/lib/bulletin'
+import {
+  ACK_STATEMENT_DEFAULT,
+  ACK_CONFIRM_LABEL_DEFAULT,
+  ACK_BUTTON_LABEL_DEFAULT,
+} from '@/lib/acknowledgment'
 
 export function makeBlock(type: BulletinBlockType): CanvasElement {
   const id = `blk-${type}-${String(Math.abs(hashStr(type + '-seed')))}`
   if (type === 'poll') return { id, type, pollQuestion: '', pollOptions: ['', ''] }
   if (type === 'rating') return { id, type, ratingQuestion: '', ratingMax: 5, ratingStyle: 'stars' }
+  if (type === 'acknowledgment') return { id, type, ackStatement: ACK_STATEMENT_DEFAULT, ackConfirmLabel: ACK_CONFIRM_LABEL_DEFAULT, ackButtonLabel: ACK_BUTTON_LABEL_DEFAULT }
   return { id, type, shortAnswerQuestion: '', shortAnswerPlaceholder: 'Type your answer…' }
 }
 
@@ -50,6 +56,9 @@ export function BlockEditor({ block, onChange, onRemove }: { block: CanvasElemen
       )}
       {block.type === 'shortanswer' && (
         <input value={block.shortAnswerQuestion || ''} onChange={(e) => set({ shortAnswerQuestion: e.target.value })} placeholder="Your question" className="w-full rounded-md border border-border bg-surface px-2 py-1 text-sm outline-none focus:border-primary/50" />
+      )}
+      {block.type === 'acknowledgment' && (
+        <input value={block.ackStatement || ''} onChange={(e) => set({ ackStatement: e.target.value })} placeholder="What are they acknowledging?" className="w-full rounded-md border border-border bg-surface px-2 py-1 text-sm outline-none focus:border-primary/50" />
       )}
     </div>
   )

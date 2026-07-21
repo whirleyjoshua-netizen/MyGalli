@@ -43,6 +43,7 @@ model User {
   collaborations DisplayCollaborator[]
   verificationTokens VerificationToken[]
   notifications Notification[] @relation("UserNotifications")
+  acknowledgments Acknowledgment[] @relation("UserAcknowledgments")
   conversations  ConversationParticipant[] @relation("UserConversations")
   directMessages DirectMessage[]           @relation("UserDirectMessages")
   hubs Hub[] @relation("UserHubs")
@@ -863,4 +864,26 @@ model DirectMessage {
   deletedAt      DateTime?
 
   @@index([conversationId, createdAt])
+}
+
+model Acknowledgment {
+  id        String   @id @default(cuid())
+  scopeKey  String
+  elementId String
+  displayId String?
+  hubPostId String?
+  userId    String
+  user      User     @relation("UserAcknowledgments", fields: [userId], references: [id], onDelete: Cascade)
+  round     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([scopeKey, userId, round])
+  @@index([scopeKey, round])
+  @@index([userId])
+}
+
+model AcknowledgmentRound {
+  scopeKey String   @id
+  round    Int      @default(0)
+  resetAt  DateTime @updatedAt
 }
