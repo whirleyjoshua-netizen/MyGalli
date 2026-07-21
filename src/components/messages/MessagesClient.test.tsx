@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { MessagesClient } from './MessagesClient'
 
@@ -50,26 +50,26 @@ beforeEach(() => {
 
 describe('MessagesClient', () => {
   it('loads and lists conversations', async () => {
-    render(<MessagesClient myId="me" />)
+    render(<MessagesClient myId="me" myUsername="mine" />)
     await waitFor(() => expect(screen.getByText('Sarah Johnson')).toBeInTheDocument())
   })
 
   it('puts the selected conversation in the URL', async () => {
-    render(<MessagesClient myId="me" />)
+    render(<MessagesClient myId="me" myUsername="mine" />)
     await waitFor(() => expect(screen.getByText('Sarah Johnson')).toBeInTheDocument())
     fireEvent.click(screen.getByRole('button', { name: /Sarah Johnson/ }))
     expect(push).toHaveBeenCalledWith('/messages?c=c1')
   })
 
   it('shows the visitor notes tab content when selected', async () => {
-    render(<MessagesClient myId="me" />)
+    render(<MessagesClient myId="me" myUsername="mine" />)
     fireEvent.click(screen.getByRole('button', { name: /Visitor notes/i }))
     await waitFor(() => expect(screen.getByText('visitor notes list')).toBeInTheDocument())
   })
 
   it('appends an optimistic message immediately on send', async () => {
     search = 'c=c1'
-    render(<MessagesClient myId="me" />)
+    render(<MessagesClient myId="me" myUsername="mine" />)
     await waitFor(() => expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument())
     fireEvent.change(screen.getByPlaceholderText('Type a message...'), { target: { value: 'hi there' } })
     fireEvent.click(screen.getByRole('button', { name: /send message/i }))
@@ -85,7 +85,7 @@ describe('MessagesClient', () => {
       return { ok: true, json: async () => ({ conversations: [conversation] }) } as any
     }) as any
 
-    render(<MessagesClient myId="me" />)
+    render(<MessagesClient myId="me" myUsername="mine" />)
     await waitFor(() => expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument())
     fireEvent.change(screen.getByPlaceholderText('Type a message...'), { target: { value: 'oops' } })
     fireEvent.click(screen.getByRole('button', { name: /send message/i }))
@@ -125,7 +125,7 @@ describe('MessagesClient', () => {
       return { ok: true, json: async () => ({}) } as any
     }) as any
 
-    render(<MessagesClient myId="me" />)
+    render(<MessagesClient myId="me" myUsername="mine" />)
     await waitFor(() => expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument())
     fireEvent.change(screen.getByPlaceholderText('Type a message...'), { target: { value: 'hi there' } })
     fireEvent.click(screen.getByRole('button', { name: /send message/i }))
@@ -182,12 +182,12 @@ describe('MessagesClient', () => {
       return { ok: true, json: async () => ({}) } as any
     }) as any
 
-    const { rerender } = render(<MessagesClient myId="me" />)
+    const { rerender } = render(<MessagesClient myId="me" myUsername="mine" />)
     await waitFor(() => expect(global.fetch).toHaveBeenCalled())
 
     // Switch away from c1 to c2 before c1's in-flight thread fetch resolves.
     search = 'c=c2'
-    rerender(<MessagesClient myId="me" />)
+    rerender(<MessagesClient myId="me" myUsername="mine" />)
     await waitFor(() => expect(screen.getAllByText('Jo Lee').length).toBeGreaterThan(0))
 
     // Now let c1's stale response land.
@@ -209,21 +209,44 @@ describe('MessagesClient', () => {
   })
 
   describe('starting a conversation', () => {
-    it('creates the conversation and selects it', async () => {
-      const created = vi.fn(async () => ({ ok: true, json: async () => ({ id: 'cNew' }) }))
-      global.fetch = vi.fn(async (url: any, init?: any) => {
+    const withPicker = (onCreate: () => any) =>
+      vi.fn(async (url: any, init?: any) => {
         const href = String(url)
-        if (href.endsWith('/api/dm/conversations') && init?.method === 'POST') return created() as any
+        if (href.endsWith('/api/dm/conversations') && init?.method === 'POST') return onCreate() as any
+        if (href.includes('/followers')) {
+          return {
+            ok: true,
+            json: async () => ({ users: [{ username: 'sarah', name: 'Sarah Johnson', avatar: null }] }),
+          } as any
+        }
+        if (href.includes('/following')) return { ok: true, json: async () => ({ users: [] }) } as any
         if (href.includes('/messages')) return { ok: true, json: async () => ({ messages: [] }) } as any
         return { ok: true, json: async () => ({ conversations: [] }) } as any
       }) as any
-      vi.spyOn(window, 'prompt').mockReturnValue('sarah')
 
-      render(<MessagesClient myId="me" />)
+    it('creates the conversation and selects it when a person is picked', async () => {
+      const created = vi.fn(async () => ({ ok: true, json: async () => ({ id: 'cNew' }) }))
+      global.fetch = withPicker(created)
+
+      render(<MessagesClient myId="me" myUsername="mine" />)
       fireEvent.click(screen.getByRole('button', { name: /new message/i }))
+
+      await waitFor(() => expect(screen.getByText('@sarah')).toBeInTheDocument())
+      fireEvent.click(screen.getByRole('button', { name: /Sarah Johnson/ }))
 
       await waitFor(() => expect(created).toHaveBeenCalled())
       await waitFor(() => expect(push).toHaveBeenCalledWith('/messages?c=cNew'))
+    })
+
+    it('closes the picker after a successful start', async () => {
+      global.fetch = withPicker(async () => ({ ok: true, json: async () => ({ id: 'cNew' }) }))
+
+      render(<MessagesClient myId="me" myUsername="mine" />)
+      fireEvent.click(screen.getByRole('button', { name: /new message/i }))
+      await waitFor(() => expect(screen.getByText('@sarah')).toBeInTheDocument())
+      fireEvent.click(screen.getByRole('button', { name: /Sarah Johnson/ }))
+
+      await waitFor(() => expect(screen.queryByText('@sarah')).not.toBeInTheDocument())
     })
   })
 })

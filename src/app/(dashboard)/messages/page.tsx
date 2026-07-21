@@ -20,7 +20,7 @@ export default async function MessagesPage() {
       {/* useSearchParams needs a Suspense boundary to avoid opting the whole
           route into client-side rendering at build time. */}
       <Suspense fallback={<p className="px-6 py-8 text-sm text-muted-foreground lg:px-8">Loading…</p>}>
-        <MessagesClient myId={auth?.id ?? ''} />
+        <MessagesClient myId={auth?.id ?? ''} myUsername={auth?.username ?? ''} />
       </Suspense>
     </div>
   )
