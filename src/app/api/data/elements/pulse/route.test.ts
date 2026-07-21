@@ -66,4 +66,64 @@ describe('GET /api/data/elements/pulse', () => {
     const body = await (await GET(req())).json()
     expect(body.pulse[0].live).toBe(false)
   })
+
+  it('takes today\'s count from the today-scoped query, never from the aggregate max', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findMany as any).mockResolvedValue([{ id: 'd1', published: true }])
+    // 40 signups all time, newest today; only 2 of them actually arrived today.
+    ;(db.waitlistSignup.groupBy as any).mockImplementation(({ where }: any) =>
+      Promise.resolve(
+        where?.createdAt
+          ? [{ displayId: 'd1', elementId: 'w1', _count: { _all: 2 } }]
+          : [{ displayId: 'd1', elementId: 'w1', _count: { _all: 40 }, _max: { createdAt: new Date() } }]
+      )
+    )
+    const body = await (await GET(req())).json()
+    expect(body.pulse.find((p: any) => p.key === 'd1:w1').todayCount).toBe(2)
+  })
+
+  it('scopes mailbox reads to the owner', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findMany as any).mockResolvedValue([{ id: 'd1', published: true }])
+    await GET(req())
+    expect(db.message.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ ownerId: 'me' }) })
+    )
+  })
+
+  it('scopes bulletin reads by authorId and keys instruments by post', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.bulletinPost.findMany as any).mockResolvedValue([
+      { id: 'p1', responses: [{ createdAt: new Date(), responses: { b1: { type: 'poll', answer: 'A' } } }] },
+    ])
+    const body = await (await GET(req())).json()
+    expect(db.bulletinPost.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ authorId: 'me' }) })
+    )
+    expect(body.pulse.find((p: any) => p.key === 'bulletin:p1:b1')).toBeTruthy()
+  })
+
+  it('keeps a form element in the payload when its newest response is inside the live window but before midnight', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findMany as any).mockResolvedValue([{ id: 'd1', published: true }])
+    const twoHoursAgo = new Date(Date.now() - 2 * 3600 * 1000)
+    ;(db.formResponse.findMany as any).mockResolvedValue([
+      { displayId: 'd1', responses: { e1: { type: 'poll', answer: 'A' } }, submittedAt: twoHoursAgo },
+    ])
+    const body = await (await GET(req())).json()
+    const p = body.pulse.find((x: any) => x.key === 'd1:e1')
+    expect(p).toBeTruthy()
+    expect(p.live).toBe(true)
+  })
+
+  it('queries form responses over the 24h live window, not just since midnight', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findMany as any).mockResolvedValue([{ id: 'd1', published: true }])
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    await GET(req())
+    const arg = (db.formResponse.findMany as any).mock.calls[0][0]
+    expect(arg.where.submittedAt.gte.getTime()).toBeLessThanOrEqual(Date.now() - 23 * 3600 * 1000)
+    expect(arg.where.submittedAt.gte.getTime()).toBeLessThan(startOfToday.getTime() + 1)
+  })
 })

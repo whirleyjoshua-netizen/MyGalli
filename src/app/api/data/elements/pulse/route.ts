@@ -34,13 +34,19 @@ export async function GET(request: NextRequest) {
     activity.set(key, cur)
   }
 
+  // The live window is 24h, not "since midnight" — a response from 11:50pm
+  // yesterday still counts as live at 00:30 today. Fetch the whole live
+  // window and split today out of it in memory, so form-backed elements
+  // cannot drop out of the payload at the day boundary.
+  const liveHorizon = new Date(Date.now() - LIVE_WINDOW_MS)
+
   if (displayIds.length) {
     const where = { displayId: { in: displayIds } }
     const todayWhere = { ...where, createdAt: { gte: startOfToday } }
     const [forms, messages, waitlist, bookings, jerseys, messagesToday, waitlistToday, bookingsToday, jerseysToday] =
       await Promise.all([
         db.formResponse.findMany({
-          where: { ...where, submittedAt: { gte: startOfToday } },
+          where: { ...where, submittedAt: { gte: liveHorizon } },
           select: { displayId: true, responses: true, submittedAt: true },
         }),
         db.message.groupBy({
@@ -92,7 +98,12 @@ export async function GET(request: NextRequest) {
     for (const row of forms) {
       const answers = (row.responses ?? {}) as Record<string, unknown>
       for (const elementId of Object.keys(answers)) {
-        bump(`${row.displayId}:${elementId}`, publishedById.get(row.displayId) ?? false, row.submittedAt, 1)
+        bump(
+          `${row.displayId}:${elementId}`,
+          publishedById.get(row.displayId) ?? false,
+          row.submittedAt,
+          row.submittedAt >= startOfToday ? 1 : 0
+        )
       }
     }
     // An aggregate carries ONE timestamp and MANY rows, so "is the newest one
