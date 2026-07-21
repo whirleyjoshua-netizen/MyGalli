@@ -84,15 +84,18 @@ export function toDropDTO(row: {
 }): DropDTO {
   const status = row.status as DropStatus
   // A rejected drop's asset is deleted from Blob storage; emitting the dead URL
-  // would leak what was uploaded via the pathname and 404 in every renderer.
+  // would leak what was uploaded via the pathname and 404 in every renderer. We also
+  // blank caption and mimeType, as together they describe the rejected content and
+  // defeat much of the point of deletion — the uploader's free-text description plus
+  // the asset kind is sensitive metadata that should not survive rejection.
   const rejected = status === 'rejected'
   return {
     id: row.id,
     type: row.type as DropType,
     url: rejected ? '' : row.url,
     thumbnailUrl: rejected ? null : row.thumbnailUrl,
-    caption: row.caption,
-    mimeType: row.mimeType,
+    caption: rejected ? null : row.caption,
+    mimeType: rejected ? null : row.mimeType,
     width: row.width,
     height: row.height,
     status,

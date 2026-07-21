@@ -163,4 +163,14 @@ describe('toDropDTO status', () => {
     expect(dto.url).toBe('')
     expect(dto.thumbnailUrl).toBeNull()
   })
+  it('never emits the caption or mime type of a rejected drop', () => {
+    const dto = toDropDTO(row({ status: 'rejected', caption: 'a caption', mimeType: 'video/mp4' }))
+    expect(dto.caption).toBeNull()
+    expect(dto.mimeType).toBeNull()
+  })
+  it('preserves caption and mime type of an approved drop', () => {
+    const dto = toDropDTO(row({ status: 'approved', caption: 'my video', mimeType: 'video/mp4' }))
+    expect(dto.caption).toBe('my video')
+    expect(dto.mimeType).toBe('video/mp4')
+  })
 })
