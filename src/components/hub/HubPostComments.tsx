@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MessageCircle, Trash2 } from 'lucide-react'
 
 interface Comment {
@@ -24,6 +24,12 @@ export function HubPostComments({
   const [count, setCount] = useState(initialCount)
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // Sync only while closed; an open thread owns its count (the user may be
+  // looking at their own optimistic increment).
+  useEffect(() => {
+    if (!open) setCount(initialCount)
+  }, [initialCount, open])
 
   const base = `/api/hubs/${hubId}/posts/${postId}/comments`
 
