@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { collectDataElements, elementTitle, pageElementKey, bulletinElementKey, deriveStatus, computeEngagement, MIN_VIEWERS_FOR_ENGAGEMENT, groupByType, sortElements, filterElements, type ElementSummary } from './element-os'
+import { collectDataElements, elementTitle, pageElementKey, bulletinElementKey, deriveStatus, computeEngagement, MIN_VIEWERS_FOR_ENGAGEMENT, groupByType, sortElements, filterElements, isInstrumentedType, DATA_ELEMENT_TYPES, type ElementSummary } from './element-os'
 import type { Section } from '@/lib/types/canvas'
 import type { TabsConfig } from '@/lib/types/tabs'
 
@@ -208,6 +208,22 @@ const el = (over: Partial<ElementSummary>): ElementSummary => ({
   engagement: null,
   status: 'idle',
   ...over,
+})
+
+describe('isInstrumentedType', () => {
+  it('is true only for types whose public component calls trackInteraction', () => {
+    // Verified by grepping trackInteraction call sites under src/components/elements/.
+    const expectedInstrumented = new Set(['poll', 'mcq', 'rating', 'shortanswer', 'rsvp', 'waitlist'])
+    for (const type of DATA_ELEMENT_TYPES) {
+      expect(isInstrumentedType(type)).toBe(expectedInstrumented.has(type))
+    }
+  })
+
+  it('is false for the six uninstrumented types that would otherwise show a fabricated 0%', () => {
+    for (const type of ['wedding-rsvp', 'business-review', 'jersey', 'appointments', 'mailbox', 'comment']) {
+      expect(isInstrumentedType(type)).toBe(false)
+    }
+  })
 })
 
 describe('groupByType', () => {

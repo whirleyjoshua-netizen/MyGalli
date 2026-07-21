@@ -1,7 +1,7 @@
 'use client'
 
 import { Search } from 'lucide-react'
-import { TYPE_GROUPS, type ElementFilter, type ElementStatus, type SortMode } from '@/lib/element-os'
+import { TYPE_GROUPS, type DataElementType, type ElementFilter, type ElementStatus, type SortMode } from '@/lib/element-os'
 
 const STATUSES: { id: ElementStatus; label: string; dot: string }[] = [
   { id: 'needs-attention', label: 'Need Attention', dot: 'bg-amber-500' },
@@ -40,12 +40,12 @@ export function FilterRail({
 }) {
   // A chip represents a display group, which can cover more than one element
   // type (a "Polls" chip selects poll + mcq).
-  const groupActive = (types: string[]) => types.every((t) => filter.types.includes(t as never))
-  const toggleGroup = (types: string[]) => {
+  const groupActive = (types: readonly DataElementType[]) => types.every((t) => filter.types.includes(t))
+  const toggleGroup = (types: readonly DataElementType[]) => {
     const next = groupActive(types)
       ? filter.types.filter((t) => !types.includes(t))
-      : [...filter.types, ...types.filter((t) => !filter.types.includes(t as never))]
-    onChange({ ...filter, types: next as ElementFilter['types'] })
+      : [...filter.types, ...types.filter((t) => !filter.types.includes(t))]
+    onChange({ ...filter, types: next })
   }
 
   const toggleStatus = (id: ElementStatus) => {

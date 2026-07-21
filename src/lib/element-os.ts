@@ -26,6 +26,28 @@ export const DATA_ELEMENT_TYPES = [
 
 export type DataElementType = (typeof DATA_ELEMENT_TYPES)[number]
 
+// Types whose PUBLIC component actually calls trackInteraction() — i.e. the only
+// types that can produce an AnalyticsEvent with eventType 'interact'.
+// Engagement is `unique interacting visitors / unique page viewers`. A type that
+// never emits an 'interact' event has no numerator at all, so the ratio would
+// always be 0/N — a confident, fabricated "0% engagement" for an element that may
+// in fact be converting every visitor. Those types report `engagement: null` (the
+// UI renders "—") and are excluded from the average, because "we don't measure
+// this" is true and "0%" is not.
+// Verified by grepping trackInteraction call sites under src/components/elements/.
+export const INSTRUMENTED_TYPES = new Set<DataElementType>([
+  'poll',
+  'mcq',
+  'rating',
+  'shortanswer',
+  'rsvp',
+  'waitlist',
+])
+
+export function isInstrumentedType(type: string): boolean {
+  return INSTRUMENTED_TYPES.has(type as DataElementType)
+}
+
 const TYPE_LABELS: Record<DataElementType, string> = {
   poll: 'poll',
   mcq: 'multiple choice',
@@ -190,7 +212,7 @@ export interface ElementSummary extends CollectedElement {
 
 // Display groups. Several element types share a group because the owner thinks
 // of them the same way (a poll and an MCQ are both "a poll" to a human).
-export const TYPE_GROUPS: { label: string; types: DataElementType[] }[] = [
+export const TYPE_GROUPS = [
   { label: 'Polls', types: ['poll', 'mcq'] },
   { label: 'Questions', types: ['shortanswer', 'comment'] },
   { label: 'Ratings', types: ['rating', 'business-review'] },
@@ -199,14 +221,25 @@ export const TYPE_GROUPS: { label: string; types: DataElementType[] }[] = [
   { label: 'Appointments', types: ['appointments'] },
   { label: 'Mailboxes', types: ['mailbox'] },
   { label: 'Signatures', types: ['jersey'] },
-]
+] as const satisfies readonly { label: string; types: readonly DataElementType[] }[]
+
+type GroupedElementType = (typeof TYPE_GROUPS)[number]['types'][number]
+
+// Compile-time exhaustiveness guard. TYPE_GROUPS drives BOTH the grid and the
+// filter rail, so a type missing from it is invisible in the product while still
+// collecting data. Adding a 13th DataElementType without putting it in a group
+// makes this assignment fail `tsc` (the type resolves to `never`).
+const _EVERY_TYPE_IS_GROUPED: Exclude<DataElementType, GroupedElementType> extends never
+  ? true
+  : never = true
+void _EVERY_TYPE_IS_GROUPED
 
 export function groupByType(
   elements: ElementSummary[]
 ): { label: string; elements: ElementSummary[] }[] {
   return TYPE_GROUPS.map((g) => ({
     label: g.label,
-    elements: elements.filter((e) => g.types.includes(e.type)),
+    elements: elements.filter((e) => (g.types as readonly DataElementType[]).includes(e.type)),
   })).filter((g) => g.elements.length > 0)
 }
 
