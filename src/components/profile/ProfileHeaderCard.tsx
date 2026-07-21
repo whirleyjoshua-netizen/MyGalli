@@ -8,6 +8,7 @@ export function ProfileHeaderCard({
   followerCount,
   followingCount,
   isOwner,
+  isLoggedIn,
   isFollowing,
   isFriend,
 }: {
@@ -17,6 +18,7 @@ export function ProfileHeaderCard({
   followerCount: number
   followingCount: number
   isOwner: boolean
+  isLoggedIn: boolean
   isFollowing: boolean
   isFriend: boolean
 }) {
@@ -42,6 +44,7 @@ export function ProfileHeaderCard({
       <div className="lg:ml-auto">
         <ProfileActionCards
           isOwner={isOwner}
+          isLoggedIn={isLoggedIn}
           username={username}
           name={name}
           isFollowing={isFollowing}

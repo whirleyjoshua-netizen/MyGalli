@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Mail, Share2, Pencil, Check } from 'lucide-react'
 import { FollowButton } from '@/components/social/FollowButton'
 import { ProfileMailboxModal } from '@/components/profile/ProfileMailboxModal'
+import { ProfileDmModal } from '@/components/profile/ProfileDmModal'
 import { getProfileActionCards } from '@/lib/profile-actions'
 
 const cardCls =
@@ -12,18 +13,20 @@ const cardCls =
 
 export function ProfileActionCards({
   isOwner,
+  isLoggedIn,
   username,
   name,
   isFollowing,
   isFriend,
 }: {
   isOwner: boolean
+  isLoggedIn: boolean
   username: string
   name: string | null
   isFollowing: boolean
   isFriend: boolean
 }) {
-  const [mailboxOpen, setMailboxOpen] = useState(false)
+  const [messageOpen, setMessageOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const cards = getProfileActionCards(isOwner)
 
@@ -65,7 +68,7 @@ export function ProfileActionCards({
         }
         if (c.key === 'message') {
           return (
-            <button key={c.key} onClick={() => setMailboxOpen(true)} className={`${cardCls} cursor-pointer text-left`}>
+            <button key={c.key} onClick={() => setMessageOpen(true)} className={`${cardCls} cursor-pointer text-left`}>
               <Mail className="w-5 h-5 text-primary shrink-0" />
               <Body label={c.label} sublabel={c.sublabel} />
             </button>
@@ -90,9 +93,15 @@ export function ProfileActionCards({
         )
       })}
 
-      {mailboxOpen && (
-        <ProfileMailboxModal username={username} name={name} onClose={() => setMailboxOpen(false)} />
-      )}
+      {/* A signed-in member gets a real threaded DM. A logged-out visitor keeps
+          the anonymous note path -- it is the only way a non-member can reach
+          the owner at all. */}
+      {messageOpen &&
+        (isLoggedIn ? (
+          <ProfileDmModal username={username} name={name} onClose={() => setMessageOpen(false)} />
+        ) : (
+          <ProfileMailboxModal username={username} name={name} onClose={() => setMessageOpen(false)} />
+        ))}
     </div>
   )
 }
