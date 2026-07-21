@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import {
@@ -6,6 +7,7 @@ import {
   computeEngagement,
   elementTitle,
   isDataElementType,
+  isInstrumentedType,
   bulletinElementKey,
   type ElementSummary,
 } from '@/lib/element-os'
@@ -69,9 +71,34 @@ export async function GET(request: NextRequest) {
     slot(key).today += n
   }
 
+  // FormResponse keys answers by elementId inside a JSON blob — there is no
+  // elementId column to group by in Prisma's query builder, and reading every
+  // row's JSON payload to fold it in memory (the old approach) means loading
+  // every response a user has EVER collected on every tab open. Postgres can
+  // aggregate the jsonb keys directly, so this stays a true all-time count
+  // without ever materialising the response payloads in Node.
+  type FormAgg = { displayId: string; elementId: string; cnt: number; last: Date }
+  const formAggAllTime = displayIds.length
+    ? db.$queryRaw<FormAgg[]>(Prisma.sql`
+        SELECT "displayId", key AS "elementId", COUNT(*)::int AS cnt, MAX("submittedAt") AS last
+        FROM "FormResponse", jsonb_object_keys(responses) AS key
+        WHERE "displayId" IN (${Prisma.join(displayIds)})
+        GROUP BY "displayId", key
+      `)
+    : Promise.resolve<FormAgg[]>([])
+  const formAggToday = displayIds.length
+    ? db.$queryRaw<FormAgg[]>(Prisma.sql`
+        SELECT "displayId", key AS "elementId", COUNT(*)::int AS cnt, MAX("submittedAt") AS last
+        FROM "FormResponse", jsonb_object_keys(responses) AS key
+        WHERE "displayId" IN (${Prisma.join(displayIds)}) AND "submittedAt" >= ${startOfToday}
+        GROUP BY "displayId", key
+      `)
+    : Promise.resolve<FormAgg[]>([])
+
   const empty: any[] = []
   const [
-    formRows,
+    formRowsAllTime,
+    formRowsToday,
     commentRows,
     messageRows,
     unreadRows,
@@ -79,6 +106,8 @@ export async function GET(request: NextRequest) {
     bookingRows,
     jerseyRows,
     bulletinPosts,
+    bulletinRespRows,
+    bulletinRespTodayRows,
     events,
     commentTodayRows,
     messageTodayRows,
@@ -88,11 +117,8 @@ export async function GET(request: NextRequest) {
   ] =
     displayIds.length
       ? await Promise.all([
-          db.formResponse.findMany({
-            where: { displayId: { in: displayIds } },
-            select: { displayId: true, responses: true, submittedAt: true },
-            orderBy: { submittedAt: 'desc' },
-          }),
+          formAggAllTime,
+          formAggToday,
           // Comment has NO elementId column — it is page-scoped.
           db.comment.groupBy({
             by: ['displayId'],
@@ -132,13 +158,24 @@ export async function GET(request: NextRequest) {
           }),
           db.bulletinPost.findMany({
             where: { authorId: user.id },
-            select: {
-              id: true,
-              createdAt: true,
-              blocks: true,
-              responses: { select: { createdAt: true, responses: true } },
-            },
+            select: { id: true, createdAt: true, blocks: true },
             orderBy: { createdAt: 'desc' },
+          }),
+          // Bulletin posts carry "zero or one" interactive block (see BulletinPost.blocks
+          // comment), so every response to a post is a response to that post's block —
+          // a per-post count is a truthful per-element count without reading the JSON
+          // response payloads at all (unlike FormResponse, which can back many elements
+          // per display and genuinely needs the jsonb aggregation above).
+          db.bulletinResponse.groupBy({
+            by: ['postId'],
+            where: { post: { authorId: user.id } },
+            _count: { _all: true },
+            _max: { createdAt: true },
+          }),
+          db.bulletinResponse.groupBy({
+            by: ['postId'],
+            where: { post: { authorId: user.id }, createdAt: { gte: startOfToday } },
+            _count: { _all: true },
           }),
           db.analyticsEvent.findMany({
             where: { displayId: { in: displayIds }, createdAt: { gte: since } },
@@ -180,10 +217,22 @@ export async function GET(request: NextRequest) {
           empty,
           empty,
           empty,
+          empty,
           await db.bulletinPost.findMany({
             where: { authorId: user.id },
-            select: { id: true, createdAt: true, blocks: true, responses: { select: { createdAt: true, responses: true } } },
+            select: { id: true, createdAt: true, blocks: true },
             orderBy: { createdAt: 'desc' },
+          }),
+          await db.bulletinResponse.groupBy({
+            by: ['postId'],
+            where: { post: { authorId: user.id } },
+            _count: { _all: true },
+            _max: { createdAt: true },
+          }),
+          await db.bulletinResponse.groupBy({
+            by: ['postId'],
+            where: { post: { authorId: user.id }, createdAt: { gte: startOfToday } },
+            _count: { _all: true },
           }),
           empty,
           empty,
@@ -193,15 +242,11 @@ export async function GET(request: NextRequest) {
           empty,
         ]
 
-  // FormResponse keys answers by elementId inside a JSON blob, so it cannot be
-  // grouped in SQL — fold it once here.
-  for (const row of formRows) {
-    const answers = (row.responses ?? {}) as Record<string, unknown>
-    for (const elementId of Object.keys(answers)) {
-      const key = `${row.displayId}:${elementId}`
-      addTotal(key, 1, row.submittedAt)
-      if (row.submittedAt >= startOfToday) addToday(key, 1)
-    }
+  for (const row of formRowsAllTime) {
+    addTotal(`${row.displayId}:${row.elementId}`, row.cnt, row.last)
+  }
+  for (const row of formRowsToday) {
+    addToday(`${row.displayId}:${row.elementId}`, row.cnt)
   }
 
   for (const g of [...messageRows, ...waitlistRows, ...bookingRows, ...jerseyRows]) {
@@ -258,6 +303,17 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // The events sample was truncated by MAX_EVENTS: the ratio's denominator
+  // (page views) and numerator (interactions) can be dropped unevenly across
+  // pages, so any computed percentage would be a confident wrong number, not
+  // just an incomplete one. Report "we don't know" instead.
+  const eventsTruncated = events.length === MAX_EVENTS
+  if (eventsTruncated) {
+    console.warn(
+      `[data/elements] user ${user.id} hit the ${MAX_EVENTS}-event cap; engagement is unreliable and reported as null`
+    )
+  }
+
   const pageElements: ElementSummary[] = collected.map(({ el, published }) => {
     const c = counts.get(el.key) ?? { total: 0, today: 0, last: null }
     return {
@@ -269,10 +325,15 @@ export async function GET(request: NextRequest) {
       lastResponseAt: c.last,
       unreadCount: unread.get(el.key) ?? 0,
       pendingCount: 0,
-      engagement: computeEngagement({
-        responders: respondersByKey.get(el.key)?.size ?? 0,
-        pageViewers: viewersByPage.get(el.pageId)?.size ?? 0,
-      }),
+      // Types whose public component never emits an 'interact' event have no
+      // numerator at all — 0/N is a fabricated "0% engagement", not a real one.
+      engagement:
+        !isInstrumentedType(el.type) || eventsTruncated
+          ? null
+          : computeEngagement({
+              responders: respondersByKey.get(el.key)?.size ?? 0,
+              pageViewers: viewersByPage.get(el.pageId)?.size ?? 0,
+            }),
       status: 'idle' as const,
     }
   })
@@ -281,22 +342,25 @@ export async function GET(request: NextRequest) {
   // Bulletin instruments live on a post, not a page. They are always "published"
   // (a post is either published or it isn't a post), and they have no page views
   // to divide by, so engagement stays null.
+  const bulletinTotals = new Map<string, { total: number; last: string | null }>()
+  for (const g of bulletinRespRows) {
+    const at = g._max?.createdAt ?? null
+    bulletinTotals.set(g.postId, { total: g._count?._all ?? 0, last: at ? at.toISOString() : null })
+  }
+  const bulletinTodayTotals = new Map<string, number>()
+  for (const g of bulletinRespTodayRows) {
+    bulletinTodayTotals.set(g.postId, g._count?._all ?? 0)
+  }
+
   const bulletinElements: ElementSummary[] = []
   for (const post of bulletinPosts) {
     const blocks = (parse<CanvasElement[]>(post.blocks) ?? []).filter((b) => b && isDataElementType(b.type))
     for (const block of blocks) {
       const key = bulletinElementKey(post.id, block.id)
-      let total = 0
-      let today = 0
-      let last: string | null = null
-      for (const r of post.responses) {
-        const answers = (r.responses ?? {}) as Record<string, unknown>
-        if (!(block.id in answers)) continue
-        total += 1
-        if (r.createdAt >= startOfToday) today += 1
-        const iso = r.createdAt.toISOString()
-        if (!last || iso > last) last = iso
-      }
+      const agg = bulletinTotals.get(post.id) ?? { total: 0, last: null }
+      const total = agg.total
+      const today = bulletinTodayTotals.get(post.id) ?? 0
+      const last = agg.last
       bulletinElements.push({
         key,
         elementId: block.id,
@@ -320,18 +384,18 @@ export async function GET(request: NextRequest) {
 
   const elements = [...pageElements, ...bulletinElements]
   const engaged = elements.map((e) => e.engagement).filter((v): v is number => v !== null)
-  const liveCutoff = Date.now() - 24 * 3600 * 1000
 
   return NextResponse.json({
     elements,
     totals: {
       elements: elements.length,
       responses: elements.reduce((sum, e) => sum + e.responseCount, 0),
-      avgEngagement: engaged.length ? Math.round(engaged.reduce((a, b) => a + b, 0) / engaged.length) : null,
-      liveNow: elements.filter(
-        (e) => e.published && e.lastResponseAt && Date.parse(e.lastResponseAt) >= liveCutoff
-      ).length,
+      avgEngagement:
+        eventsTruncated || !engaged.length
+          ? null
+          : Math.round(engaged.reduce((a, b) => a + b, 0) / engaged.length),
     },
     truncated,
+    engagementUnavailable: eventsTruncated,
   })
 }

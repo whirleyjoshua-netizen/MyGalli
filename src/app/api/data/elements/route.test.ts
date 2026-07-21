@@ -5,13 +5,14 @@ vi.mock('@/lib/auth', () => ({ getUser: vi.fn() }))
 vi.mock('@/lib/db', () => ({
   db: {
     display: { findMany: vi.fn().mockResolvedValue([]) },
-    formResponse: { findMany: vi.fn().mockResolvedValue([]) },
+    $queryRaw: vi.fn().mockResolvedValue([]),
     comment: { groupBy: vi.fn().mockResolvedValue([]) },
     message: { groupBy: vi.fn().mockResolvedValue([]) },
     waitlistSignup: { groupBy: vi.fn().mockResolvedValue([]) },
     booking: { groupBy: vi.fn().mockResolvedValue([]) },
     jerseySignature: { groupBy: vi.fn().mockResolvedValue([]) },
     bulletinPost: { findMany: vi.fn().mockResolvedValue([]) },
+    bulletinResponse: { groupBy: vi.fn().mockResolvedValue([]) },
     analyticsEvent: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }))
@@ -63,13 +64,12 @@ describe('GET /api/data/elements', () => {
     })
   })
 
-  it('counts responses per element from FormResponse payloads', async () => {
+  it('counts responses per element from the jsonb-aggregated FormResponse query', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'me' })
     ;(db.display.findMany as any).mockResolvedValue([display()])
-    ;(db.formResponse.findMany as any).mockResolvedValue([
-      { displayId: 'd1', responses: { e1: { type: 'poll', answer: 'A' } }, submittedAt: new Date('2026-07-20T10:00:00Z') },
-      { displayId: 'd1', responses: { e1: { type: 'poll', answer: 'B' } }, submittedAt: new Date('2026-07-19T10:00:00Z') },
-      { displayId: 'd1', responses: { other: { type: 'poll', answer: 'B' } }, submittedAt: new Date('2026-07-19T10:00:00Z') },
+    // First $queryRaw call is the all-time aggregate, second is today-scoped.
+    ;(db.$queryRaw as any).mockResolvedValueOnce([
+      { displayId: 'd1', elementId: 'e1', cnt: 2, last: new Date('2026-07-20T10:00:00Z') },
     ])
     const body = await (await GET(req())).json()
     expect(body.elements[0].responseCount).toBe(2)
@@ -79,12 +79,13 @@ describe('GET /api/data/elements', () => {
   it('reports totals across all elements', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'me' })
     ;(db.display.findMany as any).mockResolvedValue([display()])
-    ;(db.formResponse.findMany as any).mockResolvedValue([
-      { displayId: 'd1', responses: { e1: { type: 'poll', answer: 'A' } }, submittedAt: new Date() },
+    ;(db.$queryRaw as any).mockResolvedValueOnce([
+      { displayId: 'd1', elementId: 'e1', cnt: 1, last: new Date() },
     ])
     const body = await (await GET(req())).json()
     expect(body.totals).toMatchObject({ elements: 1, responses: 1 })
     expect(body.totals).not.toHaveProperty('needsAttention')
+    expect(body.totals).not.toHaveProperty('liveNow')
   })
 
   it('leaves engagement null when the page is below the viewer floor', async () => {
@@ -215,9 +216,15 @@ describe('GET /api/data/elements — all stores', () => {
         id: 'p1',
         createdAt: new Date('2026-07-12T00:00:00Z'),
         blocks: [{ id: 'b1', type: 'poll', pollQuestion: 'Best practice time?' }],
-        responses: [{ createdAt: new Date('2026-07-20T12:00:00Z'), responses: { b1: { type: 'poll', answer: 'AM' } } }],
       },
     ])
+    ;(db.bulletinResponse.groupBy as any).mockImplementation(({ where }: any) =>
+      Promise.resolve(
+        where?.createdAt
+          ? [{ postId: 'p1', _count: { _all: 1 } }]
+          : [{ postId: 'p1', _count: { _all: 1 }, _max: { createdAt: new Date('2026-07-20T12:00:00Z') } }]
+      )
+    )
     const body = await (await GET(req())).json()
     const b = body.elements.find((e: any) => e.key === 'bulletin:p1:b1')
     expect(b).toMatchObject({ source: 'bulletin', type: 'poll', title: 'Best practice time?', published: true, responseCount: 1 })
@@ -261,5 +268,85 @@ describe('GET /api/data/elements — all stores', () => {
     expect(db.bulletinPost.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ authorId: 'me' }) })
     )
+  })
+
+  it('reports engagement: null for uninstrumented types even with heavy traffic and responses', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findMany as any).mockResolvedValue([
+      display({
+        sections: [{ id: 's1', layout: 'single', columns: [{ id: 'c1', elements: [
+          { id: 'm1', type: 'mailbox', mailboxTitle: 'Say hi' },
+        ] }] }],
+      }),
+    ])
+    ;(db.message.groupBy as any).mockResolvedValue([
+      { displayId: 'd1', elementId: 'm1', _count: { _all: 300 }, _max: { createdAt: new Date() } },
+    ])
+    const views = Array.from({ length: 500 }, (_, i) => ({
+      displayId: 'd1', eventType: 'view', visitorId: `v${i}`, sessionId: null, metadata: null,
+    }))
+    ;(db.analyticsEvent.findMany as any).mockResolvedValue(views)
+    const body = await (await GET(req())).json()
+    const m = body.elements.find((e: any) => e.key === 'd1:m1')
+    expect(m.responseCount).toBe(300)
+    expect(m.engagement).toBeNull()
+    // Excluded from the average, not dragged toward zero.
+    expect(body.totals.avgEngagement).toBeNull()
+  })
+
+  it('excludes uninstrumented-type nulls from avgEngagement while keeping instrumented ones', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findMany as any).mockResolvedValue([
+      display({
+        sections: [{ id: 's1', layout: 'single', columns: [{ id: 'c1', elements: [
+          { id: 'e1', type: 'poll', pollQuestion: 'Q' },
+          { id: 'm1', type: 'mailbox', mailboxTitle: 'Say hi' },
+        ] }] }],
+      }),
+    ])
+    const views = Array.from({ length: 100 }, (_, i) => ({
+      displayId: 'd1', eventType: 'view', visitorId: `v${i}`, sessionId: null, metadata: null,
+    }))
+    const interacts = Array.from({ length: 20 }, (_, i) => ({
+      displayId: 'd1', eventType: 'interact', visitorId: `v${i}`, sessionId: null, metadata: { elementId: 'e1' },
+    }))
+    ;(db.analyticsEvent.findMany as any).mockResolvedValue([...views, ...interacts])
+    ;(db.message.groupBy as any).mockResolvedValue([
+      { displayId: 'd1', elementId: 'm1', _count: { _all: 50 }, _max: { createdAt: new Date() } },
+    ])
+    const body = await (await GET(req())).json()
+    // Only the poll (20%) counts toward the average — the mailbox's null is excluded.
+    expect(body.totals.avgEngagement).toBe(20)
+  })
+
+  it('nulls out engagement and warns when the AnalyticsEvent sample hits the cap', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findMany as any).mockResolvedValue([display()])
+    const events = Array.from({ length: 50_000 }, (_, i) => ({
+      displayId: 'd1', eventType: 'view', visitorId: `v${i}`, sessionId: null, metadata: null,
+    }))
+    ;(db.analyticsEvent.findMany as any).mockResolvedValue(events)
+    const body = await (await GET(req())).json()
+    expect(body.elements[0].engagement).toBeNull()
+    expect(body.totals.avgEngagement).toBeNull()
+    expect(body.engagementUnavailable).toBe(true)
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('does not flag engagementUnavailable when under the event cap', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findMany as any).mockResolvedValue([display()])
+    ;(db.analyticsEvent.findMany as any).mockResolvedValue([])
+    const body = await (await GET(req())).json()
+    expect(body.engagementUnavailable).toBe(false)
+  })
+
+  it('bounds the FormResponse jsonb aggregation to the caller\'s display ids', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findMany as any).mockResolvedValue([display()])
+    await GET(req())
+    expect(db.$queryRaw).toHaveBeenCalled()
   })
 })
