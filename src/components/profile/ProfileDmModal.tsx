@@ -8,10 +8,17 @@ export function ProfileDmModal({
   username,
   name,
   onClose,
+  onSent,
 }: {
   username: string
   name: string | null
   onClose: () => void
+  /**
+   * Called instead of navigating to the thread once the message is away.
+   * Callers that show this over a list (e.g. the follower list) pass it so the
+   * sender keeps their place and can message several people in a row.
+   */
+  onSent?: () => void
 }) {
   const router = useRouter()
   const [body, setBody] = useState('')
@@ -41,7 +48,8 @@ export function ProfileDmModal({
       })
       if (!sent.ok) throw new Error('send failed')
 
-      router.push(`/messages?c=${id}`)
+      if (onSent) onSent()
+      else router.push(`/messages?c=${id}`)
     } catch {
       // The typed text is deliberately left in place so a retry costs nothing.
       setError(true)

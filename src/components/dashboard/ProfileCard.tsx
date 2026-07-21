@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Users, Eye, MoreVertical, UserCircle, Settings, LogOut } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
+import { FollowListModal } from '@/components/social/FollowListModal'
 
 function fmt(n: number | null): string {
   if (n == null) return '—'
@@ -16,6 +17,7 @@ export function ProfileCard({ collapsed = false }: { collapsed?: boolean }) {
   const { user, logout } = useAuthStore()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [followersOpen, setFollowersOpen] = useState(false)
   const [followers, setFollowers] = useState<number | null>(null)
   const [views, setViews] = useState<number | null>(null)
 
@@ -117,12 +119,15 @@ export function ProfileCard({ collapsed = false }: { collapsed?: boolean }) {
         {user.bio && <p className="mt-2 text-xs text-muted-foreground line-clamp-2 leading-snug">{user.bio}</p>}
 
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="flex flex-col items-center py-1.5 rounded-xl bg-muted/60">
+          <button
+            onClick={() => setFollowersOpen(true)}
+            className="flex flex-col items-center py-1.5 rounded-xl bg-muted/60 hover:bg-muted transition-colors cursor-pointer"
+          >
             <span className="flex items-center gap-1 text-sm font-bold text-foreground">
               <Users className="w-3.5 h-3.5 text-primary" /> {fmt(followers)}
             </span>
             <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Followers</span>
-          </div>
+          </button>
           <div className="flex flex-col items-center py-1.5 rounded-xl bg-muted/60">
             <span className="flex items-center gap-1 text-sm font-bold text-foreground">
               <Eye className="w-3.5 h-3.5 text-galli-aqua" /> {fmt(views)}
@@ -132,6 +137,14 @@ export function ProfileCard({ collapsed = false }: { collapsed?: boolean }) {
         </div>
       </div>
       {menu}
+      {/* Signed-in surface, so messaging is offered straight from the list. */}
+      <FollowListModal
+        isOpen={followersOpen}
+        onClose={() => setFollowersOpen(false)}
+        username={user.username}
+        mode="followers"
+        canMessage
+      />
     </div>
   )
 }

@@ -15,6 +15,16 @@ beforeEach(() => {
 })
 
 describe('ProfileCard', () => {
+  it('opens the followers list when the Followers stat is clicked', async () => {
+    render(<ProfileCard />)
+    const tile = screen.getByRole('button', { name: /followers/i })
+    fireEvent.click(tile)
+    // The modal fetches the follower list for the signed-in user.
+    await vi.waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith('/api/users/josh/followers')
+    )
+  })
+
   it('opens the account menu with View profile, Settings, and Log out', () => {
     render(<ProfileCard />)
     fireEvent.click(screen.getByLabelText('Account menu'))
