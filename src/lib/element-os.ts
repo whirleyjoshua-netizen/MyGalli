@@ -1,0 +1,131 @@
+// Pure, DB-free logic for the Interactions tab (Element Operating System).
+// No IO here: the routes do the querying, this module does the thinking, so
+// every rule below is unit-testable without a database.
+import type { Section, CanvasElement } from '@/lib/types/canvas'
+import type { TabsConfig } from '@/lib/types/tabs'
+
+// Element types that have a real response store. Anything not listed here has
+// nothing to report and stays out of the grid. Deliberately excluded:
+//   tip-jar  — no model exists; it can only ever report clicks
+//   tracker  — TrackerEntry is owner-entered data, not visitor responses
+//   static elements (text, gallery, countdown, map, ...) — nothing collected
+export const DATA_ELEMENT_TYPES = [
+  'poll',
+  'mcq',
+  'rating',
+  'shortanswer',
+  'comment',
+  'rsvp',
+  'wedding-rsvp',
+  'business-review',
+  'waitlist',
+  'appointments',
+  'mailbox',
+  'jersey',
+] as const
+
+export type DataElementType = (typeof DATA_ELEMENT_TYPES)[number]
+
+const TYPE_LABELS: Record<DataElementType, string> = {
+  poll: 'poll',
+  mcq: 'multiple choice',
+  rating: 'rating',
+  shortanswer: 'question',
+  comment: 'comment wall',
+  rsvp: 'RSVP',
+  'wedding-rsvp': 'wedding RSVP',
+  'business-review': 'reviews',
+  waitlist: 'wait list',
+  appointments: 'appointments',
+  mailbox: 'mailbox',
+  jersey: 'jersey',
+}
+
+// Which config field holds the human-facing title, per type.
+const TITLE_FIELDS: Record<DataElementType, string> = {
+  poll: 'pollQuestion',
+  mcq: 'mcqQuestion',
+  rating: 'ratingQuestion',
+  shortanswer: 'shortAnswerQuestion',
+  comment: 'commentTitle',
+  rsvp: 'rsvpSubject',
+  'wedding-rsvp': 'weddingRsvpTitle',
+  'business-review': 'bizReviewTitle',
+  waitlist: 'waitlistTitle',
+  appointments: 'apptTitle',
+  mailbox: 'mailboxTitle',
+  jersey: 'jerseyName',
+}
+
+export interface CollectedElement {
+  key: string
+  elementId: string
+  type: DataElementType
+  title: string
+  pageId: string
+  pageTitle: string
+  sectionIndex: number
+  tabLabel?: string
+}
+
+export function pageElementKey(displayId: string, elementId: string): string {
+  return `${displayId}:${elementId}`
+}
+
+export function bulletinElementKey(postId: string, elementId: string): string {
+  return `bulletin:${postId}:${elementId}`
+}
+
+export function isDataElementType(type: unknown): type is DataElementType {
+  return (DATA_ELEMENT_TYPES as readonly string[]).includes(type as string)
+}
+
+export function elementTitle(el: CanvasElement): string {
+  const type = el.type as DataElementType
+  const field = TITLE_FIELDS[type]
+  const raw = field ? (el as unknown as Record<string, unknown>)[field] : null
+  const title = typeof raw === 'string' ? raw.trim() : ''
+  return title || `Untitled ${TYPE_LABELS[type] ?? 'element'}`
+}
+
+function walk(
+  sections: Section[] | null | undefined,
+  pageId: string,
+  pageTitle: string,
+  tabLabel: string | undefined,
+  out: CollectedElement[]
+): void {
+  ;(sections || []).forEach((section, i) => {
+    for (const column of section?.columns || []) {
+      for (const el of column?.elements || []) {
+        if (!el || !isDataElementType(el.type)) continue
+        out.push({
+          key: pageElementKey(pageId, el.id),
+          elementId: el.id,
+          type: el.type as DataElementType,
+          title: elementTitle(el),
+          pageId,
+          pageTitle,
+          sectionIndex: i + 1,
+          ...(tabLabel ? { tabLabel } : {}),
+        })
+      }
+    }
+  })
+}
+
+// Walks the main canvas AND every tab's canvas. Tabbed pages were silently
+// dropped by an earlier analytics feature; that must not repeat here.
+export function collectDataElements(
+  sections: Section[] | null | undefined,
+  tabs: TabsConfig | null | undefined,
+  pageId: string,
+  pageTitle: string
+): CollectedElement[] {
+  const out: CollectedElement[] = []
+  walk(sections, pageId, pageTitle, undefined, out)
+  for (const tab of tabs?.tabs || []) {
+    walk(tab?.sections, pageId, pageTitle, tab?.label, out)
+  }
+  return out
+}
