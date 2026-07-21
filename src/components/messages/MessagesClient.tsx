@@ -12,6 +12,7 @@ import { MessageComposer } from './MessageComposer'
 import { RequestBanner } from './RequestBanner'
 import { PersonPanel } from './PersonPanel'
 import { MessagesEmpty } from './MessagesEmpty'
+import { UserPickerModal } from './UserPickerModal'
 
 type Tab = 'all' | 'unread' | 'requests' | 'visitor'
 
@@ -25,7 +26,7 @@ const TABS: { id: Tab; label: string }[] = [
 const LIST_INTERVAL_MS = 20_000
 const THREAD_INTERVAL_MS = 5_000
 
-export function MessagesClient({ myId }: { myId: string }) {
+export function MessagesClient({ myId, myUsername }: { myId: string; myUsername: string }) {
   const router = useRouter()
   const params = useSearchParams()
   const activeId = params.get('c')
@@ -36,6 +37,7 @@ export function MessagesClient({ myId }: { myId: string }) {
   const [loadingList, setLoadingList] = useState(true)
   const [busy, setBusy] = useState(false)
   const [missing, setMissing] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
   // Retains the last conversation summary the user was actually viewing, so
   // that a filtered list (Unread/Requests) dropping the row out from under
   // the reader does not blank the open thread mid-read.
@@ -196,9 +198,8 @@ export function MessagesClient({ myId }: { myId: string }) {
     void deliver({ ...m, failed: false, pending: true })
   }
 
-  const startConversation = async () => {
-    const username = window.prompt('Message which member? Enter their username.')?.trim()
-    if (!username) return
+  const startConversation = async (username: string) => {
+    setPickerOpen(false)
     setBusy(true)
     try {
       const res = await fetch('/api/dm/conversations', {
@@ -260,7 +261,7 @@ export function MessagesClient({ myId }: { myId: string }) {
           </button>
         ))}
         <button
-          onClick={startConversation}
+          onClick={() => setPickerOpen(true)}
           disabled={busy}
           className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-galli px-4 py-1.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
         >
@@ -330,6 +331,14 @@ export function MessagesClient({ myId }: { myId: string }) {
 
           {active && <PersonPanel conversation={active} />}
         </div>
+      )}
+
+      {pickerOpen && (
+        <UserPickerModal
+          myUsername={myUsername}
+          onSelect={startConversation}
+          onClose={() => setPickerOpen(false)}
+        />
       )}
     </div>
   )
