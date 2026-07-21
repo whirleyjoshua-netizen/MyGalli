@@ -1,4 +1,4 @@
-export type NotificationType = 'follow' | 'bulletin' | 'page_published' | 'comment' | 'hub_collaborator' | 'message' | 'hub_member' | 'hub_post' | 'hub_comment' | 'hub_event' | 'hub_drop' | 'hub_report'
+export type NotificationType = 'follow' | 'bulletin' | 'page_published' | 'comment' | 'hub_collaborator' | 'message' | 'hub_member' | 'hub_post' | 'hub_comment' | 'hub_event' | 'hub_drop' | 'hub_drop_pending' | 'hub_drop_approved' | 'hub_drop_rejected' | 'hub_report'
 
 export function formatNotification(n: { type: string; actorName: string; contextText?: string | null }): string {
   switch (n.type) {
@@ -24,6 +24,12 @@ export function formatNotification(n: { type: string; actorName: string; context
       return `${n.actorName} added an event in ${n.contextText ? `“${n.contextText}”` : 'a community'}`
     case 'hub_drop':
       return `${n.actorName} dropped content in ${n.contextText ? `“${n.contextText}”` : 'a community'}`
+    case 'hub_drop_pending':
+      return `${n.actorName} dropped content in ${n.contextText ? `“${n.contextText}”` : 'your community'} — review it`
+    case 'hub_drop_approved':
+      return `Your drop is live in ${n.contextText ? `“${n.contextText}”` : 'the community'}`
+    case 'hub_drop_rejected':
+      return `Your drop in ${n.contextText ? `“${n.contextText}”` : 'the community'} wasn’t approved`
     case 'hub_report':
       return `${n.actorName} reported content in ${n.contextText ? `“${n.contextText}”` : 'a community'}`
     default:

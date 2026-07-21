@@ -38,3 +38,18 @@ describe('formatNotification — hub community types', () => {
     expect(formatNotification({ type: 'hub_comment', actorName: 'Ada' })).toBe('Ada commented on your post')
   })
 })
+
+describe('kollab drop notifications', () => {
+  it('tells the owner a drop needs review', () => {
+    expect(formatNotification({ type: 'hub_drop_pending', actorName: 'Sam', contextText: 'Frog Club' }))
+      .toBe('Sam dropped content in “Frog Club” — review it')
+  })
+  it('tells the author their drop is live', () => {
+    expect(formatNotification({ type: 'hub_drop_approved', actorName: 'Jo', contextText: 'Frog Club' }))
+      .toBe('Your drop is live in “Frog Club”')
+  })
+  it('tells the author their drop was not approved', () => {
+    expect(formatNotification({ type: 'hub_drop_rejected', actorName: 'Jo', contextText: 'Frog Club' }))
+      .toBe('Your drop in “Frog Club” wasn’t approved')
+  })
+})
