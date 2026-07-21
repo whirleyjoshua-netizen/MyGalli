@@ -5,7 +5,7 @@ import { canParticipate, canViewCommunityHub, postNotifyTargets, isUserBanned } 
 import { sanitizeHubConfig, canDropToPool } from '@/lib/hub-config'
 import { rateLimit } from '@/lib/rate-limit'
 import { notifyHubMembers } from '@/lib/notifications'
-import { validateDropInput, toDropDTO } from '@/lib/hub-drops'
+import { validateDropInput, toDropDTO, nextStatusFor } from '@/lib/hub-drops'
 import { consentTextFor } from '@/lib/hub-consent'
 
 const PAGE = 24
@@ -24,8 +24,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const isPrivileged = !!me && (me.id === hub.userId || collabIds.includes(me.id))
   if (!canViewCommunityHub({ published: hub.published, isPrivileged })) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const where: any = { hubId: id }
-  if (!isPrivileged) where.hidden = false
+  // `pending` is a moderation view: 403 rather than an empty list, so the
+  // endpoint can't be probed to learn whether a hub has a review backlog.
+  // Anything not explicitly `pending` reads as the public approved pool —
+  // rejected rows are never listed on any path.
+  const requested = new URL(request.url).searchParams.get('status')
+  if (requested === 'pending' && !isPrivileged) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  const where: any = { hubId: id, status: requested === 'pending' ? 'pending' : 'approved' }
 
   // Cursor is a drop id, not a timestamp: two drops uploaded in the same
   // millisecond (easy — the picker uploads a whole selection in a loop) share a
@@ -75,6 +82,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const parsed = validateDropInput(id, await request.json().catch(() => ({})))
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
   const v = parsed.value
+  const status = nextStatusFor(isPrivileged)
   const drop = await db.hubDrop.create({
     data: {
       hubId: id,
@@ -86,17 +94,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       mimeType: v.mimeType,
       width: v.width,
       height: v.height,
-      hidden: config.kollab.requireApproval && !isPrivileged,
+      status,
+      // Written only so a rollback to the previous deploy still filters correctly.
+      hidden: status !== 'approved',
       consentText: consentTextFor(hub.title),
     },
   })
-  const memberIds = (await db.hubMember.findMany({ where: { hubId: id }, select: { userId: true } })).map((m) => m.userId)
-  const targets = postNotifyTargets({ authorId: me.id, ownerId: hub.userId, collabIds, memberIds })
-  await notifyHubMembers(targets, {
-    type: 'hub_drop',
-    actor: { id: me.id, name: me.name || me.username, avatar: me.avatar },
-    entityUrl: `/${hub.user.username}/hub/${hub.slug}`,
-    contextText: hub.title,
-  })
-  return NextResponse.json({ id: drop.id }, { status: 201 })
+  if (status === 'approved') {
+    const memberIds = (await db.hubMember.findMany({ where: { hubId: id }, select: { userId: true } })).map((m) => m.userId)
+    const targets = postNotifyTargets({ authorId: me.id, ownerId: hub.userId, collabIds, memberIds })
+    await notifyHubMembers(targets, {
+      type: 'hub_drop',
+      actor: { id: me.id, name: me.name || me.username, avatar: me.avatar },
+      entityUrl: `/${hub.user.username}/hub/${hub.slug}`,
+      contextText: hub.title,
+    })
+  } else {
+    // Pending content is invisible to members — only the people who can act on
+    // it are told, and only they receive a link to it.
+    await notifyHubMembers([hub.userId, ...collabIds], {
+      type: 'hub_drop_pending',
+      actor: { id: me.id, name: me.name || me.username, avatar: me.avatar },
+      entityUrl: `/${hub.user.username}/hub/${hub.slug}#hub-kollab`,
+      contextText: hub.title,
+    })
+  }
+  return NextResponse.json({ id: drop.id, status }, { status: 201 })
 }

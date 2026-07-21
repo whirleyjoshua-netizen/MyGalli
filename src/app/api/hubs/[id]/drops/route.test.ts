@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('@/lib/auth', () => ({ getUser: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: vi.fn().mockResolvedValue(null) }))
-vi.mock('@/lib/notifications', () => ({ notifyHubMembers: vi.fn() }))
+vi.mock('@/lib/notifications', () => ({ notifyHubMembers: vi.fn(), createNotification: vi.fn() }))
 vi.mock('@/lib/db', () => ({
   db: {
     hub: { findUnique: vi.fn() },
@@ -21,6 +21,7 @@ import { GET, POST } from './route'
 const ctx = { params: Promise.resolve({ id: 'h1' }) }
 const post = (b: unknown) => new Request('http://localhost/api/hubs/h1/drops', { method: 'POST', body: JSON.stringify(b) }) as any
 const get = (qs = '') => new Request(`http://localhost/api/hubs/h1/drops${qs}`, { method: 'GET' }) as any
+const OWN_URL = 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1/y.jpg'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -64,16 +65,16 @@ describe('POST /drops', () => {
     expect(res.status).toBe(403)
   })
 
-  it('201 for a member drop + notifies', async () => {
+  it('201 for a member drop + notifies moderators (pending, unseen by the pool)', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: 'M', avatar: null })
     ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
     const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1/y.jpg', caption: 'hi' }), ctx)
     expect(res.status).toBe(201)
-    expect(await res.json()).toEqual({ id: 'd1' })
+    expect(await res.json()).toEqual({ id: 'd1', status: 'pending' })
     expect(db.hubDrop.create).toHaveBeenCalled()
     const [targets, input] = (notifyHubMembers as any).mock.calls[0]
     expect([...targets]).toEqual(['owner'])
-    expect(input.type).toBe('hub_drop')
+    expect(input.type).toBe('hub_drop_pending')
   })
 
   // A member can skip the Blob token route and POST here directly; an off-host
@@ -96,24 +97,46 @@ describe('POST /drops', () => {
     expect(db.hubDrop.create).not.toHaveBeenCalled()
   })
 
-  it('sets hidden and snapshots consentText for a member drop when approval is required', async () => {
+  it('POST holds a member drop for review regardless of config', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: 'M', avatar: null })
-    ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club', config: { kollab: { enabled: true, whoCanDrop: 'members', requireApproval: true } }, user: { username: 'o' } })
+    ;(db.hub.findUnique as any).mockResolvedValue({
+      id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club',
+      config: { kollab: { enabled: true, whoCanDrop: 'members', requireApproval: false } },
+      user: { username: 'o' },
+    })
     ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
-    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1/y.jpg' }), ctx)
+    ;(db.hubDrop.create as any).mockResolvedValue({ id: 'drop1' })
+    const res = await POST(post({ type: 'image', url: OWN_URL }), ctx)
     expect(res.status).toBe(201)
-    const data = (db.hubDrop.create as any).mock.calls[0][0].data
-    expect(data.hidden).toBe(true)
-    expect(data.consentText).toContain('Club')
+    expect((db.hubDrop.create as any).mock.calls[0][0].data.status).toBe('pending')
+    expect((db.hubDrop.create as any).mock.calls[0][0].data.hidden).toBe(true)
   })
 
-  it('does not gate a privileged user by their own approval requirement', async () => {
+  it('POST auto-approves a privileged uploader', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
-    ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club', config: { kollab: { enabled: true, whoCanDrop: 'members', requireApproval: true } }, user: { username: 'o' } })
-    const res = await POST(post({ type: 'image', url: 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1/y.jpg' }), ctx)
+    ;(db.hub.findUnique as any).mockResolvedValue({
+      id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club',
+      config: { kollab: { enabled: true, whoCanDrop: 'members' } }, user: { username: 'o' },
+    })
+    ;(db.hubMember.findUnique as any).mockResolvedValue(null)
+    ;(db.hubDrop.create as any).mockResolvedValue({ id: 'drop2' })
+    const res = await POST(post({ type: 'image', url: OWN_URL }), ctx)
     expect(res.status).toBe(201)
-    const data = (db.hubDrop.create as any).mock.calls[0][0].data
-    expect(data.hidden).toBe(false)
+    expect((db.hubDrop.create as any).mock.calls[0][0].data.status).toBe('approved')
+  })
+
+  it('POST does not notify the hub about a drop nobody can see', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: 'M', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue({
+      id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club',
+      config: { kollab: { enabled: true, whoCanDrop: 'members' } }, user: { username: 'o' },
+    })
+    ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
+    ;(db.hubDrop.create as any).mockResolvedValue({ id: 'drop3' })
+    await POST(post({ type: 'image', url: OWN_URL }), ctx)
+    const types = (notifyHubMembers as any).mock.calls.map((c: any[]) => c[1].type)
+    expect(types).toContain('hub_drop_pending')
+    expect(types).not.toContain('hub_drop')
   })
 
   it('400 on invalid type', async () => {
@@ -132,13 +155,28 @@ describe('GET /drops', () => {
     expect(res.status).toBe(404)
   })
 
-  it('excludes hidden drops for the public', async () => {
+  it('excludes non-approved drops for the public', async () => {
     ;(getUser as any).mockResolvedValue(null)
     ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true })
     ;(db.hubDrop.findMany as any).mockResolvedValue([])
     await GET(get(), ctx)
     const call = (db.hubDrop.findMany as any).mock.calls[0][0]
-    expect(call.where).toMatchObject({ hubId: 'h1', hidden: false })
+    expect(call.where).toMatchObject({ hubId: 'h1', status: 'approved' })
+  })
+
+  it('GET 403s a pending request from a non-privileged viewer', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'stranger' })
+    ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true })
+    const res = await GET(get('?status=pending'), ctx)
+    expect(res.status).toBe(403)
+  })
+
+  it('GET defaults to approved only, even for the owner', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner' })
+    ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: true })
+    ;(db.hubDrop.findMany as any).mockResolvedValue([])
+    await GET(get(''), ctx)
+    expect((db.hubDrop.findMany as any).mock.calls[0][0].where).toEqual({ hubId: 'h1', status: 'approved' })
   })
 
   // Same-millisecond drops (the picker uploads a selection in a loop) share a
