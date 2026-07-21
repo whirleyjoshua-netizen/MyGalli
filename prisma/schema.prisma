@@ -685,10 +685,15 @@ model HubDrop {
   mimeType     String?
   width        Int?
   height       Int?
-  hidden       Boolean  @default(false)
+  hidden       Boolean  @default(false)   // DEPRECATED — kept in sync with `status` for rollback safety; dropped in a follow-up migration
+  status       String   @default("pending")  // 'pending' | 'approved' | 'rejected'
+  reviewedAt   DateTime?
+  reviewedById String?                    // audit stamp, deliberately not a relation
+  assetDeleted Boolean  @default(false)
   consentText  String?
   createdAt    DateTime @default(now())
   @@index([hubId, createdAt])
+  @@index([hubId, status, createdAt])
 }
 
 model HubReport {
