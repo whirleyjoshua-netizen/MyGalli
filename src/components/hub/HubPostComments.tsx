@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MessageCircle, Trash2 } from 'lucide-react'
 
 interface Comment {
@@ -25,10 +25,16 @@ export function HubPostComments({
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
 
-  // Sync only while closed; an open thread owns its count (the user may be
-  // looking at their own optimistic increment).
+  // Sync only while closed, and only when initialCount has genuinely changed
+  // since the last value we adopted. An open thread owns its count (the user
+  // may be looking at their own optimistic increment); merely closing the
+  // thread must not re-snap the count back to a stale initialCount.
+  const lastAdoptedRef = useRef(initialCount)
   useEffect(() => {
-    if (!open) setCount(initialCount)
+    if (!open && initialCount !== lastAdoptedRef.current) {
+      lastAdoptedRef.current = initialCount
+      setCount(initialCount)
+    }
   }, [initialCount, open])
 
   const base = `/api/hubs/${hubId}/posts/${postId}/comments`
