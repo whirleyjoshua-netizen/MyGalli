@@ -343,10 +343,24 @@ describe('GET /api/data/elements — all stores', () => {
     expect(body.engagementUnavailable).toBe(false)
   })
 
-  it('bounds the FormResponse jsonb aggregation to the caller\'s display ids', async () => {
+  it('binds the FormResponse jsonb aggregation to the caller\'s display ids and guards jsonb_object_keys against non-object rows', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'me' })
-    ;(db.display.findMany as any).mockResolvedValue([display()])
+    ;(db.display.findMany as any).mockResolvedValue([
+      display({ id: 'd1' }),
+      display({ id: 'd2' }),
+    ])
     await GET(req())
-    expect(db.$queryRaw).toHaveBeenCalled()
+    expect(db.$queryRaw).toHaveBeenCalledTimes(2)
+    for (const call of (db.$queryRaw as any).mock.calls) {
+      const arg = call[0]
+      // Bound values are exactly the caller's display ids — nothing else leaks in.
+      expect(arg.values).toEqual(expect.arrayContaining(['d1', 'd2']))
+      const sqlText: string = Array.isArray(arg.strings) ? arg.strings.join('') : String(arg.sql ?? arg.text ?? '')
+      // A public unauthenticated endpoint (/api/forms/submit) can store a
+      // non-object `responses` payload; without this guard
+      // jsonb_object_keys() throws for that row and 500s the whole tab.
+      expect(sqlText).toContain('jsonb_typeof')
+      expect(sqlText).toContain('jsonb_object_keys')
+    }
   })
 })
