@@ -66,10 +66,11 @@ export function sanitizeHubConfig(raw: unknown): HubConfig {
       ...(emptyStateText !== undefined ? { emptyStateText } : {}),
     },
     access: { whoCanPost },
+    // A legacy `requireApproval` key on a stored config is ignored, not an
+    // error — review is mandatory now, so there is nothing left to configure.
     kollab: {
       enabled: bool(kollabRaw.enabled, DEFAULT_HUB_CONFIG.kollab.enabled),
       whoCanDrop,
-      requireApproval: bool(kollabRaw.requireApproval, DEFAULT_HUB_CONFIG.kollab.requireApproval),
     },
   }
 }

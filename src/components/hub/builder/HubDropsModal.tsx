@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, Trash2, Eye, EyeOff } from 'lucide-react'
+import { X, Trash2, EyeOff } from 'lucide-react'
 import type { DropDTO } from '@/lib/hub-drops'
 
 export function HubDropsModal({ hubId, onClose }: { hubId: string; onClose: () => void }) {
@@ -30,9 +30,10 @@ export function HubDropsModal({ hubId, onClose }: { hubId: string; onClose: () =
   }
   useEffect(() => { load() }, [hubId])
 
-  async function toggleHide(d: DropDTO) {
-    const res = await fetch(`/api/hubs/${hubId}/drops/${d.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hidden: !d.hidden }) })
-    if (res.ok) setDrops((cur) => cur.map((x) => (x.id === d.id ? { ...x, hidden: !x.hidden } : x)))
+  async function reject(d: DropDTO) {
+    if (!window.confirm('Reject this drop? The file will be deleted permanently.')) return
+    const res = await fetch(`/api/hubs/${hubId}/drops/${d.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject' }) })
+    if (res.ok) setDrops((cur) => cur.filter((x) => x.id !== d.id))
   }
   async function remove(d: DropDTO) {
     if (!window.confirm('Delete this drop permanently?')) return
@@ -53,7 +54,7 @@ export function HubDropsModal({ hubId, onClose }: { hubId: string; onClose: () =
         ) : (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {drops.map((d) => (
-              <div key={d.id} className={`relative aspect-square overflow-hidden rounded-lg border border-border bg-muted ${d.hidden ? 'opacity-50' : ''}`}>
+              <div key={d.id} className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
                 {(d.thumbnailUrl || d.type === 'image') ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={d.thumbnailUrl || d.url} alt={d.caption ?? ''} className="h-full w-full object-cover" />
@@ -62,8 +63,8 @@ export function HubDropsModal({ hubId, onClose }: { hubId: string; onClose: () =
                 )}
                 <div className="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1.5 py-0.5 text-[10px] text-white">{d.author.name ?? d.author.username}</div>
                 <div className="absolute right-1 top-1 flex gap-1">
-                  <button onClick={() => toggleHide(d)} title={d.hidden ? 'Unhide' : 'Hide'} className="rounded bg-black/60 p-1 text-white hover:bg-black/80">
-                    {d.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  <button onClick={() => reject(d)} title="Reject" className="rounded bg-black/60 p-1 text-white hover:bg-black/80">
+                    <EyeOff className="h-3.5 w-3.5" />
                   </button>
                   <button onClick={() => remove(d)} title="Delete" className="rounded bg-black/60 p-1 text-white hover:bg-black/80"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>

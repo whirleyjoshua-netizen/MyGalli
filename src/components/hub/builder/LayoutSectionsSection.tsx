@@ -75,18 +75,9 @@ export function LayoutSectionsSection({ config, onChange, hubId }: { config: Hub
           </div>
         )}
         {config.kollab.enabled && (
-          <div className="mt-2 flex items-center justify-between rounded-xl border border-border bg-surface p-3">
-            <span className="text-sm">Require approval for member uploads</span>
-            <label className="relative inline-flex cursor-pointer items-center">
-              <input
-                type="checkbox"
-                checked={config.kollab.requireApproval}
-                onChange={(e) => setKollab({ requireApproval: e.target.checked })}
-                className="peer sr-only"
-              />
-              <div className="h-5 w-9 rounded-full bg-muted peer-checked:bg-galli after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-4" />
-            </label>
-          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Member uploads always wait for your approval — review them from the Kollab tile on your community page.
+          </p>
         )}
       </section>
 
