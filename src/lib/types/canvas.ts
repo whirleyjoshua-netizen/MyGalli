@@ -1,6 +1,11 @@
 // Canvas Types - Section/Column/Element Architecture
 import type { CSSProperties } from 'react'
 import type { CollectionMemberCard } from '@/lib/collections'
+import {
+  ACK_STATEMENT_DEFAULT,
+  ACK_CONFIRM_LABEL_DEFAULT,
+  ACK_BUTTON_LABEL_DEFAULT,
+} from '@/lib/acknowledgment'
 
 // Text styling (applicable to text, heading, quote, callout, list)
 export interface TextStyle {
@@ -112,6 +117,7 @@ export type ElementType =
   // Tier 4: Social / Engagement
   | 'comment'   // Comment section for visitor feedback
   | 'poll'      // Poll with voting
+  | 'acknowledgment' // Logged-in visitors confirm they have read the content
   // Tier 5: Integration cards (on hold)
   | 'card'      // App cards (Vouch, custom)
   // Kit elements
@@ -317,6 +323,11 @@ export interface CanvasElement {
   pollOptions?: string[]
   pollAllowMultiple?: boolean
   pollShowResultsBeforeVote?: boolean
+  // Acknowledgment
+  ackStatement?: string
+  ackDescription?: string
+  ackConfirmLabel?: string
+  ackButtonLabel?: string
   // Tracker specific
   trackerKitId?: string           // Which kit this tracker belongs to
   trackerConfigId?: string        // Maps to TrackerConfig.id (e.g. 'forty-yard')
@@ -922,6 +933,14 @@ export function createElement(type: ElementType): CanvasElement {
         pollOptions: ['Option 1', 'Option 2', 'Option 3'],
         pollAllowMultiple: false,
         pollShowResultsBeforeVote: false,
+      }
+    case 'acknowledgment':
+      return {
+        ...base,
+        ackStatement: ACK_STATEMENT_DEFAULT,
+        ackDescription: '',
+        ackConfirmLabel: ACK_CONFIRM_LABEL_DEFAULT,
+        ackButtonLabel: ACK_BUTTON_LABEL_DEFAULT,
       }
     case 'tracker':
       return {
