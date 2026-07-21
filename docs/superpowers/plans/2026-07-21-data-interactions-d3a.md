@@ -451,15 +451,17 @@ export interface StatusInput {
   now: Date
 }
 
-// Order matters: first match wins. needs-attention outranks everything because
-// it is the only status that asks the owner to do something.
+// Order matters: first match wins. needs-attention outranks everything —
+// including draft — because it is the only status that asks the owner to do
+// something, and an unread message stays unread whether or not the page that
+// collected it is currently published.
 export function deriveStatus(input: StatusInput): ElementStatus {
   const { published, lastResponseAt, unreadCount, pendingCount, lastSeenAt, now } = input
   const last = lastResponseAt ? Date.parse(lastResponseAt) : NaN
   const hasLast = Number.isFinite(last)
 
   const unseen = hasLast && (!lastSeenAt || last > Date.parse(lastSeenAt))
-  if (published && (unreadCount > 0 || pendingCount > 0 || unseen)) return 'needs-attention'
+  if (unreadCount > 0 || pendingCount > 0 || unseen) return 'needs-attention'
   if (!published) return 'draft'
   if (hasLast && now.getTime() - last < LIVE_WINDOW_MS) return 'live'
   return 'idle'
