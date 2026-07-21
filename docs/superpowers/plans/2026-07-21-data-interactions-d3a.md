@@ -3308,7 +3308,10 @@ export function InteractionsTab() {
                       key={e.key}
                       element={e}
                       onOpen={openDrawer}
-                      editHref={e.source === 'bulletin' ? '/bulletin' : `/editor/${e.pageId}`}
+                      // The editor is a single route taking the page as a query
+                      // param (`src/app/editor/page.tsx` reads `searchParams.get('id')`).
+                      // `/editor/<id>` would 404.
+                      editHref={e.source === 'bulletin' ? '/bulletin' : `/editor?id=${e.pageId}`}
                     />
                   ))}
                 </TypeGroup>
@@ -3340,8 +3343,8 @@ export function InteractionsTab() {
 
 - [ ] **Step 4: Confirm the editor route used by `editHref`**
 
-Run: `ls src/app/\(dashboard\)/editor 2>/dev/null || grep -rn "href={\`/editor" src/components --include=*.tsx | head -3`
-Expected: confirms `/editor/<displayId>` is the real editor path. If the project uses a different path, update `editHref` in `InteractionsTab.tsx` and the assertion in `ElementCard.test.tsx` to match.
+Run: `grep -n "searchParams.get" src/app/editor/page.tsx`
+Expected: `const pageId = searchParams.get('id')` — the editor is ONE route at `src/app/editor/page.tsx` taking the page as a query param, so links are `/editor?id=<displayId>`. `/editor/<displayId>` would 404. This was verified during Task 10.
 
 - [ ] **Step 5: Run test to verify it passes**
 
