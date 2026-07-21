@@ -25,8 +25,9 @@ const EMPTY_FILTER: ElementFilter = { search: '', types: [], statuses: [], sourc
 
 interface Inventory {
   elements: ElementSummary[]
-  totals: { elements: number; responses: number; avgEngagement: number | null; liveNow: number }
+  totals: { elements: number; responses: number; avgEngagement: number | null }
   truncated: boolean
+  engagementUnavailable: boolean
 }
 
 export function InteractionsTab() {
@@ -171,13 +172,30 @@ export function InteractionsTab() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
           <InsightsStrip
-            totals={{ ...data.totals, needsAttention: statusCounts['needs-attention'] }}
+            // liveNow is derived from the same finalised withStatus array that
+            // produces needsAttention, so the strip's number can never disagree
+            // with the filter rail's "Live Now" status count — the server-computed
+            // version (published + response within 24h) didn't account for
+            // needs-attention outranking live, or the localStorage "seen" stamp,
+            // and would silently disagree on first load for every user.
+            totals={{
+              ...data.totals,
+              needsAttention: statusCounts['needs-attention'],
+              liveNow: statusCounts.live,
+            }}
             onFilterStatus={(status) => setFilter({ ...EMPTY_FILTER, statuses: [status] })}
           />
 
           {data.truncated && (
             <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800">
               You have a lot of pages — showing the first 200 pages&apos; elements.
+            </p>
+          )}
+
+          {data.engagementUnavailable && (
+            <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800">
+              Engagement is unavailable for this load — there was too much activity to sample
+              reliably. Response counts are still accurate.
             </p>
           )}
 

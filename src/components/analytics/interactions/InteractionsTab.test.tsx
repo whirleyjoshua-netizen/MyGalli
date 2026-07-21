@@ -18,8 +18,9 @@ const inventory = {
       unreadCount: 0, pendingCount: 0, engagement: null, status: 'idle',
     },
   ],
-  totals: { elements: 2, responses: 766, avgEngagement: 84, liveNow: 1 },
+  totals: { elements: 2, responses: 766, avgEngagement: 84 },
   truncated: false,
+  engagementUnavailable: false,
 }
 
 const mockFetch = (body: unknown = inventory) =>
@@ -76,7 +77,7 @@ describe('InteractionsTab', () => {
   })
 
   it('shows an empty state when the account has no data elements', async () => {
-    vi.stubGlobal('fetch', mockFetch({ elements: [], totals: { elements: 0, responses: 0, avgEngagement: null, liveNow: 0 }, truncated: false }))
+    vi.stubGlobal('fetch', mockFetch({ elements: [], totals: { elements: 0, responses: 0, avgEngagement: null }, truncated: false, engagementUnavailable: false }))
     render(<InteractionsTab />)
     await waitFor(() => expect(screen.getByText(/no interactive elements yet/i)).toBeTruthy())
   })
@@ -91,6 +92,31 @@ describe('InteractionsTab', () => {
     vi.stubGlobal('fetch', mockFetch({ ...inventory, truncated: true }))
     render(<InteractionsTab />)
     await waitFor(() => expect(screen.getByText(/showing the first 200 pages/i)).toBeTruthy())
+  })
+
+  it('explains when engagement is unavailable instead of showing silent dashes', async () => {
+    vi.stubGlobal('fetch', mockFetch({ ...inventory, engagementUnavailable: true }))
+    render(<InteractionsTab />)
+    await waitFor(() => expect(screen.getByText(/engagement is unavailable/i)).toBeTruthy())
+  })
+
+  it("the strip's Live Now value always equals the rail's live status count", async () => {
+    // Mark the poll's response seen so it reads as 'live' (published, recent,
+    // already seen) rather than 'needs-attention' — isolated from the shared
+    // beforeEach seed so the other tests' NEEDS YOU assertions stay intact.
+    localStorage.setItem(
+      SEEN_STORAGE_KEY,
+      JSON.stringify({
+        'd1:e1': new Date(Date.now() + 1000).toISOString(),
+        'd2:w1': '2026-01-02T00:00:00.000Z',
+      })
+    )
+    render(<InteractionsTab />)
+    await waitFor(() => expect(screen.getByText('Favorite NBA Player')).toBeTruthy())
+    const stripLiveNow = screen.getByRole('button', { name: /live now/i })
+    const railLiveCheckbox = screen.getAllByText('Live Now').map((n) => n.closest('label')).find(Boolean)
+    expect(stripLiveNow.textContent).toContain('1')
+    expect(railLiveCheckbox?.textContent).toContain('1')
   })
 
   it('keeps one pulse interval across ticks and clears it on unmount', async () => {
