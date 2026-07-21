@@ -47,17 +47,45 @@ export async function GET(request: NextRequest) {
 
   // ---- counts -------------------------------------------------------------
   const counts = new Map<string, { total: number; today: number; last: string | null }>()
-  const bump = (key: string, at: Date, n = 1) => {
+  const slot = (key: string) => {
     const cur = counts.get(key) ?? { total: 0, today: 0, last: null }
-    cur.total += n
-    if (at >= startOfToday) cur.today += n
-    const iso = at.toISOString()
-    if (!cur.last || iso > cur.last) cur.last = iso
     counts.set(key, cur)
+    return cur
+  }
+  // Total responses, plus the newest response timestamp seen for this element.
+  const addTotal = (key: string, n: number, at: Date | null) => {
+    const cur = slot(key)
+    cur.total += n
+    if (at) {
+      const iso = at.toISOString()
+      if (!cur.last || iso > cur.last) cur.last = iso
+    }
+  }
+  // Today's responses. Never derived from an aggregate's max timestamp — an
+  // aggregate carries one timestamp and many rows, so "is the newest one from
+  // today" says nothing about how many of them are. Aggregated stores get a
+  // separate today-scoped COUNT query below.
+  const addToday = (key: string, n: number) => {
+    slot(key).today += n
   }
 
   const empty: any[] = []
-  const [formRows, commentRows, messageRows, unreadRows, waitlistRows, bookingRows, jerseyRows, bulletinPosts, events] =
+  const [
+    formRows,
+    commentRows,
+    messageRows,
+    unreadRows,
+    waitlistRows,
+    bookingRows,
+    jerseyRows,
+    bulletinPosts,
+    events,
+    commentTodayRows,
+    messageTodayRows,
+    waitlistTodayRows,
+    bookingTodayRows,
+    jerseyTodayRows,
+  ] =
     displayIds.length
       ? await Promise.all([
           db.formResponse.findMany({
@@ -115,25 +143,72 @@ export async function GET(request: NextRequest) {
           db.analyticsEvent.findMany({
             where: { displayId: { in: displayIds }, createdAt: { gte: since } },
             select: { displayId: true, eventType: true, visitorId: true, sessionId: true, metadata: true },
+            orderBy: { createdAt: 'desc' },
             take: MAX_EVENTS,
           }),
+          db.comment.groupBy({
+            by: ['displayId'],
+            where: { displayId: { in: displayIds }, createdAt: { gte: startOfToday } },
+            _count: { _all: true },
+          }),
+          db.message.groupBy({
+            by: ['displayId', 'elementId'],
+            where: { ownerId: user.id, displayId: { in: displayIds }, createdAt: { gte: startOfToday } },
+            _count: { _all: true },
+          }),
+          db.waitlistSignup.groupBy({
+            by: ['displayId', 'elementId'],
+            where: { displayId: { in: displayIds }, createdAt: { gte: startOfToday } },
+            _count: { _all: true },
+          }),
+          db.booking.groupBy({
+            by: ['displayId', 'elementId'],
+            where: { displayId: { in: displayIds }, createdAt: { gte: startOfToday } },
+            _count: { _all: true },
+          }),
+          db.jerseySignature.groupBy({
+            by: ['displayId', 'elementId'],
+            where: { displayId: { in: displayIds }, createdAt: { gte: startOfToday } },
+            _count: { _all: true },
+          }),
         ])
-      : [empty, empty, empty, empty, empty, empty, empty, await db.bulletinPost.findMany({
-          where: { authorId: user.id },
-          select: { id: true, createdAt: true, blocks: true, responses: { select: { createdAt: true, responses: true } } },
-          orderBy: { createdAt: 'desc' },
-        }), empty]
+      : [
+          empty,
+          empty,
+          empty,
+          empty,
+          empty,
+          empty,
+          empty,
+          await db.bulletinPost.findMany({
+            where: { authorId: user.id },
+            select: { id: true, createdAt: true, blocks: true, responses: { select: { createdAt: true, responses: true } } },
+            orderBy: { createdAt: 'desc' },
+          }),
+          empty,
+          empty,
+          empty,
+          empty,
+          empty,
+          empty,
+        ]
 
   // FormResponse keys answers by elementId inside a JSON blob, so it cannot be
   // grouped in SQL — fold it once here.
   for (const row of formRows) {
     const answers = (row.responses ?? {}) as Record<string, unknown>
-    for (const elementId of Object.keys(answers)) bump(`${row.displayId}:${elementId}`, row.submittedAt)
+    for (const elementId of Object.keys(answers)) {
+      const key = `${row.displayId}:${elementId}`
+      addTotal(key, 1, row.submittedAt)
+      if (row.submittedAt >= startOfToday) addToday(key, 1)
+    }
   }
 
   for (const g of [...messageRows, ...waitlistRows, ...bookingRows, ...jerseyRows]) {
-    const at = g._max?.createdAt ?? new Date(0)
-    bump(`${g.displayId}:${g.elementId}`, at, g._count?._all ?? 0)
+    addTotal(`${g.displayId}:${g.elementId}`, g._count?._all ?? 0, g._max?.createdAt ?? null)
+  }
+  for (const g of [...messageTodayRows, ...waitlistTodayRows, ...bookingTodayRows, ...jerseyTodayRows]) {
+    addToday(`${g.displayId}:${g.elementId}`, g._count?._all ?? 0)
   }
 
   // Comments are stored per display, not per element, so the page's total is
@@ -149,7 +224,12 @@ export async function GET(request: NextRequest) {
   for (const g of commentRows) {
     const key = firstCommentKeyByPage.get(g.displayId)
     if (!key) continue
-    bump(key, g._max?.createdAt ?? new Date(0), g._count?._all ?? 0)
+    addTotal(key, g._count?._all ?? 0, g._max?.createdAt ?? null)
+  }
+  for (const g of commentTodayRows) {
+    const key = firstCommentKeyByPage.get(g.displayId)
+    if (!key) continue
+    addToday(key, g._count?._all ?? 0)
   }
 
   const unread = new Map<string, number>()

@@ -224,6 +224,36 @@ describe('GET /api/data/elements — all stores', () => {
     expect(b.engagement).toBeNull()
   })
 
+  it('counts only today\'s signups as today, not the whole aggregate', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findMany as any).mockResolvedValue([waitlistDisplay()])
+    ;(db.waitlistSignup.groupBy as any).mockImplementation(({ where }: any) =>
+      Promise.resolve(
+        where?.createdAt
+          ? [{ displayId: 'd1', elementId: 'w1', _count: { _all: 1 } }]
+          : [{ displayId: 'd1', elementId: 'w1', _count: { _all: 12 }, _max: { createdAt: new Date() } }]
+      )
+    )
+    const body = await (await GET(req())).json()
+    const w = body.elements.find((e: any) => e.key === 'd1:w1')
+    expect(w.responseCount).toBe(12)
+    expect(w.todayCount).toBe(1)
+  })
+
+  it('reports zero today when the aggregated store has no rows from today', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findMany as any).mockResolvedValue([waitlistDisplay()])
+    ;(db.waitlistSignup.groupBy as any).mockImplementation(({ where }: any) =>
+      Promise.resolve(
+        where?.createdAt
+          ? []
+          : [{ displayId: 'd1', elementId: 'w1', _count: { _all: 12 }, _max: { createdAt: new Date() } }]
+      )
+    )
+    const body = await (await GET(req())).json()
+    expect(body.elements.find((e: any) => e.key === 'd1:w1').todayCount).toBe(0)
+  })
+
   it('only reads bulletin posts authored by the caller', async () => {
     ;(getUser as any).mockResolvedValue({ id: 'me' })
     await GET(req())
