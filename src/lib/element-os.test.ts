@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { collectDataElements, elementTitle, pageElementKey, bulletinElementKey, deriveStatus, computeEngagement, MIN_VIEWERS_FOR_ENGAGEMENT } from './element-os'
+import { collectDataElements, elementTitle, pageElementKey, bulletinElementKey, deriveStatus, computeEngagement, MIN_VIEWERS_FOR_ENGAGEMENT, groupByType, sortElements, filterElements, type ElementSummary } from './element-os'
 import type { Section } from '@/lib/types/canvas'
 import type { TabsConfig } from '@/lib/types/tabs'
 
@@ -187,5 +187,100 @@ describe('computeEngagement', () => {
 
   it('never returns a negative value', () => {
     expect(computeEngagement({ responders: -5, pageViewers: 40 })).toBe(0)
+  })
+})
+
+const el = (over: Partial<ElementSummary>): ElementSummary => ({
+  key: over.key ?? 'd1:e1',
+  elementId: 'e1',
+  type: 'poll',
+  title: 'A poll',
+  pageId: 'd1',
+  pageTitle: 'Homepage',
+  sectionIndex: 1,
+  source: 'page',
+  published: true,
+  responseCount: 0,
+  todayCount: 0,
+  lastResponseAt: null,
+  unreadCount: 0,
+  pendingCount: 0,
+  engagement: null,
+  status: 'idle',
+  ...over,
+})
+
+describe('groupByType', () => {
+  it('groups into ordered, labelled buckets and drops empty ones', () => {
+    const groups = groupByType([
+      el({ key: 'a', type: 'poll' }),
+      el({ key: 'b', type: 'mcq' }),
+      el({ key: 'c', type: 'shortanswer' }),
+    ])
+    expect(groups.map((g) => g.label)).toEqual(['Polls', 'Questions'])
+    expect(groups[0].elements).toHaveLength(2) // poll + mcq
+    expect(groups[1].elements).toHaveLength(1)
+  })
+})
+
+describe('sortElements', () => {
+  const quiet = el({ key: 'quiet', responseCount: 2, lastResponseAt: '2026-07-01T00:00:00.000Z' })
+  const busy = el({ key: 'busy', responseCount: 90, lastResponseAt: '2026-07-20T00:00:00.000Z' })
+  const never = el({ key: 'never', responseCount: 0, lastResponseAt: null })
+
+  it('sorts most active first', () => {
+    expect(sortElements([quiet, busy, never], 'most-active').map((e) => e.key)).toEqual(['busy', 'quiet', 'never'])
+  })
+
+  it('sorts least active first', () => {
+    expect(sortElements([quiet, busy, never], 'least-active').map((e) => e.key)).toEqual(['never', 'quiet', 'busy'])
+  })
+
+  it('sorts by most recent activity, never-answered last', () => {
+    expect(sortElements([quiet, busy, never], 'recent').map((e) => e.key)).toEqual(['busy', 'quiet', 'never'])
+  })
+
+  it('sorts longest idle first, never-answered first of all', () => {
+    expect(sortElements([quiet, busy, never], 'stale').map((e) => e.key)).toEqual(['never', 'quiet', 'busy'])
+  })
+
+  it('does not mutate the input array', () => {
+    const input = [quiet, busy]
+    sortElements(input, 'most-active')
+    expect(input.map((e) => e.key)).toEqual(['quiet', 'busy'])
+  })
+})
+
+describe('filterElements', () => {
+  const items = [
+    el({ key: 'a', type: 'poll', title: 'Favorite NBA player', status: 'live', source: 'page' }),
+    el({ key: 'b', type: 'waitlist', title: 'Beta waitlist', status: 'idle', source: 'page' }),
+    el({ key: 'c', type: 'poll', title: 'Bulletin poll', status: 'needs-attention', source: 'bulletin' }),
+  ]
+  const all = { search: '', types: [], statuses: [], source: 'all' as const }
+
+  it('returns everything by default', () => {
+    expect(filterElements(items, all)).toHaveLength(3)
+  })
+
+  it('matches search case-insensitively against title and page', () => {
+    expect(filterElements(items, { ...all, search: 'nba' }).map((e) => e.key)).toEqual(['a'])
+    expect(filterElements(items, { ...all, search: 'HOMEPAGE' })).toHaveLength(3)
+  })
+
+  it('filters by type', () => {
+    expect(filterElements(items, { ...all, types: ['waitlist'] }).map((e) => e.key)).toEqual(['b'])
+  })
+
+  it('filters by status', () => {
+    expect(filterElements(items, { ...all, statuses: ['live'] }).map((e) => e.key)).toEqual(['a'])
+  })
+
+  it('filters by source', () => {
+    expect(filterElements(items, { ...all, source: 'bulletin' }).map((e) => e.key)).toEqual(['c'])
+  })
+
+  it('ands the criteria together', () => {
+    expect(filterElements(items, { ...all, types: ['poll'], source: 'page' }).map((e) => e.key)).toEqual(['a'])
   })
 })

@@ -174,3 +174,84 @@ export function computeEngagement({
   const pct = Math.round((responders / pageViewers) * 100)
   return Math.max(0, Math.min(100, pct))
 }
+
+export interface ElementSummary extends CollectedElement {
+  source: 'page' | 'bulletin'
+  published: boolean
+  responseCount: number
+  todayCount: number
+  lastResponseAt: string | null
+  unreadCount: number
+  pendingCount: number
+  engagement: number | null
+  /** Finalised on the client by deriveStatus(); the route leaves this 'idle'. */
+  status: ElementStatus
+}
+
+// Display groups. Several element types share a group because the owner thinks
+// of them the same way (a poll and an MCQ are both "a poll" to a human).
+export const TYPE_GROUPS: { label: string; types: DataElementType[] }[] = [
+  { label: 'Polls', types: ['poll', 'mcq'] },
+  { label: 'Questions', types: ['shortanswer', 'comment'] },
+  { label: 'Ratings', types: ['rating', 'business-review'] },
+  { label: 'RSVPs', types: ['rsvp', 'wedding-rsvp'] },
+  { label: 'Wait lists', types: ['waitlist'] },
+  { label: 'Appointments', types: ['appointments'] },
+  { label: 'Mailboxes', types: ['mailbox'] },
+  { label: 'Signatures', types: ['jersey'] },
+]
+
+export function groupByType(
+  elements: ElementSummary[]
+): { label: string; elements: ElementSummary[] }[] {
+  return TYPE_GROUPS.map((g) => ({
+    label: g.label,
+    elements: elements.filter((e) => g.types.includes(e.type)),
+  })).filter((g) => g.elements.length > 0)
+}
+
+export type SortMode = 'most-active' | 'least-active' | 'recent' | 'stale'
+
+// Elements carry no creation date anywhere in the schema, so every sort is
+// activity-based. "newest/oldest" would have to be invented; it isn't offered.
+export function sortElements(elements: ElementSummary[], mode: SortMode): ElementSummary[] {
+  const at = (e: ElementSummary) => (e.lastResponseAt ? Date.parse(e.lastResponseAt) : null)
+  return [...elements].sort((a, b) => {
+    switch (mode) {
+      case 'most-active':
+        return b.responseCount - a.responseCount
+      case 'least-active':
+        return a.responseCount - b.responseCount
+      case 'recent': {
+        const av = at(a) ?? -Infinity
+        const bv = at(b) ?? -Infinity
+        return bv - av
+      }
+      case 'stale': {
+        const av = at(a) ?? -Infinity
+        const bv = at(b) ?? -Infinity
+        return av - bv
+      }
+    }
+  })
+}
+
+export interface ElementFilter {
+  search: string
+  /** Empty means "all". */
+  types: DataElementType[]
+  /** Empty means "all". */
+  statuses: ElementStatus[]
+  source: 'all' | 'page' | 'bulletin'
+}
+
+export function filterElements(elements: ElementSummary[], filter: ElementFilter): ElementSummary[] {
+  const q = filter.search.trim().toLowerCase()
+  return elements.filter((e) => {
+    if (filter.source !== 'all' && e.source !== filter.source) return false
+    if (filter.types.length > 0 && !filter.types.includes(e.type)) return false
+    if (filter.statuses.length > 0 && !filter.statuses.includes(e.status)) return false
+    if (q && !`${e.title} ${e.pageTitle}`.toLowerCase().includes(q)) return false
+    return true
+  })
+}
