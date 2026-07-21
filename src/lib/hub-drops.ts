@@ -82,7 +82,11 @@ export function toDropDTO(row: {
   mimeType: string | null; width: number | null; height: number | null; status: string; createdAt: Date
   author: { id: string; username: string; name: string | null; avatar: string | null }
 }): DropDTO {
-  const status = row.status as DropStatus
+  // Anything that isn't exactly 'approved' or 'pending' is treated as
+  // 'rejected' — masking is the safe failure direction for an unexpected
+  // status value, since the alternative (an open cast) would emit a possibly
+  // purged asset URL if the value were ever something else.
+  const status: DropStatus = row.status === 'approved' || row.status === 'pending' ? row.status : 'rejected'
   // A rejected drop's asset is deleted from Blob storage; emitting the dead URL
   // would leak what was uploaded via the pathname and 404 in every renderer. We also
   // blank caption and mimeType, as together they describe the rejected content and

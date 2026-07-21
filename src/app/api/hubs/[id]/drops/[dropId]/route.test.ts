@@ -6,6 +6,7 @@ const { del } = vi.hoisted(() => ({ del: vi.fn(async () => {}) }))
 vi.mock('@vercel/blob', () => ({ del }))
 vi.mock('@/lib/storage-env', () => ({ blobReadWriteToken: () => 'tok' }))
 vi.mock('@/lib/notifications', () => ({ createNotification: vi.fn(), notifyHubMembers: vi.fn() }))
+vi.mock('@/lib/rate-limit', () => ({ rateLimit: vi.fn().mockResolvedValue(null) }))
 
 vi.mock('@/lib/auth', () => ({ getUser: vi.fn() }))
 vi.mock('@/lib/db', () => ({
@@ -98,18 +99,66 @@ it('PATCH reject purges only this hub-s own assets', async () => {
   const res = await PATCH(req({ action: 'reject' }), params)
   expect(res.status).toBe(200)
   expect(del).toHaveBeenCalledWith([OWN], { token: 'tok' })
-  const data = (db.hubDrop.update as any).mock.calls[0][0].data
-  expect(data.status).toBe('rejected')
-  expect(data.assetDeleted).toBe(true)
+  // First write persists the rejection itself; only after the purge succeeds
+  // does a second, small write record assetDeleted — so a mid-flight failure
+  // between the two never leaves a row claiming pending/undeleted over a gone file.
+  const firstData = (db.hubDrop.update as any).mock.calls[0][0].data
+  expect(firstData.status).toBe('rejected')
+  expect((db.hubDrop.update as any).mock.calls[1][0]).toEqual({ where: { id: 'drop1' }, data: { assetDeleted: true } })
   expect((createNotification as any).mock.calls[0][0].type).toBe('hub_drop_rejected')
 })
 
 it('PATCH reject still succeeds when the blob purge throws', async () => {
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
   del.mockRejectedValueOnce(new Error('blob down'))
   ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
   ;(db.hub.findUnique as any).mockResolvedValue(hub)
   ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'pending' })
   const res = await PATCH(req({ action: 'reject' }), params)
   expect(res.status).toBe(200)
-  expect((db.hubDrop.update as any).mock.calls[0][0].data.assetDeleted).toBe(false)
+  // Row is still rejected, but no follow-up write claims the purge succeeded.
+  expect((db.hubDrop.update as any).mock.calls[0][0].data.status).toBe('rejected')
+  expect((db.hubDrop.update as any).mock.calls.length).toBe(1)
+  expect(warnSpy).toHaveBeenCalled()
+  warnSpy.mockRestore()
+})
+
+it('PATCH approve on an already-approved drop returns 409 and fires no notification', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+  ;(db.hub.findUnique as any).mockResolvedValue(hub)
+  ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'approved' })
+  const res = await PATCH(req({ action: 'approve' }), params)
+  expect(res.status).toBe(409)
+  expect(db.hubDrop.update).not.toHaveBeenCalled()
+  expect(createNotification).not.toHaveBeenCalled()
+  expect(notifyHubMembers).not.toHaveBeenCalled()
+})
+
+it('PATCH approve on a rejected drop returns 409 (resurrection guard)', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+  ;(db.hub.findUnique as any).mockResolvedValue(hub)
+  ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'rejected' })
+  const res = await PATCH(req({ action: 'approve' }), params)
+  expect(res.status).toBe(409)
+  expect(db.hubDrop.update).not.toHaveBeenCalled()
+})
+
+it('PATCH reject on a pending drop still succeeds (regression guard)', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+  ;(db.hub.findUnique as any).mockResolvedValue(hub)
+  ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'pending' })
+  const res = await PATCH(req({ action: 'reject' }), params)
+  expect(res.status).toBe(200)
+})
+
+it('PATCH approve notifies members but excludes the author from the hub-wide ping', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+  ;(db.hub.findUnique as any).mockResolvedValue(hub)
+  ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'pending' })
+  ;(db.hubMember.findMany as any).mockResolvedValue([{ userId: 'member1' }, { userId: 'author' }])
+  const res = await PATCH(req({ action: 'approve' }), params)
+  expect(res.status).toBe(200)
+  const call = (notifyHubMembers as any).mock.calls.find((c: any) => c[1].type === 'hub_drop')
+  expect(call[0]).toEqual(expect.arrayContaining(['member1']))
+  expect(call[0]).not.toContain('author')
 })

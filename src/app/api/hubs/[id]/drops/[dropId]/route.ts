@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
-import { canModerate, postNotifyTargets } from '@/lib/community'
+import { canModerate } from '@/lib/community'
 import { blobReadWriteToken } from '@/lib/storage-env'
 import { isOwnDropAsset, canReviewDrop } from '@/lib/hub-drops'
 import { createNotification, notifyHubMembers } from '@/lib/notifications'
+import { rateLimit } from '@/lib/rate-limit'
 
 type LoadedHub = { id: string; userId: string; community: boolean; title: string; slug: string; user: { username: string } }
 type LoadedDrop = { id: string; authorId: string; url: string; thumbnailUrl: string | null; status: string }
@@ -47,6 +48,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string; dropId: string }> }): Promise<NextResponse> {
   const { id, dropId } = await params
+  const limited = await rateLimit(request, { limit: 20, windowMs: 60_000, prefix: 'hub-drop-review' })
+  if (limited) return limited
   const me = await getUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const r = await load(id, dropId)
@@ -59,13 +62,35 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (action !== 'approve' && action !== 'reject') {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   }
+
+  // A drop can be reviewed exactly once. Without this a rejected drop (its
+  // file already purged) can be re-approved and enter the public pool with a
+  // dead URL, and an already-approved drop can be re-approved to replay the
+  // author + hub-wide notifications with no rate limit backstop on either.
+  if (r.drop.status !== 'pending') {
+    return NextResponse.json({ error: 'This drop has already been reviewed' }, { status: 409 })
+  }
+
   const status = action === 'approve' ? 'approved' : 'rejected'
 
-  // Reject destroys the file. `del` runs with the app-wide RW token over a store
-  // shared with avatars, page images and message media — hand it only URLs that
-  // are provably this hub's own drop assets, whatever ended up on the row.
-  let assetDeleted = false
-  if (action === 'reject') {
+  if (action === 'approve') {
+    await db.hubDrop.update({
+      where: { id: dropId },
+      data: { status, hidden: false, reviewedAt: new Date(), reviewedById: me.id },
+    })
+  } else {
+    // Write the row first, then purge, then persist the purge outcome — if the
+    // purge resolves but a later write fails, the row must not still claim
+    // `pending`/`assetDeleted:false` over a file that is already gone.
+    await db.hubDrop.update({
+      where: { id: dropId },
+      data: { status, hidden: true, reviewedAt: new Date(), reviewedById: me.id },
+    })
+
+    // Reject destroys the file. `del` runs with the app-wide RW token over a store
+    // shared with avatars, page images and message media — hand it only URLs that
+    // are provably this hub's own drop assets, whatever ended up on the row.
+    let assetDeleted = false
     const token = blobReadWriteToken()
     const owned = [r.drop.url, r.drop.thumbnailUrl].filter((u): u is string => !!u && isOwnDropAsset(id, u))
     if (token && owned.length) {
@@ -74,18 +99,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       // rejection because storage was unreachable.
       assetDeleted = await del(owned, { token }).then(() => true).catch(() => false)
     }
+    if (assetDeleted) {
+      await db.hubDrop.update({ where: { id: dropId }, data: { assetDeleted: true } })
+    } else {
+      console.warn(`hub-drop reject: purge skipped or failed for hub ${id} drop ${dropId}`)
+    }
   }
-
-  await db.hubDrop.update({
-    where: { id: dropId },
-    data: {
-      status,
-      hidden: status !== 'approved',
-      reviewedAt: new Date(),
-      reviewedById: me.id,
-      ...(action === 'reject' ? { assetDeleted } : {}),
-    },
-  })
 
   const actor = { id: me.id, name: me.name || me.username, avatar: me.avatar }
   const entityUrl = `/${r.hub.user.username}/hub/${r.hub.slug}`
@@ -98,10 +117,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   })
 
   // The hub-wide "new clips" ping fires here, not on upload — members are never
-  // told about content that was still invisible to them.
+  // told about content that was still invisible to them. This is deliberately
+  // NOT routed through postNotifyTargets: that helper only broadcasts to the
+  // full membership when the *author* is privileged, but here the author is a
+  // plain member being approved by a moderator, so it would notify no one.
+  // Build the recipient list explicitly: members + owner + collaborators,
+  // deduped, minus the author (who already got hub_drop_approved above).
   if (action === 'approve') {
     const memberIds = (await db.hubMember.findMany({ where: { hubId: id }, select: { userId: true } })).map((m) => m.userId)
-    const targets = postNotifyTargets({ authorId: r.drop.authorId, ownerId: r.hub.userId, collabIds: r.collabIds, memberIds })
+    const targets = [...new Set([r.hub.userId, ...r.collabIds, ...memberIds])].filter((uid) => uid !== r.drop.authorId)
     await notifyHubMembers(targets, { type: 'hub_drop', actor, entityUrl, contextText: r.hub.title })
   }
 
