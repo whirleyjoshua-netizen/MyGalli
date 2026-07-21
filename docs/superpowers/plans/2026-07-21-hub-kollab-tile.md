@@ -841,8 +841,7 @@ Create `src/components/hub/community/KollabTile.test.tsx`:
 
 ```tsx
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { KollabTile } from './KollabTile'
 
 const base = {
@@ -876,7 +875,7 @@ describe('KollabTile', () => {
   it('calls onSee when See content is clicked', async () => {
     const onSee = vi.fn()
     render(<KollabTile {...base} onSee={onSee} />)
-    await userEvent.click(screen.getByRole('button', { name: /see content/i }))
+    fireEvent.click(screen.getByRole('button', { name: /see content/i }))
     expect(onSee).toHaveBeenCalledOnce()
   })
 })
@@ -987,8 +986,7 @@ Create `src/components/hub/community/KollabGrid.test.tsx`:
 
 ```tsx
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { KollabGrid } from './KollabGrid'
 import type { DropDTO } from '@/lib/hub-drops'
 
@@ -1022,7 +1020,7 @@ describe('KollabGrid', () => {
   it('calls onApprove with the drop id', async () => {
     const onApprove = vi.fn()
     render(<KollabGrid {...base} mode="pending" onApprove={onApprove} drops={[drop({ id: 'x9', status: 'pending' })]} />)
-    await userEvent.click(screen.getByRole('button', { name: /approve/i }))
+    fireEvent.click(screen.getByRole('button', { name: /approve/i }))
     expect(onApprove).toHaveBeenCalledWith('x9')
   })
 
@@ -1181,8 +1179,7 @@ Create `src/components/hub/community/KollabViewer.test.tsx`:
 
 ```tsx
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { KollabViewer } from './KollabViewer'
 import type { DropDTO } from '@/lib/hub-drops'
 
@@ -1218,7 +1215,7 @@ describe('KollabViewer', () => {
   it('fetches pending drops only when the tab is opened', async () => {
     render(<KollabViewer {...base} isPrivileged />)
     expect(global.fetch).not.toHaveBeenCalled()
-    await userEvent.click(screen.getByRole('tab', { name: /pending/i }))
+    fireEvent.click(screen.getByRole('tab', { name: /pending/i }))
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith('/api/hubs/hub1/drops?status=pending')
     })
@@ -1227,7 +1224,7 @@ describe('KollabViewer', () => {
   it('closes on Escape', async () => {
     const onClose = vi.fn()
     render(<KollabViewer {...base} isPrivileged={false} onClose={onClose} />)
-    await userEvent.keyboard('{Escape}')
+    fireEvent.keyDown(window, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledOnce()
   })
 
@@ -1237,9 +1234,9 @@ describe('KollabViewer', () => {
       return { ok: true, json: async () => ({ drops: [drop({ id: 'p1', status: 'pending' })], nextCursor: null }) }
     })
     render(<KollabViewer {...base} isPrivileged />)
-    await userEvent.click(screen.getByRole('tab', { name: /pending/i }))
+    fireEvent.click(screen.getByRole('tab', { name: /pending/i }))
     await screen.findByRole('button', { name: /approve/i })
-    await userEvent.click(screen.getByRole('button', { name: /approve/i }))
+    fireEvent.click(screen.getByRole('button', { name: /approve/i }))
     await waitFor(() => {
       expect(screen.getByText('Nothing waiting for review.')).toBeInTheDocument()
     })
@@ -1482,8 +1479,7 @@ Replace the contents of `src/components/hub/community/CommunityKollab.test.tsx` 
 
 ```tsx
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { CommunityKollab } from './CommunityKollab'
 import type { DropDTO } from '@/lib/hub-drops'
 
@@ -1518,7 +1514,7 @@ describe('CommunityKollab', () => {
 
   it('opens the viewer from See content', async () => {
     render(<CommunityKollab {...base} />)
-    await userEvent.click(screen.getByRole('button', { name: /see content/i }))
+    fireEvent.click(screen.getByRole('button', { name: /see content/i }))
     expect(screen.getByRole('dialog', { name: 'Kollab' })).toBeInTheDocument()
   })
 
