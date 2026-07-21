@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { InteractionsTab } from './InteractionsTab'
 import { SEEN_STORAGE_KEY } from './useElementSeen'
 
@@ -91,5 +91,35 @@ describe('InteractionsTab', () => {
     vi.stubGlobal('fetch', mockFetch({ ...inventory, truncated: true }))
     render(<InteractionsTab />)
     await waitFor(() => expect(screen.getByText(/showing the first 200 pages/i)).toBeTruthy())
+  })
+
+  it('keeps one pulse interval across ticks and clears it on unmount', async () => {
+    vi.useFakeTimers()
+    const setSpy = vi.spyOn(global, 'setInterval')
+    const clearSpy = vi.spyOn(global, 'clearInterval')
+    try {
+      const { unmount } = render(<InteractionsTab />)
+      // let the mocked fetch's promise chain (not a timer) settle before the
+      // pulse effect mounts its interval
+      await act(async () => {
+        for (let i = 0; i < 10; i++) await Promise.resolve()
+      })
+      const afterLoad = setSpy.mock.calls.length
+      expect(afterLoad).toBeGreaterThan(0)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(31_000)
+      })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(31_000)
+      })
+      // two ticks must not have mounted two more intervals
+      expect(setSpy.mock.calls.length).toBe(afterLoad)
+      unmount()
+      expect(clearSpy).toHaveBeenCalled()
+    } finally {
+      setSpy.mockRestore()
+      clearSpy.mockRestore()
+      vi.useRealTimers()
+    }
   })
 })

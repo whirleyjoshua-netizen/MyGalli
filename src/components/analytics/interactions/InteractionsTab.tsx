@@ -60,8 +60,9 @@ export function InteractionsTab() {
   }, [reloads])
 
   // Patch counts in place rather than refetching the whole inventory.
+  const hasData = data !== null
   useEffect(() => {
-    if (!data) return
+    if (!hasData) return
     const tick = async () => {
       if (typeof document !== 'undefined' && document.hidden) return
       try {
@@ -91,7 +92,7 @@ export function InteractionsTab() {
     }
     const id = setInterval(tick, PULSE_MS)
     return () => clearInterval(id)
-  }, [data])
+  }, [hasData])
 
   // Status is finalised here, not on the server: part of the needs-attention
   // rule depends on a localStorage stamp the server cannot see.
