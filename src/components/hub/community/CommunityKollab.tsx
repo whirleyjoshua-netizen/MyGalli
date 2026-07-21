@@ -136,6 +136,7 @@ export function CommunityKollab({
           initialDrops={drops}
           total={count}
           pendingCount={pending}
+          initialTab={count === 0 && pending > 0 && isPrivileged ? 'pending' : 'approved'}
           onClose={() => setViewerOpen(false)}
           onApprovedCountChange={(d) => setCount((c) => Math.max(0, c + d))}
           onPendingCountChange={(d) => setPending((p) => Math.max(0, p + d))}

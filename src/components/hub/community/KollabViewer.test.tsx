@@ -150,4 +150,41 @@ describe('KollabViewer', () => {
       expect(screen.queryByRole('button', { name: /load more/i })).not.toBeInTheDocument()
     })
   })
+
+  it('opens on the Pending tab and fetches it when initialTab is pending for a moderator', async () => {
+    render(<KollabViewer {...base} isPrivileged initialTab="pending" />)
+    expect(screen.getByRole('tab', { name: /pending/i })).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/hubs/hub1/drops?status=pending')
+    })
+  })
+
+  it('ignores initialTab="pending" for a non-privileged viewer and lands on Approved', () => {
+    render(<KollabViewer {...base} isPrivileged={false} initialTab="pending" />)
+    expect(screen.getByRole('tab', { name: /approved/i })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('pages the Pending tab with Load more, appending without duplicating', async () => {
+    let call = 0
+    ;(global.fetch as any) = vi.fn(async (url: string) => {
+      call += 1
+      if (String(url).includes('status=pending')) {
+        if (call === 1) {
+          return { ok: true, json: async () => ({ drops: [drop({ id: 'p1', status: 'pending' })], nextCursor: 'p1' }) }
+        }
+        return { ok: true, json: async () => ({ drops: [drop({ id: 'p2', status: 'pending' })], nextCursor: null }) }
+      }
+      return { ok: true, json: async () => ({ drops: [], nextCursor: null }) }
+    })
+    render(<KollabViewer {...base} isPrivileged />)
+    fireEvent.click(screen.getByRole('tab', { name: /pending/i }))
+    await screen.findByRole('button', { name: /load more/i })
+    fireEvent.click(screen.getByRole('button', { name: /load more/i }))
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/hubs/hub1/drops?status=pending&cursor=p1')
+    })
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /load more/i })).not.toBeInTheDocument()
+    })
+  })
 })

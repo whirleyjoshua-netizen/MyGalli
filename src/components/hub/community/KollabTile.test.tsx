@@ -18,9 +18,34 @@ describe('KollabTile', () => {
     expect(screen.queryByRole('button', { name: /drop content/i })).not.toBeInTheDocument()
   })
 
-  it('disables See content when the pool is empty', () => {
+  it('disables See content when the pool is empty and there is no pending backlog', () => {
     render(<KollabTile {...base} count={0} />)
     expect(screen.getByRole('button', { name: /see content/i })).toBeDisabled()
+  })
+
+  it('enables See content for a moderator when approved is 0 but pending is 3', () => {
+    render(<KollabTile {...base} count={0} pendingCount={3} isPrivileged />)
+    expect(screen.getByRole('button', { name: /see content/i })).not.toBeDisabled()
+  })
+
+  it('keeps See content disabled for a non-privileged viewer when approved is 0, whatever pending says', () => {
+    render(<KollabTile {...base} count={0} pendingCount={3} isPrivileged={false} />)
+    expect(screen.getByRole('button', { name: /see content/i })).toBeDisabled()
+  })
+
+  it('renders the zero-state copy', () => {
+    render(<KollabTile {...base} count={0} />)
+    expect(screen.getByText('Be the first to drop something.')).toBeInTheDocument()
+  })
+
+  it('renders singular copy at count 1', () => {
+    render(<KollabTile {...base} count={1} />)
+    expect(screen.getByText('1 clip or photo')).toBeInTheDocument()
+  })
+
+  it('renders plural copy at count 2', () => {
+    render(<KollabTile {...base} count={2} />)
+    expect(screen.getByText('2 clips & photos')).toBeInTheDocument()
   })
 
   it('shows the awaiting-review badge only to moderators', () => {

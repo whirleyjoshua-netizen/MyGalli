@@ -18,7 +18,11 @@ export function KollabTile({
     <section className="rounded-2xl border border-border bg-surface p-5 text-center">
       <KollabWordmark className="mx-auto h-10 w-auto" />
       <p className="mt-2 text-sm text-muted-foreground">
-        {count > 0 ? `${count} clip${count === 1 ? '' : 's'} & photos` : 'Be the first to drop something.'}
+        {count === 0
+          ? 'Be the first to drop something.'
+          : count === 1
+            ? '1 clip or photo'
+            : `${count} clips & photos`}
       </p>
 
       <div className="mt-4 space-y-2">
@@ -34,7 +38,7 @@ export function KollabTile({
         )}
         <button
           onClick={onSee}
-          disabled={count === 0}
+          disabled={count === 0 && !(isPrivileged && pendingCount > 0)}
           className="inline-flex w-full items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
         >
           See content

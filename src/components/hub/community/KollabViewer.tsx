@@ -8,7 +8,7 @@ import { KollabGrid } from './KollabGrid'
 type Tab = 'approved' | 'pending'
 
 export function KollabViewer({
-  hubId, isPrivileged, currentUserId, initialDrops, total, onClose, onApprovedCountChange, onPendingCountChange, pendingCount = 0,
+  hubId, isPrivileged, currentUserId, initialDrops, total, onClose, onApprovedCountChange, onPendingCountChange, pendingCount = 0, initialTab = 'approved',
 }: {
   hubId: string
   isPrivileged: boolean
@@ -19,8 +19,12 @@ export function KollabViewer({
   onApprovedCountChange: (delta: number) => void
   onPendingCountChange: (delta: number) => void
   pendingCount?: number
+  initialTab?: Tab
 }) {
-  const [tab, setTab] = useState<Tab>('approved')
+  // A non-privileged viewer can never land on (or see) the Pending tab,
+  // regardless of what the caller asks for.
+  const startTab: Tab = initialTab === 'pending' && isPrivileged ? 'pending' : 'approved'
+  const [tab, setTab] = useState<Tab>(startTab)
   const [approved, setApproved] = useState<DropDTO[]>(initialDrops)
   const [approvedTotal, setApprovedTotal] = useState(total)
   const [pending, setPending] = useState<DropDTO[]>([])
@@ -28,6 +32,8 @@ export function KollabViewer({
   const [pendingBadge, setPendingBadge] = useState(pendingCount)
   const [cursor, setCursor] = useState<string | null>(initialDrops[initialDrops.length - 1]?.id ?? null)
   const [exhausted, setExhausted] = useState(false)
+  const [pendingCursor, setPendingCursor] = useState<string | null>(null)
+  const [pendingExhausted, setPendingExhausted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [lightbox, setLightbox] = useState<DropDTO | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -43,7 +49,8 @@ export function KollabViewer({
   }, [lightbox, onClose])
 
   // Pending is fetched lazily: a plain visitor never triggers the privileged
-  // request at all, and a moderator only pays for it if they open the tab.
+  // request at all, and a moderator only pays for it if they open the tab
+  // (or the viewer opens straight onto it because there's a backlog).
   async function openPending() {
     setTab('pending')
     if (pendingLoaded) return
@@ -53,8 +60,38 @@ export function KollabViewer({
       if (res.ok) {
         const d = await res.json()
         setPending(d.drops ?? [])
+        setPendingCursor(d.nextCursor ?? null)
+        if (!d.nextCursor) setPendingExhausted(true)
       }
       setPendingLoaded(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    if (startTab === 'pending') {
+      openPending()
+    }
+    // Only run once on mount to trigger the initial lazy fetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function loadMorePending() {
+    if (pendingExhausted || busy) return
+    setBusy(true)
+    try {
+      const qs = pendingCursor ? `&cursor=${encodeURIComponent(pendingCursor)}` : ''
+      const res = await fetch(`/api/hubs/${hubId}/drops?status=pending${qs}`)
+      if (!res.ok) return
+      const d = await res.json()
+      const fresh: DropDTO[] = d.drops ?? []
+      setPending((cur) => {
+        const seen = new Set(cur.map((x) => x.id))
+        return [...cur, ...fresh.filter((x) => !seen.has(x.id))]
+      })
+      setPendingCursor(d.nextCursor ?? null)
+      if (!d.nextCursor) setPendingExhausted(true)
     } finally {
       setBusy(false)
     }
@@ -168,6 +205,15 @@ export function KollabViewer({
           {tab === 'approved' && !exhausted && approved.length < approvedTotal && (
             <div className="mt-4 text-center">
               <button onClick={loadMoreApproved} disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted disabled:opacity-60">
+                {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+                {busy ? 'Loading…' : 'Load more'}
+              </button>
+            </div>
+          )}
+
+          {tab === 'pending' && pendingLoaded && !pendingExhausted && (
+            <div className="mt-4 text-center">
+              <button onClick={loadMorePending} disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted disabled:opacity-60">
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />}
                 {busy ? 'Loading…' : 'Load more'}
               </button>
