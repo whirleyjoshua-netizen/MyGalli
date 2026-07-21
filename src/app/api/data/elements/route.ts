@@ -78,10 +78,19 @@ export async function GET(request: NextRequest) {
   // aggregate the jsonb keys directly, so this stays a true all-time count
   // without ever materialising the response payloads in Node.
   type FormAgg = { displayId: string; elementId: string; cnt: number; last: Date }
+  // /api/forms/submit accepts any `typeof responses === 'object'` body, and
+  // `typeof [] === 'object'` — so a public, unauthenticated POST of
+  // {"displayId":"<published id>","responses":[]} is stored as-is. Postgres's
+  // jsonb_object_keys() throws "cannot call jsonb_object_keys on an array" for
+  // such a row, and a set-returning function in FROM runs before WHERE, so a
+  // WHERE jsonb_typeof(...) filter does NOT protect this query — it still
+  // errors before any row is excluded. The CASE guards the argument itself so
+  // a non-object payload contributes zero keys instead of 500ing every caller
+  // who loads their Interactions tab. Do not replace this with a WHERE filter.
   const formAggAllTime = displayIds.length
     ? db.$queryRaw<FormAgg[]>(Prisma.sql`
         SELECT "displayId", key AS "elementId", COUNT(*)::int AS cnt, MAX("submittedAt") AS last
-        FROM "FormResponse", jsonb_object_keys(responses) AS key
+        FROM "FormResponse", jsonb_object_keys(CASE WHEN jsonb_typeof(responses) = 'object' THEN responses ELSE '{}'::jsonb END) AS key
         WHERE "displayId" IN (${Prisma.join(displayIds)})
         GROUP BY "displayId", key
       `)
@@ -89,7 +98,7 @@ export async function GET(request: NextRequest) {
   const formAggToday = displayIds.length
     ? db.$queryRaw<FormAgg[]>(Prisma.sql`
         SELECT "displayId", key AS "elementId", COUNT(*)::int AS cnt, MAX("submittedAt") AS last
-        FROM "FormResponse", jsonb_object_keys(responses) AS key
+        FROM "FormResponse", jsonb_object_keys(CASE WHEN jsonb_typeof(responses) = 'object' THEN responses ELSE '{}'::jsonb END) AS key
         WHERE "displayId" IN (${Prisma.join(displayIds)}) AND "submittedAt" >= ${startOfToday}
         GROUP BY "displayId", key
       `)
