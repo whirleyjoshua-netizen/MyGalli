@@ -1,8 +1,9 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import { FileText, Lock, Download, X, Upload, Loader2 } from 'lucide-react'
+import { FileText, Lock, Download, X, Upload, Loader2, Eye } from 'lucide-react'
 import { HubFolderTree } from '@/components/hub/HubFolderTree'
+import { HubFileViewer } from '@/components/hub/HubFileViewer'
 import { buildFolderTree } from '@/lib/hub-tree'
 import { itemsInFolder, type FileFolder, type FileItem } from '@/lib/hub-files-view'
 
@@ -30,6 +31,8 @@ export function HubFilesTab({
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Viewing is for everyone who can see the file — not gated on canManage.
+  const [viewing, setViewing] = useState<FileItem | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
   const tree = useMemo(() => buildFolderTree(folders), [folders])
@@ -156,15 +159,25 @@ export function HubFilesTab({
                 {/* A locked item keeps its name but never its url — the server
                     already nulled it, so there is nothing to link to. */}
                 {!it.locked && it.url && (
-                  <a
-                    href={it.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={it.title}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                  >
-                    <Download className="h-3.5 w-3.5" /> Open
-                  </a>
+                  <>
+                    <button
+                      type="button"
+                      aria-label={`View ${it.title}`}
+                      onClick={() => setViewing(it)}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    >
+                      <Eye className="h-3.5 w-3.5" /> View
+                    </button>
+                    <a
+                      href={it.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Download ${it.title}`}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:underline"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Download
+                    </a>
+                  </>
                 )}
                 {canManage && (
                   <button
@@ -181,6 +194,14 @@ export function HubFilesTab({
           </ul>
         )}
       </section>
+
+      {/* Same viewer the data-room uses, so PDFs and images open in-app rather
+          than dumping the visitor into a new tab. Bookmarking is deliberately
+          not wired up here — it hangs off HubNote and needs its own design pass. */}
+      <HubFileViewer
+        file={viewing ? { id: viewing.id, type: viewing.type, title: viewing.title, url: viewing.url } : null}
+        onClose={() => setViewing(null)}
+      />
     </div>
   )
 }

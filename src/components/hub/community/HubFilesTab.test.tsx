@@ -80,6 +80,40 @@ describe('HubFilesTab (manage)', () => {
   })
 })
 
+describe('HubFilesTab (viewer)', () => {
+  // A .png keeps pdf.js out of jsdom; the pdf path is covered by the kind check below.
+  const withImage: FileItem[] = [
+    { id: 'img', folderId: null, type: 'file', title: 'Diagram.png', url: 'https://x/d.png', order: 0, locked: false },
+  ]
+
+  it('offers View to a plain member, not just the owner', () => {
+    render(<HubFilesTab hubId="h1" canManage={false} initialFolders={[]} initialItems={withImage} />)
+    expect(screen.getByRole('button', { name: /view diagram\.png/i })).toBeInTheDocument()
+  })
+
+  it('opens the in-app viewer instead of navigating away', () => {
+    render(<HubFilesTab hubId="h1" canManage={false} initialFolders={[]} initialItems={withImage} />)
+    fireEvent.click(screen.getByRole('button', { name: /view diagram\.png/i }))
+    expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument()
+    expect(screen.getByAltText('Diagram.png')).toBeInTheDocument()
+  })
+
+  it('closes the viewer again', () => {
+    render(<HubFilesTab hubId="h1" canManage={false} initialFolders={[]} initialItems={withImage} />)
+    fireEvent.click(screen.getByRole('button', { name: /view diagram\.png/i }))
+    fireEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(screen.queryByAltText('Diagram.png')).not.toBeInTheDocument()
+  })
+
+  it('offers no View for a locked item, which has no url to show', () => {
+    const locked: FileItem[] = [
+      { id: 'lk', folderId: null, type: 'file', title: 'Sealed.pdf', url: null, order: 0, locked: true },
+    ]
+    render(<HubFilesTab hubId="h1" canManage={false} initialFolders={[]} initialItems={locked} />)
+    expect(screen.queryByRole('button', { name: /view/i })).not.toBeInTheDocument()
+  })
+})
+
 describe('HubFilesTab (upload)', () => {
   const pdf = () => new File(['%PDF-1.4'], 'contract.pdf', { type: 'application/pdf' })
 
