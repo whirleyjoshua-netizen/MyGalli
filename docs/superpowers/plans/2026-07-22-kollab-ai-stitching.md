@@ -912,7 +912,7 @@ export function describeCandidates(rows: CandidateRow[], now: Date): string {
 pnpm exec vitest run src/lib/kollab/candidates.test.ts
 ```
 
-Expected: PASS, 14 tests.
+Expected: PASS, 13 tests.
 
 - [ ] **Step 5: Commit**
 
