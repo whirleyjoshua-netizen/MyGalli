@@ -252,6 +252,9 @@ model Display {
   // Wait list signups
   waitlistSignups WaitlistSignup[]
 
+  // Lead Gen captures (email-for-freebie)
+  leadCaptures LeadCapture[]
+
   @@unique([userId, slug])
   @@index([userId])
   @@index([published])
@@ -289,6 +292,26 @@ model WaitlistSignup {
 
   @@unique([displayId, elementId, email])
   @@index([displayId, elementId])
+}
+
+// A visitor who traded their email for a Lead Gen element's payload.
+// Deliberately NOT unique on (displayId, elementId, email): re-requesting a
+// download is a legitimate action (the first email got lost), and each request
+// is a real delivery attempt worth recording.
+model LeadCapture {
+  id         String   @id @default(cuid())
+  displayId  String
+  elementId  String
+  email      String
+  name       String?
+  delivered  Boolean  @default(false)
+  ipHash     String?
+  createdAt  DateTime @default(now())
+
+  display    Display  @relation(fields: [displayId], references: [id], onDelete: Cascade)
+
+  @@index([displayId, elementId])
+  @@index([displayId, createdAt])
 }
 
 model DisplayCollaborator {
