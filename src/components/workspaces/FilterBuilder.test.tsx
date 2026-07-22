@@ -118,10 +118,14 @@ describe('FilterBuilder', () => {
     open()
     fireEvent.click(screen.getByRole('button', { name: /add condition/i }))
     fireEvent.change(screen.getByLabelText('Field 1'), { target: { value: 'due' } })
+    // A native <input type="date"> refuses to hold an ambiguous format like
+    // "07/01/2026" in the first place — jsdom mirrors real browsers here and
+    // leaves the value blank, which is exactly the scenario the blank-value
+    // guard in coerce() now catches first.
     fireEvent.change(screen.getByLabelText('Value 1'), { target: { value: '07/01/2026' } })
     fireEvent.click(screen.getByRole('button', { name: /^apply$/i }))
     expect(onApply).not.toHaveBeenCalled()
-    expect(screen.getByText(/YYYY-MM-DD/)).toBeTruthy()
+    expect(screen.getByText(/"Due" needs a value/)).toBeTruthy()
   })
 
   it('applies null when every row is removed', () => {

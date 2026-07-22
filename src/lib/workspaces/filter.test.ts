@@ -93,6 +93,42 @@ describe('validateFilter', () => {
     const spec = { op: 'and', conditions: [{ field: 'startDate', cmp: 'gt', value: '2026-13-45' }] }
     expect(() => validateFilter(spec, fields)).toThrow(FilterError)
   })
+
+  it('rejects a blank value on a numeric field instead of silently coercing to 0 (Finding: blank value box persists as value: 0)', () => {
+    const spec = { op: 'and', conditions: [{ field: 'fee', cmp: 'eq', value: '' }] }
+    expect(() => validateFilter(spec, fields)).toThrow(FilterError)
+    expect(() => validateFilter(spec, fields)).toThrow(/needs a value/)
+  })
+
+  it('rejects a whitespace-only value on a numeric field', () => {
+    const spec = { op: 'and', conditions: [{ field: 'fee', cmp: 'eq', value: '   ' }] }
+    expect(() => validateFilter(spec, fields)).toThrow(FilterError)
+    expect(() => validateFilter(spec, fields)).toThrow(/needs a value/)
+  })
+
+  it('rejects a blank value on a text field', () => {
+    const spec = { op: 'and', conditions: [{ field: 'name', cmp: 'eq', value: '' }] }
+    expect(() => validateFilter(spec, fields)).toThrow(FilterError)
+    expect(() => validateFilter(spec, fields)).toThrow(/needs a value/)
+  })
+
+  it('still accepts a legitimate 0 on a numeric field', () => {
+    const spec = { op: 'and', conditions: [{ field: 'fee', cmp: 'eq', value: 0 }] }
+    expect(validateFilter(spec, fields).conditions[0].value).toBe(0)
+  })
+
+  it('still accepts a legitimate "0" string on a numeric field', () => {
+    const spec = { op: 'and', conditions: [{ field: 'fee', cmp: 'eq', value: '0' }] }
+    expect(validateFilter(spec, fields).conditions[0].value).toBe(0)
+  })
+
+  it('is_empty still validates fine with no value at all, even for a numeric field', () => {
+    const spec = { op: 'and', conditions: [{ field: 'fee', cmp: 'is_empty' }] }
+    expect(validateFilter(spec, fields)).toEqual({
+      op: 'and',
+      conditions: [{ field: 'fee', cmp: 'is_empty' }],
+    })
+  })
 })
 
 describe('is_empty / is_not_empty', () => {

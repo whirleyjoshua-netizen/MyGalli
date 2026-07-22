@@ -80,6 +80,14 @@ function coerce(field: FilterField, value: unknown): string | number | boolean {
   if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
     throw new FilterError(`"${field.label}" has an invalid value`)
   }
+  if (typeof value === 'string' && value.trim() === '') {
+    // A blank or whitespace-only operand is never a legitimate value for any
+    // field type — including numeric ones, where Number('') coerces to 0 and
+    // would otherwise silently persist a filter the caller never intended.
+    // Emptiness now has a first-class expression via is_empty/is_not_empty,
+    // so a blank here is unambiguously a mistake.
+    throw new FilterError(`"${field.label}" needs a value`)
+  }
   if (field.type === 'date') {
     // Dates are stored as yyyy-MM-dd strings and compared lexicographically
     // via a raw JSONB string comparison (see records-query.ts) — that
