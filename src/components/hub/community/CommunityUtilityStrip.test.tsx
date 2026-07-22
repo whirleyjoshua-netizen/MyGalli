@@ -161,13 +161,22 @@ describe('Tools card', () => {
     expect(onOpenResources).toHaveBeenCalledTimes(2) // Files and Links share the manager
   })
 
-  // Files/Links open a manager gated on ownHub server-side; a collaborator only
-  // gets a working modal for Polls and Events.
-  it('shows only Polls and Events to a non-owner collaborator', () => {
+  // Files is now a browsable tab, so everyone gets it. Links still opens the
+  // owner-only manager gated on ownHub server-side, so it stays owner-only.
+  it('shows Files but not Links to a non-owner collaborator', () => {
     render(<CommunityUtilityStrip {...base} isPrivileged isOwner={false} />)
     expect(screen.getByRole('button', { name: 'Polls' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Events' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Files' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Files' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Links' })).toBeNull()
+  })
+
+  it('routes the Files button to the Files tab rather than the legacy modal', () => {
+    const onOpenFiles = vi.fn()
+    const onOpenResources = vi.fn()
+    render(<CommunityUtilityStrip {...base} isPrivileged isOwner onOpenFiles={onOpenFiles} onOpenResources={onOpenResources} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Files' }))
+    expect(onOpenFiles).toHaveBeenCalledTimes(1)
+    expect(onOpenResources).not.toHaveBeenCalled()
   })
 })

@@ -2,9 +2,11 @@
 
 import Link from 'next/link'
 import { UserPlus, Check, Share2, Pencil } from 'lucide-react'
+import { HubAnnouncementBanner } from './HubAnnouncementBanner'
+import type { AnnouncementDTO } from '@/lib/hub-announcements'
 
 export function CommunityHeader({
-  title, tagline, ownerUsername, coverImage, memberAvatars, counts, joined, isPrivileged, onToggleJoin, sharePath, editHref,
+  title, tagline, ownerUsername, coverImage, memberAvatars, counts, joined, isPrivileged, onToggleJoin, sharePath, editHref, hubId, announcements,
 }: {
   title: string
   tagline: string | null
@@ -17,6 +19,8 @@ export function CommunityHeader({
   onToggleJoin: () => void
   sharePath: string
   editHref?: string
+  hubId: string
+  announcements: AnnouncementDTO[]
 }) {
   async function share() {
     const url = `${window.location.origin}${sharePath}`
@@ -50,6 +54,9 @@ export function CommunityHeader({
             ))}
           </div>
           <span className="text-xs text-muted-foreground">{counts.members} member{counts.members === 1 ? '' : 's'}</span>
+        </div>
+        <div className="mt-3">
+          <HubAnnouncementBanner hubId={hubId} isPrivileged={isPrivileged} initial={announcements} />
         </div>
       </div>
       <div className="flex flex-col items-end gap-3">

@@ -144,7 +144,17 @@ export default function MyPagesPage() {
   )
 
   return (
-    <div className="pb-7">
+    <div className="relative pb-7">
+      {/* Decorative frog watermark — matches the dashboard home */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/gallio-frog.svg"
+        alt=""
+        aria-hidden
+        className="pointer-events-none fixed -bottom-12 -right-12 z-0 w-[26rem] max-w-[45vw] opacity-[0.05]"
+      />
+
+      <div className="relative z-10">
       <PageHero
         icon={<ImageIcon className="w-7 h-7 text-primary" />}
         title="Gallery"
@@ -210,6 +220,9 @@ export default function MyPagesPage() {
             )}
           </section>
 
+          {/* Row divider */}
+          <hr className="border-t border-border" />
+
           {/* Drafts */}
           <section>
             <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
@@ -227,6 +240,7 @@ export default function MyPagesPage() {
       )}
 
       <UpgradePrompt isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} feature="Boards" />
+      </div>
       </div>
     </div>
   )
