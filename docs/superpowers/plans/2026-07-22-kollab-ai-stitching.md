@@ -569,7 +569,7 @@ export function validateEdl(
 pnpm exec vitest run src/lib/kollab/edl.test.ts
 ```
 
-Expected: PASS, 16 tests.
+Expected: PASS, 17 tests.
 
 - [ ] **Step 5: Commit**
 
