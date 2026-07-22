@@ -57,6 +57,7 @@ model User {
   hubAnnouncements HubAnnouncement[] @relation("HubAnnouncementAuthor")
   hubReports HubReport[] @relation("HubReportReporter")
   hubBans HubBan[] @relation("HubBanUser")
+  kollabReels KollabReel[] @relation("KollabReelCreator")
   ownedWorkspaces          Workspace[]       @relation("OwnedWorkspaces")
   workspaceRecordsCreated  WorkspaceRecord[] @relation("WorkspaceRecordsCreated")
   workspaceRecordsUpdated  WorkspaceRecord[] @relation("WorkspaceRecordsUpdated")
@@ -629,6 +630,7 @@ model Hub {
   announcements HubAnnouncement[]
   hubReports  HubReport[]
   hubBans     HubBan[]
+  kollabReels KollabReel[]
   @@unique([userId, slug])
   @@index([userId])
   @@index([displayId])
@@ -711,6 +713,8 @@ model HubDrop {
   mimeType     String?
   width        Int?
   height       Int?
+  durationSec  Float?                     // video length in seconds, captured client-side at upload
+  aiTags       Json?                      // { tags: string[], desc, subjects, quality, model, at }
   hidden       Boolean  @default(false)   // DEPRECATED — kept in sync with `status` for rollback safety; dropped in a follow-up migration
   status       String   @default("pending")  // 'pending' | 'approved' | 'rejected'
   reviewedAt   DateTime?
@@ -922,4 +926,19 @@ model AcknowledgmentRound {
   scopeKey String   @id
   round    Int      @default(0)
   resetAt  DateTime @updatedAt
+}
+
+model KollabReel {
+  id        String   @id @default(cuid())
+  hubId     String
+  hub       Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  creatorId String
+  creator   User     @relation("KollabReelCreator", fields: [creatorId], references: [id])
+  preset    String?
+  prompt    String?
+  title     String
+  edl       Json
+  status    String   @default("draft")
+  createdAt DateTime @default(now())
+  @@index([hubId, status, createdAt])
 }
