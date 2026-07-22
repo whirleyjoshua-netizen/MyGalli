@@ -63,17 +63,34 @@ export function buildRecordsQuery(input: BuildInput): BuiltQuery {
 function conditionSql(c: Condition, fields: FilterField[], p: (v: any) => string): string {
   const field = fields.find((f) => f.key === c.field)!
   const numeric = NUMERIC.includes(field.type)
+  // Bound ONCE; `$n` may be referenced repeatedly in the SQL text.
   const lhs = `data->>${p(c.field)}`
+
+  // `data->>key` yields SQL NULL for BOTH a missing key and a JSON null, so a
+  // single IS NULL test covers two of the three empty states and the '' test
+  // covers the third. Handled before the switch so no value param is bound.
+  if (c.cmp === 'is_empty') return `(${lhs} IS NULL OR ${lhs} = '')`
+  if (c.cmp === 'is_not_empty') return `(${lhs} IS NOT NULL AND ${lhs} <> '')`
+
+  const value = c.value as string | number | boolean
+
   switch (c.cmp) {
-    case 'eq': return numeric ? `(${lhs})::numeric = ${p(c.value)}` : `${lhs} = ${p(c.value)}`
-    case 'neq': return numeric ? `NOT ((${lhs})::numeric = ${p(c.value)})` : `NOT (${lhs} = ${p(c.value)})`
-    // Match E's string_contains (case-sensitive, %/_ in the value act as wildcards
-    // exactly as Prisma's string_contains does — so wrap WITHOUT escaping).
-    case 'contains': return `${lhs} LIKE ${p('%' + c.value + '%')}`
-    case 'gt': return numeric ? `(${lhs})::numeric > ${p(c.value)}` : `${lhs} > ${p(c.value)}`
-    case 'gte': return numeric ? `(${lhs})::numeric >= ${p(c.value)}` : `${lhs} >= ${p(c.value)}`
-    case 'lt': return numeric ? `(${lhs})::numeric < ${p(c.value)}` : `${lhs} < ${p(c.value)}`
-    case 'lte': return numeric ? `(${lhs})::numeric <= ${p(c.value)}` : `${lhs} <= ${p(c.value)}`
+    case 'eq': return numeric ? `(${lhs})::numeric = ${p(value)}` : `${lhs} = ${p(value)}`
+    // An empty cell is NOT equal to anything, so "is not X" must match it.
+    // Without the IS NULL disjunct, `NOT (NULL = 'x')` is NULL and Postgres
+    // drops the row — "Status is not Done" would hide every record with no
+    // Status at all, which is three-valued logic behaving as specified and
+    // not at all as anyone reading the filter expects.
+    case 'neq': return numeric
+      ? `(${lhs} IS NULL OR NOT ((${lhs})::numeric = ${p(value)}))`
+      : `(${lhs} IS NULL OR NOT (${lhs} = ${p(value)}))`
+    // Escaped, unlike E's Prisma string_contains: a person typing "50%" into
+    // the manual builder means a literal percent sign, not a wildcard.
+    case 'contains': return `${lhs} LIKE ${p('%' + escapeLike(String(value)) + '%')}`
+    case 'gt': return numeric ? `(${lhs})::numeric > ${p(value)}` : `${lhs} > ${p(value)}`
+    case 'gte': return numeric ? `(${lhs})::numeric >= ${p(value)}` : `${lhs} >= ${p(value)}`
+    case 'lt': return numeric ? `(${lhs})::numeric < ${p(value)}` : `${lhs} < ${p(value)}`
+    case 'lte': return numeric ? `(${lhs})::numeric <= ${p(value)}` : `${lhs} <= ${p(value)}`
   }
 }
 

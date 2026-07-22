@@ -58,7 +58,7 @@ describe('buildRecordsQuery', () => {
       ] },
     })
     expect(q.sql).toContain(
-      '(data->>$2 = $3 AND (data->>$4)::numeric > $5 AND data->>$6 LIKE $7 AND NOT (data->>$8 = $9))'
+      '(data->>$2 = $3 AND (data->>$4)::numeric > $5 AND data->>$6 LIKE $7 AND (data->>$8 IS NULL OR NOT (data->>$8 = $9)))'
     )
     // keys and values are all params; count shares them
     expect(q.countParams).toEqual(['w1', 'sport', 'Soccer', 'fee', 1200, 'name', '%jo%', 'sport', 'Tennis'])
@@ -128,5 +128,49 @@ describe('buildRecordsQuery', () => {
     expect(q.countSql).not.toContain('DROP TABLE')
     // the malicious strings live only in params
     expect(q.params).toContain("'; DROP TABLE x; --")
+  })
+})
+
+describe('is_empty / is_not_empty', () => {
+  it('is_empty covers missing key, JSON null and empty string in one clause', () => {
+    const q = buildRecordsQuery({ ...base, filter: { op: 'and', conditions: [{ field: 'due', cmp: 'is_empty' }] } })
+    expect(q.countSql).toContain('(data->>$2 IS NULL OR data->>$2 = \'\')')
+    // the field key is bound ONCE and referenced twice
+    expect(q.countParams).toEqual(['w1', 'due'])
+  })
+
+  it('is_not_empty is the exact negation', () => {
+    const q = buildRecordsQuery({ ...base, filter: { op: 'and', conditions: [{ field: 'due', cmp: 'is_not_empty' }] } })
+    expect(q.countSql).toContain('(data->>$2 IS NOT NULL AND data->>$2 <> \'\')')
+    expect(q.countParams).toEqual(['w1', 'due'])
+  })
+
+  it('binds no value parameter for a value-less comparator', () => {
+    const q = buildRecordsQuery({ ...base, filter: { op: 'and', conditions: [{ field: 'name', cmp: 'is_empty' }] } })
+    expect(q.countParams).toHaveLength(2) // workspaceId + field key only
+  })
+})
+
+describe('neq includes empty cells', () => {
+  it('text neq also matches rows where the field is absent', () => {
+    const q = buildRecordsQuery({ ...base, filter: { op: 'and', conditions: [{ field: 'sport', cmp: 'neq', value: 'Soccer' }] } })
+    expect(q.countSql).toContain('(data->>$2 IS NULL OR NOT (data->>$2 = $3))')
+  })
+
+  it('numeric neq also matches rows where the field is absent', () => {
+    const q = buildRecordsQuery({ ...base, filter: { op: 'and', conditions: [{ field: 'fee', cmp: 'neq', value: 100 }] } })
+    expect(q.countSql).toContain('(data->>$2 IS NULL OR NOT ((data->>$2)::numeric = $3))')
+  })
+})
+
+describe('contains matches literally', () => {
+  it('escapes LIKE metacharacters so % is not a wildcard', () => {
+    const q = buildRecordsQuery({ ...base, filter: { op: 'and', conditions: [{ field: 'name', cmp: 'contains', value: '50%' }] } })
+    expect(q.countParams).toEqual(['w1', 'name', '%50\\%%'])
+  })
+
+  it('escapes underscores too', () => {
+    const q = buildRecordsQuery({ ...base, filter: { op: 'and', conditions: [{ field: 'name', cmp: 'contains', value: 'a_b' }] } })
+    expect(q.countParams).toEqual(['w1', 'name', '%a\\_b%'])
   })
 })
