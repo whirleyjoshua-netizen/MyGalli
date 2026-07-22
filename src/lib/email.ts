@@ -80,3 +80,25 @@ export function bookingCancelledEmail(a: BookingArgs) {
     ),
   }
 }
+
+interface LeadGenArgs { name?: string; message: string; fileUrl?: string; fileName?: string }
+
+// Not built on `shell()`: that helper always renders a CTA button, and a lead-gen
+// payload with no file (a discount code, a secret link typed into the message)
+// must not show a dead button.
+export function leadGenEmail(a: LeadGenArgs) {
+  const greeting = a.name ? `Hi ${escapeHtml(a.name)}` : 'Hi there'
+  const body = escapeHtml(a.message).replace(/\n/g, '<br/>')
+  const download = a.fileUrl
+    ? `<a href="${escapeHtml(a.fileUrl)}" style="display:inline-block;margin-top:16px;background:#39D98A;color:#fff;padding:10px 20px;border-radius:9999px;text-decoration:none;font-weight:600">Download ${escapeHtml(a.fileName || 'your file')}</a>`
+    : ''
+  return {
+    subject: 'Your download from My Galli',
+    html: `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px">
+      <p style="color:#0F3D2E;font-size:16px;font-weight:600">${greeting},</p>
+      <p style="color:#475569;font-size:14px;line-height:1.6">${body}</p>
+      ${download}
+      <p style="color:#94a3b8;font-size:12px;margin-top:24px">Sent via My Galli.</p>
+    </div>`,
+  }
+}
