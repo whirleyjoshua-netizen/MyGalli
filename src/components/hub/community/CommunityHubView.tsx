@@ -14,12 +14,13 @@ import type { EventDTO } from '@/lib/hub-events'
 import type { DropDTO } from '@/lib/hub-drops'
 import type { StripNote } from '@/lib/hub-notes'
 import type { ActivityCounts } from '@/lib/hub-activity'
+import type { AnnouncementDTO } from '@/lib/hub-announcements'
 
 type CommunityMember = { userId: string; username: string; name: string | null; avatar: string | null }
 type CommunityResource = { id: string; type: string; title: string; url: string | null }
 
 export function CommunityHubView({
-  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, pendingCount = 0, notes, counts, activity, sharePath, config, preview,
+  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, pendingCount = 0, notes, counts, activity, sharePath, config, preview, announcements = [],
 }: {
   hub: { id: string; title: string; tagline: string | null; description: string | null; coverImage: string | null; heroVideoUrl: string | null }
   ownerUsername: string
@@ -40,6 +41,7 @@ export function CommunityHubView({
   sharePath: string
   config: HubConfig
   preview?: boolean
+  announcements?: AnnouncementDTO[]
 }) {
   const [joined, setJoined] = useState(initialJoined)
   const [count, setCount] = useState(initialCount)
@@ -88,6 +90,8 @@ export function CommunityHubView({
             onToggleJoin={toggleJoin}
             sharePath={sharePath}
             editHref={preview ? undefined : `/hubs/${hub.id}`}
+            hubId={hub.id}
+            announcements={announcements}
           />
           <div className="mt-5 flex items-center gap-3 border-t border-border pt-4">
             <span className="inline-flex items-center gap-1.5 border-b-2 border-primary pb-1 text-sm font-medium"><Leaf className="h-4 w-4 text-primary" /> Home</span>
