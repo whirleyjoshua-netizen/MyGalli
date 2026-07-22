@@ -11,6 +11,7 @@ vi.mock('@/lib/db', () => ({
     waitlistSignup: { groupBy: vi.fn().mockResolvedValue([]) },
     booking: { groupBy: vi.fn().mockResolvedValue([]) },
     jerseySignature: { groupBy: vi.fn().mockResolvedValue([]) },
+    leadCapture: { groupBy: vi.fn().mockResolvedValue([]) },
     bulletinPost: { findMany: vi.fn().mockResolvedValue([]) },
     bulletinResponse: { groupBy: vi.fn().mockResolvedValue([]) },
     analyticsEvent: { findMany: vi.fn().mockResolvedValue([]) },
@@ -125,6 +126,30 @@ describe('GET /api/data/elements — all stores', () => {
     const w = body.elements.find((e: any) => e.key === 'd1:w1')
     expect(w.responseCount).toBe(12)
     expect(w.lastResponseAt).toBe('2026-07-20T09:00:00.000Z')
+  })
+
+  it('counts lead-gen captures per element, all-time and today', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'me' })
+    ;(db.display.findMany as any).mockResolvedValue([
+      display({
+        sections: [{ id: 's1', layout: 'single', columns: [{ id: 'c1', elements: [
+          { id: 'lg1', type: 'lead-gen', leadGenHeadline: 'Press kit' },
+        ] }] }],
+      }),
+    ])
+    ;(db.leadCapture.groupBy as any).mockImplementation(({ where }: any) =>
+      Promise.resolve(
+        where?.createdAt
+          ? [{ displayId: 'd1', elementId: 'lg1', _count: { _all: 2 } }]
+          : [{ displayId: 'd1', elementId: 'lg1', _count: { _all: 7 }, _max: { createdAt: new Date('2026-07-22T09:00:00Z') } }]
+      )
+    )
+    const body = await (await GET(req())).json()
+    const lg = body.elements.find((e: any) => e.key === 'd1:lg1')
+    expect(lg).toMatchObject({ type: 'lead-gen', title: 'Press kit' })
+    expect(lg.responseCount).toBe(7)
+    expect(lg.todayCount).toBe(2)
+    expect(lg.lastResponseAt).toBe('2026-07-22T09:00:00.000Z')
   })
 
   it('reports unread mailbox messages so the client can flag attention', async () => {

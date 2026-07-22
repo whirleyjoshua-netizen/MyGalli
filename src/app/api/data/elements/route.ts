@@ -123,6 +123,8 @@ export async function GET(request: NextRequest) {
     waitlistTodayRows,
     bookingTodayRows,
     jerseyTodayRows,
+    leadRows,
+    leadTodayRows,
   ] =
     displayIds.length
       ? await Promise.all([
@@ -217,6 +219,17 @@ export async function GET(request: NextRequest) {
             where: { displayId: { in: displayIds }, createdAt: { gte: startOfToday } },
             _count: { _all: true },
           }),
+          db.leadCapture.groupBy({
+            by: ['displayId', 'elementId'],
+            where: { displayId: { in: displayIds } },
+            _count: { _all: true },
+            _max: { createdAt: true },
+          }),
+          db.leadCapture.groupBy({
+            by: ['displayId', 'elementId'],
+            where: { displayId: { in: displayIds }, createdAt: { gte: startOfToday } },
+            _count: { _all: true },
+          }),
         ])
       : [
           empty,
@@ -249,6 +262,8 @@ export async function GET(request: NextRequest) {
           empty,
           empty,
           empty,
+          empty,
+          empty,
         ]
 
   for (const row of formRowsAllTime) {
@@ -258,10 +273,16 @@ export async function GET(request: NextRequest) {
     addToday(`${row.displayId}:${row.elementId}`, row.cnt)
   }
 
-  for (const g of [...messageRows, ...waitlistRows, ...bookingRows, ...jerseyRows]) {
+  for (const g of [...messageRows, ...waitlistRows, ...bookingRows, ...jerseyRows, ...leadRows]) {
     addTotal(`${g.displayId}:${g.elementId}`, g._count?._all ?? 0, g._max?.createdAt ?? null)
   }
-  for (const g of [...messageTodayRows, ...waitlistTodayRows, ...bookingTodayRows, ...jerseyTodayRows]) {
+  for (const g of [
+    ...messageTodayRows,
+    ...waitlistTodayRows,
+    ...bookingTodayRows,
+    ...jerseyTodayRows,
+    ...leadTodayRows,
+  ]) {
     addToday(`${g.displayId}:${g.elementId}`, g._count?._all ?? 0)
   }
 

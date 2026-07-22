@@ -137,6 +137,27 @@ async function loadResponses({
       }
     }
 
+    case 'lead-gen': {
+      const leads = await db.leadCapture.findMany({
+        where: { displayId, elementId, createdAt: { gte: since } },
+        select: { email: true, name: true, delivered: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      })
+      return {
+        rows: leads.map((l) => ({
+          at: l.createdAt,
+          response: {
+            answer: l.email,
+            who: l.name ?? undefined,
+            // Only flag the exceptions: a "delivered" badge on every row is noise,
+            // an undelivered one is the thing the owner needs to act on.
+            meta: l.delivered ? undefined : 'Not delivered',
+            submittedAt: l.createdAt.toISOString(),
+          },
+        })),
+      }
+    }
+
     case 'mailbox': {
       // ownerId is the denormalised inbox owner; scoping on it as well as the
       // display means a mailbox can never leak across tenants.

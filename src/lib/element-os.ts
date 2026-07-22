@@ -22,6 +22,7 @@ export const DATA_ELEMENT_TYPES = [
   'appointments',
   'mailbox',
   'jersey',
+  'lead-gen',
 ] as const
 
 export type DataElementType = (typeof DATA_ELEMENT_TYPES)[number]
@@ -42,6 +43,7 @@ export const INSTRUMENTED_TYPES = new Set<DataElementType>([
   'shortanswer',
   'rsvp',
   'waitlist',
+  'lead-gen',
 ])
 
 export function isInstrumentedType(type: string): boolean {
@@ -61,6 +63,7 @@ const TYPE_LABELS: Record<DataElementType, string> = {
   appointments: 'appointments',
   mailbox: 'mailbox',
   jersey: 'jersey',
+  'lead-gen': 'lead gen',
 }
 
 // Which config field holds the human-facing title, per type.
@@ -77,6 +80,7 @@ const TITLE_FIELDS: Record<DataElementType, string> = {
   appointments: 'apptTitle',
   mailbox: 'mailboxTitle',
   jersey: 'jerseyName',
+  'lead-gen': 'leadGenHeadline',
 }
 
 export interface CollectedElement {
@@ -218,6 +222,7 @@ export const TYPE_GROUPS = [
   { label: 'Ratings', types: ['rating', 'business-review'] },
   { label: 'RSVPs', types: ['rsvp', 'wedding-rsvp'] },
   { label: 'Wait lists', types: ['waitlist'] },
+  { label: 'Lead Gen', types: ['lead-gen'] },
   { label: 'Appointments', types: ['appointments'] },
   { label: 'Mailboxes', types: ['mailbox'] },
   { label: 'Signatures', types: ['jersey'] },

@@ -11,6 +11,7 @@ vi.mock('@/lib/db', () => ({
     booking: { findMany: vi.fn().mockResolvedValue([]) },
     jerseySignature: { findMany: vi.fn().mockResolvedValue([]) },
     comment: { findMany: vi.fn().mockResolvedValue([]) },
+    leadCapture: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }))
 
@@ -243,5 +244,25 @@ describe('per-type response stores', () => {
     expect(db.comment.findMany).not.toHaveBeenCalled()
     expect(body.responses).toHaveLength(0)
     expect(body.notice).toContain('first comment wall')
+  })
+
+  it('lists lead-gen captures, scoped to the display AND element', async () => {
+    ;(db.display.findUnique as any).mockResolvedValue(
+      pageWith({ id: 'e1', type: 'lead-gen', leadGenHeadline: 'Press kit' })
+    )
+    ;(db.leadCapture.findMany as any).mockResolvedValue([
+      { email: 'a@b.com', name: 'Sarah', delivered: true, createdAt: new Date('2026-07-22T10:00:00Z') },
+      { email: 'c@d.com', name: null, delivered: false, createdAt: new Date('2026-07-22T09:00:00Z') },
+    ])
+    const body = await (await GET(req(), ctx)).json()
+    const where = (db.leadCapture.findMany as any).mock.calls[0][0].where
+    expect(where).toMatchObject({ displayId: 'd1', elementId: 'e1' })
+    expect(body.element).toMatchObject({ type: 'lead-gen', title: 'Press kit' })
+    expect(body.responses).toHaveLength(2)
+    expect(body.responses[0]).toMatchObject({ answer: 'a@b.com', who: 'Sarah' })
+    // Only the undelivered row is badged — a badge on every row would be noise.
+    expect(body.responses[0].meta).toBeUndefined()
+    expect(body.responses[1]).toMatchObject({ answer: 'c@d.com', meta: 'Not delivered' })
+    expect(body.responses[1].who).toBeUndefined()
   })
 })

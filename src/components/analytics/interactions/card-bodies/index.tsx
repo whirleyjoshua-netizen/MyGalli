@@ -22,6 +22,13 @@ export function CardBody({ element }: { element: ElementSummary }) {
       )
     case 'waitlist':
       return <p className="text-sm font-medium">{element.responseCount.toLocaleString('en-US')} joined</p>
+    case 'lead-gen':
+      return (
+        <p className="text-sm font-medium">
+          {element.responseCount.toLocaleString('en-US')} lead
+          {element.responseCount === 1 ? '' : 's'}
+        </p>
+      )
     case 'appointments':
       return <p className="text-sm font-medium">{element.responseCount.toLocaleString('en-US')} booked</p>
     case 'rsvp':
