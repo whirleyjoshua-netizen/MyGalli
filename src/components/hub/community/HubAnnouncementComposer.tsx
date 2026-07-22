@@ -10,7 +10,7 @@ export function HubAnnouncementComposer({
   hubId: string
   onCreated: (a: AnnouncementDTO) => void
   onClose: () => void
-  currentUser: { username: string; name: string | null; avatar: string | null }
+  currentUser?: { username: string; name: string | null; avatar: string | null }
 }) {
   const [body, setBody] = useState('')
   const [busy, setBusy] = useState(false)

@@ -14,11 +14,12 @@ function timeAgo(iso: string): string {
 }
 
 export function HubAnnouncementBanner({
-  hubId, isPrivileged, initial,
+  hubId, isPrivileged, initial, currentUser,
 }: {
   hubId: string
   isPrivileged: boolean
   initial: AnnouncementDTO[]
+  currentUser?: { username: string; name: string | null; avatar: string | null }
 }) {
   const [items, setItems] = useState<AnnouncementDTO[]>(initial)
   const [idx, setIdx] = useState(0)
@@ -53,7 +54,7 @@ export function HubAnnouncementBanner({
       {composing ? (
         <HubAnnouncementComposer
           hubId={hubId}
-          currentUser={{ username: 'you', name: null, avatar: null }}
+          currentUser={currentUser}
           onClose={() => setComposing(false)}
           onCreated={(a) => { setItems((cur) => [a, ...cur]); setIdx(0) }}
         />

@@ -14,7 +14,10 @@ export type AnnouncementDTO = {
   id: string
   body: string
   createdAt: string
-  author: AnnouncementAuthor
+  // Optional because the client's optimistic row (created right after POST,
+  // which returns only an id) genuinely has no author yet. Server-built DTOs
+  // always populate it — see toAnnouncementDTO.
+  author?: AnnouncementAuthor
 }
 
 export function toAnnouncementDTO(row: {

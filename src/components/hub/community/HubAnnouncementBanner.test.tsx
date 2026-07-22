@@ -39,4 +39,26 @@ describe('HubAnnouncementBanner', () => {
     render(<HubAnnouncementBanner hubId="h1" isPrivileged={false} initial={[ann()]} />)
     expect(screen.queryByRole('button', { name: /delete|remove/i })).not.toBeInTheDocument()
   })
+
+  it('deletes an announcement and drops it from the list once confirmed', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<HubAnnouncementBanner hubId="h1" isPrivileged initial={[ann({ id: 'doomed', body: 'Doomed' }), ann({ id: 'keeper', body: 'Keeper' })]} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /delete/i }))
+    await vi.waitFor(() => expect(screen.queryByText('Doomed')).not.toBeInTheDocument())
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/hubs/h1/announcements/doomed', { method: 'DELETE' })
+    // the pager must fall back to a valid index, not strand an empty slot
+    expect(screen.getByText('Keeper')).toBeInTheDocument()
+  })
+
+  it('leaves the announcement alone when the confirm is dismissed', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<HubAnnouncementBanner hubId="h1" isPrivileged initial={[ann({ body: 'Survivor' })]} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+    expect(global.fetch).not.toHaveBeenCalled()
+    expect(screen.getByText('Survivor')).toBeInTheDocument()
+  })
 })

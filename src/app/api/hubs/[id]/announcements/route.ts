@@ -17,7 +17,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const hub = await db.hub.findUnique({ where: { id }, select: { id: true, userId: true, community: true, published: true } })
   if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const me = await getUser(request)
-  const collabIds = await collaboratorIds(id)
+  // Privilege requires a signed-in viewer, so skip the collaborator lookup
+  // entirely for logged-out readers rather than fetching rows we can't use.
+  const collabIds = me ? await collaboratorIds(id) : []
   const isPrivileged = !!me && (me.id === hub.userId || collabIds.includes(me.id))
   if (!canViewCommunityHub({ published: hub.published, isPrivileged })) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
