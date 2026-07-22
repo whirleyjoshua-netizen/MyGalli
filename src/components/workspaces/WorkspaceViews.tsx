@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, X, Upload } from 'lucide-react'
+import { Plus, X, Upload, Filter } from 'lucide-react'
 import { useWorkspaceGrid, PAGE_SIZE } from './useWorkspaceGrid'
 import { GridView } from './views/GridView'
 import { GalleryView } from './views/GalleryView'
 import { KanbanView } from './views/KanbanView'
 import { AddViewModal } from './AddViewModal'
 import { FilterChips } from './FilterChips'
+import { FilterBuilder } from './FilterBuilder'
 import { ImportCsvModal } from './ImportCsvModal'
 
 export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
@@ -17,6 +18,7 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
   const grid = useWorkspaceGrid(workspaceId, params.get('view'))
   const [addingView, setAddingView] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [filtering, setFiltering] = useState(false)
   // Local, always-mounted controlled state for the search input. Typing here
   // never touches `grid.search` (the fetch driver) directly — a debounced
   // effect below pushes it after a pause. This keeps the <input> node itself
@@ -86,12 +88,28 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
           state, not from the in-flight records fetch — they stay mounted
           across loading states so typing never loses focus and the pager
           buttons never vanish mid-click. */}
-      <input
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-        placeholder="Search records…"
-        className="mb-3 w-full max-w-xs rounded-lg border border-border bg-transparent px-3 py-2 text-sm"
-      />
+      <div className="mb-3 flex items-center gap-2">
+        <input
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Search records…"
+          className="w-full max-w-xs rounded-lg border border-border bg-transparent px-3 py-2 text-sm"
+        />
+        {active && (
+          <button
+            onClick={() => setFiltering(true)}
+            title="Filter records"
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:text-galli"
+          >
+            <Filter size={14} /> Filter
+            {active.config?.filter?.conditions?.length > 0 && (
+              <span className="rounded-full bg-galli/10 px-1.5 text-xs font-semibold text-galli">
+                {active.config.filter.conditions.length}
+              </span>
+            )}
+          </button>
+        )}
+      </div>
       <FilterChips
         filter={active?.config?.filter ?? null}
         fields={grid.fields}
@@ -156,6 +174,20 @@ export function WorkspaceViews({ workspaceId }: { workspaceId: string }) {
           fields={grid.fields}
           onClose={() => setImporting(false)}
           onImported={() => grid.reload()}
+        />
+      )}
+
+      {filtering && active && (
+        <FilterBuilder
+          fields={grid.fields}
+          value={active.config?.filter ?? null}
+          onClose={() => setFiltering(false)}
+          onApply={(next) => {
+            // Strip the old filter key first so clearing writes a config with no
+            // `filter` at all, exactly like the chip's X already does.
+            const { filter: _drop, ...rest } = active.config ?? {}
+            grid.updateView(active.id, next ? { ...rest, filter: next } : rest)
+          }}
         />
       )}
     </div>
