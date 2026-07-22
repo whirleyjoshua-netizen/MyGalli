@@ -73,7 +73,7 @@ export default async function PublicHubPage({ params }: Props) {
     // 7-day rolling window. "Since your last visit" would need a lastSeenAt on
     // HubMember (a migration) for marginal extra value — see the design spec.
     const activitySince = new Date(Date.now() - 7 * 864e5)
-    const [memberRows, items, postsCount, mine, eventRows, eventsCount, dropRows, dropsCount, noteRows, newPostsCount, newDropsCount, newMembersCount, pendingDropsCount, announcementRows, fileFolderRows, fileItemRows] = await Promise.all([
+    const [memberRows, items, postsCount, mine, eventRows, eventsCount, dropRows, dropsCount, noteRows, newPostsCount, newDropsCount, newMembersCount, pendingDropsCount, announcementRows, fileFolderRows, fileItemRows, bookmarkRows] = await Promise.all([
       db.hubMember.findMany({ where: { hubId: hub.id }, select: { userId: true, user: { select: { username: true, name: true, avatar: true } } } }),
       db.hubItem.findMany({ where: { hubId: hub.id, visibility: 'public', type: { in: ['file', 'link'] } }, orderBy: { createdAt: 'desc' } }),
       db.hubPost.count({ where: { hubId: hub.id } }),
@@ -103,6 +103,7 @@ export default async function PublicHubPage({ params }: Props) {
       // non-community branch does — unfiltered rows must never reach the client.
       db.hubFolder.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
       db.hubItem.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
+      db.hubNoteBookmark.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
     ])
 
     const fileCookieStore = await cookies()
@@ -129,6 +130,21 @@ export default async function PublicHubPage({ params }: Props) {
     const announcements = announcementRows.map(toAnnouncementDTO)
     // visibleNotes runs server-side: a visitor's HTML never contains a private note.
     const notes = visibleNotes(noteRows, viewer === 'owner').map(toStripNote)
+
+    // Built from the UNFILTERED noteRows: a bookmark whose note was filtered out
+    // must resolve to that note's real visibility and be dropped deliberately,
+    // not fall through an undefined lookup. HubFileViewer filters by itemId
+    // only, so without this a member receives the owner's private highlights —
+    // including each one's title and highlighted text.
+    const noteVisibility = Object.fromEntries(noteRows.map((n) => [n.id, n.visibility]))
+    const fileBookmarks = visibleBookmarks(bookmarkRows, noteVisibility, viewer === 'owner').map((b) => ({
+      id: b.id,
+      noteId: b.noteId,
+      itemId: b.itemId,
+      page: b.page,
+      rects: b.rects as unknown as { x: number; y: number; w: number; h: number }[],
+      title: b.title,
+    }))
     const config = sanitizeHubConfig(hub.config)
     return (
       <>
@@ -157,6 +173,7 @@ export default async function PublicHubPage({ params }: Props) {
         announcements={announcements}
         fileFolders={fileFolders}
         fileItems={fileItems}
+        fileBookmarks={fileBookmarks}
         />
       </>
     )
