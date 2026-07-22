@@ -64,6 +64,7 @@ import { PublicCalendarElement } from '@/components/elements/PublicCalendarEleme
 import { PublicAppointmentsElement } from '@/components/elements/PublicAppointmentsElement'
 import { PublicMailboxElement } from '@/components/elements/PublicMailboxElement'
 import { PublicProductListElement } from '@/components/elements/PublicProductListElement'
+import { PublicLeadGenElement } from '@/components/elements/PublicLeadGenElement'
 import { PublicIndexElement } from '@/components/elements/PublicIndexElement'
 
 export function getGridClass(layout: string): string {
@@ -447,6 +448,9 @@ export function renderElement(element: CanvasElement, displayId?: string) {
 
     case 'product-list':
       return <PublicProductListElement element={element} />
+
+    case 'lead-gen':
+      return <PublicLeadGenElement element={element} displayId={displayId || ''} />
 
     case 'index':
       return <PublicIndexElement element={element} />

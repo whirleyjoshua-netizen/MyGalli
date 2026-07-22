@@ -38,6 +38,7 @@ import {
   Users,
   Mail,
   Gift,
+  Magnet,
   Hash,
   Clock,
   Grid3X3,
@@ -168,6 +169,7 @@ const commands: Command[] = [
   { id: 'appointments', label: 'Appointments', icon: CalendarClock, description: 'Let visitors book a time with you', category: 'Scheduling' },
   { id: 'product-list', label: 'Product List', icon: ShoppingBag, description: 'A shoppable list of products with images & buy links', category: 'Commerce' },
   { id: 'waitlist', label: 'Wait List', icon: Rocket, description: 'Collect signups before a launch, with a live count', category: 'Commerce' },
+  { id: 'lead-gen', label: 'Lead Gen', icon: Magnet, description: 'Collect emails and auto-send a file or message', category: 'Commerce' },
 ]
 
 const CATEGORY_ORDER = ['Content', 'Data & Visuals', 'Media', 'Commerce', 'Scheduling', 'Live', 'Forms', 'Social', 'Apps', 'Kit']
