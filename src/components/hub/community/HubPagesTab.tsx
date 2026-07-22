@@ -1,0 +1,104 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { LayoutGrid, Check, X } from 'lucide-react'
+import type { HubPageDTO } from '@/lib/hub-pages'
+
+export function HubPagesTab({
+  hubId, canManage, currentUserId, initialPages,
+}: {
+  hubId: string
+  canManage: boolean
+  currentUserId: string | null
+  initialPages: HubPageDTO[]
+}) {
+  const [pages, setPages] = useState<HubPageDTO[]>(initialPages)
+
+  const approved = pages.filter((p) => p.status === 'approved')
+  const queue = canManage ? pages.filter((p) => p.status === 'pending') : []
+  const mine = !canManage && currentUserId
+    ? pages.filter((p) => p.status !== 'approved' && p.addedById === currentUserId)
+    : []
+
+  async function review(id: string, status: 'approved' | 'rejected') {
+    const res = await fetch(`/api/hubs/${hubId}/pages/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    if (!res.ok) return
+    setPages((cur) =>
+      status === 'approved'
+        ? cur.map((p) => (p.id === id ? { ...p, status: 'approved' } : p))
+        : cur.filter((p) => p.id !== id),
+    )
+  }
+
+  return (
+    <div className="space-y-8">
+      {queue.length > 0 && (
+        <section>
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+            Needs review ({queue.length})
+          </h3>
+          <ul className="space-y-2">
+            {queue.map((p) => (
+              <li key={p.id} className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+                <Link href={`/${p.ownerUsername}/${p.slug}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:underline">
+                  {p.title}
+                </Link>
+                <span className="shrink-0 text-xs text-muted-foreground">by @{p.ownerUsername}</span>
+                <button onClick={() => review(p.id, 'approved')} aria-label={`Approve ${p.title}`} className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+                  <Check className="mr-1 inline h-3 w-3" />Approve
+                </button>
+                <button onClick={() => review(p.id, 'rejected')} aria-label={`Reject ${p.title}`} className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground">
+                  <X className="mr-1 inline h-3 w-3" />Reject
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {mine.length > 0 && (
+        <ul className="space-y-2">
+          {mine.map((p) => (
+            <li key={p.id} className="flex items-center gap-3 rounded-xl border border-dashed border-border px-4 py-3 text-sm">
+              <span className="min-w-0 flex-1 truncate">{p.title}</span>
+              <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] capitalize text-muted-foreground">{p.status}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {approved.length === 0 && queue.length === 0 && mine.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border py-16 text-center">
+          <LayoutGrid className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">No pages yet.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {approved.map((p) => (
+            <Link
+              key={p.id}
+              href={`/${p.ownerUsername}/${p.slug}`}
+              className="group overflow-hidden rounded-2xl border border-border bg-surface shadow-soft transition hover:shadow-soft-lg"
+            >
+              <div className="aspect-[4/3] w-full bg-gradient-to-br from-galli/20 to-galli-aqua/10">
+                {p.coverImage && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.coverImage} alt="" aria-hidden className="h-full w-full object-cover" />
+                )}
+              </div>
+              <div className="p-3">
+                <p className="truncate text-sm font-semibold">{p.title}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">by @{p.ownerUsername}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
