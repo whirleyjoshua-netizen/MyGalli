@@ -9,6 +9,10 @@ describe('tabFromParam', () => {
     expect(tabFromParam('')).toBe('home')
     expect(tabFromParam('nonsense')).toBe('home')
   })
+
+  it('maps the pages param to the pages tab', () => {
+    expect(tabFromParam('pages')).toBe('pages')
+  })
 })
 
 describe('CommunityTabs', () => {
@@ -23,5 +27,10 @@ describe('CommunityTabs', () => {
     render(<CommunityTabs active="home" onSelect={onSelect} />)
     fireEvent.click(screen.getByRole('tab', { name: /files/i }))
     expect(onSelect).toHaveBeenCalledWith('files')
+  })
+
+  it('renders a Pages tab', () => {
+    render(<CommunityTabs active="home" onSelect={() => {}} />)
+    expect(screen.getByRole('tab', { name: /pages/i })).toBeInTheDocument()
   })
 })
