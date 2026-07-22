@@ -11,9 +11,12 @@ export type PageHeroProps = {
 
 export function PageHero({ icon, title, subtitle, action, controls, tabs }: PageHeroProps) {
   return (
-    <div className="relative overflow-hidden px-6 lg:px-8 py-7">
+    // No overflow-hidden on this root: the action slot hosts popovers (the
+    // notification bell's dropdown) that must escape the hero's bounds. The
+    // banner below clips itself instead.
+    <div className="relative px-6 lg:px-8 py-7">
       {/* Decorative banner — bleeds into the top-right, faded on the left */}
-      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-3/5 md:block" aria-hidden="true">
+      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-3/5 overflow-hidden md:block" aria-hidden="true">
         <Image
           src="/page-banner.png"
           alt=""

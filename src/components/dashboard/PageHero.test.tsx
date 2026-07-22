@@ -32,4 +32,13 @@ describe('PageHero', () => {
     const img = container.querySelector('img[alt=""]')
     expect(img).toBeTruthy()
   })
+
+  it('does not clip the action slot, so popovers can escape the hero', () => {
+    // The banner needs clipping; the hero root must NOT clip, or dropdowns
+    // rendered from the action slot get cut off at the hero's bottom edge.
+    const { container } = render(<PageHero icon={<span />} title="X" action={<button>Bell</button>} />)
+    const root = container.firstElementChild!
+    expect(root.className).not.toContain('overflow-hidden')
+    expect(container.querySelector('[aria-hidden="true"]')!.className).toContain('overflow-hidden')
+  })
 })
