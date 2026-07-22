@@ -55,6 +55,7 @@ model User {
   hubPostResponses HubPostResponse[]
   hubDrops HubDrop[]
   hubAnnouncements HubAnnouncement[] @relation("HubAnnouncementAuthor")
+  hubPagesAdded HubPage[] @relation("HubPageAddedBy")
   hubReports HubReport[] @relation("HubReportReporter")
   hubBans HubBan[] @relation("HubBanUser")
   ownedWorkspaces          Workspace[]       @relation("OwnedWorkspaces")
@@ -243,6 +244,7 @@ model Display {
   kind          String   @default("page")
   collaborators DisplayCollaborator[]
   collectionMembers CollectionMember[] @relation("CollectionMembers")
+  hubPages    HubPage[] @relation("HubPageDisplay")
   memberOf          CollectionMember[] @relation("MemberOfCollections")
 
   // Discovery category (set on publish)
@@ -627,6 +629,7 @@ model Hub {
   hubEvents   HubEvent[]
   drops       HubDrop[]
   announcements HubAnnouncement[]
+  hubPages    HubPage[]
   hubReports  HubReport[]
   hubBans     HubBan[]
   @@unique([userId, slug])
@@ -922,4 +925,22 @@ model AcknowledgmentRound {
   scopeKey String   @id
   round    Int      @default(0)
   resetAt  DateTime @updatedAt
+}
+
+model HubPage {
+  id           String    @id @default(cuid())
+  hubId        String
+  hub          Hub       @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  displayId    String
+  display      Display   @relation("HubPageDisplay", fields: [displayId], references: [id], onDelete: Cascade)
+  addedById    String
+  addedBy      User      @relation("HubPageAddedBy", fields: [addedById], references: [id], onDelete: Cascade)
+  status       String    @default("pending")
+  reviewedAt   DateTime?
+  reviewedById String?
+  order        Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  @@unique([hubId, displayId])
+  @@index([hubId, status])
 }
