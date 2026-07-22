@@ -2,16 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { readFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
+import { mimeForExtension } from '@/lib/upload-validate'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads')
 
-const MIME_TYPES: Record<string, string> = {
-  '.jpg': 'image/jpeg',
+// Serve exactly what upload-validate lets people upload — no second hand-kept
+// list. `.jpeg` is the one alias the writer never produces (it normalises to
+// .jpg) but older stored files may still use, so it is mapped explicitly.
+// `.svg` is deliberately NOT served: it is not an accepted upload type and
+// serving it invites stored-XSS.
+const EXTRA_MIME_TYPES: Record<string, string> = {
   '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.svg': 'image/svg+xml',
+}
+
+function contentTypeFor(ext: string): string | undefined {
+  return mimeForExtension(ext) || EXTRA_MIME_TYPES[ext]
 }
 
 export async function GET(
@@ -40,9 +45,10 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid path' }, { status: 403 })
     }
 
-    // Validate file extension is an allowed image type
+    // Validate the extension is something we accept on upload
     const ext = path.extname(filepath).toLowerCase()
-    if (!MIME_TYPES[ext]) {
+    const contentType = contentTypeFor(ext)
+    if (!contentType) {
       return NextResponse.json({ error: 'Invalid file type' }, { status: 403 })
     }
 
@@ -53,7 +59,6 @@ export async function GET(
 
     // Read file
     const buffer = await readFile(filepath)
-    const contentType = MIME_TYPES[ext] || 'application/octet-stream'
 
     // Return file with security headers
     return new NextResponse(buffer, {

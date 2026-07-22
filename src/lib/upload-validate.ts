@@ -20,6 +20,24 @@ export function extensionForMime(mime: string): string {
   return EXT[mime] || ''
 }
 
+// Reverse of EXT, so the local-dev file server serves exactly what this module
+// lets people upload. These two drifted before: uploads accepted PDF/audio/video
+// while the reader only served images, which 403'd every non-image in dev (a
+// Lead Gen PDF, a mailbox voice message). Derive it rather than hand-maintaining
+// a second list.
+const MIME_BY_EXT: Record<string, string> = Object.entries(EXT).reduce(
+  (acc, [mime, ext]) => {
+    // First mime wins: several map to .m4a, and image/jpeg must win .jpg.
+    if (ext && !acc[ext]) acc[ext] = mime
+    return acc
+  },
+  {} as Record<string, string>
+)
+
+export function mimeForExtension(ext: string): string | undefined {
+  return MIME_BY_EXT[ext.toLowerCase()]
+}
+
 export function validateUpload(type: string, size: number): { ok: true } | { ok: false; error: string } {
   const isImage = IMAGE_TYPES.includes(type)
   const isAudio = AUDIO_TYPES.includes(type)
