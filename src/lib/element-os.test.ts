@@ -213,7 +213,7 @@ const el = (over: Partial<ElementSummary>): ElementSummary => ({
 describe('isInstrumentedType', () => {
   it('is true only for types whose public component calls trackInteraction', () => {
     // Verified by grepping trackInteraction call sites under src/components/elements/.
-    const expectedInstrumented = new Set(['poll', 'mcq', 'rating', 'shortanswer', 'rsvp', 'waitlist'])
+    const expectedInstrumented = new Set(['poll', 'mcq', 'rating', 'shortanswer', 'rsvp', 'waitlist', 'lead-gen'])
     for (const type of DATA_ELEMENT_TYPES) {
       expect(isInstrumentedType(type)).toBe(expectedInstrumented.has(type))
     }
