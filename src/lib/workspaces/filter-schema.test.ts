@@ -37,6 +37,20 @@ describe('buildFilterJsonSchema', () => {
     expect(Array.isArray(value.type)).toBe(false)
     expect(value.type).toBeUndefined()
   })
+
+  it('offers the value-less comparators to the model', () => {
+    const schema = buildFilterJsonSchema([{ key: 'due', label: 'Due', type: 'date' }]) as any
+    const cmps = schema.properties.conditions.items.properties.cmp.enum
+    expect(cmps).toContain('is_empty')
+    expect(cmps).toContain('is_not_empty')
+  })
+
+  it('still requires a value property, which validateFilter strips', () => {
+    // Structured outputs cannot express "required only for some enum values", so
+    // `value` stays required and validateFilter drops it for the value-less pair.
+    const schema = buildFilterJsonSchema([{ key: 'due', label: 'Due', type: 'date' }]) as any
+    expect(schema.properties.conditions.items.required).toContain('value')
+  })
 })
 
 describe('describeSchemaForPrompt', () => {

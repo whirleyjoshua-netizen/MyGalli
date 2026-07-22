@@ -1,6 +1,6 @@
 import { allowedCmps, type FilterField } from './filter'
 
-const ALL_CMPS = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains']
+const ALL_CMPS = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'is_empty', 'is_not_empty']
 
 /**
  * The JSON Schema handed to output_config.format. Flat by necessity —
