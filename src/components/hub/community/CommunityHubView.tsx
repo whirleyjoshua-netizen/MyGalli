@@ -1,7 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { Leaf, Search } from 'lucide-react'
+import { Suspense, useState } from 'react'
+import { Search } from 'lucide-react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { CommunityTabs, tabFromParam, type CommunityTab } from './CommunityTabs'
+import { HubFilesTab } from './HubFilesTab'
+import type { FileFolder, FileItem } from '@/lib/hub-files-view'
 import { CommunityHeader } from './CommunityHeader'
 import { CommunityFeed } from './CommunityFeed'
 import { CommunitySidebar } from './CommunitySidebar'
@@ -19,8 +23,8 @@ import type { AnnouncementDTO } from '@/lib/hub-announcements'
 type CommunityMember = { userId: string; username: string; name: string | null; avatar: string | null }
 type CommunityResource = { id: string; type: string; title: string; url: string | null }
 
-export function CommunityHubView({
-  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, pendingCount = 0, notes, counts, activity, sharePath, config, preview, announcements = [],
+function CommunityHubViewInner({
+  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, pendingCount = 0, notes, counts, activity, sharePath, config, preview, announcements = [], fileFolders = [], fileItems = [],
 }: {
   hub: { id: string; title: string; tagline: string | null; description: string | null; coverImage: string | null; heroVideoUrl: string | null }
   ownerUsername: string
@@ -42,7 +46,23 @@ export function CommunityHubView({
   config: HubConfig
   preview?: boolean
   announcements?: AnnouncementDTO[]
+  /** Visibility-filtered by the server — nothing hidden reaches this component. */
+  fileFolders?: FileFolder[]
+  fileItems?: FileItem[]
 }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const search = useSearchParams()
+  const tab: CommunityTab = tabFromParam(search.get('tab'))
+
+  function selectTab(next: CommunityTab) {
+    const params = new URLSearchParams(search.toString())
+    if (next === 'home') params.delete('tab')
+    else params.set('tab', next)
+    const qs = params.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  }
+
   const [joined, setJoined] = useState(initialJoined)
   const [count, setCount] = useState(initialCount)
   const [pollNonce, setPollNonce] = useState(0)
@@ -76,6 +96,7 @@ export function CommunityHubView({
           onOpenPoll={() => setPollNonce((n) => n + 1)}
           onOpenEvents={() => setManageEvents(true)}
           onOpenResources={() => setManageResources(true)}
+          onOpenFiles={() => selectTab('files')}
         />
         <div className="rounded-3xl border border-border bg-surface p-6 shadow-soft">
           <CommunityHeader
@@ -94,14 +115,24 @@ export function CommunityHubView({
             announcements={announcements}
           />
           <div className="mt-5 flex items-center gap-3 border-t border-border pt-4">
-            <span className="inline-flex items-center gap-1.5 border-b-2 border-primary pb-1 text-sm font-medium"><Leaf className="h-4 w-4 text-primary" /> Home</span>
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input placeholder="Search this hub…" className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm" disabled />
-            </div>
+            <CommunityTabs active={tab} onSelect={selectTab} />
+            {/* The search box belongs to Home; wiring it is out of scope. */}
+            {tab === 'home' && (
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input placeholder="Search this hub…" className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm" disabled />
+              </div>
+            )}
           </div>
         </div>
 
+        {tab === 'files' && (
+          <div className="mt-6">
+            <HubFilesTab hubId={hub.id} canManage={!!isOwner} initialFolders={fileFolders} initialItems={fileItems} />
+          </div>
+        )}
+
+        {tab === 'home' && (
         <div className={`mt-6 grid grid-cols-1 gap-6 ${config.kollab.enabled ? 'lg:grid-cols-[260px_1fr_320px]' : 'lg:grid-cols-[1fr_320px]'}`}>
           {config.kollab.enabled && (
             <div id="hub-kollab" className="order-2 lg:order-none">
@@ -127,6 +158,7 @@ export function CommunityHubView({
             <CommunitySidebar config={config} heroVideoUrl={hub.heroVideoUrl} members={members} resources={resources} events={events} />
           </div>
         </div>
+        )}
 
         <div className="mt-10 rounded-2xl border border-border bg-galli/5 py-6 text-center text-sm text-muted-foreground">
           Good ideas grow in great communities.
@@ -135,5 +167,15 @@ export function CommunityHubView({
       {!preview && manageEvents && <HubEventsModal hubId={hub.id} onClose={() => setManageEvents(false)} />}
       {!preview && manageResources && <HubResourcesModal hubId={hub.id} onClose={() => setManageResources(false)} />}
     </div>
+  )
+}
+
+// useSearchParams needs a Suspense boundary — this component is rendered from a
+// server component, and without one Next fails the build with a CSR-bailout error.
+export function CommunityHubView(props: React.ComponentProps<typeof CommunityHubViewInner>) {
+  return (
+    <Suspense fallback={null}>
+      <CommunityHubViewInner {...props} />
+    </Suspense>
   )
 }

@@ -73,7 +73,7 @@ export default async function PublicHubPage({ params }: Props) {
     // 7-day rolling window. "Since your last visit" would need a lastSeenAt on
     // HubMember (a migration) for marginal extra value — see the design spec.
     const activitySince = new Date(Date.now() - 7 * 864e5)
-    const [memberRows, items, postsCount, mine, eventRows, eventsCount, dropRows, dropsCount, noteRows, newPostsCount, newDropsCount, newMembersCount, pendingDropsCount, announcementRows] = await Promise.all([
+    const [memberRows, items, postsCount, mine, eventRows, eventsCount, dropRows, dropsCount, noteRows, newPostsCount, newDropsCount, newMembersCount, pendingDropsCount, announcementRows, fileFolderRows, fileItemRows] = await Promise.all([
       db.hubMember.findMany({ where: { hubId: hub.id }, select: { userId: true, user: { select: { username: true, name: true, avatar: true } } } }),
       db.hubItem.findMany({ where: { hubId: hub.id, visibility: 'public', type: { in: ['file', 'link'] } }, orderBy: { createdAt: 'desc' } }),
       db.hubPost.count({ where: { hubId: hub.id } }),
@@ -99,7 +99,29 @@ export default async function PublicHubPage({ params }: Props) {
         take: 10,
         include: { author: { select: { username: true, name: true, avatar: true } } },
       }),
+      // Files tab: the full data-room, filtered below exactly as the
+      // non-community branch does — unfiltered rows must never reach the client.
+      db.hubFolder.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
+      db.hubItem.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
     ])
+
+    const fileCookieStore = await cookies()
+    const fileUnlockedIds = new Set(readUnlockToken(fileCookieStore.get(`hub_unlock_${hub.id}`)?.value, hub.id))
+    const fileStatus = resolveHubVisibility({
+      folders: fileFolderRows.map((f) => ({ id: f.id, parentId: f.parentId, visibility: f.visibility, hasPasscode: !!f.passcodeHash })),
+      items: fileItemRows.map((i) => ({ id: i.id, folderId: i.folderId, visibility: i.visibility, hasPasscode: !!i.passcodeHash })),
+      viewer,
+      unlockedIds: fileUnlockedIds,
+    })
+    const fileFolders = fileFolderRows
+      .filter((f) => fileStatus.get(f.id) !== 'hidden')
+      .map((f) => ({ id: f.id, parentId: f.parentId, name: f.name, order: f.order, locked: fileStatus.get(f.id) === 'locked' }))
+    const fileItems = fileItemRows
+      .filter((i) => fileStatus.get(i.id) !== 'hidden')
+      .map((i) => {
+        const locked = fileStatus.get(i.id) === 'locked'
+        return { id: i.id, folderId: i.folderId, type: i.type, title: i.title, url: locked ? null : i.url, order: i.order, locked }
+      })
     const members = memberRows.map((m) => ({ userId: m.userId, username: m.user.username, name: m.user.name, avatar: m.user.avatar }))
     const resources = items.map((i) => ({ id: i.id, type: i.type, title: i.title, url: i.url }))
     const events = eventRows.map(toEventDTO)
@@ -133,6 +155,8 @@ export default async function PublicHubPage({ params }: Props) {
         sharePath={`/${user.username}/hub/${slug}`}
         config={config}
         announcements={announcements}
+        fileFolders={fileFolders}
+        fileItems={fileItems}
         />
       </>
     )

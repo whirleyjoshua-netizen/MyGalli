@@ -7,7 +7,7 @@ import type { StripNote } from '@/lib/hub-notes'
 import { activityRows, isQuiet, type ActivityCounts } from '@/lib/hub-activity'
 
 export function CommunityUtilityStrip({
-  hubId, config, notes, isOwner, isPrivileged, preview, activity, joined, memberCount, tagline, nextEvent, onToggleJoin, onOpenPoll, onOpenEvents, onOpenResources,
+  hubId, config, notes, isOwner, isPrivileged, preview, activity, joined, memberCount, tagline, nextEvent, onToggleJoin, onOpenPoll, onOpenEvents, onOpenResources, onOpenFiles,
 }: {
   hubId: string
   config: HubConfig
@@ -24,6 +24,8 @@ export function CommunityUtilityStrip({
   onOpenPoll: () => void
   onOpenEvents: () => void
   onOpenResources: () => void
+  /** Selects the Files tab. Falls back to the legacy modal if absent. */
+  onOpenFiles?: () => void
 }) {
   const visible = config.utility.filter((w) => {
     if (!w.enabled) return false
@@ -35,7 +37,7 @@ export function CommunityUtilityStrip({
   const card = (key: HubUtilityKey) => {
     if (key === 'notes') return <NotesCard key="notes" hubId={hubId} notes={notes} isOwner={isOwner} preview={preview} />
     if (key === 'activity') return <ActivityCard key="activity" activity={activity} joined={joined} isPrivileged={isPrivileged} memberCount={memberCount} tagline={tagline} nextEvent={nextEvent} preview={preview} onToggleJoin={onToggleJoin} />
-    return <ToolsCard key="tools" isOwner={isOwner} onOpenPoll={onOpenPoll} onOpenEvents={onOpenEvents} onOpenResources={onOpenResources} />
+    return <ToolsCard key="tools" isOwner={isOwner} onOpenPoll={onOpenPoll} onOpenEvents={onOpenEvents} onOpenResources={onOpenResources} onOpenFiles={onOpenFiles} />
   }
 
   return (
@@ -206,15 +208,14 @@ function NoteModal({ title, onClose, children }: { title: string; onClose: () =>
   )
 }
 
-function ToolsCard({ isOwner, onOpenPoll, onOpenEvents, onOpenResources }: { isOwner: boolean; onOpenPoll: () => void; onOpenEvents: () => void; onOpenResources: () => void }) {
+function ToolsCard({ isOwner, onOpenPoll, onOpenEvents, onOpenResources, onOpenFiles }: { isOwner: boolean; onOpenPoll: () => void; onOpenEvents: () => void; onOpenResources: () => void; onOpenFiles?: () => void }) {
   const tools = [
     { label: 'Polls', icon: <BarChart3 className="h-4 w-4" />, onClick: onOpenPoll },
     { label: 'Events', icon: <CalendarDays className="h-4 w-4" />, onClick: onOpenEvents },
+    // Files is now a tab everyone can browse; Links keeps its owner-only modal.
+    { label: 'Files', icon: <FolderOpen className="h-4 w-4" />, onClick: onOpenFiles ?? onOpenResources },
     ...(isOwner
-      ? [
-          { label: 'Files', icon: <FolderOpen className="h-4 w-4" />, onClick: onOpenResources },
-          { label: 'Links', icon: <Link2 className="h-4 w-4" />, onClick: onOpenResources },
-        ]
+      ? [{ label: 'Links', icon: <Link2 className="h-4 w-4" />, onClick: onOpenResources }]
       : []),
   ]
   return (
