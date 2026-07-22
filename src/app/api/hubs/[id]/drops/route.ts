@@ -94,6 +94,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       mimeType: v.mimeType,
       width: v.width,
       height: v.height,
+      durationSec: v.durationSec,
       status,
       // Written only so a rollback to the previous deploy still filters correctly.
       hidden: status !== 'approved',

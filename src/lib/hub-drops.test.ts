@@ -154,6 +154,27 @@ describe('canReviewDrop', () => {
   })
 })
 
+describe('validateDropInput durationSec', () => {
+  const OWN = 'https://abc123.public.blob.vercel-storage.com/hub-drops/h1/v.mp4'
+
+  it('keeps a positive duration', () => {
+    const r = validateDropInput('h1', { type: 'video', url: OWN, durationSec: 4.25 })
+    expect(r.ok && r.value.durationSec).toBe(4.25)
+  })
+
+  it('nulls a zero, negative, or non-numeric duration', () => {
+    for (const bad of [0, -3, 'abc', null, undefined, NaN, Infinity]) {
+      const r = validateDropInput('h1', { type: 'video', url: OWN, durationSec: bad })
+      expect(r.ok && r.value.durationSec).toBe(null)
+    }
+  })
+
+  it('caps an absurd duration at 3600', () => {
+    const r = validateDropInput('h1', { type: 'video', url: OWN, durationSec: 99999 })
+    expect(r.ok && r.value.durationSec).toBe(3600)
+  })
+})
+
 describe('toDropDTO status', () => {
   it('carries the status through', () => {
     expect(toDropDTO(row({ status: 'pending' })).status).toBe('pending')

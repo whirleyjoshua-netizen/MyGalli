@@ -7,32 +7,29 @@ import { consentTextFor } from '@/lib/hub-consent'
 import { KollabTile } from './KollabTile'
 import { KollabViewer } from './KollabViewer'
 
-async function captureVideoPoster(file: File): Promise<Blob | null> {
+function captureVideoPoster(file: File): Promise<{ blob: Blob | null; duration: number | null }> {
   return new Promise((resolve) => {
-    try {
-      let settled = false
-      const finish = (result: Blob | null) => {
-        if (settled) return
-        settled = true
-        clearTimeout(timeout)
-        resolve(result)
-      }
-      const timeout = setTimeout(() => finish(null), 3000)
-      const video = document.createElement('video')
-      video.preload = 'metadata'
-      video.muted = true
-      video.src = URL.createObjectURL(file)
-      video.onloadeddata = () => { video.currentTime = Math.min(0.1, video.duration || 0.1) }
-      video.onseeked = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = video.videoWidth; canvas.height = video.videoHeight
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return finish(null)
-        ctx.drawImage(video, 0, 0)
-        canvas.toBlob((b) => finish(b), 'image/jpeg', 0.8)
-      }
-      video.onerror = () => finish(null)
-    } catch { resolve(null) }
+    let done = false
+    const finish = (blob: Blob | null, duration: number | null) => {
+      if (done) return
+      done = true
+      resolve({ blob, duration })
+    }
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    video.muted = true
+    video.src = URL.createObjectURL(file)
+    const dur = () => (Number.isFinite(video.duration) && video.duration > 0 ? video.duration : null)
+    video.onloadeddata = () => { video.currentTime = Math.min(0.1, video.duration || 0.1) }
+    video.onseeked = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return finish(null, dur())
+      ctx.drawImage(video, 0, 0)
+      canvas.toBlob((b) => finish(b, dur()), 'image/jpeg', 0.8)
+    }
+    video.onerror = () => finish(null, null)
   })
 }
 
@@ -79,8 +76,10 @@ export function CommunityKollab({
         const prefix = dropPathPrefix(hubId)
         const blob = await upload(`${prefix}${file.name}`, file, { access: 'public', handleUploadUrl: uploadUrl })
         let thumbnailUrl: string | null = null
+        let durationSec: number | null = null
         if (isVideo) {
-          const poster = await captureVideoPoster(file)
+          const { blob: poster, duration } = await captureVideoPoster(file)
+          durationSec = duration
           if (poster) {
             const pb = await upload(`${prefix}${file.name}.poster.jpg`, poster, { access: 'public', handleUploadUrl: uploadUrl })
             thumbnailUrl = pb.url
@@ -88,7 +87,7 @@ export function CommunityKollab({
         }
         const res = await fetch(`/api/hubs/${hubId}/drops`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: isVideo ? 'video' : 'image', url: blob.url, thumbnailUrl, mimeType: file.type }),
+          body: JSON.stringify({ type: isVideo ? 'video' : 'image', url: blob.url, thumbnailUrl, mimeType: file.type, durationSec }),
         })
         if (!res.ok) { setError((await res.json()).error || 'Upload failed'); continue }
         // The server decides the status — never assume from the client's own
