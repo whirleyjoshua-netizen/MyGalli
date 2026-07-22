@@ -16,6 +16,20 @@ export function HubPagesTab({
   initialPages: HubPageDTO[]
 }) {
   const [pages, setPages] = useState<HubPageDTO[]>(initialPages)
+  // `useState`'s argument only seeds the initial render — it is ignored on
+  // every subsequent one. When the server component re-runs (e.g. after
+  // `router.refresh()` following an attach) and hands us a new
+  // `initialPages` array, sync local state to it here. This is React's
+  // documented "adjusting state during render" pattern: comparing against a
+  // previous-props snapshot kept in state lets us reset synchronously,
+  // without an effect, and without clobbering the optimistic updates that
+  // `review()` makes between refreshes (those don't change the
+  // `initialPages` reference, so this check stays false for them).
+  const [prevInitialPages, setPrevInitialPages] = useState<HubPageDTO[]>(initialPages)
+  if (initialPages !== prevInitialPages) {
+    setPrevInitialPages(initialPages)
+    setPages(initialPages)
+  }
   const router = useRouter()
   const [attaching, setAttaching] = useState(false)
 

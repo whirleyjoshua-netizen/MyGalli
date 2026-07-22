@@ -60,3 +60,22 @@ it('shows an empty state when nothing is attached', () => {
   render(<HubPagesTab hubId="h1" canManage={false} currentUserId="u1" initialPages={[]} />)
   expect(screen.getByText(/no pages yet/i)).toBeInTheDocument()
 })
+
+it('reflects a newly attached page when initialPages changes after a router.refresh()', () => {
+  const { rerender } = render(
+    <HubPagesTab hubId="h1" canManage={false} currentUserId="u1" initialPages={[]} />,
+  )
+  expect(screen.getByText(/no pages yet/i)).toBeInTheDocument()
+
+  const attached: HubPageDTO = {
+    id: 'hp5', displayId: 'd5', title: 'Freshly Attached Page', slug: 'freshly-attached-page',
+    coverImage: null, ownerUsername: 'jo', status: 'approved', addedById: 'u1',
+    createdAt: '2026-07-22T00:00:00.000Z',
+  }
+  rerender(
+    <HubPagesTab hubId="h1" canManage={false} currentUserId="u1" initialPages={[attached]} />,
+  )
+
+  expect(screen.getByRole('link', { name: /freshly attached page/i })).toBeInTheDocument()
+  expect(screen.queryByText(/no pages yet/i)).not.toBeInTheDocument()
+})
