@@ -75,7 +75,9 @@ export function NotificationBell() {
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full mt-2 z-50 w-80 max-w-[90vw] bg-surface border border-border rounded-xl shadow-soft-lg overflow-hidden">
             <div className="px-4 py-2.5 border-b border-border text-sm font-semibold">Notifications</div>
-            <div className="max-h-96 overflow-y-auto">
+            {/* Cap against the viewport, not just a fixed height, so the list
+                scrolls instead of running off the bottom of short windows. */}
+            <div className="max-h-[min(24rem,calc(100vh-12rem))] overflow-y-auto">
               {loading ? (
                 <p className="px-4 py-6 text-center text-sm text-muted-foreground">Loading…</p>
               ) : items.length === 0 ? (
