@@ -19,12 +19,14 @@ import type { DropDTO } from '@/lib/hub-drops'
 import type { StripNote } from '@/lib/hub-notes'
 import type { ActivityCounts } from '@/lib/hub-activity'
 import type { AnnouncementDTO } from '@/lib/hub-announcements'
+import { HubPagesTab } from './HubPagesTab'
+import type { HubPageDTO } from '@/lib/hub-pages'
 
 type CommunityMember = { userId: string; username: string; name: string | null; avatar: string | null }
 type CommunityResource = { id: string; type: string; title: string; url: string | null }
 
 function CommunityHubViewInner({
-  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, pendingCount = 0, notes, counts, activity, sharePath, config, preview, announcements = [], fileFolders = [], fileItems = [],
+  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, pendingCount = 0, notes, counts, activity, sharePath, config, preview, announcements = [], fileFolders = [], fileItems = [], hubPages = [],
 }: {
   hub: { id: string; title: string; tagline: string | null; description: string | null; coverImage: string | null; heroVideoUrl: string | null }
   ownerUsername: string
@@ -49,6 +51,7 @@ function CommunityHubViewInner({
   /** Visibility-filtered by the server — nothing hidden reaches this component. */
   fileFolders?: FileFolder[]
   fileItems?: FileItem[]
+  hubPages?: HubPageDTO[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -129,6 +132,17 @@ function CommunityHubViewInner({
         {tab === 'files' && (
           <div className="mt-6">
             <HubFilesTab hubId={hub.id} canManage={!!isOwner} initialFolders={fileFolders} initialItems={fileItems} />
+          </div>
+        )}
+
+        {tab === 'pages' && (
+          <div className="mt-6">
+            <HubPagesTab
+              hubId={hub.id}
+              canManage={isPrivileged}
+              currentUserId={currentUserId ?? null}
+              initialPages={hubPages}
+            />
           </div>
         )}
 
