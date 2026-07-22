@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { LayoutGrid, Check, X } from 'lucide-react'
 import type { HubPageDTO } from '@/lib/hub-pages'
+import { HubPageAttachModal } from './HubPageAttachModal'
 
 export function HubPagesTab({
   hubId, canManage, currentUserId, initialPages,
@@ -14,6 +16,8 @@ export function HubPagesTab({
   initialPages: HubPageDTO[]
 }) {
   const [pages, setPages] = useState<HubPageDTO[]>(initialPages)
+  const router = useRouter()
+  const [attaching, setAttaching] = useState(false)
 
   const approved = pages.filter((p) => p.status === 'approved')
   const queue = canManage ? pages.filter((p) => p.status === 'pending') : []
@@ -42,6 +46,24 @@ export function HubPagesTab({
 
   return (
     <div className="space-y-8">
+      {currentUserId && (
+        <div className="flex justify-end">
+          <button
+            onClick={() => setAttaching(true)}
+            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-soft"
+          >
+            Attach a Page
+          </button>
+        </div>
+      )}
+      {attaching && (
+        <HubPageAttachModal
+          hubId={hubId}
+          attachedDisplayIds={pages.map((p) => p.displayId)}
+          onClose={() => setAttaching(false)}
+          onAttached={() => router.refresh()}
+        />
+      )}
       {queue.length > 0 && (
         <section>
           <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">

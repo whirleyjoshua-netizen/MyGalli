@@ -3,6 +3,8 @@ import { render, screen, within } from '@testing-library/react'
 import { HubPagesTab } from './HubPagesTab'
 import type { HubPageDTO } from '@/lib/hub-pages'
 
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
+
 const approved: HubPageDTO = {
   id: 'hp1', displayId: 'd1', title: 'Approved Page', slug: 'approved-page',
   coverImage: null, ownerUsername: 'jo', status: 'approved', addedById: 'u1',

@@ -1,0 +1,37 @@
+import { it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import { HubPageAttachModal } from './HubPageAttachModal'
+
+const displays = [
+  { id: 'd1', title: 'Published One', slug: 'published-one', published: true, kind: 'page' },
+  { id: 'd2', title: 'A Draft', slug: 'a-draft', published: false, kind: 'page' },
+  { id: 'd3', title: 'A Board', slug: 'a-board', published: true, kind: 'collection' },
+  { id: 'd4', title: 'Already There', slug: 'already-there', published: true, kind: 'page' },
+]
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => displays })) as any)
+})
+
+it('lists published Pages as selectable', async () => {
+  render(<HubPageAttachModal hubId="h1" attachedDisplayIds={['d4']} onClose={() => {}} onAttached={() => {}} />)
+  await waitFor(() => expect(screen.getByRole('button', { name: /published one/i })).toBeEnabled())
+})
+
+it('disables drafts with a publish-first hint', async () => {
+  render(<HubPageAttachModal hubId="h1" attachedDisplayIds={[]} onClose={() => {}} onAttached={() => {}} />)
+  await waitFor(() => expect(screen.getByRole('button', { name: /a draft/i })).toBeDisabled())
+  expect(screen.getByText(/publish first/i)).toBeInTheDocument()
+})
+
+it('omits Boards entirely', async () => {
+  render(<HubPageAttachModal hubId="h1" attachedDisplayIds={[]} onClose={() => {}} onAttached={() => {}} />)
+  await waitFor(() => expect(screen.getByRole('button', { name: /published one/i })).toBeInTheDocument())
+  expect(screen.queryByText(/a board/i)).not.toBeInTheDocument()
+})
+
+it('disables an already-attached Page', async () => {
+  render(<HubPageAttachModal hubId="h1" attachedDisplayIds={['d4']} onClose={() => {}} onAttached={() => {}} />)
+  await waitFor(() => expect(screen.getByRole('button', { name: /already there/i })).toBeDisabled())
+  expect(screen.getByText(/already added/i)).toBeInTheDocument()
+})
