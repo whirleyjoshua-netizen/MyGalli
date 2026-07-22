@@ -54,6 +54,7 @@ model User {
   hubPostComments HubPostComment[] @relation("HubPostCommentAuthor")
   hubPostResponses HubPostResponse[]
   hubDrops HubDrop[]
+  hubAnnouncements HubAnnouncement[] @relation("HubAnnouncementAuthor")
   hubReports HubReport[] @relation("HubReportReporter")
   hubBans HubBan[] @relation("HubBanUser")
   ownedWorkspaces          Workspace[]       @relation("OwnedWorkspaces")
@@ -602,6 +603,7 @@ model Hub {
   posts       HubPost[]
   hubEvents   HubEvent[]
   drops       HubDrop[]
+  announcements HubAnnouncement[]
   hubReports  HubReport[]
   hubBans     HubBan[]
   @@unique([userId, slug])
@@ -695,6 +697,17 @@ model HubDrop {
   createdAt    DateTime @default(now())
   @@index([hubId, createdAt])
   @@index([hubId, status, createdAt])
+}
+
+model HubAnnouncement {
+  id        String   @id @default(cuid())
+  hubId     String
+  hub       Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("HubAnnouncementAuthor", fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+  @@index([hubId, createdAt])
 }
 
 model HubReport {
