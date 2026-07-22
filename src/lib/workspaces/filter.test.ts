@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateFilter, validateSort, FilterError, filterToPrismaWhere, describeFilter, type FilterField } from './filter'
+import { validateFilter, validateSort, FilterError, describeFilter, allowedCmps, type FilterField } from './filter'
 
 const fields: FilterField[] = [
   { key: 'name', label: 'Name', type: 'text' },
@@ -95,47 +95,53 @@ describe('validateFilter', () => {
   })
 })
 
-describe('filterToPrismaWhere', () => {
-  it('maps an and-filter to Prisma JSONB path conditions', () => {
-    const spec = validateFilter(
-      { op: 'and', conditions: [
-        { field: 'sport', cmp: 'eq', value: 'Soccer' },
-        { field: 'fee', cmp: 'gt', value: 1200 },
-      ] },
-      fields
-    )
-    expect(filterToPrismaWhere(spec)).toEqual({
-      AND: [
-        { data: { path: ['sport'], equals: 'Soccer' } },
-        { data: { path: ['fee'], gt: 1200 } },
-      ],
+describe('is_empty / is_not_empty', () => {
+  it('offers both comparators for every field type', () => {
+    for (const type of ['text', 'number', 'currency', 'date', 'choice', 'checkbox', 'url', 'email']) {
+      expect(allowedCmps(type)).toContain('is_empty')
+      expect(allowedCmps(type)).toContain('is_not_empty')
+    }
+  })
+
+  it('accepts a condition with no value at all', () => {
+    const spec = { op: 'and', conditions: [{ field: 'startDate', cmp: 'is_empty' }] }
+    expect(validateFilter(spec, fields)).toEqual({
+      op: 'and',
+      conditions: [{ field: 'startDate', cmp: 'is_empty' }],
     })
   })
 
-  it('maps an or-filter to OR', () => {
-    const spec = validateFilter(
-      { op: 'or', conditions: [{ field: 'sport', cmp: 'eq', value: 'Tennis' }] },
-      fields
-    )
-    expect(filterToPrismaWhere(spec)).toEqual({
-      OR: [{ data: { path: ['sport'], equals: 'Tennis' } }],
-    })
+  it('strips a value the caller supplied anyway', () => {
+    // The AI path's structured-output schema forces a `value` property, so the
+    // model always sends one. It must never reach the SQL builder.
+    const spec = { op: 'and', conditions: [{ field: 'startDate', cmp: 'is_not_empty', value: 'ignored' }] }
+    const out = validateFilter(spec, fields)
+    expect(out.conditions[0]).toEqual({ field: 'startDate', cmp: 'is_not_empty' })
+    expect(out.conditions[0]).not.toHaveProperty('value')
   })
 
-  it('maps neq to a negated equals and contains to string_contains', () => {
+  it('does not run type coercion on a value-less condition', () => {
+    // 'not-a-date' would throw for a date field under the normal value path.
+    const spec = { op: 'and', conditions: [{ field: 'startDate', cmp: 'is_empty', value: 'not-a-date' }] }
+    expect(() => validateFilter(spec, fields)).not.toThrow()
+  })
+
+  it('still rejects an unknown field for a value-less comparator', () => {
+    const spec = { op: 'and', conditions: [{ field: 'nope', cmp: 'is_empty' }] }
+    expect(() => validateFilter(spec, fields)).toThrow(FilterError)
+  })
+
+  it('describes them without a trailing value', () => {
+    const spec = validateFilter({ op: 'and', conditions: [{ field: 'startDate', cmp: 'is_empty' }] }, fields)
+    expect(describeFilter(spec, fields)).toBe('Start Date is empty')
+  })
+
+  it('describes them alongside a valued condition', () => {
     const spec = validateFilter(
-      { op: 'and', conditions: [
-        { field: 'sport', cmp: 'neq', value: 'Soccer' },
-        { field: 'name', cmp: 'contains', value: 'jord' },
-      ] },
+      { op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }, { field: 'startDate', cmp: 'is_empty' }] },
       fields
     )
-    expect(filterToPrismaWhere(spec)).toEqual({
-      AND: [
-        { NOT: { data: { path: ['sport'], equals: 'Soccer' } } },
-        { data: { path: ['name'], string_contains: 'jord' } },
-      ],
-    })
+    expect(describeFilter(spec, fields)).toBe('Sport is Soccer and Start Date is empty')
   })
 })
 

@@ -1,7 +1,7 @@
 import { formatFieldValue } from './format-value'
 
-export type Cmp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains'
-export type Condition = { field: string; cmp: Cmp; value: string | number | boolean }
+export type Cmp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'is_empty' | 'is_not_empty'
+export type Condition = { field: string; cmp: Cmp; value?: string | number | boolean }
 export type FilterSpec = { op: 'and' | 'or'; conditions: Condition[] }
 export type FilterField = { key: string; label: string; type: string; config?: any }
 
@@ -11,13 +11,28 @@ const TEXTUAL = ['text', 'url', 'email']
 const NUMERIC = ['number', 'currency', 'percent', 'rating']
 const ORDERED = [...NUMERIC, 'date']
 
-/** Comparators each field type is allowed to use. */
-export function allowedCmps(type: string): Cmp[] {
+/** Comparators that take no operand — emptiness is a property of the cell alone. */
+const VALUELESS: Cmp[] = ['is_empty', 'is_not_empty']
+
+export function isValueless(cmp: Cmp): boolean {
+  return VALUELESS.includes(cmp)
+}
+
+function baseCmps(type: string): Cmp[] {
   if (TEXTUAL.includes(type)) return ['eq', 'neq', 'contains']
   if (ORDERED.includes(type)) return ['eq', 'neq', 'gt', 'gte', 'lt', 'lte']
   if (type === 'choice') return ['eq', 'neq']
   if (type === 'checkbox') return ['eq', 'neq']
   return []
+}
+
+/**
+ * Comparators each field type is allowed to use. Emptiness is meaningful for
+ * every type — including ones with no ordering or equality story — so the two
+ * value-less comparators are appended unconditionally.
+ */
+export function allowedCmps(type: string): Cmp[] {
+  return [...baseCmps(type), ...VALUELESS]
 }
 
 /**
@@ -45,6 +60,13 @@ export function validateFilter(spec: unknown, fields: FilterField[]): FilterSpec
       throw new FilterError(`"${field.label}" cannot use "${c.cmp}"`)
     }
 
+    if (isValueless(c.cmp)) {
+      // Deliberately drops any value the caller sent. The structured-output
+      // schema forces the model to emit a `value` property, and a stray value
+      // must never reach conditionSql — which binds no parameter for these.
+      return { field: field.key, cmp: c.cmp }
+    }
+
     return { field: field.key, cmp: c.cmp, value: coerce(field, c.value) }
   })
 
@@ -60,7 +82,7 @@ function coerce(field: FilterField, value: unknown): string | number | boolean {
   }
   if (field.type === 'date') {
     // Dates are stored as yyyy-MM-dd strings and compared lexicographically
-    // via a raw JSONB string comparison (see filterToPrismaWhere) — that
+    // via a raw JSONB string comparison (see records-query.ts) — that
     // ordering is only correct for ISO form. Accepting anything Date.parse
     // swallows (e.g. "07/01/2026") and passing it through verbatim would let
     // an ambiguous format compare lexicographically against every ISO row,
@@ -96,36 +118,6 @@ function coerce(field: FilterField, value: unknown): string | number | boolean {
   return String(value)
 }
 
-/**
- * Translates a VALIDATED spec into a Prisma where-fragment over the JSONB
- * `data` column. Only ever call this with the output of validateFilter — it
- * trusts field keys and value types to have been checked already.
- */
-export function filterToPrismaWhere(spec: FilterSpec): Record<string, any> {
-  const clauses = spec.conditions.map((c) => conditionToPrisma(c))
-  return spec.op === 'or' ? { OR: clauses } : { AND: clauses }
-}
-
-function conditionToPrisma(c: Condition): Record<string, any> {
-  const path = [c.field]
-  switch (c.cmp) {
-    case 'eq':
-      return { data: { path, equals: c.value } }
-    case 'neq':
-      return { NOT: { data: { path, equals: c.value } } }
-    case 'contains':
-      return { data: { path, string_contains: c.value } }
-    case 'gt':
-      return { data: { path, gt: c.value } }
-    case 'gte':
-      return { data: { path, gte: c.value } }
-    case 'lt':
-      return { data: { path, lt: c.value } }
-    case 'lte':
-      return { data: { path, lte: c.value } }
-  }
-}
-
 const CMP_WORDS: Record<Cmp, string> = {
   eq: 'is',
   neq: 'is not',
@@ -134,6 +126,8 @@ const CMP_WORDS: Record<Cmp, string> = {
   gte: '≥',
   lt: '<',
   lte: '≤',
+  is_empty: 'is empty',
+  is_not_empty: 'is not empty',
 }
 
 /** Plain-language rendering of a filter, for the confirmation chips. */
@@ -141,6 +135,7 @@ export function describeFilter(spec: FilterSpec, fields: FilterField[]): string 
   const parts = spec.conditions.map((c) => {
     const field = fields.find((f) => f.key === c.field)
     const label = field?.label ?? c.field
+    if (isValueless(c.cmp)) return `${label} ${CMP_WORDS[c.cmp]}`
     const shown = field ? formatFieldValue(field.type, c.value, field.config) : String(c.value)
     return `${label} ${CMP_WORDS[c.cmp]} ${shown || String(c.value)}`
   })
