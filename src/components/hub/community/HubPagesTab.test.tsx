@@ -37,6 +37,23 @@ it('badges the attacher own pending row', () => {
   }
 })
 
+it('shows a moderator their own rejected row without duplicating their own pending row from the queue', () => {
+  const modPending: HubPageDTO = { ...pending, id: 'hp3', displayId: 'd3', title: 'Mod Pending Page', addedById: 'mod' }
+  const modRejected: HubPageDTO = { ...pending, id: 'hp4', displayId: 'd4', title: 'Mod Rejected Page', status: 'rejected', addedById: 'mod' }
+  render(<HubPagesTab hubId="h1" canManage currentUserId="mod" initialPages={[approved, pending, modPending, modRejected]} />)
+
+  // The rejected row belonging to the moderator must not silently vanish.
+  expect(screen.getByText('Mod Rejected Page')).toBeInTheDocument()
+
+  // The moderator's own pending row lives in the review queue and must appear only once.
+  expect(screen.getAllByText('Mod Pending Page')).toHaveLength(1)
+  const queueSection = screen.getByText(/needs review/i).closest('section')
+  expect(queueSection).toBeTruthy()
+  if (queueSection) {
+    expect(within(queueSection).getByText('Mod Pending Page')).toBeInTheDocument()
+  }
+})
+
 it('shows an empty state when nothing is attached', () => {
   render(<HubPagesTab hubId="h1" canManage={false} currentUserId="u1" initialPages={[]} />)
   expect(screen.getByText(/no pages yet/i)).toBeInTheDocument()

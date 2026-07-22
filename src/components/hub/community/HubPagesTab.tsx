@@ -17,22 +17,27 @@ export function HubPagesTab({
 
   const approved = pages.filter((p) => p.status === 'approved')
   const queue = canManage ? pages.filter((p) => p.status === 'pending') : []
-  const mine = !canManage && currentUserId
-    ? pages.filter((p) => p.status !== 'approved' && p.addedById === currentUserId)
+  const queueIds = new Set(queue.map((p) => p.id))
+  const mine = currentUserId
+    ? pages.filter((p) => p.status !== 'approved' && p.addedById === currentUserId && !queueIds.has(p.id))
     : []
 
   async function review(id: string, status: 'approved' | 'rejected') {
-    const res = await fetch(`/api/hubs/${hubId}/pages/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    })
-    if (!res.ok) return
-    setPages((cur) =>
-      status === 'approved'
-        ? cur.map((p) => (p.id === id ? { ...p, status: 'approved' } : p))
-        : cur.filter((p) => p.id !== id),
-    )
+    try {
+      const res = await fetch(`/api/hubs/${hubId}/pages/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      if (!res.ok) return
+      setPages((cur) =>
+        status === 'approved'
+          ? cur.map((p) => (p.id === id ? { ...p, status: 'approved' } : p))
+          : cur.filter((p) => p.id !== id),
+      )
+    } catch {
+      // Network failure: leave state unchanged; nothing to surface here.
+    }
   }
 
   return (
