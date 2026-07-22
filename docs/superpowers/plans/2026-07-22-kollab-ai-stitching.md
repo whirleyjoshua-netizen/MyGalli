@@ -263,27 +263,35 @@ In `src/components/hub/community/CommunityKollab.tsx`, change `captureVideoPoste
 ```tsx
   function captureVideoPoster(file: File): Promise<{ blob: Blob | null; duration: number | null }> {
     return new Promise((resolve) => {
-      let done = false
-      const finish = (blob: Blob | null, duration: number | null) => {
-        if (done) return
-        done = true
-        resolve({ blob, duration })
-      }
-      const video = document.createElement('video')
-      video.preload = 'metadata'
-      video.muted = true
-      video.src = URL.createObjectURL(file)
-      const dur = () => (Number.isFinite(video.duration) && video.duration > 0 ? video.duration : null)
-      video.onloadeddata = () => { video.currentTime = Math.min(0.1, video.duration || 0.1) }
-      video.onseeked = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = video.videoWidth; canvas.height = video.videoHeight
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return finish(null, dur())
-        ctx.drawImage(video, 0, 0)
-        canvas.toBlob((b) => finish(b, dur()), 'image/jpeg', 0.8)
-      }
-      video.onerror = () => finish(null, null)
+      try {
+        let done = false
+        const finish = (blob: Blob | null, duration: number | null) => {
+          if (done) return
+          done = true
+          clearTimeout(timeout)
+          resolve({ blob, duration })
+        }
+        const video = document.createElement('video')
+        const dur = () => (Number.isFinite(video.duration) && video.duration > 0 ? video.duration : null)
+        // Some codecs never fire loadeddata/seeked. Without this watchdog the
+        // promise never settles and the upload stalls with no error. The
+        // timeout still reports a duration: if metadata loaded but the seek
+        // hung, the duration is valid and worth keeping.
+        const timeout = setTimeout(() => finish(null, dur()), 3000)
+        video.preload = 'metadata'
+        video.muted = true
+        video.src = URL.createObjectURL(file)
+        video.onloadeddata = () => { video.currentTime = Math.min(0.1, video.duration || 0.1) }
+        video.onseeked = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width = video.videoWidth; canvas.height = video.videoHeight
+          const ctx = canvas.getContext('2d')
+          if (!ctx) return finish(null, dur())
+          ctx.drawImage(video, 0, 0)
+          canvas.toBlob((b) => finish(b, dur()), 'image/jpeg', 0.8)
+        }
+        video.onerror = () => finish(null, null)
+      } catch { resolve({ blob: null, duration: null }) }
     })
   }
 ```
