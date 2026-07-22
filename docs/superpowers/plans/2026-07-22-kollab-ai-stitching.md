@@ -1097,7 +1097,7 @@ export async function tagDropAsset(hubId: string, url: string): Promise<DropTags
           ],
         },
       ],
-    } as any)
+    })
 
     const text = (message.content as any[]).find((b) => b?.type === 'text')?.text
     if (!text) return null
@@ -1455,7 +1455,7 @@ export async function directReel(input: {
           content: `Clips:\n${input.digest}\n\n${ask}\nTarget length: ${input.targetSec} seconds.`,
         },
       ],
-    } as any)
+    })
 
     // With adaptive thinking on, content[0] is a thinking block. Find the text
     // block by type — indexing [0] here returns undefined and looks like an
@@ -1754,7 +1754,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   let raw: unknown
   try {
-    raw = await directReel({ digest: describeCandidates(rows as any, now), preset, prompt, targetSec })
+    raw = await directReel({ digest: describeCandidates(rows, now), preset, prompt, targetSec })
   } catch (error: any) {
     if (error instanceof DirectorError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
@@ -2686,7 +2686,14 @@ export function KollabReelRequest({
 
 - [ ] **Step 4: Add the tile button**
 
-In `src/components/hub/community/KollabTile.tsx`, add `canStitch: boolean` and `onMakeReel: () => void` to both the destructured params and the props type, then add this button directly after the existing **See content** button, inside the same `space-y-2` div:
+In `src/components/hub/community/KollabTile.tsx`, add the two new props as **optional with safe defaults**, so this task does not have to leave a placeholder call site behind in `CommunityKollab.tsx` for Task 14 to clean up — an unwired button that silently does nothing is worse than one that isn't rendered yet. In the destructured params add `canStitch = false, onMakeReel,` and in the props type add:
+
+```tsx
+  canStitch?: boolean
+  onMakeReel?: () => void
+```
+
+Then add this button directly after the existing **See content** button, inside the same `space-y-2` div:
 
 ```tsx
         {canStitch && (
@@ -2711,13 +2718,13 @@ pnpm exec vitest run src/components/hub/community/KollabReelRequest.test.tsx src
 pnpm exec tsc --noEmit
 ```
 
-Expected: PASS; 0 type errors. If `tsc` reports missing props at the `KollabTile` call site in `CommunityKollab.tsx`, that is expected — Task 14 wires it. Pass `canStitch={false}` and `onMakeReel={() => {}}` there temporarily to keep the build green, and replace both in Task 14.
+Expected: PASS; 0 type errors. Because the new tile props are optional, the existing `KollabTile` call site in `CommunityKollab.tsx` still typechecks untouched — do **not** modify that file in this task.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git branch --show-current   # must print feat/kollab-ai-stitching
-git add src/components/hub/community/KollabReelRequest.tsx src/components/hub/community/KollabReelRequest.test.tsx src/components/hub/community/KollabTile.tsx src/components/hub/community/KollabTile.test.tsx src/components/hub/community/CommunityKollab.tsx
+git add src/components/hub/community/KollabReelRequest.tsx src/components/hub/community/KollabReelRequest.test.tsx src/components/hub/community/KollabTile.tsx src/components/hub/community/KollabTile.test.tsx
 git commit -m "feat(kollab): reel request modal and Make a reel tile action"
 ```
 
