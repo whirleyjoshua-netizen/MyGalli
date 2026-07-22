@@ -28,15 +28,20 @@ export function HubPageAttachModal({
   async function attach(displayId: string) {
     setBusy(displayId)
     setError(null)
-    const res = await fetch(`/api/hubs/${hubId}/pages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ displayId }),
-    })
-    setBusy(null)
-    if (res.ok) { onAttached(); onClose(); return }
-    const data = await res.json().catch(() => ({}))
-    setError(data?.error || 'Could not attach that Page.')
+    try {
+      const res = await fetch(`/api/hubs/${hubId}/pages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayId }),
+      })
+      setBusy(null)
+      if (res.ok) { onAttached(); onClose(); return }
+      const data = await res.json().catch(() => ({}))
+      setError(data?.error || 'Could not attach that Page.')
+    } catch {
+      setBusy(null)
+      setError('Could not attach that Page. Check your connection and try again.')
+    }
   }
 
   return (
