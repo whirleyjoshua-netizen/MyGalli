@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { FileText, Lock, Download, X } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import { FileText, Lock, Download, X, Upload, Loader2 } from 'lucide-react'
 import { HubFolderTree } from '@/components/hub/HubFolderTree'
 import { buildFolderTree } from '@/lib/hub-tree'
 import { itemsInFolder, type FileFolder, type FileItem } from '@/lib/hub-files-view'
@@ -28,6 +28,9 @@ export function HubFilesTab({
   const [items, setItems] = useState<FileItem[]>(initialItems)
   const [folderId, setFolderId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
 
   const tree = useMemo(() => buildFolderTree(folders), [folders])
   const visible = useMemo(() => itemsInFolder(items, folderId), [items, folderId])
@@ -50,6 +53,44 @@ export function HubFilesTab({
     }
   }
 
+  async function uploadFile(file: File) {
+    setUploading(true)
+    setError(null)
+    try {
+      // 1. Store the bytes. The server validates type and size, so a rejection
+      //    here must stop the flow — creating an item now would point it at
+      //    nothing and leave a broken row the owner has to clean up.
+      const fd = new FormData()
+      fd.append('file', file)
+      const up = await fetch('/api/upload', { method: 'POST', body: fd })
+      if (!up.ok) {
+        setError((await up.json().catch(() => ({}))).error || 'Upload failed')
+        return
+      }
+      const { url } = await up.json()
+
+      // 2. Record it against the folder currently in view.
+      const res = await fetch(`/api/hubs/${hubId}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'file', title: file.name, url, folderId }),
+      })
+      if (!res.ok) {
+        setError((await res.json().catch(() => ({}))).error || 'Could not add the file')
+        return
+      }
+      const { id } = await res.json()
+      setItems((cur) => [
+        ...cur,
+        { id, folderId, type: 'file', title: file.name, url, order: cur.length, locked: false },
+      ])
+    } finally {
+      setUploading(false)
+      // Let the same file be picked again after a failure.
+      if (fileInput.current) fileInput.current.value = ''
+    }
+  }
+
   async function deleteItem(it: FileItem) {
     if (!window.confirm(`Delete "${it.title}"?`)) return
     const res = await fetch(`/api/hubs/${hubId}/items/${it.id}`, { method: 'DELETE' })
@@ -64,16 +105,40 @@ export function HubFilesTab({
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         {canManage && (
-          <div className="mb-3 flex justify-end">
+          <div className="mb-3 flex items-center justify-end gap-2">
+            {/* accept mirrors upload-validate's allow-list so the picker doesn't
+                offer types the server will reject. */}
+            <input
+              ref={fileInput}
+              id="hub-files-upload"
+              type="file"
+              className="sr-only"
+              accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,audio/wav,audio/webm,video/mp4,video/webm,video/quicktime"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) uploadFile(f)
+              }}
+            />
+            <label
+              htmlFor="hub-files-upload"
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted ${uploading ? 'pointer-events-none opacity-60' : ''}`}
+            >
+              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              {uploading ? 'Uploading…' : 'Upload file'}
+            </label>
             <button
               type="button"
               onClick={createFolder}
-              disabled={busy}
+              disabled={busy || uploading}
               className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
             >
               New folder
             </button>
           </div>
+        )}
+
+        {error && (
+          <p role="alert" className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
         )}
 
         {visible.length === 0 ? (
