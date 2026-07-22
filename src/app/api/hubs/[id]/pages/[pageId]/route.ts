@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { canModerate } from '@/lib/community'
 
 type Ctx = { params: Promise<{ id: string; pageId: string }> }
 
-async function load(request: NextRequest, id: string, pageId: string) {
+type HubPageRow = Prisma.HubPageGetPayload<{
+  select: { id: true; hubId: true; addedById: true; status: true }
+}>
+
+type LoadSuccess = {
+  me: NonNullable<Awaited<ReturnType<typeof getUser>>>
+  row: HubPageRow
+  isPrivileged: boolean
+}
+type LoadFailure = { error: NextResponse }
+type LoadResult = LoadFailure | LoadSuccess
+
+async function load(request: NextRequest, id: string, pageId: string): Promise<LoadResult> {
   const me = await getUser(request)
   if (!me) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const hub = await db.hub.findUnique({ where: { id }, select: { id: true, userId: true, community: true, published: true } })
@@ -18,7 +31,7 @@ async function load(request: NextRequest, id: string, pageId: string) {
   return { me, row, isPrivileged }
 }
 
-export async function PATCH(request: NextRequest, { params }: Ctx) {
+export async function PATCH(request: NextRequest, { params }: Ctx): Promise<NextResponse> {
   const { id, pageId } = await params
   const ctx = await load(request, id, pageId)
   if ('error' in ctx) return ctx.error
@@ -37,7 +50,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
   return NextResponse.json({ id: updated.id, status: updated.status })
 }
 
-export async function DELETE(request: NextRequest, { params }: Ctx) {
+export async function DELETE(request: NextRequest, { params }: Ctx): Promise<NextResponse> {
   const { id, pageId } = await params
   const ctx = await load(request, id, pageId)
   if ('error' in ctx) return ctx.error
