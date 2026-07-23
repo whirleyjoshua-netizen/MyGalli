@@ -866,11 +866,16 @@ export function presetWhere(preset: Preset, hubId: string, now: Date): Record<st
   return base
 }
 
-// A caption is member-authored free text that lands in a model prompt. Newlines
-// and pipes are stripped so a caption cannot forge extra digest rows and talk
-// the director into referencing an id that isn't really a candidate. validateEdl
-// is the real backstop, but not manufacturing the injection is cheaper.
-const clean = (s: string): string => s.replace(/[\r\n|]+/g, ' ').trim().slice(0, 140)
+// A caption is member-authored free text that lands in a model prompt. Line
+// terminators and pipes are stripped so a caption cannot forge extra digest
+// rows and talk the director into referencing an id that isn't really a
+// candidate. validateEdl is the real backstop, but not manufacturing the
+// injection is cheaper. The class must cover the FULL Unicode set, not just
+// \r\n -- U+2028, U+2029, U+0085, U+000B and U+000C all break a line for a
+// reader, and a `.split('\n')` test passes right over them. Write them as
+// \u escapes: a literal U+2028 in a source file is itself a line terminator.
+const clean = (s: string): string =>
+  s.replace(/[\r\n\u000B\f\u0085\u2028\u2029|]+/g, ' ').trim().slice(0, 140)
 
 const relAge = (then: Date, now: Date): string => {
   const days = Math.floor((now.getTime() - then.getTime()) / DAY)
@@ -885,7 +890,9 @@ function tagBits(aiTags: unknown): string[] {
   const out: string[] = []
   if (Array.isArray(t.tags)) {
     const tags = t.tags.filter((x): x is string => typeof x === 'string').slice(0, 8)
-    if (tags.length) out.push(tags.map(clean).join(','))
+    // Commas are stripped from tags only -- they join with commas, so a comma
+    // inside one tag would read as two. Captions keep theirs.
+    if (tags.length) out.push(tags.map((tag) => clean(tag).replace(/,/g, '')).join(','))
   }
   if (typeof t.desc === 'string' && t.desc.trim()) out.push(clean(t.desc))
   return out
@@ -896,7 +903,8 @@ export function describeCandidates(rows: CandidateRow[], now: Date): string {
   return rows
     .map((r) => {
       const parts = [r.id, r.type]
-      if (r.type === 'video') parts.push(r.durationSec ? `${r.durationSec}s` : '?s')
+      // != null, not truthiness: 0 is a real duration, null means unknown.
+      if (r.type === 'video') parts.push(r.durationSec != null ? `${r.durationSec}s` : '?s')
       parts.push(`@${r.author.username}`, relAge(r.createdAt, now))
       if (r.caption) parts.push(`"${clean(r.caption)}"`)
       parts.push(...tagBits(r.aiTags))
@@ -912,7 +920,7 @@ export function describeCandidates(rows: CandidateRow[], now: Date): string {
 pnpm exec vitest run src/lib/kollab/candidates.test.ts
 ```
 
-Expected: PASS, 13 tests.
+Expected: PASS, 16 tests.
 
 - [ ] **Step 5: Commit**
 
