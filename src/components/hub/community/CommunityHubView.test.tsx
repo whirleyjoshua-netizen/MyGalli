@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { CommunityHubView } from './CommunityHubView'
 import { DEFAULT_HUB_CONFIG } from '@/lib/types/hub-config'
+import { resolveHubTheme } from '@/lib/hub-themes'
 
 vi.mock('./CommunityFeed', () => ({ CommunityFeed: () => <div data-testid="feed" /> }))
 vi.mock('./CommunitySidebar', () => ({ CommunitySidebar: () => <div data-testid="sidebar" /> }))
@@ -94,5 +95,32 @@ describe('CommunityHubView tabs', () => {
     currentSearch = 'tab=files'
     render(<CommunityHubView {...withFiles} isOwner />)
     expect(screen.getByRole('button', { name: /new folder/i })).toBeInTheDocument()
+  })
+})
+
+describe('CommunityHubView theming', () => {
+  const styleOf = (container: HTMLElement) => (container.firstElementChild as HTMLElement).style
+
+  it('sets the three theme variables on its outermost element', () => {
+    const config = { ...DEFAULT_HUB_CONFIG, appearance: { theme: 'sunset' as const } }
+    const { container } = render(<CommunityHubView {...base} config={config} />)
+    const s = styleOf(container)
+    const t = resolveHubTheme('sunset')
+    expect(s.getPropertyValue('--primary')).toBe(t.primary)
+    expect(s.getPropertyValue('--primary-foreground')).toBe(t.primaryForeground)
+    expect(s.getPropertyValue('--hub-accent')).toBe(t.accent)
+  })
+
+  it('falls back to galli when the config has no appearance key', () => {
+    // Mirrors every hub created before themes existed.
+    const { appearance, ...noAppearance } = DEFAULT_HUB_CONFIG as any
+    const { container } = render(<CommunityHubView {...base} config={noAppearance} />)
+    expect(styleOf(container).getPropertyValue('--primary')).toBe(resolveHubTheme('galli').primary)
+  })
+
+  it('does not set the variables on document root', () => {
+    // Scoping matters: a hub theme must never leak into the dashboard chrome.
+    render(<CommunityHubView {...base} />)
+    expect(document.documentElement.style.getPropertyValue('--primary')).toBe('')
   })
 })
