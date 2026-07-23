@@ -28,6 +28,11 @@ export default function KollabReelPlayer({ reel, onClose }: { reel: Reel; onClos
   const [i, setI] = useState(0)
   const [muted, setMuted] = useState(true)
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  // Guards against double-advancing a single clip: a video clip can fire both
+  // its `timeupdate` (when currentTime reaches `out`) and `ended` listeners
+  // for the same end-of-playback moment. Reset whenever the clip index
+  // changes so the next clip is armed for its own single advance.
+  const advancedRef = useRef(false)
   const clip = reel.clips[i]
 
   useEffect(() => {
@@ -36,7 +41,13 @@ export default function KollabReelPlayer({ reel, onClose }: { reel: Reel; onClos
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  useEffect(() => {
+    advancedRef.current = false
+  }, [i])
+
   const next = useCallback(() => {
+    if (advancedRef.current) return
+    advancedRef.current = true
     setI((cur) => (cur + 1 < reel.clips.length ? cur + 1 : cur))
   }, [reel.clips.length])
 
@@ -49,14 +60,15 @@ export default function KollabReelPlayer({ reel, onClose }: { reel: Reel; onClos
   }, [clip, next])
 
   // Seek to the clip's in-point and stop at its out-point. `out` is clamped
-  // server-side where a duration is known, and here where it isn't.
+  // server-side where a duration is known.
   useEffect(() => {
     const v = videoRef.current
     if (!v || !clip || clip.type !== 'video') return
     v.currentTime = clip.in
-    // jsdom's HTMLMediaElement.play() throws synchronously ("Not implemented")
-    // rather than returning a rejected promise, and a real browser can reject
-    // autoplay too — swallow both so a play failure never crashes the effect.
+    // jsdom's HTMLMediaElement.play() was observed to return undefined
+    // (neither throwing nor rejecting) rather than a real promise, and a
+    // real browser can reject autoplay too — swallow both so a play
+    // failure never crashes the effect.
     try {
       v.play()?.catch(() => {})
     } catch {
