@@ -28,6 +28,7 @@ import type {
   LayoutMode,
 } from '@/lib/types/canvas'
 import { DEFAULT_COLUMN_SETTINGS } from '@/lib/types/canvas'
+import { ElementStamp } from '@/components/elements/ElementStamp'
 import type { SpacingConfig } from '@/lib/types/spacing'
 import { getSpacingStyles, getContainerStyle } from '@/lib/types/spacing'
 import {
@@ -399,8 +400,8 @@ export function ColumnCanvas({
     }
   }
 
-  // Render element
-  const renderElement = (
+  // Render element (type-specific)
+  const renderElementBody = (
     element: CanvasElement,
     sectionId: string,
     columnId: string
@@ -1587,6 +1588,23 @@ export function ColumnCanvas({
           </div>
         )
     }
+  }
+
+  // Same wrapper idea as the public renderer in src/lib/render-elements.tsx:
+  // the stamp applies to every element type, so it sits outside the switch.
+  const renderElement = (
+    element: CanvasElement,
+    sectionId: string,
+    columnId: string
+  ) => {
+    const body = renderElementBody(element, sectionId, columnId)
+    if (!element.stampedAt) return body
+    return (
+      <>
+        {body}
+        <ElementStamp stampedAt={element.stampedAt} stampedTz={element.stampedTz} />
+      </>
+    )
   }
 
   // Get active element for drag overlay
