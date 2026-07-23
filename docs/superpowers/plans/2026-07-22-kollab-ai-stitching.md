@@ -2396,9 +2396,17 @@ export default function KollabReelPlayer({ reel, onClose }: { reel: Reel; onClos
   // the reel strands. Both signals are needed; only the first may take effect.
   const advancedRef = useRef(false)
 
-  useEffect(() => {
+  // Reset during RENDER, not in an effect. A passive effect runs after commit,
+  // so the newly-mounted <video>/<img> is already live and can fire onError (a
+  // broken URL — normal here, a clip's drop can be deleted) while the previous
+  // clip's flag is still set. next() would swallow it, and `error` does not
+  // re-fire, so the clip would strand. Clearing during render means the flag is
+  // false before the new element exists.
+  const lastIndexRef = useRef(i)
+  if (lastIndexRef.current !== i) {
+    lastIndexRef.current = i
     advancedRef.current = false
-  }, [i])
+  }
 
   const next = useCallback(() => {
     if (advancedRef.current) return
