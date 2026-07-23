@@ -2913,14 +2913,20 @@ Add the create and publish handlers:
 
   async function publishReel(id: string, action: 'publish' | 'unpublish') {
     const nextStatus = action === 'publish' ? 'published' : 'draft'
-    const prev = reels
+    // Capture only THIS reel's prior status, never a whole-array snapshot. The
+    // Reels tab renders a button per row, so a moderator can publish reel B
+    // while reel A's request is still in flight — and restoring a snapshot
+    // taken before A would silently discard B. Revert by id, functionally.
+    const prevStatus = reels.find((r) => r.id === id)?.status
     setReels((cur) => cur.map((r) => (r.id === id ? { ...r, status: nextStatus } : r)))
     const res = await fetch(`/api/hubs/${hubId}/kollab/reels/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action }),
     })
-    if (!res.ok) setReels(prev)
+    if (!res.ok && prevStatus !== undefined) {
+      setReels((cur) => cur.map((r) => (r.id === id ? { ...r, status: prevStatus } : r)))
+    }
   }
 ```
 

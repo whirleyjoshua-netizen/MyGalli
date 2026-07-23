@@ -98,3 +98,59 @@ describe('Make a reel', () => {
     expect(screen.getByRole('dialog', { name: /make a reel/i })).toBeInTheDocument()
   })
 })
+
+describe('publishReel rollback', () => {
+  it('reverts only the reel whose publish failed, leaving a concurrently-published reel intact', async () => {
+    const reel1 = {
+      id: 'r1', title: 'One', status: 'draft', createdAt: '2026-07-22T00:00:00.000Z',
+      creator: { username: 'sam' }, runtimeSec: 10, clips: [],
+    }
+    const reel2 = {
+      id: 'r2', title: 'Two', status: 'draft', createdAt: '2026-07-22T00:00:00.000Z',
+      creator: { username: 'sam' }, runtimeSec: 10, clips: [],
+    }
+
+    // r1's PATCH stays pending until we resolve it ourselves, so we can land
+    // r2's PATCH (which resolves immediately) first — proving the rollback
+    // targets only r1 and doesn't clobber r2's already-applied change.
+    let resolveFirstPatch: (v: any) => void = () => {}
+    const firstPatchPromise = new Promise((resolve) => { resolveFirstPatch = resolve })
+
+    global.fetch = vi.fn((url: string, init?: any) => {
+      if (url === '/api/hubs/hub1/kollab/reels') {
+        return Promise.resolve({ ok: true, json: async () => ({ reels: [reel1, reel2] }) })
+      }
+      if (url === '/api/hubs/hub1/kollab/reels/r1' && init?.method === 'PATCH') {
+        return firstPatchPromise
+      }
+      if (url === '/api/hubs/hub1/kollab/reels/r2' && init?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, json: async () => ({}) })
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) })
+    }) as any
+
+    render(<CommunityKollab {...base} isPrivileged />)
+    fireEvent.click(screen.getByRole('button', { name: /see content/i }))
+    fireEvent.click(screen.getByRole('tab', { name: /reels/i }))
+
+    await waitFor(() => expect(screen.getByText('One')).toBeInTheDocument())
+    expect(screen.getAllByRole('button', { name: 'Publish' })).toHaveLength(2)
+
+    // Click r1's Publish — its PATCH is left hanging.
+    fireEvent.click(screen.getAllByRole('button', { name: 'Publish' })[0])
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Publish' })).toHaveLength(1))
+
+    // Click r2's Publish while r1's request is still in flight — resolves immediately.
+    fireEvent.click(screen.getAllByRole('button', { name: 'Publish' })[0])
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Unpublish' })).toHaveLength(2))
+
+    // Now fail r1's request.
+    resolveFirstPatch({ ok: false, json: async () => ({}) })
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: 'Publish' })).toHaveLength(1)
+    })
+    // r2's optimistic update must have survived r1's rollback.
+    expect(screen.getAllByRole('button', { name: 'Unpublish' })).toHaveLength(1)
+  })
+})

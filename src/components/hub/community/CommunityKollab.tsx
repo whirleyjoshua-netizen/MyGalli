@@ -101,14 +101,20 @@ export function CommunityKollab({
 
   async function publishReel(id: string, action: 'publish' | 'unpublish') {
     const nextStatus = action === 'publish' ? 'published' : 'draft'
-    const prev = reels
+    // Capture only THIS reel's prior status, not a whole-array snapshot: the
+    // Reels tab has a button per row, so another reel's optimistic update can
+    // land while this request is in flight. Restoring a whole-array snapshot
+    // would silently discard it. Revert by id through a functional updater.
+    const prevStatus = reels.find((r) => r.id === id)?.status
     setReels((cur) => cur.map((r) => (r.id === id ? { ...r, status: nextStatus } : r)))
     const res = await fetch(`/api/hubs/${hubId}/kollab/reels/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action }),
     })
-    if (!res.ok) setReels(prev)
+    if (!res.ok && prevStatus !== undefined) {
+      setReels((cur) => cur.map((r) => (r.id === id ? { ...r, status: prevStatus } : r)))
+    }
   }
 
   if (!enabled) return null
