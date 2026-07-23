@@ -133,3 +133,88 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     { status: 201 },
   )
 }
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const hub = await db.hub.findUnique({
+    where: { id },
+    select: { id: true, userId: true, community: true, published: true },
+  })
+  if (!hub || !hub.community) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  const me = await getUser(request)
+  const collabIds = await collaboratorIds(id)
+  const isPrivileged = !!me && (me.id === hub.userId || collabIds.includes(me.id))
+  if (!canViewCommunityHub({ published: hub.published, isPrivileged })) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  // Drafts are private to their creator; moderators see everything. The public
+  // payload never reveals that an unpublished reel exists.
+  const where: any = { hubId: id }
+  if (!isPrivileged) {
+    if (me) where.OR = [{ status: 'published' }, { creatorId: me.id }]
+    else where.status = 'published'
+  }
+
+  const reels = await db.kollabReel.findMany({
+    where,
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 24,
+    select: {
+      id: true, title: true, status: true, createdAt: true, edl: true, creatorId: true,
+      creator: { select: { username: true } },
+    },
+  })
+
+  const clipsOf = (edl: unknown): { dropId: string; in: number; out: number }[] =>
+    Array.isArray(edl)
+      ? (edl as any[]).filter((c) => c && typeof c.dropId === 'string' && typeof c.in === 'number' && typeof c.out === 'number')
+      : []
+
+  const dropIds = [...new Set(reels.flatMap((r) => clipsOf(r.edl).map((c) => c.dropId)))]
+
+  // Resolved fresh on every read, and only for approved drops. This is what
+  // makes moderating a drop propagate to every reel that used it: a rejected or
+  // deleted drop simply has no row here, so its clip disappears.
+  const drops = dropIds.length
+    ? await db.hubDrop.findMany({
+        where: { id: { in: dropIds }, hubId: id, status: 'approved' },
+        select: {
+          id: true, type: true, url: true, thumbnailUrl: true, caption: true, durationSec: true, status: true,
+          author: { select: { username: true } },
+        },
+      })
+    : []
+  const byId = new Map(drops.map((d) => [d.id, d]))
+
+  return NextResponse.json({
+    reels: reels.map((r) => {
+      const clips = clipsOf(r.edl)
+        .map((c) => {
+          const d = byId.get(c.dropId)
+          if (!d) return null
+          return {
+            dropId: c.dropId,
+            in: c.in,
+            out: d.durationSec ? Math.min(c.out, d.durationSec) : c.out,
+            type: d.type,
+            url: d.url,
+            thumbnailUrl: d.thumbnailUrl,
+            caption: d.caption,
+            author: d.author.username,
+          }
+        })
+        .filter((c): c is NonNullable<typeof c> => c !== null)
+      return {
+        id: r.id,
+        title: r.title,
+        status: r.status,
+        createdAt: r.createdAt.toISOString(),
+        creator: { username: r.creator.username },
+        runtimeSec: clips.reduce((s, c) => s + (c.out - c.in), 0),
+        clips,
+      }
+    }),
+  })
+}

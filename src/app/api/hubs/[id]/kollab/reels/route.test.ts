@@ -20,7 +20,7 @@ vi.mock('@/lib/db', () => ({
 import { getUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { directReel, DirectorError } from '@/lib/kollab/director'
-import { POST } from './route'
+import { POST, GET } from './route'
 
 const ctx = { params: Promise.resolve({ id: 'h1' }) }
 const post = (b: unknown) =>
@@ -133,5 +133,78 @@ describe('POST /kollab/reels', () => {
 
   it('400 on an overlong prompt', async () => {
     expect((await POST(post({ preset: 'recent', prompt: 'x'.repeat(300) }), ctx)).status).toBe(400)
+  })
+})
+
+const get = () => new Request('http://localhost/api/hubs/h1/kollab/reels', { method: 'GET' }) as any
+
+const reelRow = (over: any = {}) => ({
+  id: 'r1', title: 'Saturday', status: 'published', createdAt: new Date('2026-07-22'),
+  edl: [{ dropId: 'd1', in: 0, out: 3 }, { dropId: 'gone', in: 0, out: 3 }],
+  creatorId: 'member', creator: { username: 'm' }, ...over,
+})
+
+describe('GET /kollab/reels', () => {
+  beforeEach(() => {
+    ;(db.kollabReel.findMany as any).mockResolvedValue([reelRow()])
+    ;(db.hubDrop.findMany as any).mockResolvedValue([
+      { id: 'd1', type: 'video', url: 'https://blob/x.mp4', thumbnailUrl: 'https://blob/x.jpg', caption: null, durationSec: 10, status: 'approved', author: { username: 'maria' } },
+    ])
+  })
+
+  it('drops clips whose drop no longer exists', async () => {
+    ;(getUser as any).mockResolvedValue(null)
+    const body = await (await GET(get(), ctx)).json()
+    expect(body.reels[0].clips).toHaveLength(1)
+    expect(body.reels[0].clips[0].dropId).toBe('d1')
+    expect(body.reels[0].clips[0].url).toBe('https://blob/x.mp4')
+  })
+
+  it('recomputes runtime from the surviving clips', async () => {
+    ;(getUser as any).mockResolvedValue(null)
+    const body = await (await GET(get(), ctx)).json()
+    expect(body.reels[0].runtimeSec).toBeCloseTo(3)
+  })
+
+  it('hydrates only approved drops', async () => {
+    ;(getUser as any).mockResolvedValue(null)
+    await GET(get(), ctx)
+    const call = (db.hubDrop.findMany as any).mock.calls.at(-1)[0]
+    expect(call.where.status).toBe('approved')
+  })
+
+  it('shows anonymous visitors published reels only', async () => {
+    ;(getUser as any).mockResolvedValue(null)
+    await GET(get(), ctx)
+    expect((db.kollabReel.findMany as any).mock.calls[0][0].where.status).toBe('published')
+  })
+
+  it('shows a creator their own drafts too', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: null, avatar: null })
+    await GET(get(), ctx)
+    const where = (db.kollabReel.findMany as any).mock.calls[0][0].where
+    expect(where.OR).toEqual([{ status: 'published' }, { creatorId: 'member' }])
+  })
+
+  it('shows a moderator everything', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: null, avatar: null })
+    await GET(get(), ctx)
+    const where = (db.kollabReel.findMany as any).mock.calls[0][0].where
+    expect(where.status).toBeUndefined()
+    expect(where.OR).toBeUndefined()
+  })
+
+  it('404s on a draft community for an anonymous visitor', async () => {
+    ;(getUser as any).mockResolvedValue(null)
+    ;(db.hub.findUnique as any).mockResolvedValue({ id: 'h1', userId: 'owner', community: true, published: false, config: null })
+    expect((await GET(get(), ctx)).status).toBe(404)
+  })
+
+  it('survives a malformed edl blob', async () => {
+    ;(getUser as any).mockResolvedValue(null)
+    ;(db.kollabReel.findMany as any).mockResolvedValue([reelRow({ edl: 'garbage' })])
+    const res = await GET(get(), ctx)
+    expect(res.status).toBe(200)
+    expect((await res.json()).reels[0].clips).toEqual([])
   })
 })
