@@ -79,3 +79,105 @@ describe('HubFilesTab (manage)', () => {
     expect(screen.getByText('Root Readme')).toBeInTheDocument()
   })
 })
+
+describe('HubFilesTab (viewer)', () => {
+  // A .png keeps pdf.js out of jsdom; the pdf path is covered by the kind check below.
+  const withImage: FileItem[] = [
+    { id: 'img', folderId: null, type: 'file', title: 'Diagram.png', url: 'https://x/d.png', order: 0, locked: false },
+  ]
+
+  it('offers View to a plain member, not just the owner', () => {
+    render(<HubFilesTab hubId="h1" canManage={false} initialFolders={[]} initialItems={withImage} />)
+    expect(screen.getByRole('button', { name: /view diagram\.png/i })).toBeInTheDocument()
+  })
+
+  it('opens the in-app viewer instead of navigating away', () => {
+    render(<HubFilesTab hubId="h1" canManage={false} initialFolders={[]} initialItems={withImage} />)
+    fireEvent.click(screen.getByRole('button', { name: /view diagram\.png/i }))
+    expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument()
+    expect(screen.getByAltText('Diagram.png')).toBeInTheDocument()
+  })
+
+  it('closes the viewer again', () => {
+    render(<HubFilesTab hubId="h1" canManage={false} initialFolders={[]} initialItems={withImage} />)
+    fireEvent.click(screen.getByRole('button', { name: /view diagram\.png/i }))
+    fireEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(screen.queryByAltText('Diagram.png')).not.toBeInTheDocument()
+  })
+
+  it('offers no View for a locked item, which has no url to show', () => {
+    const locked: FileItem[] = [
+      { id: 'lk', folderId: null, type: 'file', title: 'Sealed.pdf', url: null, order: 0, locked: true },
+    ]
+    render(<HubFilesTab hubId="h1" canManage={false} initialFolders={[]} initialItems={locked} />)
+    expect(screen.queryByRole('button', { name: /view/i })).not.toBeInTheDocument()
+  })
+})
+
+describe('HubFilesTab (upload)', () => {
+  const pdf = () => new File(['%PDF-1.4'], 'contract.pdf', { type: 'application/pdf' })
+
+  // Two-step flow: POST /api/upload -> { url }, then POST items with that url.
+  const okUpload = () => vi.fn(async (url: string) => {
+    if (String(url) === '/api/upload') return { ok: true, json: async () => ({ url: 'https://blob/contract.pdf' }) }
+    return { ok: true, json: async () => ({ id: 'new-item' }) }
+  }) as any
+
+  beforeEach(() => { global.fetch = okUpload() })
+
+  it('offers no upload control to a non-manager', () => {
+    render(<HubFilesTab hubId="h1" canManage={false} initialFolders={folders} initialItems={items} />)
+    expect(screen.queryByLabelText(/upload/i)).not.toBeInTheDocument()
+  })
+
+  it('uploads a file, creates the item, and shows it in the list', async () => {
+    render(<HubFilesTab hubId="h1" canManage initialFolders={folders} initialItems={items} />)
+
+    const input = screen.getByLabelText(/upload/i) as HTMLInputElement
+    fireEvent.change(input, { target: { files: [pdf()] } })
+
+    await vi.waitFor(() => expect(screen.getByText('contract.pdf')).toBeInTheDocument())
+
+    const calls = (global.fetch as any).mock.calls
+    expect(calls[0][0]).toBe('/api/upload')
+    expect(calls[0][1].body).toBeInstanceOf(FormData)
+    expect(calls[1][0]).toBe('/api/hubs/h1/items')
+    const sent = JSON.parse(calls[1][1].body)
+    expect(sent).toMatchObject({ type: 'file', title: 'contract.pdf', url: 'https://blob/contract.pdf' })
+  })
+
+  it('files the upload into the folder the user is looking at', async () => {
+    render(<HubFilesTab hubId="h1" canManage initialFolders={folders} initialItems={items} />)
+    fireEvent.click(screen.getByRole('button', { name: /decks/i }))
+
+    fireEvent.change(screen.getByLabelText(/upload/i), { target: { files: [pdf()] } })
+
+    await vi.waitFor(() => expect((global.fetch as any).mock.calls.length).toBe(2))
+    expect(JSON.parse((global.fetch as any).mock.calls[1][1].body).folderId).toBe('f1')
+  })
+
+  it('surfaces the server error and creates no item when the upload is rejected', async () => {
+    global.fetch = vi.fn(async () => ({ ok: false, json: async () => ({ error: 'File too large' }) })) as any
+    render(<HubFilesTab hubId="h1" canManage initialFolders={folders} initialItems={items} />)
+
+    fireEvent.change(screen.getByLabelText(/upload/i), { target: { files: [pdf()] } })
+
+    await vi.waitFor(() => expect(screen.getByText(/file too large/i)).toBeInTheDocument())
+    // must not have gone on to create an item pointing at nothing
+    expect((global.fetch as any).mock.calls.length).toBe(1)
+    expect(screen.queryByText('contract.pdf')).not.toBeInTheDocument()
+  })
+
+  it('surfaces an error when the item create fails after a successful upload', async () => {
+    global.fetch = vi.fn(async (url: string) =>
+      String(url) === '/api/upload'
+        ? { ok: true, json: async () => ({ url: 'https://blob/contract.pdf' }) }
+        : { ok: false, json: async () => ({ error: 'Not found' }) }) as any
+    render(<HubFilesTab hubId="h1" canManage initialFolders={folders} initialItems={items} />)
+
+    fireEvent.change(screen.getByLabelText(/upload/i), { target: { files: [pdf()] } })
+
+    await vi.waitFor(() => expect(screen.getByText(/not found/i)).toBeInTheDocument())
+    expect(screen.queryByText('contract.pdf')).not.toBeInTheDocument()
+  })
+})

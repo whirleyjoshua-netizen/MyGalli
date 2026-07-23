@@ -6,6 +6,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { CommunityTabs, tabFromParam, type CommunityTab } from './CommunityTabs'
 import { HubFilesTab } from './HubFilesTab'
 import type { FileFolder, FileItem } from '@/lib/hub-files-view'
+import type { BookmarkLite } from '@/lib/hub-bookmark-requests'
 import { CommunityHeader } from './CommunityHeader'
 import { CommunityFeed } from './CommunityFeed'
 import { CommunitySidebar } from './CommunitySidebar'
@@ -26,7 +27,7 @@ type CommunityMember = { userId: string; username: string; name: string | null; 
 type CommunityResource = { id: string; type: string; title: string; url: string | null }
 
 function CommunityHubViewInner({
-  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, pendingCount = 0, notes, counts, activity, sharePath, config, preview, announcements = [], fileFolders = [], fileItems = [], hubPages = [],
+  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, pendingCount = 0, notes, counts, activity, sharePath, config, preview, announcements = [], fileFolders = [], fileItems = [], fileBookmarks = [], hubPages = [],
 }: {
   hub: { id: string; title: string; tagline: string | null; description: string | null; coverImage: string | null; heroVideoUrl: string | null }
   ownerUsername: string
@@ -50,6 +51,8 @@ function CommunityHubViewInner({
   announcements?: AnnouncementDTO[]
   /** Visibility-filtered by the server — nothing hidden reaches this component. */
   fileFolders?: FileFolder[]
+  /** Visibility-filtered by the server; private-note marks never arrive. */
+  fileBookmarks?: BookmarkLite[]
   fileItems?: FileItem[]
   hubPages?: HubPageDTO[]
 }) {
@@ -131,7 +134,14 @@ function CommunityHubViewInner({
 
         {tab === 'files' && (
           <div className="mt-6">
-            <HubFilesTab hubId={hub.id} canManage={!!isOwner} initialFolders={fileFolders} initialItems={fileItems} />
+            <HubFilesTab
+              hubId={hub.id}
+              canManage={!!isOwner}
+              initialFolders={fileFolders}
+              initialItems={fileItems}
+              notes={(notes ?? []).map((n) => ({ id: n.id, title: n.title, color: n.color }))}
+              initialBookmarks={fileBookmarks}
+            />
           </div>
         )}
 
