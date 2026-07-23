@@ -8,10 +8,12 @@ import type { HubPageDTO } from '@/lib/hub-pages'
 import { HubPageAttachModal } from './HubPageAttachModal'
 
 export function HubPagesTab({
-  hubId, canManage, currentUserId, initialPages,
+  hubId, canManage, canAttach, currentUserId, initialPages,
 }: {
   hubId: string
   canManage: boolean
+  /** Member of the hub (or privileged), so submitting won't 403. Gates the trigger and empty-state shell only — the approved grid stays visible to everyone who can view the hub. */
+  canAttach: boolean
   currentUserId: string | null
   initialPages: HubPageDTO[]
 }) {
@@ -58,9 +60,11 @@ export function HubPagesTab({
     }
   }
 
+  const showTrigger = (canAttach || canManage) && !!currentUserId
+
   return (
     <div className="space-y-8">
-      {currentUserId && (
+      {showTrigger && (
         <div className="flex justify-end">
           <button
             onClick={() => setAttaching(true)}
@@ -114,10 +118,12 @@ export function HubPagesTab({
       )}
 
       {approved.length === 0 && queue.length === 0 && mine.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border py-16 text-center">
-          <LayoutGrid className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No pages yet.</p>
-        </div>
+        showTrigger && (
+          <div className="rounded-2xl border border-dashed border-border py-16 text-center">
+            <LayoutGrid className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No pages yet.</p>
+          </div>
+        )
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {approved.map((p) => (

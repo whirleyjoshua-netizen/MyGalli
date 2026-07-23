@@ -140,6 +140,7 @@ function CommunityHubViewInner({
             <HubPagesTab
               hubId={hub.id}
               canManage={isPrivileged}
+              canAttach={isPrivileged || joined}
               currentUserId={currentUserId ?? null}
               initialPages={hubPages}
             />

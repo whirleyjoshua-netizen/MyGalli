@@ -35,12 +35,12 @@ describe('visibleHubPageWhere', () => {
     })
   })
 
-  it('a plain member also sees their own rows in any status', () => {
+  it('a plain member also sees their own pending and rejected rows', () => {
     const w = visibleHubPageWhere({ hubId: 'h1', viewerId: 'u1', isPrivileged: false }) as any
     expect(w.hubId).toBe('h1')
     expect(w.OR).toEqual([
       { status: 'approved', display: { is: { published: true } } },
-      { addedById: 'u1' },
+      { addedById: 'u1', status: { in: ['pending', 'rejected'] } },
     ])
   })
 
@@ -52,5 +52,15 @@ describe('visibleHubPageWhere', () => {
   it('never exposes another member rejected rows', () => {
     const w = visibleHubPageWhere({ hubId: 'h1', viewerId: 'mod', isPrivileged: true }) as any
     expect(w.OR).not.toContainEqual({ status: 'rejected' })
+  })
+
+  it('does not resurface the author own approved row once its Display is unpublished, but keeps their pending and rejected rows', () => {
+    const w = visibleHubPageWhere({ hubId: 'h1', viewerId: 'u1', isPrivileged: false }) as any
+    // The own-rows clause only ever matches pending/rejected — an approved row
+    // must clear the same `display.published` bar as everyone else's, so an
+    // author cannot see their own approved-but-unpublished row via this OR arm.
+    const ownRowsClause = w.OR.find((clause: Record<string, unknown>) => clause.addedById === 'u1')
+    expect(ownRowsClause).toEqual({ addedById: 'u1', status: { in: ['pending', 'rejected'] } })
+    expect(ownRowsClause.status.in).not.toContain('approved')
   })
 })

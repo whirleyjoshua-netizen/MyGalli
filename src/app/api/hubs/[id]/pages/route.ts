@@ -3,11 +3,7 @@ import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { canModerate, canViewCommunityHub } from '@/lib/community'
 import { rateLimit } from '@/lib/rate-limit'
-import { toHubPageDTO, visibleHubPageWhere } from '@/lib/hub-pages'
-
-const DISPLAY_JOIN = {
-  display: { select: { title: true, slug: true, coverImage: true, user: { select: { username: true } } } },
-} as const
+import { toHubPageDTO, visibleHubPageWhere, HUB_PAGE_DISPLAY_SELECT, HUB_PAGE_ORDER_BY } from '@/lib/hub-pages'
 
 async function collaboratorIds(hubId: string): Promise<string[]> {
   const rows = await db.hubCollaborator.findMany({ where: { hubId }, select: { userId: true } })
@@ -27,8 +23,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const rows = await db.hubPage.findMany({
     where: visibleHubPageWhere({ hubId: id, viewerId: me?.id ?? null, isPrivileged }),
-    orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
-    include: DISPLAY_JOIN,
+    orderBy: HUB_PAGE_ORDER_BY,
+    include: HUB_PAGE_DISPLAY_SELECT,
   })
   return NextResponse.json({ pages: rows.map(toHubPageDTO) })
 }

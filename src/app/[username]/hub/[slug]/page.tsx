@@ -14,7 +14,7 @@ import { sanitizeHubConfig } from '@/lib/hub-config'
 import { toEventDTO } from '@/lib/hub-events'
 import { toDropDTO } from '@/lib/hub-drops'
 import { toAnnouncementDTO } from '@/lib/hub-announcements'
-import { toHubPageDTO, visibleHubPageWhere } from '@/lib/hub-pages'
+import { toHubPageDTO, visibleHubPageWhere, HUB_PAGE_DISPLAY_SELECT, HUB_PAGE_ORDER_BY } from '@/lib/hub-pages'
 
 interface Props {
   params: Promise<{ username: string; slug: string }>
@@ -106,8 +106,8 @@ export default async function PublicHubPage({ params }: Props) {
       db.hubItem.findMany({ where: { hubId: hub.id }, orderBy: { order: 'asc' } }),
       db.hubPage.findMany({
         where: visibleHubPageWhere({ hubId: hub.id, viewerId: viewerUser?.id ?? null, isPrivileged }),
-        orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
-        include: { display: { select: { title: true, slug: true, coverImage: true, user: { select: { username: true } } } } },
+        orderBy: HUB_PAGE_ORDER_BY,
+        include: HUB_PAGE_DISPLAY_SELECT,
       }),
     ])
 
