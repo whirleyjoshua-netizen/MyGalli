@@ -86,15 +86,18 @@ export async function POST(request: NextRequest, { params }: Ctx) {
     // Only the field that actually changed gets written — an element found
     // inside a tab must not stomp `sections` (or vice versa) with a same-value
     // rewrite of the field it wasn't in.
-    const nextVersion = ctx.version + 1
     const foundInMain = next.sections !== ctx.sections
-    await db.display.update({
+    // Report the version the write actually produced, not a locally-computed
+    // `ctx.version + 1`: two stamps racing in from independent ElementRow
+    // `busy` locks both read the same `ctx.version`, so a locally-computed
+    // guess would have both callers report the same, now-stale, number.
+    const updated = await db.display.update({
       where: { id },
       data: foundInMain
         ? { sections: next.sections as never, version: { increment: 1 } }
         : { tabs: next.tabs as never, version: { increment: 1 } },
     })
-    return NextResponse.json({ stampedAt, stampedTz, version: nextVersion })
+    return NextResponse.json({ stampedAt, stampedTz, version: updated.version })
   } catch (error) {
     console.error('POST /api/displays/[id]/elements/[elementId]/stamp error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -119,15 +122,15 @@ export async function DELETE(request: NextRequest, { params }: Ctx) {
     const next = clearStampAnywhere({ sections: ctx.sections, tabs: ctx.tabs }, elementId)
     if (!next) return notFound()
 
-    const nextVersion = ctx.version + 1
     const foundInMain = next.sections !== ctx.sections
-    await db.display.update({
+    // See POST above: report the write's real result, not a stale local guess.
+    const updated = await db.display.update({
       where: { id },
       data: foundInMain
         ? { sections: next.sections as never, version: { increment: 1 } }
         : { tabs: next.tabs as never, version: { increment: 1 } },
     })
-    return NextResponse.json({ ok: true, version: nextVersion })
+    return NextResponse.json({ ok: true, version: updated.version })
   } catch (error) {
     console.error('DELETE /api/displays/[id]/elements/[elementId]/stamp error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

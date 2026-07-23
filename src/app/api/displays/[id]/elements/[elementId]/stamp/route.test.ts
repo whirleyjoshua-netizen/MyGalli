@@ -182,6 +182,7 @@ it('DELETE 409s on a stale version and does not write', async () => {
 it('POST returns the new version after bumping it', async () => {
   ;(getUser as any).mockResolvedValue({ id: 'owner' })
   ;(db.display.findUnique as any).mockResolvedValue(display({ version: 3 }))
+  ;(db.display.update as any).mockResolvedValue({ version: 4 })
   const res = await POST(req({ tz: 'UTC' }), ctx)
   expect(res.status).toBe(200)
   const data = await res.json()
@@ -196,10 +197,48 @@ it('DELETE returns the new version after bumping it', async () => {
       { id: 'e1', type: 'text', content: 'hello', stampedAt: '2026-01-01T00:00:00.000Z', stampedTz: 'UTC' },
     ] }] }],
   }))
+  ;(db.display.update as any).mockResolvedValue({ version: 8 })
   const res = await DELETE(req(), ctx)
   expect(res.status).toBe(200)
   const data = await res.json()
   expect(data.version).toBe(8)
+})
+
+// Finding 1 (regression guard): the reported version must come from the
+// UPDATE's result, not from a `ctx.version + 1` computed at read time. Two
+// elements stamped in quick succession both read the same `ctx.version`
+// (each ElementRow's `busy` lock is independent, so the reads aren't
+// serialised) — a locally-computed guess would have both calls report the
+// SAME, now-stale, number even though the DB's real value has moved further.
+// Simulate exactly that: the read sees version 3, but by the time the update
+// resolves the true row is at version 9 (some concurrent write raced ahead).
+// A locally-computed `ctx.version + 1` would report 4 here and pass a naive
+// "read + 1" test while still shipping the bug — this asserts the real 9.
+it('POST reports the version the UPDATE actually returned, not ctx.version + 1', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  ;(db.display.findUnique as any).mockResolvedValue(display({ version: 3 }))
+  ;(db.display.update as any).mockResolvedValue({ version: 9 })
+  const res = await POST(req({ tz: 'UTC' }), ctx)
+  expect(res.status).toBe(200)
+  const data = await res.json()
+  expect(data.version).toBe(9)
+  expect(data.version).not.toBe(4)
+})
+
+it('DELETE reports the version the UPDATE actually returned, not ctx.version + 1', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  ;(db.display.findUnique as any).mockResolvedValue(display({
+    version: 3,
+    sections: [{ id: 's1', layout: 'full-width', columns: [{ id: 'c1', elements: [
+      { id: 'e1', type: 'text', content: 'hello', stampedAt: '2026-01-01T00:00:00.000Z', stampedTz: 'UTC' },
+    ] }] }],
+  }))
+  ;(db.display.update as any).mockResolvedValue({ version: 9 })
+  const res = await DELETE(req(), ctx)
+  expect(res.status).toBe(200)
+  const data = await res.json()
+  expect(data.version).toBe(9)
+  expect(data.version).not.toBe(4)
 })
 
 // Finding 2a: a page can route its content through tabs instead of the
