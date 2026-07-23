@@ -147,11 +147,46 @@ inside server-rendered public pages.
 
 ## Part D — Editor
 
-The per-element controls gain a **Stamp** action. Once stamped, that control shows the stamped
-value with **Remove** and **Re-stamp**.
+**Where the control lives: `src/components/editor/panel/ElementRow.tsx`, beside the
+`<Inspector>` — not inside it.**
 
-The stamp is also visible in the editor canvas, rendered by the same `ElementStamp` component,
-so the author sees what a visitor sees.
+`ElementRow` is the collapsible per-element row in the editor panel. Its header carries the
+element label and Delete; when expanded it renders the per-type inspector chosen by
+`getInspector(element.type)`. The stamp control goes in that expanded area, **after** the
+inspector, separated by a divider, so the row reads as "settings for this element type" followed
+by "settings any element can have".
+
+This placement is load-bearing, not cosmetic. Only four types have a custom inspector today
+(`image`, `kpi`, `button`, `slideshow`); every other type falls back to `DefaultInspector`.
+Putting the stamp control inside the inspectors would mean five copies immediately and an
+unwritten rule that every future inspector must re-implement it — reintroducing exactly the
+per-type duplication that Part C's single `renderElement` wrapper exists to avoid. `ElementRow`
+wraps the type-specific inspector the same way `renderElement` wraps the type-specific switch.
+One shared seam at each end.
+
+**Behaviour.** Unstamped: a single **Stamp** button. Stamped: the formatted value rendered by
+the same `ElementStamp` component used publicly, plus **Re-stamp** and **Remove**.
+
+**Wiring.** `ElementRow` currently receives `onChange(updates: Partial<CanvasElement>)`, which
+mutates local editor state. Stamping cannot go through `onChange` alone, because the value must
+come from the server. `ElementRow` gains a `displayId` prop and calls the Part B endpoint, then
+feeds the response into the existing `onChange`:
+
+```ts
+const res = await fetch(`/api/displays/${displayId}/elements/${element.id}/stamp`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ tz: Intl.DateTimeFormat().resolvedOptions().timeZone }),
+})
+if (res.ok) onChange(await res.json())   // { stampedAt, stampedTz } straight from the server
+```
+
+Applying the server's response rather than a locally-guessed value keeps the editor's state
+exactly equal to what was persisted — the client never invents a timestamp, even optimistically.
+Remove calls `DELETE` and then `onChange({ stampedAt: undefined, stampedTz: undefined })`.
+
+The stamp also renders on the canvas itself via the same `ElementStamp`, so the author sees what
+a visitor sees.
 
 Wording is "Stamp", never "Last updated" — see the naming rule above.
 
@@ -184,8 +219,13 @@ Render tests:
 - a stamped element of several different `type`s all render the stamp — proving the wrapper is
   genuinely type-independent
 
-Component tests for the editor control: Stamp appears when unstamped; Remove and Re-stamp
-appear when stamped.
+Component tests for the editor control, in `ElementRow`:
+- Stamp appears when unstamped; Re-stamp and Remove appear when stamped
+- the control renders for an element type that has NO custom inspector (falls back to
+  `DefaultInspector`) and for one that HAS a custom inspector — proving it is genuinely
+  independent of the inspector registry
+- Stamp applies the server's returned `stampedAt`/`stampedTz` via `onChange`, and applies
+  nothing when the request fails
 
 ## Out of scope
 
