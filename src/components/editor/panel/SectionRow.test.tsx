@@ -9,6 +9,7 @@ const group = {
 const base = {
   group,
   expandedElementId: null,
+  displayId: 'd1',
   onToggleElement: vi.fn(),
   onChangeElement: vi.fn(),
   onDeleteElement: vi.fn(),

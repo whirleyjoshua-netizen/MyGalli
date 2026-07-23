@@ -1376,6 +1376,7 @@ export function PageEditor({ pageId, openShare }: PageEditorProps) {
               <ElementsTab
                 sections={getActiveSections()}
                 expandedElementId={selectedElementId(selection)}
+                displayId={id || ''}
                 onToggleElement={toggleRow}
                 onChangeElement={updateElement}
                 onDeleteElement={deleteElement}
