@@ -16,6 +16,7 @@ function display(overrides: Record<string, unknown> = {}) {
   return {
     id: 'd1',
     userId: 'owner',
+    version: 3,
     collaborators: [{ userId: 'collab' }],
     sections: [
       { id: 's1', layout: 'full-width', columns: [
@@ -121,4 +122,54 @@ it('DELETE 404 for a stranger', async () => {
   ;(getUser as any).mockResolvedValue({ id: 'stranger' })
   ;(db.display.findUnique as any).mockResolvedValue(display())
   expect((await DELETE(req(), ctx)).status).toBe(404)
+})
+
+it('a fresh 404 response body is readable on EVERY call, not just the first', async () => {
+  // Regression test for a shared module-level NOT_FOUND response: a Response
+  // body is a single-use stream, so reusing one instance across requests
+  // means the second .json() read on a warm module hits an already-consumed
+  // (and locked) stream. Reading both bodies is what exercises the bug —
+  // checking .status twice would still pass against the broken version.
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  ;(db.display.findUnique as any).mockResolvedValue(null)
+
+  const first = await POST(req(), ctx)
+  const second = await POST(req(), ctx)
+
+  await expect(first.json()).resolves.toEqual({ error: 'Display not found' })
+  await expect(second.json()).resolves.toEqual({ error: 'Display not found' })
+})
+
+it('POST 409s on a stale version and does not write', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  ;(db.display.findUnique as any).mockResolvedValue(display({ version: 3 }))
+  const res = await POST(req({ tz: 'UTC', version: 2 }), ctx)
+  expect(res.status).toBe(409)
+  const data = await res.json()
+  expect(data).toEqual({ error: 'Version conflict', currentVersion: 3 })
+  expect(db.display.update).not.toHaveBeenCalled()
+})
+
+it('POST succeeds and bumps version when the client version matches', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  ;(db.display.findUnique as any).mockResolvedValue(display({ version: 3 }))
+  const res = await POST(req({ tz: 'UTC', version: 3 }), ctx)
+  expect(res.status).toBe(200)
+  const data = (db.display.update as any).mock.calls[0][0].data
+  expect(data.version).toEqual({ increment: 1 })
+})
+
+it('DELETE 409s on a stale version and does not write', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  ;(db.display.findUnique as any).mockResolvedValue(display({
+    version: 5,
+    sections: [{ id: 's1', layout: 'full-width', columns: [{ id: 'c1', elements: [
+      { id: 'e1', type: 'text', content: 'hello', stampedAt: '2026-01-01T00:00:00.000Z', stampedTz: 'UTC' },
+    ] }] }],
+  }))
+  const res = await DELETE(req({ version: 4 }), ctx)
+  expect(res.status).toBe(409)
+  const data = await res.json()
+  expect(data).toEqual({ error: 'Version conflict', currentVersion: 5 })
+  expect(db.display.update).not.toHaveBeenCalled()
 })
