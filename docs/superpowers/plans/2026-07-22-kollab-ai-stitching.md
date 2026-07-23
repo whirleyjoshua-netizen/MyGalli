@@ -2387,7 +2387,22 @@ export default function KollabReelPlayer({ reel, onClose }: { reel: Reel; onClos
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  // Guards against double-advancing a single clip. A video fires BOTH
+  // `timeupdate` (when currentTime reaches `out`) and `ended` for the same
+  // end-of-playback moment whenever `out` >= the real duration — the ordinary
+  // untrimmed case. Two next() calls would skip the following clip entirely.
+  // Do NOT fix this by dropping onEnded: if `out` exceeds the real duration,
+  // currentTime never reaches it, timeupdate never fires, and without onEnded
+  // the reel strands. Both signals are needed; only the first may take effect.
+  const advancedRef = useRef(false)
+
+  useEffect(() => {
+    advancedRef.current = false
+  }, [i])
+
   const next = useCallback(() => {
+    if (advancedRef.current) return
+    advancedRef.current = true
     setI((cur) => (cur + 1 < reel.clips.length ? cur + 1 : cur))
   }, [reel.clips.length])
 
@@ -2483,7 +2498,7 @@ export default function KollabReelPlayer({ reel, onClose }: { reel: Reel; onClos
 pnpm exec vitest run src/components/hub/community/KollabReelPlayer.test.tsx
 ```
 
-Expected: PASS, 9 tests.
+Expected: PASS, 15 tests.
 
 - [ ] **Step 5: Commit**
 
