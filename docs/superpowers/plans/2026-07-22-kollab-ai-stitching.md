@@ -875,7 +875,15 @@ export function presetWhere(preset: Preset, hubId: string, now: Date): Record<st
 // reader, and a `.split('\n')` test passes right over them. Write them as
 // \u escapes: a literal U+2028 in a source file is itself a line terminator.
 const clean = (s: string): string =>
-  s.replace(/[\r\n\u000B\f\u0085\u2028\u2029|]+/g, ' ').trim().slice(0, 140)
+  s
+    // NFKC first: it folds fullwidth/compatibility forms onto ASCII, so a
+    // caption using U+FF5C (fullwidth pipe) collapses to a real `|` and is
+    // then stripped below. Chasing individual lookalike code points does not
+    // scale; normalising does.
+    .normalize('NFKC')
+    .replace(/[\r\n\u000B\f\u0085\u2028\u2029|\u202A-\u202E\u2066-\u2069\u200B-\u200D\uFEFF]+/g, ' ')
+    .trim()
+    .slice(0, 140)
 
 const relAge = (then: Date, now: Date): string => {
   const days = Math.floor((now.getTime() - then.getTime()) / DAY)
@@ -903,8 +911,8 @@ export function describeCandidates(rows: CandidateRow[], now: Date): string {
   return rows
     .map((r) => {
       const parts = [r.id, r.type]
-      // != null, not truthiness: 0 is a real duration, null means unknown.
-      if (r.type === 'video') parts.push(r.durationSec != null ? `${r.durationSec}s` : '?s')
+      // !== null, not truthiness: 0 is a real duration, null means unknown.
+      if (r.type === 'video') parts.push(r.durationSec !== null ? `${r.durationSec}s` : '?s')
       parts.push(`@${r.author.username}`, relAge(r.createdAt, now))
       if (r.caption) parts.push(`"${clean(r.caption)}"`)
       parts.push(...tagBits(r.aiTags))
@@ -920,7 +928,7 @@ export function describeCandidates(rows: CandidateRow[], now: Date): string {
 pnpm exec vitest run src/lib/kollab/candidates.test.ts
 ```
 
-Expected: PASS, 16 tests.
+Expected: PASS, 18 tests.
 
 - [ ] **Step 5: Commit**
 
