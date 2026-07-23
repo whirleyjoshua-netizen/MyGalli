@@ -1,4 +1,4 @@
-import { it, expect, vi, beforeEach } from 'vitest'
+import { it, describe, expect, vi, beforeEach } from 'vitest'
 
 // vi.mock is hoisted above every top-level const, so the shared spy must be
 // created with vi.hoisted or the factory closes over a TDZ binding.
@@ -7,6 +7,7 @@ vi.mock('@vercel/blob', () => ({ del }))
 vi.mock('@/lib/storage-env', () => ({ blobReadWriteToken: () => 'tok' }))
 vi.mock('@/lib/notifications', () => ({ createNotification: vi.fn(), notifyHubMembers: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: vi.fn().mockResolvedValue(null) }))
+vi.mock('@/lib/kollab/tag-drop', () => ({ tagDropAsset: vi.fn().mockResolvedValue(null) }))
 
 vi.mock('@/lib/auth', () => ({ getUser: vi.fn() }))
 vi.mock('@/lib/db', () => ({
@@ -27,6 +28,7 @@ import { DELETE, PATCH } from './route'
 import { getUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createNotification, notifyHubMembers } from '@/lib/notifications'
+import { tagDropAsset } from '@/lib/kollab/tag-drop'
 
 const params = { params: Promise.resolve({ id: 'hub1', dropId: 'drop1' }) }
 const req = (body?: any) => ({ json: async () => body } as any)
@@ -214,4 +216,46 @@ it('PATCH approve dedupes a user who is both a collaborator and a member', async
   const call = (notifyHubMembers as any).mock.calls.find((c: any) => c[1].type === 'hub_drop')
   expect(call[0].filter((u: string) => u === 'collab1').length).toBe(1)
   expect(call[0]).toEqual(expect.arrayContaining(['collab1', 'member1']))
+})
+
+describe('tagging on approve', () => {
+  it('tags an approved drop and stores the result', async () => {
+    ;(tagDropAsset as any).mockResolvedValue({ tags: ['soccer'], desc: 'd', subjects: 2, quality: 0.7, model: 'claude-haiku-4-5', at: 'now' })
+    ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue(hub)
+    ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'pending' })
+    const res = await PATCH(req({ action: 'approve' }), params)
+    expect(res.status).toBe(200)
+    expect(tagDropAsset).toHaveBeenCalled()
+    const tagWrite = (db.hubDrop.update as any).mock.calls.find((c: any) => c[0]?.data?.aiTags)
+    expect(tagWrite).toBeTruthy()
+    expect(tagWrite[0].data.aiTags.tags).toEqual(['soccer'])
+  })
+
+  it('does not tag on reject', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue(hub)
+    ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'pending' })
+    await PATCH(req({ action: 'reject' }), params)
+    expect(tagDropAsset).not.toHaveBeenCalled()
+  })
+
+  it('still approves when tagging throws', async () => {
+    ;(tagDropAsset as any).mockRejectedValue(new Error('boom'))
+    ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue(hub)
+    ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'pending' })
+    const res = await PATCH(req({ action: 'approve' }), params)
+    expect(res.status).toBe(200)
+  })
+
+  it('writes no aiTags when tagging returns null', async () => {
+    ;(tagDropAsset as any).mockResolvedValue(null)
+    ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue(hub)
+    ;(db.hubDrop.findFirst as any).mockResolvedValue({ id: 'drop1', authorId: 'author', hubId: 'hub1', url: OWN, thumbnailUrl: null, status: 'pending' })
+    await PATCH(req({ action: 'approve' }), params)
+    const tagWrite = (db.hubDrop.update as any).mock.calls.find((c: any) => c[0]?.data?.aiTags)
+    expect(tagWrite).toBeFalsy()
+  })
 })

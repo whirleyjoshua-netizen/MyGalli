@@ -6,6 +6,7 @@ import { blobReadWriteToken } from '@/lib/storage-env'
 import { isOwnDropAsset, canReviewDrop } from '@/lib/hub-drops'
 import { createNotification, notifyHubMembers } from '@/lib/notifications'
 import { rateLimit } from '@/lib/rate-limit'
+import { tagDropAsset } from '@/lib/kollab/tag-drop'
 
 type LoadedHub = { id: string; userId: string; community: boolean; title: string; slug: string; user: { username: string } }
 type LoadedDrop = { id: string; authorId: string; url: string; thumbnailUrl: string | null; status: string }
@@ -87,6 +88,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   })
   if (transitioned.count === 0) {
     return NextResponse.json({ error: 'This drop has already been reviewed' }, { status: 409 })
+  }
+
+  // Tagging is best-effort and must never fail an approval: the drop is already
+  // live at this point, and a tagless drop is still stitchable on its metadata.
+  if (action === 'approve') {
+    try {
+      const aiTags = await tagDropAsset(id, r.drop.thumbnailUrl || r.drop.url)
+      if (aiTags) await db.hubDrop.update({ where: { id: dropId }, data: { aiTags } })
+    } catch (error) {
+      console.warn(`hub-drop approve: tagging skipped for hub ${id} drop ${dropId}`, error)
+    }
   }
 
   if (action === 'reject') {
