@@ -88,7 +88,7 @@ export interface ApptRule {
 }
 
 // Layout modes for sections
-export type LayoutMode = 'single' | 'full-width' | 'two-column' | 'three-column'
+export type LayoutMode = 'full-width' | 'two-column' | 'three-column'
 
 // Element types (Tier 1 + Tier 2 + Tier 3)
 export type ElementType =

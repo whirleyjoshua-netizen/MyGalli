@@ -4,10 +4,10 @@ import { isValidTimeZone, findElement, setStamp, clearStamp } from './element-st
 
 function sections(): Section[] {
   return [
-    { id: 's1', layout: 'single', columns: [
+    { id: 's1', layout: 'full-width', columns: [
       { id: 'c1', elements: [{ id: 'e1', type: 'text', content: 'hello' }] },
     ] },
-    { id: 's2', layout: 'single', columns: [
+    { id: 's2', layout: 'full-width', columns: [
       { id: 'c2', elements: [
         { id: 'e2', type: 'image', url: 'https://x/a.jpg' },
         { id: 'e3', type: 'heading', content: 'hi', stampedAt: '2026-01-01T00:00:00.000Z', stampedTz: 'UTC' },
