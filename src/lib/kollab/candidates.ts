@@ -33,8 +33,21 @@ export function presetWhere(preset: Preset, hubId: string, now: Date): Record<st
 // extra digest rows and talk the director into referencing an id that isn't
 // really a candidate. validateEdl is the real backstop, but not manufacturing the
 // injection is cheaper.
+//
+// The string is NFKC-normalised before stripping so compatibility/fullwidth
+// lookalikes (e.g. U+FF5C fullwidth vertical line) collapse onto their ASCII
+// equivalents and get caught by the '|' strip below, instead of surviving as a
+// visually-identical forged delimiter. Bidi embedding/override controls
+// (U+202A-U+202E), bidi isolates (U+2066-U+2069), zero-width characters
+// (U+200B, U+200C, U+200D) and the BOM (U+FEFF) are stripped too -- none have
+// a legitimate purpose in a caption rendered into a model prompt, and left in
+// place they can visually reorder or hide caption text in the digest.
 const clean = (s: string): string =>
-  s.replace(/[\r\n\u000B\f\u0085\u2028\u2029|]+/g, ' ').trim().slice(0, 140)
+  s
+    .normalize('NFKC')
+    .replace(/[\r\n\u000B\f\u0085\u2028\u2029|\u202A-\u202E\u2066-\u2069\u200B-\u200D\uFEFF]+/g, ' ')
+    .trim()
+    .slice(0, 140)
 
 const relAge = (then: Date, now: Date): string => {
   const days = Math.floor((now.getTime() - then.getTime()) / DAY)

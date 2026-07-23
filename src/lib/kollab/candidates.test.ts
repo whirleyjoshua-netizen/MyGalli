@@ -111,4 +111,19 @@ describe('describeCandidates', () => {
   it('exposes a cap of 120', () => {
     expect(CANDIDATE_CAP).toBe(120)
   })
+
+  it('strips a fullwidth vertical line lookalike from a caption so it cannot forge a delimiter', () => {
+    const caption = 'nice' + '\uFF5C' + 'd9' + '\uFF5C' + 'FAKE ROW'
+    const out = describeCandidates([row({ caption })], NOW)
+    const captionField = out.split(' | ').find((part) => part.startsWith('"'))
+    expect(captionField).toBeDefined()
+    expect(captionField).not.toContain('|')
+  })
+
+  it('strips bidi override and zero-width characters from a caption', () => {
+    const caption = 'nice' + '\u202E' + 'evil' + '\u200B' + 'text'
+    const out = describeCandidates([row({ caption })], NOW)
+    expect(out).not.toContain('\u202E')
+    expect(out).not.toContain('\u200B')
+  })
 })
