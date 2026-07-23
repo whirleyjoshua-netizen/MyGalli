@@ -118,8 +118,13 @@ unrecognised. The instant itself is always `new Date()` on the server.
 `POST` on an already-stamped element is a re-stamp: it overwrites with a fresh server time.
 That is the intended path, not an error.
 
-Responses: `200 { stampedAt, stampedTz }` on success, `401` unauthenticated, `403` when
-`canEdit` is false, `404` when the Display or the element id does not exist.
+Responses: `200 { stampedAt, stampedTz }` on success, `401` unauthenticated, `404` when the
+Display does not exist, when `canEdit` is false, or when the element id is not found.
+
+**A failed `canEdit` returns `404`, not `403`** — matching `PATCH /api/displays/[id]`, which
+answers `{ error: 'Display not found' }` for non-editors so that a stranger cannot use the
+status code to confirm a display exists. Diverging here would make these endpoints an existence
+oracle for every other display on the platform.
 
 **The editor must save before stamping.** An element that exists only in unsaved editor state
 has no server-side representation to stamp. The editor already autosaves, so in practice this
@@ -209,7 +214,8 @@ Endpoint tests (mirroring the existing route-test pattern under `src/app/api/`):
 - `POST` on an already-stamped element overwrites with a newer instant
 - `DELETE` removes both fields
 - a collaborator (not the owner) CAN stamp — this is the case most likely to be got wrong
-- an unrelated signed-in user → `403`; unauthenticated → `401`; unknown element id → `404`
+- an unrelated signed-in user → `404` (not `403`); unauthenticated → `401`; unknown element
+  id → `404`
 - stamping does not alter any other element or any other field of the target element
 
 Render tests:
