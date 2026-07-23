@@ -31,19 +31,31 @@ export default function KollabReelPlayer({ reel, onClose }: { reel: Reel; onClos
   // Guards against double-advancing a single clip: a video clip can fire both
   // its `timeupdate` (when currentTime reaches `out`) and `ended` listeners
   // for the same end-of-playback moment. Reset whenever the clip index
-  // changes so the next clip is armed for its own single advance.
+  // changes so the next clip is armed for its own single advance. On the
+  // final clip, next() still sets this flag but setI's index update is a
+  // no-op (already at the last index), so the index never changes and the
+  // flag stays latched permanently — harmless, since there is nowhere left
+  // to advance to.
   const advancedRef = useRef(false)
   const clip = reel.clips[i]
+
+  // Reset during render, NOT in an effect. A passive effect runs after commit,
+  // so the newly-mounted <video>/<img> is already live and can fire onError
+  // (a broken URL — normal here, since a clip's drop can be deleted) while the
+  // previous clip's flag is still set. next() would swallow it, and `error`
+  // does not re-fire, so the clip would strand. Clearing during render means
+  // the flag is false before the new element exists.
+  const lastIndexRef = useRef(i)
+  if (lastIndexRef.current !== i) {
+    lastIndexRef.current = i
+    advancedRef.current = false
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
-
-  useEffect(() => {
-    advancedRef.current = false
-  }, [i])
 
   const next = useCallback(() => {
     if (advancedRef.current) return
