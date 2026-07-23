@@ -7,6 +7,7 @@ import { CommunityTabs, tabFromParam, type CommunityTab } from './CommunityTabs'
 import { HubFilesTab } from './HubFilesTab'
 import type { FileFolder, FileItem } from '@/lib/hub-files-view'
 import type { BookmarkLite } from '@/lib/hub-bookmark-requests'
+import { resolveHubTheme } from '@/lib/hub-themes'
 import { CommunityHeader } from './CommunityHeader'
 import { CommunityFeed } from './CommunityFeed'
 import { CommunitySidebar } from './CommunitySidebar'
@@ -77,6 +78,9 @@ function CommunityHubViewInner({
   const canPost = isPrivileged || joined
   const nextEvent = events && events.length > 0 ? { title: events[0].title, startsAt: events[0].startsAt } : null
 
+  // Optional chain: a cached payload or a test fixture may predate the key.
+  const theme = resolveHubTheme(config.appearance?.theme)
+
   async function toggleJoin() {
     const res = await fetch(`/api/hubs/${hub.id}/join`, { method: joined ? 'DELETE' : 'POST' })
     if (res.status === 401) { window.location.href = '/login'; return }
@@ -84,7 +88,14 @@ function CommunityHubViewInner({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-galli/5 to-transparent">
+    <div
+      className="min-h-screen bg-gradient-to-b from-primary/5 to-transparent"
+      style={{
+        '--primary': theme.primary,
+        '--primary-foreground': theme.primaryForeground,
+        '--hub-accent': theme.accent,
+      } as React.CSSProperties}
+    >
       <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
         <CommunityUtilityStrip
           hubId={hub.id}
@@ -185,7 +196,7 @@ function CommunityHubViewInner({
         </div>
         )}
 
-        <div className="mt-10 rounded-2xl border border-border bg-galli/5 py-6 text-center text-sm text-muted-foreground">
+        <div className="mt-10 rounded-2xl border border-border bg-primary/5 py-6 text-center text-sm text-muted-foreground">
           Good ideas grow in great communities.
         </div>
       </div>
