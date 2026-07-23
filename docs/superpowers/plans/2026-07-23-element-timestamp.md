@@ -79,10 +79,10 @@ import { isValidTimeZone, findElement, setStamp, clearStamp } from './element-st
 
 function sections(): Section[] {
   return [
-    { id: 's1', layout: 'single', columns: [
+    { id: 's1', layout: 'full-width', columns: [
       { id: 'c1', elements: [{ id: 'e1', type: 'text', content: 'hello' }] },
     ] },
-    { id: 's2', layout: 'single', columns: [
+    { id: 's2', layout: 'full-width', columns: [
       { id: 'c2', elements: [
         { id: 'e2', type: 'image', url: 'https://x/a.jpg' },
         { id: 'e3', type: 'heading', content: 'hi', stampedAt: '2026-01-01T00:00:00.000Z', stampedTz: 'UTC' },
@@ -300,7 +300,7 @@ function display(overrides: Record<string, unknown> = {}) {
     userId: 'owner',
     collaborators: [{ userId: 'collab' }],
     sections: [
-      { id: 's1', layout: 'single', columns: [
+      { id: 's1', layout: 'full-width', columns: [
         { id: 'c1', elements: [
           { id: 'e1', type: 'text', content: 'hello' },
           { id: 'e2', type: 'image', url: 'https://x/a.jpg' },
@@ -387,7 +387,7 @@ it('POST writes only the target element and leaves siblings untouched', async ()
 it('DELETE removes both fields', async () => {
   ;(getUser as any).mockResolvedValue({ id: 'owner' })
   ;(db.display.findUnique as any).mockResolvedValue(display({
-    sections: [{ id: 's1', layout: 'single', columns: [{ id: 'c1', elements: [
+    sections: [{ id: 's1', layout: 'full-width', columns: [{ id: 'c1', elements: [
       { id: 'e1', type: 'text', content: 'hello', stampedAt: '2026-01-01T00:00:00.000Z', stampedTz: 'UTC' },
     ] }] }],
   }))
@@ -802,7 +802,7 @@ import { ColumnCanvas } from '@/components/canvas/ColumnCanvas'
 
 describe('editor canvas stamp', () => {
   it('renders the stamp on the canvas so the author sees what a visitor sees', () => {
-    const sections = [{ id: 's1', layout: 'single' as const, columns: [
+    const sections = [{ id: 's1', layout: 'full-width' as const, columns: [
       { id: 'c1', elements: [{ id: 'e1', type: 'text' as const, content: 'hi', ...STAMP }] },
     ] }]
     render(
