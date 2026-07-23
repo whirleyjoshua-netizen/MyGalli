@@ -1,6 +1,8 @@
+import type React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { KollabViewer } from './KollabViewer'
+import type { Reel } from './KollabReelPlayer'
 import type { DropDTO } from '@/lib/hub-drops'
 
 const drop = (over: Partial<DropDTO> = {}): DropDTO => ({
@@ -17,6 +19,11 @@ const base = {
   // it is gets the safer one; every moderator test passes `isPrivileged` itself.
   isPrivileged: false,
   onClose: () => {}, onApprovedCountChange: () => {}, onPendingCountChange: () => {},
+  reels: [] as Reel[], onPublish: () => {}, onPlay: () => {},
+}
+
+function renderViewer(over: Partial<React.ComponentProps<typeof KollabViewer>> = {}) {
+  return render(<KollabViewer {...base} {...over} />)
 }
 
 beforeEach(() => {
@@ -230,5 +237,32 @@ describe('KollabViewer', () => {
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: /load more/i })).not.toBeInTheDocument()
     })
+  })
+})
+
+describe('Reels tab', () => {
+  const reels = [{ id: 'r1', title: 'Saturday', status: 'published', runtimeSec: 30, createdAt: '2026-07-22T00:00:00.000Z', creator: { username: 'm' }, clips: [] }]
+
+  it('shows a Reels tab with a count', () => {
+    renderViewer({ reels })
+    expect(screen.getByRole('tab', { name: /reels \(1\)/i })).toBeInTheDocument()
+  })
+
+  it('lists reel titles on the Reels tab', () => {
+    renderViewer({ reels })
+    fireEvent.click(screen.getByRole('tab', { name: /reels/i }))
+    expect(screen.getByText('Saturday')).toBeInTheDocument()
+  })
+
+  it('shows a draft badge for a draft reel', () => {
+    renderViewer({ reels: [{ ...reels[0], status: 'draft' }] })
+    fireEvent.click(screen.getByRole('tab', { name: /reels/i }))
+    expect(screen.getByText(/draft/i)).toBeInTheDocument()
+  })
+
+  it('offers Publish only to a moderator', () => {
+    renderViewer({ reels: [{ ...reels[0], status: 'draft' }], isPrivileged: false })
+    fireEvent.click(screen.getByRole('tab', { name: /reels/i }))
+    expect(screen.queryByRole('button', { name: /publish/i })).toBeNull()
   })
 })

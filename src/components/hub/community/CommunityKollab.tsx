@@ -1,11 +1,13 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { upload } from '@vercel/blob/client'
 import { dropPathPrefix, type DropDTO } from '@/lib/hub-drops'
 import { consentTextFor } from '@/lib/hub-consent'
 import { KollabTile } from './KollabTile'
 import { KollabViewer } from './KollabViewer'
+import { KollabReelRequest } from './KollabReelRequest'
+import KollabReelPlayer, { type Reel } from './KollabReelPlayer'
 
 function captureVideoPoster(file: File): Promise<{ blob: Blob | null; duration: number | null }> {
   return new Promise((resolve) => {
@@ -40,11 +42,12 @@ function captureVideoPoster(file: File): Promise<{ blob: Blob | null; duration: 
 }
 
 export function CommunityKollab({
-  hubId, hubTitle, canDrop, isPrivileged, currentUserId, enabled, initialDrops, total, pendingCount, preview,
+  hubId, hubTitle, canDrop, canStitch = false, isPrivileged, currentUserId, enabled, initialDrops, total, pendingCount, preview,
 }: {
   hubId: string
   hubTitle: string
   canDrop: boolean
+  canStitch?: boolean
   isPrivileged: boolean
   currentUserId?: string
   enabled: boolean
@@ -62,7 +65,51 @@ export function CommunityKollab({
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [viewerOpen, setViewerOpen] = useState(false)
+  const [reels, setReels] = useState<Reel[]>([])
+  const [requesting, setRequesting] = useState(false)
+  const [reelBusy, setReelBusy] = useState(false)
+  const [reelError, setReelError] = useState<string | null>(null)
+  const [playing, setPlaying] = useState<Reel | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (preview) return
+    fetch(`/api/hubs/${hubId}/kollab/reels`)
+      .then((r) => (r.ok ? r.json() : { reels: [] }))
+      .then((d) => setReels(d.reels ?? []))
+      .catch(() => {})
+  }, [hubId, preview])
+
+  async function createReel(v: { preset: string; prompt: string | null; targetSec: number }) {
+    setReelBusy(true)
+    setReelError(null)
+    try {
+      const res = await fetch(`/api/hubs/${hubId}/kollab/reels`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(v),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) { setReelError(body.error || 'Could not build that reel.'); return }
+      setReels((cur) => [body, ...cur])
+      setRequesting(false)
+      setPlaying(body)
+    } finally {
+      setReelBusy(false)
+    }
+  }
+
+  async function publishReel(id: string, action: 'publish' | 'unpublish') {
+    const nextStatus = action === 'publish' ? 'published' : 'draft'
+    const prev = reels
+    setReels((cur) => cur.map((r) => (r.id === id ? { ...r, status: nextStatus } : r)))
+    const res = await fetch(`/api/hubs/${hubId}/kollab/reels/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    })
+    if (!res.ok) setReels(prev)
+  }
 
   if (!enabled) return null
 
@@ -122,10 +169,12 @@ export function CommunityKollab({
         count={count}
         pendingCount={pending}
         canDrop={canDrop}
+        canStitch={canStitch}
         isPrivileged={isPrivileged}
         uploading={uploading}
         onDrop={() => fileRef.current?.click()}
         onSee={() => setViewerOpen(true)}
+        onMakeReel={() => setRequesting(true)}
       />
 
       <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
@@ -145,8 +194,21 @@ export function CommunityKollab({
           onClose={() => setViewerOpen(false)}
           onApprovedCountChange={(d) => setCount((c) => Math.max(0, c + d))}
           onPendingCountChange={(d) => setPending((p) => Math.max(0, p + d))}
+          reels={reels}
+          onPublish={publishReel}
+          onPlay={setPlaying}
         />
       )}
+
+      {requesting && !preview && (
+        <KollabReelRequest
+          onSubmit={createReel}
+          onClose={() => { setRequesting(false); setReelError(null) }}
+          busy={reelBusy}
+          error={reelError}
+        />
+      )}
+      {playing && <KollabReelPlayer reel={playing} onClose={() => setPlaying(null)} />}
     </>
   )
 }

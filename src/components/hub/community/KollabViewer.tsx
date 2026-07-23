@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import type { DropDTO } from '@/lib/hub-drops'
 import { KollabGrid } from './KollabGrid'
+import type { Reel } from './KollabReelPlayer'
 
-type Tab = 'approved' | 'pending'
+type Tab = 'approved' | 'pending' | 'reels'
 
 export function KollabViewer({
-  hubId, isPrivileged, currentUserId, initialDrops, total, onClose, onApprovedCountChange, onPendingCountChange, pendingCount = 0, initialTab = 'approved',
+  hubId, isPrivileged, currentUserId, initialDrops, total, onClose, onApprovedCountChange, onPendingCountChange, pendingCount = 0, initialTab = 'approved', reels, onPublish, onPlay,
 }: {
   hubId: string
   isPrivileged: boolean
@@ -20,6 +21,9 @@ export function KollabViewer({
   onPendingCountChange: (delta: number) => void
   pendingCount?: number
   initialTab?: Tab
+  reels: Reel[]
+  onPublish: (id: string, next: 'publish' | 'unpublish') => void
+  onPlay: (reel: Reel) => void
 }) {
   // A non-privileged viewer can never land on (or see) the Pending tab,
   // regardless of what the caller asks for.
@@ -195,6 +199,9 @@ export function KollabViewer({
                 Pending ({pendingLoaded ? pending.length : pendingBadge})
               </button>
             )}
+            <button role="tab" aria-selected={tab === 'reels'} onClick={() => setTab('reels')} className={tabClass(tab === 'reels')}>
+              Reels ({reels.length})
+            </button>
           </div>
           <button onClick={onClose} aria-label="Close" className="rounded-md p-1 text-muted-foreground hover:bg-muted">
             <X className="h-5 w-5" />
@@ -203,7 +210,35 @@ export function KollabViewer({
 
         <div className="flex-1 overflow-y-auto p-4">
           {error && <p className="mb-3 text-xs text-destructive">{error}</p>}
-          {busy && !pendingLoaded && tab === 'pending' ? (
+          {tab === 'reels' && (
+            <div className="space-y-2">
+              {reels.length === 0 && (
+                <p className="py-8 text-center text-sm text-muted-foreground">No reels yet.</p>
+              )}
+              {reels.map((r) => (
+                <div key={r.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                  <button onClick={() => onPlay(r)} className="min-w-0 flex-1 text-left">
+                    <p className="truncate text-sm font-medium">{r.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {Math.round(r.runtimeSec)}s · {r.clips.length} clips · @{r.creator.username}
+                    </p>
+                  </button>
+                  {r.status === 'draft' && (
+                    <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Draft</span>
+                  )}
+                  {isPrivileged && (
+                    <button
+                      onClick={() => onPublish(r.id, r.status === 'draft' ? 'publish' : 'unpublish')}
+                      className="rounded-lg border border-border px-3 py-1 text-xs hover:bg-muted"
+                    >
+                      {r.status === 'draft' ? 'Publish' : 'Unpublish'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {tab !== 'reels' && (busy && !pendingLoaded && tab === 'pending' ? (
             <div className="py-12 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></div>
           ) : tab === 'pending' && !pendingLoaded && pendingError ? (
             <div className="rounded-xl border border-dashed border-destructive/40 py-12 text-center text-sm text-destructive">
@@ -221,7 +256,7 @@ export function KollabViewer({
               onReject={(id) => review(id, 'reject')}
               onRemove={remove}
             />
-          )}
+          ))}
 
           {tab === 'approved' && !exhausted && approved.length < approvedTotal && (
             <div className="mt-4 text-center">

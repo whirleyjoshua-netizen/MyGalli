@@ -75,6 +75,19 @@ export function LayoutSectionsSection({ config, onChange, hubId }: { config: Hub
           </div>
         )}
         {config.kollab.enabled && (
+          <label className="mt-2 flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Who can make reels</span>
+            <select
+              value={config.kollab.whoCanStitch}
+              onChange={(e) => setKollab({ whoCanStitch: e.target.value as HubConfig['kollab']['whoCanStitch'] })}
+              className="rounded-lg border border-border bg-transparent px-2 py-1 text-sm"
+            >
+              <option value="members">Members</option>
+              <option value="owner-only">Owner only</option>
+            </select>
+          </label>
+        )}
+        {config.kollab.enabled && (
           <p className="mt-2 text-xs text-muted-foreground">
             Member uploads always wait for your approval — review them from the Kollab tile on your community page.
           </p>
