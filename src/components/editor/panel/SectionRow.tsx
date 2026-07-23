@@ -15,11 +15,12 @@ interface SectionRowProps {
   onOpenSectionSettings: (sectionId: string) => void
   onAddElement: (sectionId: string) => void
   isPro: boolean
+  onVersionChange?: (version: number) => void
 }
 
 export function SectionRow({
   group, expandedElementId, displayId, onToggleElement, onChangeElement, onDeleteElement,
-  onOpenSectionSettings, onAddElement, isPro,
+  onOpenSectionSettings, onAddElement, isPro, onVersionChange,
 }: SectionRowProps) {
   return (
     <div className="mb-3">
@@ -46,6 +47,7 @@ export function SectionRow({
             onChange={(updates) => onChangeElement(row.sectionId, row.columnId, row.element.id, updates)}
             onDelete={() => onDeleteElement(row.sectionId, row.columnId, row.element.id)}
             isPro={isPro}
+            onVersionChange={onVersionChange}
           />
         ))}
       </div>

@@ -207,3 +207,55 @@ describe('PageEditor autosave', () => {
     }
   })
 })
+
+// Finding 1, end-to-end: the stamp endpoint's write bumps the display's
+// version, but the editor never learned the new value — so the very next
+// autosave still carried the version it loaded with, got 409'd against its
+// OWN edit, and (because savePage early-returns while `conflict` is set)
+// autosave stayed dead for the rest of the session. This must fail against
+// the pre-fix PageEditor/ElementRow, which never read `version` off the
+// stamp response.
+describe('PageEditor stamp keeps autosave alive', () => {
+  it('records the version from a Stamp write so the next autosave is not stale', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string, opts?: any) => {
+      if (url === '/api/displays/p1' && (!opts || opts.method === undefined)) {
+        return { ok: true, status: 200, json: async () => page } as any
+      }
+      if (typeof url === 'string' && url.includes('/stamp') && opts?.method === 'POST') {
+        return {
+          ok: true, status: 200,
+          json: async () => ({ stampedAt: '2026-07-23T12:00:00.000Z', stampedTz: 'UTC', version: 2 }),
+        } as any
+      }
+      return { ok: true, status: 200, json: async () => ({ version: 2 }) } as any
+    }))
+
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      render(<PageEditor pageId="p1" />)
+      await waitFor(() => expect(screen.getByDisplayValue('My Page')).toBeInTheDocument())
+
+      // Expand the element row to reveal the Stamp control, then stamp it.
+      fireEvent.click(screen.getByRole('button', { name: /Heading — Hi/i }))
+      const stampButton = await screen.findByRole('button', { name: /^stamp$/i })
+      fireEvent.click(stampButton)
+
+      // Wait for the stamp POST to resolve and the element to render as stamped.
+      await screen.findByRole('button', { name: /re-stamp/i })
+
+      await vi.advanceTimersByTimeAsync(5000)
+
+      const fetchMock = fetch as any
+      const autosaveCall = fetchMock.mock.calls
+        .filter((c: any[]) => c[1]?.method === 'PATCH' && JSON.parse(c[1].body).sections !== undefined)
+        .pop()
+      expect(autosaveCall).toBeDefined()
+      const body = JSON.parse(autosaveCall![1].body)
+      // Loaded at version 1; the stamp POST reported back version 2. The
+      // pre-fix editor would still send 1 here (stale — a 409 against itself).
+      expect(body.version).toBe(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})

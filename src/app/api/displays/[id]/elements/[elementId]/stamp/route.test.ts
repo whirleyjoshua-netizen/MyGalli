@@ -173,3 +173,95 @@ it('DELETE 409s on a stale version and does not write', async () => {
   expect(data).toEqual({ error: 'Version conflict', currentVersion: 5 })
   expect(db.display.update).not.toHaveBeenCalled()
 })
+
+// Finding 1: the write always bumps `version` (POST/DELETE both do a
+// read-modify-write of the sections/tabs blob), but nothing reported the new
+// value back to the caller — so the editor's next autosave still carried the
+// version it loaded with and got 409'd on its own stamp. These fail against
+// the pre-fix response bodies of `{ stampedAt, stampedTz }` / `{ ok: true }`.
+it('POST returns the new version after bumping it', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  ;(db.display.findUnique as any).mockResolvedValue(display({ version: 3 }))
+  const res = await POST(req({ tz: 'UTC' }), ctx)
+  expect(res.status).toBe(200)
+  const data = await res.json()
+  expect(data.version).toBe(4)
+})
+
+it('DELETE returns the new version after bumping it', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  ;(db.display.findUnique as any).mockResolvedValue(display({
+    version: 7,
+    sections: [{ id: 's1', layout: 'full-width', columns: [{ id: 'c1', elements: [
+      { id: 'e1', type: 'text', content: 'hello', stampedAt: '2026-01-01T00:00:00.000Z', stampedTz: 'UTC' },
+    ] }] }],
+  }))
+  const res = await DELETE(req(), ctx)
+  expect(res.status).toBe(200)
+  const data = await res.json()
+  expect(data.version).toBe(8)
+})
+
+// Finding 2a: a page can route its content through tabs instead of the
+// top-level `sections`. Elements in a tab must be reachable too, and only
+// the field that actually changed (`tabs`, not `sections`) should be written.
+function tabsWithElementFixture(): Record<string, unknown> {
+  return {
+    enabled: true,
+    tabs: [
+      {
+        id: 'tab1', label: 'One', slug: 'one',
+        sections: [{ id: 'ts1', layout: 'full-width', columns: [
+          { id: 'tc1', elements: [{ id: 'te1', type: 'text', content: 'tabbed' }] },
+        ] }],
+      },
+    ],
+  }
+}
+
+function displayWithTabbedElement(tabsConfig: Record<string, unknown>) {
+  return display({
+    sections: [{ id: 's1', layout: 'full-width', columns: [{ id: 'c1', elements: [] }] }],
+    tabs: tabsConfig,
+  })
+}
+
+it('POST stamps an element that lives inside a tab, not just top-level sections', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  ;(db.display.findUnique as any).mockResolvedValue(displayWithTabbedElement(tabsWithElementFixture()))
+  const res = await POST(req({ tz: 'UTC' }), { params: Promise.resolve({ id: 'd1', elementId: 'te1' }) })
+  expect(res.status).toBe(200)
+
+  const data = (db.display.update as any).mock.calls[0][0].data
+  // Written to `tabs`, not `sections` — the element wasn't in `sections`.
+  expect(data.sections).toBeUndefined()
+  const el = data.tabs.tabs[0].sections[0].columns[0].elements[0]
+  expect(el.id).toBe('te1')
+  expect(el.stampedAt).toBeTruthy()
+  expect(el.content).toBe('tabbed')
+})
+
+it('DELETE clears a stamp from an element that lives inside a tab', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  const tabsConfig: any = tabsWithElementFixture()
+  tabsConfig.tabs[0].sections[0].columns[0].elements[0].stampedAt = '2026-01-01T00:00:00.000Z'
+  tabsConfig.tabs[0].sections[0].columns[0].elements[0].stampedTz = 'UTC'
+  ;(db.display.findUnique as any).mockResolvedValue(displayWithTabbedElement(tabsConfig))
+
+  const res = await DELETE(req(), { params: Promise.resolve({ id: 'd1', elementId: 'te1' }) })
+  expect(res.status).toBe(200)
+
+  const data = (db.display.update as any).mock.calls[0][0].data
+  expect(data.sections).toBeUndefined()
+  const el = data.tabs.tabs[0].sections[0].columns[0].elements[0]
+  expect(el.stampedAt).toBeUndefined()
+  expect(el.stampedTz).toBeUndefined()
+})
+
+it('POST 404s when the element id is in neither sections nor tabs', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  ;(db.display.findUnique as any).mockResolvedValue(displayWithTabbedElement(tabsWithElementFixture()))
+  const res = await POST(req({ tz: 'UTC' }), { params: Promise.resolve({ id: 'd1', elementId: 'nope' }) })
+  expect(res.status).toBe(404)
+  expect(db.display.update).not.toHaveBeenCalled()
+})

@@ -101,4 +101,72 @@ describe('ElementRow stamp control', () => {
     render(<ElementRow row={imageRow} expanded displayId="d1" onToggle={() => {}} onChange={() => {}} onDelete={() => {}} isPro={false} />)
     expect(screen.getByRole('button', { name: /^stamp$/i })).toBeInTheDocument()
   })
+
+  // Finding 1: the stamp write bumps the display's version server-side. If
+  // the caller never learns the new value, the editor's own versionRef stays
+  // stale and its next autosave 409s against its own edit. This fails against
+  // the pre-fix ElementRow, which never reads `version` off the response or
+  // accepts a callback to report it.
+  it('reports the version returned by a successful stamp', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ stampedAt: '2026-07-23T23:30:00.000Z', stampedTz: 'UTC', version: 4 }),
+    })) as any)
+    const onVersionChange = vi.fn()
+    render(
+      <ElementRow
+        row={unstamped} expanded displayId="d1"
+        onToggle={() => {}} onChange={() => {}} onDelete={() => {}} isPro={false}
+        onVersionChange={onVersionChange}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^stamp$/i }))
+    await waitFor(() => expect(onVersionChange).toHaveBeenCalledWith(4))
+  })
+
+  it('reports the version returned by a successful Remove', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ ok: true, version: 9 }),
+    })) as any)
+    const onVersionChange = vi.fn()
+    render(
+      <ElementRow
+        row={stamped} expanded displayId="d1"
+        onToggle={() => {}} onChange={() => {}} onDelete={() => {}} isPro={false}
+        onVersionChange={onVersionChange}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /remove stamp/i }))
+    await waitFor(() => expect(onVersionChange).toHaveBeenCalledWith(9))
+  })
+
+  // Finding 2b: a failed stamp request currently does nothing visible —
+  // the button just re-enables. Surface a minimal inline error instead.
+  it('shows an inline error when the stamp request fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, json: async () => ({}) })) as any)
+    render(<ElementRow row={unstamped} expanded displayId="d1" onToggle={() => {}} onChange={() => {}} onDelete={() => {}} isPro={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^stamp$/i }))
+    await waitFor(() => expect(screen.getByText(/couldn.t save the stamp/i)).toBeInTheDocument())
+  })
+
+  it('shows an inline error when the stamp request rejects outright', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('network') }) as any)
+    render(<ElementRow row={unstamped} expanded displayId="d1" onToggle={() => {}} onChange={() => {}} onDelete={() => {}} isPro={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^stamp$/i }))
+    await waitFor(() => expect(screen.getByText(/couldn.t save the stamp/i)).toBeInTheDocument())
+  })
+
+  it('clears a prior error on a subsequent successful stamp', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ stampedAt: '2026-07-23T23:30:00.000Z', stampedTz: 'UTC' }) })
+    vi.stubGlobal('fetch', fetchMock as any)
+    render(<ElementRow row={unstamped} expanded displayId="d1" onToggle={() => {}} onChange={() => {}} onDelete={() => {}} isPro={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^stamp$/i }))
+    await waitFor(() => expect(screen.getByText(/couldn.t save the stamp/i)).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /^stamp$/i }))
+    await waitFor(() => expect(screen.queryByText(/couldn.t save the stamp/i)).not.toBeInTheDocument())
+  })
 })

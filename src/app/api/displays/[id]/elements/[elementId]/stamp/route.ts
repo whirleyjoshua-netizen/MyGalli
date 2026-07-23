@@ -3,7 +3,8 @@ import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { canEdit } from '@/lib/collab'
 import type { Section } from '@/lib/types/canvas'
-import { isValidTimeZone, setStamp, clearStamp } from '@/lib/element-stamp'
+import type { TabsConfig } from '@/lib/types/tabs'
+import { isValidTimeZone, setStampAnywhere, clearStampAnywhere } from '@/lib/element-stamp'
 
 type Ctx = { params: Promise<{ id: string; elementId: string }> }
 
@@ -23,7 +24,10 @@ function notFound() {
 async function load(
   request: NextRequest,
   id: string,
-): Promise<{ error: NextResponse } | { sections: Section[]; version: number }> {
+): Promise<
+  | { error: NextResponse }
+  | { sections: Section[]; tabs: TabsConfig | null; version: number }
+> {
   const user = await getUser(request)
   if (!user) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
 
@@ -41,7 +45,14 @@ async function load(
       ? JSON.parse(display.sections)
       : ((display.sections as unknown as Section[]) ?? [])
 
-  return { sections, version: display.version }
+  // A page's elements live either directly under `sections` or, when tabs are
+  // enabled, split across `tabs.tabs[i].sections` — mirror the RSVP route's
+  // two-scan so stamping can reach an element in either place.
+  const tabs: TabsConfig | null = display.tabs
+    ? (typeof display.tabs === 'string' ? JSON.parse(display.tabs) : (display.tabs as unknown as TabsConfig))
+    : null
+
+  return { sections, tabs, version: display.version }
 }
 
 export async function POST(request: NextRequest, { params }: Ctx) {
@@ -69,14 +80,21 @@ export async function POST(request: NextRequest, { params }: Ctx) {
       )
     }
 
-    const next = setStamp(ctx.sections, elementId, stampedAt, stampedTz)
+    const next = setStampAnywhere({ sections: ctx.sections, tabs: ctx.tabs }, elementId, stampedAt, stampedTz)
     if (!next) return notFound()
 
+    // Only the field that actually changed gets written — an element found
+    // inside a tab must not stomp `sections` (or vice versa) with a same-value
+    // rewrite of the field it wasn't in.
+    const nextVersion = ctx.version + 1
+    const foundInMain = next.sections !== ctx.sections
     await db.display.update({
       where: { id },
-      data: { sections: next as never, version: { increment: 1 } },
+      data: foundInMain
+        ? { sections: next.sections as never, version: { increment: 1 } }
+        : { tabs: next.tabs as never, version: { increment: 1 } },
     })
-    return NextResponse.json({ stampedAt, stampedTz })
+    return NextResponse.json({ stampedAt, stampedTz, version: nextVersion })
   } catch (error) {
     console.error('POST /api/displays/[id]/elements/[elementId]/stamp error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -98,14 +116,18 @@ export async function DELETE(request: NextRequest, { params }: Ctx) {
       )
     }
 
-    const next = clearStamp(ctx.sections, elementId)
+    const next = clearStampAnywhere({ sections: ctx.sections, tabs: ctx.tabs }, elementId)
     if (!next) return notFound()
 
+    const nextVersion = ctx.version + 1
+    const foundInMain = next.sections !== ctx.sections
     await db.display.update({
       where: { id },
-      data: { sections: next as never, version: { increment: 1 } },
+      data: foundInMain
+        ? { sections: next.sections as never, version: { increment: 1 } }
+        : { tabs: next.tabs as never, version: { increment: 1 } },
     })
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, version: nextVersion })
   } catch (error) {
     console.error('DELETE /api/displays/[id]/elements/[elementId]/stamp error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

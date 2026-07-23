@@ -14,6 +14,7 @@ interface ElementsTabProps {
   onOpenSectionSettings: (sectionId: string) => void
   onAddElement: (sectionId: string) => void
   isPro: boolean
+  onVersionChange?: (version: number) => void
 }
 
 export function ElementsTab(props: ElementsTabProps) {
@@ -41,6 +42,7 @@ export function ElementsTab(props: ElementsTabProps) {
           onOpenSectionSettings={props.onOpenSectionSettings}
           onAddElement={props.onAddElement}
           isPro={props.isPro}
+          onVersionChange={props.onVersionChange}
         />
       ))}
     </div>

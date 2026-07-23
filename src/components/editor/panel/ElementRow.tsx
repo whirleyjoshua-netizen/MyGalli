@@ -16,12 +16,18 @@ interface ElementRowProps {
   onChange: (updates: Partial<CanvasElement>) => void
   onDelete: () => void
   isPro: boolean
+  // The stamp endpoint bumps the display's version on every write (it's a
+  // read-modify-write of the whole sections/tabs blob). Without reporting
+  // that back up, the editor's own next autosave still carries the version
+  // it loaded with, so the server 409s it as stale.
+  onVersionChange?: (version: number) => void
 }
 
-export function ElementRow({ row, expanded, displayId, onToggle, onChange, onDelete, isPro }: ElementRowProps) {
+export function ElementRow({ row, expanded, displayId, onToggle, onChange, onDelete, isPro, onVersionChange }: ElementRowProps) {
   const ref = useRef<HTMLDivElement>(null)
   const Inspector = getInspector(row.element.type)
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(false)
   const el = row.element
   const stampUrl = `/api/displays/${displayId}/elements/${el.id}/stamp`
 
@@ -29,15 +35,23 @@ export function ElementRow({ row, expanded, displayId, onToggle, onChange, onDel
   // display hint and apply whatever the server wrote back.
   async function stamp() {
     setBusy(true)
+    setError(false)
     try {
       const res = await fetch(stampUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tz: Intl.DateTimeFormat().resolvedOptions().timeZone }),
       })
-      if (res.ok) onChange(await res.json())
+      if (res.ok) {
+        const data = await res.json()
+        onChange({ stampedAt: data.stampedAt, stampedTz: data.stampedTz })
+        if (typeof data.version === 'number') onVersionChange?.(data.version)
+      } else {
+        setError(true)
+      }
     } catch {
       // Leave the element unstamped; the button re-enables for a retry.
+      setError(true)
     } finally {
       setBusy(false)
     }
@@ -45,11 +59,19 @@ export function ElementRow({ row, expanded, displayId, onToggle, onChange, onDel
 
   async function removeStamp() {
     setBusy(true)
+    setError(false)
     try {
       const res = await fetch(stampUrl, { method: 'DELETE' })
-      if (res.ok) onChange({ stampedAt: undefined, stampedTz: undefined })
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}))
+        onChange({ stampedAt: undefined, stampedTz: undefined })
+        if (typeof data.version === 'number') onVersionChange?.(data.version)
+      } else {
+        setError(true)
+      }
     } catch {
       // Leave the stamp in place; the button re-enables for a retry.
+      setError(true)
     } finally {
       setBusy(false)
     }
@@ -114,6 +136,9 @@ export function ElementRow({ row, expanded, displayId, onToggle, onChange, onDel
               >
                 <Clock className="h-3.5 w-3.5" /> Stamp
               </button>
+            )}
+            {error && (
+              <p className="mt-1.5 text-xs text-destructive">Couldn&apos;t save the stamp. Try again.</p>
             )}
           </div>
         </div>

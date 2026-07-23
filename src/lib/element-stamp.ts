@@ -1,4 +1,5 @@
 import type { CanvasElement, Section } from '@/lib/types/canvas'
+import type { TabsConfig } from '@/lib/types/tabs'
 
 /**
  * True only for zones this runtime actually knows. The tz is the sole
@@ -68,4 +69,56 @@ export function clearStamp(sections: Section[], elementId: string): Section[] | 
     delete next.stampedTz
     return next
   })
+}
+
+/**
+ * A page's elements live either directly under `sections` or, when tabs are
+ * enabled, split across `tabs.tabs[i].sections` — the same split the RSVP
+ * route's `findElement` already scans for reads. `setStamp`/`clearStamp` only
+ * ever see one `Section[]` at a time, so this tries the top-level sections
+ * first, then each tab's sections in turn, and reports back which one (if
+ * either) actually changed.
+ */
+export interface StampTarget {
+  sections: Section[]
+  tabs: TabsConfig | null
+}
+
+function mutateWherever(
+  target: StampTarget,
+  mutate: (sections: Section[]) => Section[] | null,
+): StampTarget | null {
+  const nextSections = mutate(target.sections)
+  if (nextSections) return { sections: nextSections, tabs: target.tabs }
+
+  const tabsConfig = target.tabs
+  if (!tabsConfig) return null
+
+  for (let i = 0; i < tabsConfig.tabs.length; i++) {
+    const nextTabSections = mutate(tabsConfig.tabs[i].sections)
+    if (!nextTabSections) continue
+    return {
+      sections: target.sections,
+      tabs: {
+        ...tabsConfig,
+        tabs: tabsConfig.tabs.map((tab, idx) => (idx === i ? { ...tab, sections: nextTabSections } : tab)),
+      },
+    }
+  }
+  return null
+}
+
+/** Like `setStamp`, but reaches into tabs too. Null if the id is absent from both. */
+export function setStampAnywhere(
+  target: StampTarget,
+  elementId: string,
+  stampedAt: string,
+  stampedTz?: string,
+): StampTarget | null {
+  return mutateWherever(target, (sections) => setStamp(sections, elementId, stampedAt, stampedTz))
+}
+
+/** Like `clearStamp`, but reaches into tabs too. Null if the id is absent from both. */
+export function clearStampAnywhere(target: StampTarget, elementId: string): StampTarget | null {
+  return mutateWherever(target, (sections) => clearStamp(sections, elementId))
 }

@@ -1078,6 +1078,16 @@ export function PageEditor({ pageId, openShare }: PageEditorProps) {
     if (section && firstCol) openSlashMenu(section.id, firstCol.id)
   }
 
+  // The stamp endpoint (POST/DELETE on an element) does its own read-modify-
+  // write of sections/tabs and bumps `version` outside of savePage/autosave.
+  // Record what it reports back so the NEXT autosave sends the version the
+  // row is actually on — otherwise it's still holding the version from page
+  // load, autosave 409s as a stale write, and `conflict` latches permanently.
+  const handleElementVersionChange = useCallback((v: number) => {
+    versionRef.current = v
+    setVersion(v)
+  }, [])
+
   // Single-open accordion: toggling a row sets/clears the element selection.
   const toggleRow = (row: ElementListRow) => {
     setSelection((prev) =>
@@ -1383,6 +1393,7 @@ export function PageEditor({ pageId, openShare }: PageEditorProps) {
                 onOpenSectionSettings={openSectionSettings}
                 onAddElement={addElementToSection}
                 isPro={isPro(user)}
+                onVersionChange={handleElementVersionChange}
               />
             }
             pageSlot={
