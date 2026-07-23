@@ -59,10 +59,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const limited = await rateLimit(request, { limit: 20, windowMs: 60_000, prefix: 'hub-drop-create' })
-  if (limited) return limited
   const me = await getUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Keyed on the user, not the IP: an approved drop triggers a real Opus
+  // vision call and auth is the only thing gating the spend.
+  const limited = await rateLimit(request, { limit: 20, windowMs: 60_000, prefix: 'hub-drop-create', identifier: me.id })
+  if (limited) return limited
   const hub = await db.hub.findUnique({
     where: { id },
     select: { id: true, userId: true, community: true, title: true, slug: true, config: true, user: { select: { username: true } } },

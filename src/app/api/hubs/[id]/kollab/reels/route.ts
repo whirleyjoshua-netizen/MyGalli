@@ -105,8 +105,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   })
 
   // Shape-compatible with a GET row on purpose: the client prepends this
-  // straight into its reels list, and the Reels tab reads `creator.username`
-  // and `createdAt`. Returning a narrower object here throws in the UI.
+  // straight into its reels list, and the Reels tab reads `creator.username`,
+  // `creatorId` and `createdAt`. Returning a narrower object here throws in
+  // the UI.
   const byId = new Map(rows.map((r) => [r.id, r]))
   return NextResponse.json(
     {
@@ -114,6 +115,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       title: edl.title,
       status: 'draft',
       createdAt: reel.createdAt.toISOString(),
+      creatorId: me.id,
       creator: { username: me.username },
       runtimeSec: edlRuntime(edl),
       clips: edl.clips.map((c) => {
@@ -181,7 +183,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     ? await db.hubDrop.findMany({
         where: { id: { in: dropIds }, hubId: id, status: 'approved' },
         select: {
-          id: true, type: true, url: true, thumbnailUrl: true, caption: true, durationSec: true, status: true,
+          id: true, type: true, url: true, thumbnailUrl: true, caption: true, durationSec: true,
           author: { select: { username: true } },
         },
       })
@@ -197,7 +199,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           return {
             dropId: c.dropId,
             in: c.in,
-            out: d.durationSec ? Math.min(c.out, d.durationSec) : c.out,
+            out: d.durationSec !== null ? Math.min(c.out, d.durationSec) : c.out,
             type: d.type,
             url: d.url,
             thumbnailUrl: d.thumbnailUrl,
@@ -211,6 +213,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         title: r.title,
         status: r.status,
         createdAt: r.createdAt.toISOString(),
+        creatorId: r.creatorId,
         creator: { username: r.creator.username },
         runtimeSec: clips.reduce((s, c) => s + (c.out - c.in), 0),
         clips,

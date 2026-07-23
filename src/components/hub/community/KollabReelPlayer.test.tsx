@@ -10,7 +10,7 @@ const clip = (over: Partial<Reel['clips'][number]> = {}): Reel['clips'][number] 
 
 const reel = (over: Partial<Reel> = {}): Reel => ({
   id: 'r1', title: 'Saturday at the field', status: 'published', runtimeSec: 6,
-  createdAt: '2026-07-22T00:00:00.000Z', creator: { username: 'm' },
+  createdAt: '2026-07-22T00:00:00.000Z', creatorId: 'member', creator: { username: 'm' },
   clips: [clip(), clip({ dropId: 'd2', type: 'image', url: 'https://blob/y.jpg' })],
   ...over,
 })

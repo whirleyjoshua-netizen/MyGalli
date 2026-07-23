@@ -154,3 +154,36 @@ describe('publishReel rollback', () => {
     expect(screen.getAllByRole('button', { name: 'Unpublish' })).toHaveLength(1)
   })
 })
+
+describe('deleteReel', () => {
+  it('optimistically removes the reel and restores it on a failed DELETE', async () => {
+    const reel1 = {
+      id: 'r1', title: 'One', status: 'published', creatorId: 'u1', createdAt: '2026-07-22T00:00:00.000Z',
+      creator: { username: 'sam' }, runtimeSec: 10, clips: [],
+    }
+
+    global.fetch = vi.fn((url: string, init?: any) => {
+      if (url === '/api/hubs/hub1/kollab/reels') {
+        return Promise.resolve({ ok: true, json: async () => ({ reels: [reel1] }) })
+      }
+      if (url === '/api/hubs/hub1/kollab/reels/r1' && init?.method === 'DELETE') {
+        return Promise.resolve({ ok: false, json: async () => ({}) })
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) })
+    }) as any
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<CommunityKollab {...base} isPrivileged />)
+    fireEvent.click(screen.getByRole('button', { name: /see content/i }))
+    fireEvent.click(screen.getByRole('tab', { name: /reels/i }))
+
+    await waitFor(() => expect(screen.getByText('One')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+    // Optimistically removed immediately.
+    await waitFor(() => expect(screen.queryByText('One')).not.toBeInTheDocument())
+
+    // The failed DELETE restores it.
+    await waitFor(() => expect(screen.getByText('One')).toBeInTheDocument())
+  })
+})

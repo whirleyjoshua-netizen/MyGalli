@@ -9,7 +9,7 @@ import type { Reel } from './KollabReelPlayer'
 type Tab = 'approved' | 'pending' | 'reels'
 
 export function KollabViewer({
-  hubId, isPrivileged, currentUserId, initialDrops, total, onClose, onApprovedCountChange, onPendingCountChange, pendingCount = 0, initialTab = 'approved', reels, onPublish, onPlay,
+  hubId, isPrivileged, currentUserId, initialDrops, total, onClose, onApprovedCountChange, onPendingCountChange, pendingCount = 0, initialTab = 'approved', reels, onPublish, onDelete, onPlay,
 }: {
   hubId: string
   isPrivileged: boolean
@@ -23,6 +23,7 @@ export function KollabViewer({
   initialTab?: Tab
   reels: Reel[]
   onPublish: (id: string, next: 'publish' | 'unpublish') => void
+  onDelete: (id: string) => void
   onPlay: (reel: Reel) => void
 }) {
   // A non-privileged viewer can never land on (or see) the Pending tab,
@@ -194,14 +195,14 @@ export function KollabViewer({
             <button role="tab" aria-selected={tab === 'approved'} onClick={() => setTab('approved')} className={tabClass(tab === 'approved')}>
               Approved ({approvedTotal})
             </button>
+            <button role="tab" aria-selected={tab === 'reels'} onClick={() => setTab('reels')} className={tabClass(tab === 'reels')}>
+              Reels ({reels.length})
+            </button>
             {isPrivileged && (
               <button role="tab" aria-selected={tab === 'pending'} onClick={openPending} className={tabClass(tab === 'pending')}>
                 Pending ({pendingLoaded ? pending.length : pendingBadge})
               </button>
             )}
-            <button role="tab" aria-selected={tab === 'reels'} onClick={() => setTab('reels')} className={tabClass(tab === 'reels')}>
-              Reels ({reels.length})
-            </button>
           </div>
           <button onClick={onClose} aria-label="Close" className="rounded-md p-1 text-muted-foreground hover:bg-muted">
             <X className="h-5 w-5" />
@@ -215,27 +216,42 @@ export function KollabViewer({
               {reels.length === 0 && (
                 <p className="py-8 text-center text-sm text-muted-foreground">No reels yet.</p>
               )}
-              {reels.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
-                  <button onClick={() => onPlay(r)} className="min-w-0 flex-1 text-left">
-                    <p className="truncate text-sm font-medium">{r.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {Math.round(r.runtimeSec)}s · {r.clips.length} clips · @{r.creator.username}
-                    </p>
-                  </button>
-                  {r.status === 'draft' && (
-                    <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Draft</span>
-                  )}
-                  {isPrivileged && (
-                    <button
-                      onClick={() => onPublish(r.id, r.status === 'draft' ? 'publish' : 'unpublish')}
-                      className="rounded-lg border border-border px-3 py-1 text-xs hover:bg-muted"
-                    >
-                      {r.status === 'draft' ? 'Publish' : 'Unpublish'}
+              {reels.map((r) => {
+                // Mirrors the server's DELETE rule: the reel's own creator, or a
+                // moderator (owner/collaborator), may delete it.
+                const canDelete = isPrivileged || (!!currentUserId && r.creatorId === currentUserId)
+                return (
+                  <div key={r.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                    <button onClick={() => onPlay(r)} className="min-w-0 flex-1 text-left">
+                      <p className="truncate text-sm font-medium">{r.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {Math.round(r.runtimeSec)}s · {r.clips.length} clips · @{r.creator.username}
+                      </p>
                     </button>
-                  )}
-                </div>
-              ))}
+                    {r.status === 'draft' && (
+                      <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Draft</span>
+                    )}
+                    {isPrivileged && (
+                      <button
+                        onClick={() => onPublish(r.id, r.status === 'draft' ? 'publish' : 'unpublish')}
+                        className="rounded-lg border border-border px-3 py-1 text-xs hover:bg-muted"
+                      >
+                        {r.status === 'draft' ? 'Publish' : 'Unpublish'}
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() => {
+                          if (confirm('Delete this reel? This can’t be undone.')) onDelete(r.id)
+                        }}
+                        className="rounded-lg border border-destructive/40 px-3 py-1 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
           {tab !== 'reels' && (busy && !pendingLoaded && tab === 'pending' ? (

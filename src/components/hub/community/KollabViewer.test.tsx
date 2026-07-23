@@ -19,7 +19,7 @@ const base = {
   // it is gets the safer one; every moderator test passes `isPrivileged` itself.
   isPrivileged: false,
   onClose: () => {}, onApprovedCountChange: () => {}, onPendingCountChange: () => {},
-  reels: [] as Reel[], onPublish: () => {}, onPlay: () => {},
+  reels: [] as Reel[], onPublish: () => {}, onDelete: () => {}, onPlay: () => {},
 }
 
 function renderViewer(over: Partial<React.ComponentProps<typeof KollabViewer>> = {}) {
@@ -241,7 +241,7 @@ describe('KollabViewer', () => {
 })
 
 describe('Reels tab', () => {
-  const reels = [{ id: 'r1', title: 'Saturday', status: 'published', runtimeSec: 30, createdAt: '2026-07-22T00:00:00.000Z', creator: { username: 'm' }, clips: [] }]
+  const reels = [{ id: 'r1', title: 'Saturday', status: 'published', runtimeSec: 30, createdAt: '2026-07-22T00:00:00.000Z', creatorId: 'creator1', creator: { username: 'm' }, clips: [] }]
 
   it('shows a Reels tab with a count', () => {
     renderViewer({ reels })
@@ -264,5 +264,54 @@ describe('Reels tab', () => {
     renderViewer({ reels: [{ ...reels[0], status: 'draft' }], isPrivileged: false })
     fireEvent.click(screen.getByRole('tab', { name: /reels/i }))
     expect(screen.queryByRole('button', { name: /publish/i })).toBeNull()
+  })
+
+  it('offers Delete to a moderator, even when they did not create the reel', () => {
+    renderViewer({ reels, isPrivileged: true, currentUserId: 'owner' })
+    fireEvent.click(screen.getByRole('tab', { name: /reels/i }))
+    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument()
+  })
+
+  it('offers Delete to the reel’s creator, even when they are not a moderator', () => {
+    renderViewer({ reels, isPrivileged: false, currentUserId: 'creator1' })
+    fireEvent.click(screen.getByRole('tab', { name: /reels/i }))
+    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument()
+  })
+
+  it('hides Delete from an unrelated member', () => {
+    renderViewer({ reels, isPrivileged: false, currentUserId: 'someone-else' })
+    fireEvent.click(screen.getByRole('tab', { name: /reels/i }))
+    expect(screen.queryByRole('button', { name: /delete/i })).toBeNull()
+  })
+
+  it('confirms before calling onDelete, and does not call it if the confirm is cancelled', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const onDelete = vi.fn()
+    renderViewer({ reels, isPrivileged: true, onDelete })
+    fireEvent.click(screen.getByRole('tab', { name: /reels/i }))
+    fireEvent.click(screen.getByRole('button', { name: /delete/i }))
+    expect(window.confirm).toHaveBeenCalled()
+    expect(onDelete).not.toHaveBeenCalled()
+  })
+
+  it('calls onDelete with the reel id once the confirm is accepted', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const onDelete = vi.fn()
+    renderViewer({ reels, isPrivileged: true, onDelete })
+    fireEvent.click(screen.getByRole('tab', { name: /reels/i }))
+    fireEvent.click(screen.getByRole('button', { name: /delete/i }))
+    expect(onDelete).toHaveBeenCalledWith('r1')
+  })
+})
+
+describe('Tab order', () => {
+  it('renders Approved, Reels, then Pending for a moderator', () => {
+    render(<KollabViewer {...base} isPrivileged reels={[{ id: 'r1', title: 'Saturday', status: 'published', runtimeSec: 30, createdAt: '2026-07-22T00:00:00.000Z', creatorId: 'creator1', creator: { username: 'm' }, clips: [] }]} />)
+    const tabs = screen.getAllByRole('tab')
+    expect(tabs.map((t) => t.textContent)).toEqual([
+      expect.stringMatching(/^Approved/),
+      expect.stringMatching(/^Reels/),
+      expect.stringMatching(/^Pending/),
+    ])
   })
 })

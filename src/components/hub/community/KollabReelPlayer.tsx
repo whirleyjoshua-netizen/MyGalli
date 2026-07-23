@@ -20,6 +20,7 @@ export type Reel = {
   status: string
   runtimeSec: number
   createdAt: string
+  creatorId: string
   creator: { username: string }
   clips: ReelClip[]
 }

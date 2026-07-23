@@ -117,6 +117,18 @@ export function CommunityKollab({
     }
   }
 
+  async function deleteReel(id: string) {
+    // Same rollback shape as publishReel: capture only THIS reel so a
+    // concurrent change to another row (or another optimistic update to this
+    // same list) is never clobbered by a whole-array snapshot restore.
+    const removed = reels.find((r) => r.id === id)
+    setReels((cur) => cur.filter((r) => r.id !== id))
+    const res = await fetch(`/api/hubs/${hubId}/kollab/reels/${id}`, { method: 'DELETE' })
+    if (!res.ok && removed) {
+      setReels((cur) => (cur.some((r) => r.id === id) ? cur : [removed, ...cur]))
+    }
+  }
+
   if (!enabled) return null
 
   const uploadUrl = `/api/hubs/${hubId}/drops/upload`
@@ -202,6 +214,7 @@ export function CommunityKollab({
           onPendingCountChange={(d) => setPending((p) => Math.max(0, p + d))}
           reels={reels}
           onPublish={publishReel}
+          onDelete={deleteReel}
           onPlay={setPlaying}
         />
       )}
