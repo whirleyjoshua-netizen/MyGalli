@@ -7,12 +7,16 @@ export type HubUtilityWidget = { key: HubUtilityKey; enabled: boolean }
 export type HubWhoCanPost = 'members' | 'owner-only'
 export type HubWhoCanDrop = 'members' | 'owner-only'
 
+export const HUB_THEME_KEYS = ['galli', 'ocean', 'sunset', 'violet', 'slate', 'rose'] as const
+export type HubThemeKey = (typeof HUB_THEME_KEYS)[number]
+
 export type HubConfig = {
   sidebar: HubSidebarWidget[]
   utility: HubUtilityWidget[]
   feed: { composerEnabled: boolean; loadMoreEnabled: boolean; emptyStateText?: string }
   access: { whoCanPost: HubWhoCanPost }
   kollab: { enabled: boolean; whoCanDrop: HubWhoCanDrop }
+  appearance: { theme: HubThemeKey }
 }
 
 export const DEFAULT_HUB_CONFIG: HubConfig = {
@@ -30,4 +34,5 @@ export const DEFAULT_HUB_CONFIG: HubConfig = {
   feed: { composerEnabled: true, loadMoreEnabled: true },
   access: { whoCanPost: 'members' },
   kollab: { enabled: true, whoCanDrop: 'members' },
+  appearance: { theme: 'galli' },
 }
