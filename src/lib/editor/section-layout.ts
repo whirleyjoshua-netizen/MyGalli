@@ -1,6 +1,7 @@
 import type { Section, LayoutMode, Column } from '@/lib/types/canvas'
 
 const COLUMN_COUNT: Record<LayoutMode, number> = {
+  'single': 1,
   'full-width': 1,
   'two-column': 2,
   'three-column': 3,
