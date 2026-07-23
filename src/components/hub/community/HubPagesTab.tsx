@@ -132,7 +132,7 @@ export function HubPagesTab({
               href={`/${p.ownerUsername}/${p.slug}`}
               className="group overflow-hidden rounded-2xl border border-border bg-surface shadow-soft transition hover:shadow-soft-lg"
             >
-              <div className="aspect-[4/3] w-full bg-gradient-to-br from-galli/20 to-galli-aqua/10">
+              <div className="aspect-[4/3] w-full bg-gradient-to-br from-primary/20 to-hub-accent/10">
                 {p.coverImage && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={p.coverImage} alt="" aria-hidden className="h-full w-full object-cover" />

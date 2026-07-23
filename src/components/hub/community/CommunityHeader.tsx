@@ -32,7 +32,7 @@ export function CommunityHeader({
   const tiles: [string, number][] = [['Posts', counts.posts], ['Members', counts.members], ['Resources', counts.resources], ['Events', counts.events], ['Kollab', counts.kollab]]
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-galli/30 to-galli-violet/30">
+      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/30 to-hub-accent/30">
         {coverImage && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={coverImage} alt="" className="h-full w-full object-cover" />
@@ -45,7 +45,7 @@ export function CommunityHeader({
         <div className="mt-2 flex items-center gap-2">
           <div className="flex -space-x-2">
             {memberAvatars.slice(0, 4).map((m, i) => (
-              <span key={i} className="h-6 w-6 overflow-hidden rounded-full border-2 border-surface bg-gradient-to-br from-galli/30 to-galli-violet/30">
+              <span key={i} className="h-6 w-6 overflow-hidden rounded-full border-2 border-surface bg-gradient-to-br from-primary/30 to-hub-accent/30">
                 {m.avatar && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={m.avatar} alt="" className="h-full w-full object-cover" />
@@ -62,10 +62,10 @@ export function CommunityHeader({
       <div className="flex flex-col items-end gap-3">
         <div className="flex gap-2">
           {isPrivileged && editHref && (
-            <Link href={editHref} className="inline-flex items-center gap-1.5 rounded-full bg-galli px-4 py-2 text-sm font-semibold text-white"><Pencil className="h-4 w-4" /> Edit</Link>
+            <Link href={editHref} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"><Pencil className="h-4 w-4" /> Edit</Link>
           )}
           {!isPrivileged && (
-            <button onClick={onToggleJoin} className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold ${joined ? 'border border-border text-foreground' : 'bg-galli text-white'}`}>
+            <button onClick={onToggleJoin} className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold ${joined ? 'border border-border text-foreground' : 'bg-primary text-primary-foreground'}`}>
               {joined ? <><Check className="h-4 w-4" /> Joined</> : <><UserPlus className="h-4 w-4" /> Follow</>}
             </button>
           )}
