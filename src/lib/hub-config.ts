@@ -8,6 +8,7 @@ import {
   type HubWhoCanPost,
   type HubWhoCanDrop,
 } from './types/hub-config'
+import { isHubThemeKey } from './hub-themes'
 
 const bool = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d)
 
@@ -57,6 +58,11 @@ export function sanitizeHubConfig(raw: unknown): HubConfig {
   const kollabRaw = (r.kollab && typeof r.kollab === 'object' ? r.kollab : {}) as Record<string, any>
   const whoCanDrop: HubWhoCanDrop = kollabRaw.whoCanDrop === 'owner-only' ? 'owner-only' : 'members'
 
+  // An absent or unrecognised theme renders as Galli — the value every hub
+  // created before themes existed will take.
+  const appearanceRaw = (r.appearance && typeof r.appearance === 'object' ? r.appearance : {}) as Record<string, any>
+  const theme = isHubThemeKey(appearanceRaw.theme) ? appearanceRaw.theme : 'galli'
+
   return {
     sidebar,
     utility,
@@ -72,6 +78,7 @@ export function sanitizeHubConfig(raw: unknown): HubConfig {
       enabled: bool(kollabRaw.enabled, DEFAULT_HUB_CONFIG.kollab.enabled),
       whoCanDrop,
     },
+    appearance: { theme },
   }
 }
 
