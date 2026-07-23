@@ -27,11 +27,14 @@ export function presetWhere(preset: Preset, hubId: string, now: Date): Record<st
   return base
 }
 
-// A caption is member-authored free text that lands in a model prompt. Newlines
-// and pipes are stripped so a caption cannot forge extra digest rows and talk
-// the director into referencing an id that isn't really a candidate. validateEdl
-// is the real backstop, but not manufacturing the injection is cheaper.
-const clean = (s: string): string => s.replace(/[\r\n|]+/g, ' ').trim().slice(0, 140)
+// A caption is member-authored free text that lands in a model prompt. Newlines,
+// pipes, and Unicode line/paragraph terminators (U+2028, U+2029, U+0085, plus the
+// vertical tab / form feed control chars) are stripped so a caption cannot forge
+// extra digest rows and talk the director into referencing an id that isn't
+// really a candidate. validateEdl is the real backstop, but not manufacturing the
+// injection is cheaper.
+const clean = (s: string): string =>
+  s.replace(/[\r\n\u000B\f\u0085\u2028\u2029|]+/g, ' ').trim().slice(0, 140)
 
 const relAge = (then: Date, now: Date): string => {
   const days = Math.floor((now.getTime() - then.getTime()) / DAY)
@@ -46,7 +49,10 @@ function tagBits(aiTags: unknown): string[] {
   const out: string[] = []
   if (Array.isArray(t.tags)) {
     const tags = t.tags.filter((x): x is string => typeof x === 'string').slice(0, 8)
-    if (tags.length) out.push(tags.map(clean).join(','))
+    // clean() intentionally leaves commas alone (captions legitimately contain
+    // them), so strip commas from each tag here — this join is the only place
+    // a stray comma would visually forge an extra entry.
+    if (tags.length) out.push(tags.map((tag) => clean(tag).replace(/,/g, '')).join(','))
   }
   if (typeof t.desc === 'string' && t.desc.trim()) out.push(clean(t.desc))
   return out
@@ -57,7 +63,7 @@ export function describeCandidates(rows: CandidateRow[], now: Date): string {
   return rows
     .map((r) => {
       const parts = [r.id, r.type]
-      if (r.type === 'video') parts.push(r.durationSec ? `${r.durationSec}s` : '?s')
+      if (r.type === 'video') parts.push(r.durationSec !== null ? `${r.durationSec}s` : '?s')
       parts.push(`@${r.author.username}`, relAge(r.createdAt, now))
       if (r.caption) parts.push(`"${clean(r.caption)}"`)
       parts.push(...tagBits(r.aiTags))

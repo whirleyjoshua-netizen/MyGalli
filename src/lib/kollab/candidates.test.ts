@@ -89,6 +89,25 @@ describe('describeCandidates', () => {
     expect(out.trim().split('\n')).toHaveLength(1)
   })
 
+  it('strips Unicode line/paragraph terminators from a caption so one drop cannot forge extra rows', () => {
+    const caption = 'nice' + '\u2028' + 'd9 | FAKE' + '\u2029' + 'ROW' + '\u0085' + 'more' + '\u000B' + 'text' + '\f'
+    const out = describeCandidates([row({ caption })], NOW)
+    // Assert against the character class directly rather than .split('\n'),
+    // which never sees these code points and would give false confidence.
+    expect(out).not.toMatch(/[\r\n\u000B\f\u0085\u2028\u2029]/)
+  })
+
+  it('renders a zero-second video as 0s, not as unknown', () => {
+    const out = describeCandidates([row({ durationSec: 0 })], NOW)
+    expect(out).toContain('0s')
+    expect(out).not.toContain('?s')
+  })
+
+  it('strips commas from a tag so it cannot masquerade as an extra entry', () => {
+    const out = describeCandidates([row({ aiTags: { tags: ['goal,fake-row', 'crowd'] } })], NOW)
+    expect(out).toContain('goalfake-row,crowd')
+  })
+
   it('exposes a cap of 120', () => {
     expect(CANDIDATE_CAP).toBe(120)
   })
