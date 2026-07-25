@@ -343,7 +343,26 @@ model LiveFeed {
   lastUpdatedAt DateTime  @updatedAt
   createdAt     DateTime  @default(now())
 
+  values             Json      @default("[]")
+  clockMode          String    @default("off")
+  clockRunning       Boolean   @default(false)
+  clockElapsedMs     Int       @default(0)
+  clockLastStartedAt DateTime?
+  clockDurationMs    Int?
+  votes              LiveFeedVote[]
+
   @@index([displayId])
+}
+
+model LiveFeedVote {
+  id         String   @id @default(cuid())
+  liveFeedId String
+  liveFeed   LiveFeed @relation(fields: [liveFeedId], references: [id], onDelete: Cascade)
+  voterKey   String
+  optionId   String
+  createdAt  DateTime @default(now())
+  @@unique([liveFeedId, voterKey])
+  @@index([liveFeedId])
 }
 
 model CollectionMember {
