@@ -24,12 +24,14 @@ export function computeDisplayMs(clock: ClockInput, serverTime: string, monotoni
       ? Date.parse(serverTime) - Date.parse(clock.lastStartedAt)
       : 0
   const live = clock.elapsedMs + serverSegment + (clock.running ? Math.max(0, monotonicDeltaMs) : 0)
-  if (clock.mode === 'countdown') return Math.max(0, (clock.durationMs ?? 0) - live)
-  return Math.max(0, live)
+  const durationMs = typeof clock.durationMs === 'number' && Number.isFinite(clock.durationMs) ? clock.durationMs : 0
+  const result = clock.mode === 'countdown' ? Math.max(0, durationMs - live) : Math.max(0, live)
+  return Number.isFinite(result) ? result : 0
 }
 
 export function formatClock(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000))
+  const safeMs = Number.isFinite(ms) ? ms : 0
+  const total = Math.max(0, Math.floor(safeMs / 1000))
   const h = Math.floor(total / 3600)
   const m = Math.floor((total % 3600) / 60)
   const s = total % 60
