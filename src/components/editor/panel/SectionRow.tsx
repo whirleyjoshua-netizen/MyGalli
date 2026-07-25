@@ -8,17 +8,19 @@ import { ElementRow } from './ElementRow'
 interface SectionRowProps {
   group: ElementListGroup
   expandedElementId: string | null
+  displayId: string
   onToggleElement: (row: ElementListRow) => void
   onChangeElement: (sectionId: string, columnId: string, elementId: string, updates: Partial<CanvasElement>) => void
   onDeleteElement: (sectionId: string, columnId: string, elementId: string) => void
   onOpenSectionSettings: (sectionId: string) => void
   onAddElement: (sectionId: string) => void
   isPro: boolean
+  onVersionChange?: (version: number) => void
 }
 
 export function SectionRow({
-  group, expandedElementId, onToggleElement, onChangeElement, onDeleteElement,
-  onOpenSectionSettings, onAddElement, isPro,
+  group, expandedElementId, displayId, onToggleElement, onChangeElement, onDeleteElement,
+  onOpenSectionSettings, onAddElement, isPro, onVersionChange,
 }: SectionRowProps) {
   return (
     <div className="mb-3">
@@ -40,10 +42,12 @@ export function SectionRow({
             key={row.element.id}
             row={row}
             expanded={expandedElementId === row.element.id}
+            displayId={displayId}
             onToggle={() => onToggleElement(row)}
             onChange={(updates) => onChangeElement(row.sectionId, row.columnId, row.element.id, updates)}
             onDelete={() => onDeleteElement(row.sectionId, row.columnId, row.element.id)}
             isPro={isPro}
+            onVersionChange={onVersionChange}
           />
         ))}
       </div>

@@ -12,7 +12,7 @@ const sections: Section[] = [
 ]
 const noop = () => {}
 const base = {
-  sections, expandedElementId: null,
+  sections, expandedElementId: null, displayId: 'd1',
   onToggleElement: noop, onChangeElement: noop, onDeleteElement: noop,
   onOpenSectionSettings: noop, onAddElement: noop, isPro: false,
 }

@@ -44,3 +44,23 @@ describe('buildHubPayloadKey', () => {
     expect(buildHubPayloadKey({ a: 1, b: 2 })).toBe(buildHubPayloadKey({ b: 2, a: 1 }))
   })
 })
+
+describe('sanitizeHubConfig appearance', () => {
+  it('defaults a config with no appearance key to galli', () => {
+    // Every hub created before themes existed takes this path.
+    expect(sanitizeHubConfig({}).appearance).toEqual({ theme: 'galli' })
+  })
+
+  it('keeps a valid theme', () => {
+    expect(sanitizeHubConfig({ appearance: { theme: 'sunset' } }).appearance.theme).toBe('sunset')
+  })
+
+  it('coerces an unknown theme to galli rather than passing it through', () => {
+    expect(sanitizeHubConfig({ appearance: { theme: 'neon-chartreuse' } }).appearance.theme).toBe('galli')
+  })
+
+  it('survives a non-object appearance', () => {
+    expect(sanitizeHubConfig({ appearance: 'nope' }).appearance.theme).toBe('galli')
+    expect(sanitizeHubConfig({ appearance: null }).appearance.theme).toBe('galli')
+  })
+})

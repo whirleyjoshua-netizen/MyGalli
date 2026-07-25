@@ -214,6 +214,10 @@ export type MapCategory = {
 export interface CanvasElement {
   id: string
   type: ElementType
+  // Timestamp ("stamp") — written only by the server when the author stamps this
+  // element. Absent means unstamped. Never written from a client-supplied time.
+  stampedAt?: string   // ISO-8601 instant, UTC
+  stampedTz?: string   // IANA zone of the author at stamp time, e.g. 'America/New_York'
   content?: string
   // Heading specific
   level?: 1 | 2 | 3 | 4 | 5 | 6

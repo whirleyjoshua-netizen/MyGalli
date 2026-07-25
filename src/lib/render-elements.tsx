@@ -2,6 +2,7 @@ import type { Column, CanvasElement, ColumnSettings } from '@/lib/types/canvas'
 import { DEFAULT_COLUMN_SETTINGS, getTextStyles } from '@/lib/types/canvas'
 import { sanitizeHtml } from '@/lib/sanitize'
 import { TrendingUp, TrendingDown, Minus, Info, AlertTriangle, CheckCircle, XCircle, ChevronRight } from 'lucide-react'
+import { ElementStamp } from '@/components/elements/ElementStamp'
 import { PublicChartElement } from '@/components/elements/PublicChartElement'
 import { PublicCardElement } from '@/components/elements/PublicCardElement'
 import { PublicCodeElement } from '@/components/elements/PublicCodeElement'
@@ -105,7 +106,26 @@ export function getColumnStyles(column: Column): React.CSSProperties {
   return styles
 }
 
+/**
+ * Public entry point for rendering one element.
+ *
+ * The type-specific work lives in renderElementBody; this wrapper adds
+ * behaviour that applies to EVERY element type. Keeping the stamp here rather
+ * than in the switch is what lets all ~40 types support stamping without any
+ * per-type code.
+ */
 export function renderElement(element: CanvasElement, displayId?: string) {
+  const body = renderElementBody(element, displayId)
+  if (!element.stampedAt) return body
+  return (
+    <>
+      {body}
+      <ElementStamp stampedAt={element.stampedAt} stampedTz={element.stampedTz} />
+    </>
+  )
+}
+
+function renderElementBody(element: CanvasElement, displayId?: string) {
   switch (element.type) {
     case 'text':
       return (

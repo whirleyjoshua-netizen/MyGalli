@@ -48,7 +48,7 @@ export function HubAnnouncementComposer({
       <div className="flex items-center justify-end gap-2">
         <span className="mr-auto text-[11px] text-muted-foreground">{body.length}/{ANNOUNCEMENT_MAX}</span>
         <button onClick={onClose} className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted">Cancel</button>
-        <button onClick={submit} disabled={busy || !body.trim()} className="inline-flex items-center gap-1.5 rounded-lg bg-galli px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60">
+        <button onClick={submit} disabled={busy || !body.trim()} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">
           {busy && <Loader2 className="h-4 w-4 animate-spin" />} Post
         </button>
       </div>

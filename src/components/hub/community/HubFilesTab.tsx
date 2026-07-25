@@ -6,6 +6,8 @@ import { HubFolderTree } from '@/components/hub/HubFolderTree'
 import { HubFileViewer } from '@/components/hub/HubFileViewer'
 import { buildFolderTree } from '@/lib/hub-tree'
 import { itemsInFolder, type FileFolder, type FileItem } from '@/lib/hub-files-view'
+import { newNoteBody, bookmarkUrl, type BookmarkLite } from '@/lib/hub-bookmark-requests'
+import type { Rect } from '@/lib/hub-highlight'
 
 /**
  * The community hub's Files tab.
@@ -18,12 +20,16 @@ import { itemsInFolder, type FileFolder, type FileItem } from '@/lib/hub-files-v
  * rights — deliberately out of scope. See the plan's "Deviation from spec D4".
  */
 export function HubFilesTab({
-  hubId, canManage, initialFolders, initialItems,
+  hubId, canManage, initialFolders, initialItems, notes = [], initialBookmarks = [],
 }: {
   hubId: string
   canManage: boolean
   initialFolders: FileFolder[]
   initialItems: FileItem[]
+  /** Visibility-filtered by the server. */
+  notes?: { id: string; title: string; color: string }[]
+  /** Visibility-filtered by the server — private-note marks never arrive here. */
+  initialBookmarks?: BookmarkLite[]
 }) {
   const [folders, setFolders] = useState<FileFolder[]>(initialFolders)
   const [items, setItems] = useState<FileItem[]>(initialItems)
@@ -33,6 +39,8 @@ export function HubFilesTab({
   const [error, setError] = useState<string | null>(null)
   // Viewing is for everyone who can see the file — not gated on canManage.
   const [viewing, setViewing] = useState<FileItem | null>(null)
+  const [noteList, setNoteList] = useState(notes)
+  const [bookmarks, setBookmarks] = useState<BookmarkLite[]>(initialBookmarks)
   const fileInput = useRef<HTMLInputElement>(null)
 
   const tree = useMemo(() => buildFolderTree(folders), [folders])
@@ -92,6 +100,43 @@ export function HubFilesTab({
       // Let the same file be picked again after a failure.
       if (fileInput.current) fileInput.current.value = ''
     }
+  }
+
+  // Returning null makes SelectionPopover abort cleanly rather than saving a
+  // bookmark against a note that was never created.
+  async function createNote(): Promise<string | null> {
+    if (!viewing) return null
+    const res = await fetch(`/api/hubs/${hubId}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newNoteBody(viewing.title)),
+    })
+    if (!res.ok) {
+      setError((await res.json().catch(() => ({}))).error || 'Could not create the note')
+      return null
+    }
+    const n = await res.json()
+    setNoteList((cur) => [...cur, { id: n.id, title: n.title, color: n.color }])
+    return n.id
+  }
+
+  async function createBookmark(input: {
+    noteId: string; itemId: string; page: number; rects: Rect[]; text: string; title: string
+  }) {
+    const res = await fetch(bookmarkUrl(hubId, input.noteId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+    if (!res.ok) {
+      setError((await res.json().catch(() => ({}))).error || 'Could not save the highlight')
+      return
+    }
+    const b = await res.json()
+    setBookmarks((cur) => [
+      ...cur,
+      { id: b.id, noteId: b.noteId, itemId: b.itemId, page: b.page, rects: b.rects, title: b.title },
+    ])
   }
 
   async function deleteItem(it: FileItem) {
@@ -201,6 +246,11 @@ export function HubFilesTab({
       <HubFileViewer
         file={viewing ? { id: viewing.id, type: viewing.type, title: viewing.title, url: viewing.url } : null}
         onClose={() => setViewing(null)}
+        editable={canManage}
+        notes={noteList}
+        bookmarks={bookmarks}
+        onCreateNote={createNote}
+        onCreateBookmark={createBookmark}
       />
     </div>
   )

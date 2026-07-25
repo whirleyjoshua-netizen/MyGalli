@@ -13,6 +13,7 @@ import { LayoutSectionsSection } from './LayoutSectionsSection'
 import { HubProfileSection } from './HubProfileSection'
 import { HubSettingsSection } from './HubSettingsSection'
 import { CommunitySettingsSection } from './CommunitySettingsSection'
+import { AppearanceSection } from './AppearanceSection'
 import { WidgetsToolsSection } from './WidgetsToolsSection'
 import { ModerationQueue } from './ModerationQueue'
 
@@ -74,6 +75,7 @@ export function HubBuilder({ hubId }: { hubId: string }) {
           {section === 'layout' && <LayoutSectionsSection config={config} onChange={setConfig} hubId={merged.id} />}
           {section === 'widgets' && <WidgetsToolsSection config={config} onChange={setConfig} hubId={merged.id} />}
           {section === 'profile' && <HubProfileSection hub={merged} onField={setField} />}
+          {section === 'appearance' && <AppearanceSection config={config} onChange={setConfig} />}
           {section === 'community' && <CommunitySettingsSection config={config} onChange={setConfig} />}
           {section === 'moderation' && <ModerationQueue hubId={merged.id} />}
         </main>

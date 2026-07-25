@@ -7,12 +7,14 @@ import { SectionRow } from './SectionRow'
 interface ElementsTabProps {
   sections: Section[]
   expandedElementId: string | null
+  displayId: string
   onToggleElement: (row: ElementListRow) => void
   onChangeElement: (sectionId: string, columnId: string, elementId: string, updates: Partial<CanvasElement>) => void
   onDeleteElement: (sectionId: string, columnId: string, elementId: string) => void
   onOpenSectionSettings: (sectionId: string) => void
   onAddElement: (sectionId: string) => void
   isPro: boolean
+  onVersionChange?: (version: number) => void
 }
 
 export function ElementsTab(props: ElementsTabProps) {
@@ -33,12 +35,14 @@ export function ElementsTab(props: ElementsTabProps) {
           key={group.sectionId}
           group={group}
           expandedElementId={props.expandedElementId}
+          displayId={props.displayId}
           onToggleElement={props.onToggleElement}
           onChangeElement={props.onChangeElement}
           onDeleteElement={props.onDeleteElement}
           onOpenSectionSettings={props.onOpenSectionSettings}
           onAddElement={props.onAddElement}
           isPro={props.isPro}
+          onVersionChange={props.onVersionChange}
         />
       ))}
     </div>

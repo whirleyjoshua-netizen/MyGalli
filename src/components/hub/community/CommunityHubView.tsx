@@ -6,6 +6,8 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { CommunityTabs, tabFromParam, type CommunityTab } from './CommunityTabs'
 import { HubFilesTab } from './HubFilesTab'
 import type { FileFolder, FileItem } from '@/lib/hub-files-view'
+import type { BookmarkLite } from '@/lib/hub-bookmark-requests'
+import { resolveHubTheme } from '@/lib/hub-themes'
 import { CommunityHeader } from './CommunityHeader'
 import { CommunityFeed } from './CommunityFeed'
 import { CommunitySidebar } from './CommunitySidebar'
@@ -19,12 +21,14 @@ import type { DropDTO } from '@/lib/hub-drops'
 import type { StripNote } from '@/lib/hub-notes'
 import type { ActivityCounts } from '@/lib/hub-activity'
 import type { AnnouncementDTO } from '@/lib/hub-announcements'
+import { HubPagesTab } from './HubPagesTab'
+import type { HubPageDTO } from '@/lib/hub-pages'
 
 type CommunityMember = { userId: string; username: string; name: string | null; avatar: string | null }
 type CommunityResource = { id: string; type: string; title: string; url: string | null }
 
 function CommunityHubViewInner({
-  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, pendingCount = 0, notes, counts, activity, sharePath, config, preview, announcements = [], fileFolders = [], fileItems = [],
+  hub, ownerUsername, currentUserId, isPrivileged, isOwner, joined: initialJoined, memberCount: initialCount, members, resources, events, drops, pendingCount = 0, notes, counts, activity, sharePath, config, preview, announcements = [], fileFolders = [], fileItems = [], fileBookmarks = [], hubPages = [],
 }: {
   hub: { id: string; title: string; tagline: string | null; description: string | null; coverImage: string | null; heroVideoUrl: string | null }
   ownerUsername: string
@@ -48,7 +52,10 @@ function CommunityHubViewInner({
   announcements?: AnnouncementDTO[]
   /** Visibility-filtered by the server — nothing hidden reaches this component. */
   fileFolders?: FileFolder[]
+  /** Visibility-filtered by the server; private-note marks never arrive. */
+  fileBookmarks?: BookmarkLite[]
   fileItems?: FileItem[]
+  hubPages?: HubPageDTO[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -71,6 +78,9 @@ function CommunityHubViewInner({
   const canPost = isPrivileged || joined
   const nextEvent = events && events.length > 0 ? { title: events[0].title, startsAt: events[0].startsAt } : null
 
+  // Optional chain: a cached payload or a test fixture may predate the key.
+  const theme = resolveHubTheme(config.appearance?.theme)
+
   async function toggleJoin() {
     const res = await fetch(`/api/hubs/${hub.id}/join`, { method: joined ? 'DELETE' : 'POST' })
     if (res.status === 401) { window.location.href = '/login'; return }
@@ -78,7 +88,14 @@ function CommunityHubViewInner({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-galli/5 to-transparent">
+    <div
+      className="min-h-screen bg-gradient-to-b from-primary/5 to-transparent"
+      style={{
+        '--primary': theme.primary,
+        '--primary-foreground': theme.primaryForeground,
+        '--hub-accent': theme.accent,
+      } as React.CSSProperties}
+    >
       <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
         <CommunityUtilityStrip
           hubId={hub.id}
@@ -128,7 +145,26 @@ function CommunityHubViewInner({
 
         {tab === 'files' && (
           <div className="mt-6">
-            <HubFilesTab hubId={hub.id} canManage={!!isOwner} initialFolders={fileFolders} initialItems={fileItems} />
+            <HubFilesTab
+              hubId={hub.id}
+              canManage={!!isOwner}
+              initialFolders={fileFolders}
+              initialItems={fileItems}
+              notes={(notes ?? []).map((n) => ({ id: n.id, title: n.title, color: n.color }))}
+              initialBookmarks={fileBookmarks}
+            />
+          </div>
+        )}
+
+        {tab === 'pages' && (
+          <div className="mt-6">
+            <HubPagesTab
+              hubId={hub.id}
+              canManage={isPrivileged}
+              canAttach={isPrivileged || joined}
+              currentUserId={currentUserId ?? null}
+              initialPages={hubPages}
+            />
           </div>
         )}
 
@@ -161,7 +197,7 @@ function CommunityHubViewInner({
         </div>
         )}
 
-        <div className="mt-10 rounded-2xl border border-border bg-galli/5 py-6 text-center text-sm text-muted-foreground">
+        <div className="mt-10 rounded-2xl border border-border bg-primary/5 py-6 text-center text-sm text-muted-foreground">
           Good ideas grow in great communities.
         </div>
       </div>

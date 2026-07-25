@@ -1,17 +1,20 @@
 'use client'
 
-import { Leaf, FolderOpen } from 'lucide-react'
+import { Leaf, FolderOpen, LayoutGrid } from 'lucide-react'
 
-export type CommunityTab = 'home' | 'files'
+export type CommunityTab = 'home' | 'files' | 'pages'
 
-/** Anything that isn't an known tab falls back to Home. */
+/** Anything that isn't a known tab falls back to Home. */
 export function tabFromParam(raw: string | null): CommunityTab {
-  return raw === 'files' ? 'files' : 'home'
+  if (raw === 'files') return 'files'
+  if (raw === 'pages') return 'pages'
+  return 'home'
 }
 
 const TABS: { key: CommunityTab; label: string; icon: React.ReactNode }[] = [
   { key: 'home', label: 'Home', icon: <Leaf className="h-4 w-4" /> },
   { key: 'files', label: 'Files', icon: <FolderOpen className="h-4 w-4" /> },
+  { key: 'pages', label: 'Pages', icon: <LayoutGrid className="h-4 w-4" /> },
 ]
 
 export function CommunityTabs({

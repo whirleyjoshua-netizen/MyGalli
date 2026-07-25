@@ -45,7 +45,7 @@ export function CommunitySidebar({
           </div>
           <div className="flex flex-wrap gap-2">
             {members.slice(0, 12).map((m) => (
-              <span key={m.userId} title={m.name || m.username} className="h-9 w-9 overflow-hidden rounded-full bg-gradient-to-br from-galli/30 to-galli-violet/30">
+              <span key={m.userId} title={m.name || m.username} className="h-9 w-9 overflow-hidden rounded-full bg-gradient-to-br from-primary/30 to-hub-accent/30">
                 {m.avatar && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={m.avatar} alt="" className="h-full w-full object-cover" />
@@ -110,7 +110,7 @@ export function CommunitySidebar({
         <Modal title={`Members (${members.length})`} onClose={() => setShowMembers(false)}>
           {members.map((m) => (
             <div key={m.userId} className="flex items-center gap-2 py-1.5">
-              <span className="h-8 w-8 overflow-hidden rounded-full bg-gradient-to-br from-galli/30 to-galli-violet/30">
+              <span className="h-8 w-8 overflow-hidden rounded-full bg-gradient-to-br from-primary/30 to-hub-accent/30">
                 {m.avatar && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={m.avatar} alt="" className="h-full w-full object-cover" />
@@ -154,7 +154,7 @@ function EventDateChip({ iso }: { iso: string }) {
   const d = new Date(iso)
   const mon = d.toLocaleString('en-US', { month: 'short' }).toUpperCase()
   return (
-    <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-galli/10 text-primary">
+    <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary">
       <span className="text-[10px] font-semibold leading-none">{mon}</span>
       <span className="text-base font-bold leading-none">{d.getDate()}</span>
     </span>

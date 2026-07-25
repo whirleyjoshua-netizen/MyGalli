@@ -50,7 +50,7 @@ export function HubAnnouncementBanner({
   }
 
   return (
-    <div className="rounded-xl border border-galli/30 bg-galli/5 px-4 py-3">
+    <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
       {composing ? (
         <HubAnnouncementComposer
           hubId={hubId}

@@ -31,6 +31,9 @@ const config: Config = {
           foreground: 'hsl(var(--accent-foreground))',
         },
         destructive: 'hsl(var(--destructive))',
+        // Second stop for hub theme gradients. Set per hub by CommunityHubView;
+        // :root supplies today's galli-violet so non-hub use is unchanged.
+        'hub-accent': 'hsl(var(--hub-accent))',
         galli: {
           DEFAULT: '#39D98A',
           dark: '#0F3D2E',
