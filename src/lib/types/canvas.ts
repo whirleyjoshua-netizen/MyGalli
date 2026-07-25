@@ -149,6 +149,7 @@ export type ElementType =
   | 'mood-board'            // Image mood board grid
   | 'color-palette'         // Color palette display
   | 'playlist'              // Music playlist
+  | 'checklist'             // Owner-managed checkable list with progress
   | 'quote-wall'            // Collection of quotes
   // Creator Kit elements
   | 'social-stats'          // Social media presence cards
@@ -528,6 +529,11 @@ export interface CanvasElement {
   // Playlist specific
   playlistTitle?: string
   playlistItems?: { title: string; artist: string; coverUrl: string; link: string }[]
+
+  // Checklist — owner-managed; `done` is stored in JSON and publishes with the page.
+  checklistTitle?: string
+  checklistItems?: { id: string; text: string; done: boolean }[]
+  checklistShowProgress?: boolean
   // Quote Wall specific
   quoteWallTitle?: string
   quoteWallQuotes?: { text: string; author: string; source: string }[]
@@ -1211,6 +1217,15 @@ export function createElement(type: ElementType): CanvasElement {
           { hex: '#96CEB4', name: 'Sage' },
           { hex: '#FFEAA7', name: 'Sunshine' },
         ],
+      }
+    case 'checklist':
+      return {
+        ...base,
+        checklistTitle: 'Checklist',
+        checklistItems: [
+          { id: `chk-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, text: 'First item', done: false },
+        ],
+        checklistShowProgress: true,
       }
     case 'link-hub':
       return { ...base, linkHubTitle: '', linkHubItems: [{ label: 'My website', url: '', icon: 'website' }] }
