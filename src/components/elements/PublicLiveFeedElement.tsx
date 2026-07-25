@@ -57,8 +57,12 @@ export function PublicLiveFeedElement({ element }: { element: CanvasElement }) {
   const [state, setState] = useState<LiveState>(IDLE_STATE)
   const [displayMs, setDisplayMs] = useState(0)
   const [hasVoted, setHasVoted] = useState(false)
+  const [isVoting, setIsVoting] = useState(false)
+  const [voteError, setVoteError] = useState(false)
   const inFlight = useRef(false)
+  const votingRef = useRef(false)
   const anchorRef = useRef(performance.now())
+  const clockEnabled = element.liveFeedClock !== 'off' && state.clock.mode !== 'off'
 
   useEffect(() => {
     try {
@@ -97,32 +101,51 @@ export function PublicLiveFeedElement({ element }: { element: CanvasElement }) {
   }, [element.id])
 
   useEffect(() => {
-    if (state.clock.mode === 'off') return
+    if (!clockEnabled) return
     const tick = () => {
       setDisplayMs(computeDisplayMs(state.clock, state.serverTime, performance.now() - anchorRef.current))
     }
     tick()
     const timer = setInterval(tick, TICK_MS)
     return () => clearInterval(timer)
-  }, [state.clock, state.serverTime])
+  }, [clockEnabled, state.clock, state.serverTime])
 
   const handleVote = async (optionId: string) => {
+    if (votingRef.current) return
+    votingRef.current = true
+    setIsVoting(true)
+    setVoteError(false)
     try {
       const sessionId = getSessionId()
-      await fetch(`/api/live/${element.id}/vote`, {
+      const res = await fetch(`/api/live/${element.id}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ optionId, sessionId }),
       })
-    } catch {
-      /* ignore network errors; still mark voted locally */
-    } finally {
+      if (!res.ok) {
+        setVoteError(true)
+        return
+      }
       setHasVoted(true)
       try {
         localStorage.setItem(`lf_voted_${element.id}`, '1')
       } catch {
         /* ignore storage errors */
       }
+      try {
+        const data = (await res.json()) as Partial<LiveState>
+        if (data && Array.isArray(data.values)) {
+          setState((prev) => ({ ...prev, ...data }))
+          anchorRef.current = performance.now()
+        }
+      } catch {
+        /* response body may be empty or non-JSON; tallies will arrive on next poll */
+      }
+    } catch {
+      setVoteError(true)
+    } finally {
+      votingRef.current = false
+      setIsVoting(false)
     }
   }
 
@@ -228,7 +251,8 @@ export function PublicLiveFeedElement({ element }: { element: CanvasElement }) {
                     key={entry.id}
                     type="button"
                     onClick={() => handleVote(entry.id)}
-                    className="w-full text-left rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                    disabled={isVoting}
+                    className="w-full text-left rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
                   >
                     {label}
                   </button>
@@ -246,11 +270,14 @@ export function PublicLiveFeedElement({ element }: { element: CanvasElement }) {
                 </div>
               )
             })}
+            {voteError && !hasVoted && (
+              <div className="text-xs font-medium text-red-600">Vote failed — tap to retry</div>
+            )}
           </div>
         )
       })()}
 
-      {state.clock.mode !== 'off' && (
+      {clockEnabled && (
         <div className="mt-4 text-center">
           <time className="text-2xl font-extrabold tabular-nums text-slate-900">{formatClock(displayMs)}</time>
         </div>
