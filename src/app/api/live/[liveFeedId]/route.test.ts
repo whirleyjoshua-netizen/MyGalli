@@ -3,79 +3,59 @@ import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: vi.fn().mockResolvedValue(null) }))
 vi.mock('@/lib/auth', () => ({ getUser: vi.fn() }))
-vi.mock('@/lib/db', () => ({
-  db: { liveFeed: { findUnique: vi.fn(), update: vi.fn() } },
-}))
+vi.mock('@/lib/db', () => ({ db: { liveFeed: { findUnique: vi.fn(), update: vi.fn() } } }))
 
 import { GET, POST } from './route'
 import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 
 const ctx = (liveFeedId: string) => ({ params: Promise.resolve({ liveFeedId }) })
-const req = (body?: unknown) =>
-  new NextRequest('http://localhost/api/live/el-1', {
-    method: body ? 'POST' : 'GET',
-    body: body ? JSON.stringify(body) : undefined,
-  })
+const req = (body?: unknown) => new NextRequest('http://localhost/api/live/el-1', { method: body ? 'POST' : 'GET', body: body ? JSON.stringify(body) : undefined })
+const baseRow = () => ({ id: 'el-1', isLive: false, values: [{ id: 'a', label: '', value: 0 }], startedAt: null, lastUpdatedAt: new Date('2026-07-25T00:00:00Z'), clockMode: 'off', clockRunning: false, clockElapsedMs: 0, clockLastStartedAt: null, clockDurationMs: null, display: { userId: 'owner' } })
 
 beforeEach(() => vi.clearAllMocks())
 
-describe('GET /api/live/[liveFeedId]', () => {
-  it('returns idle default when no row exists', async () => {
-    ;(db.liveFeed.findUnique as any).mockResolvedValue(null)
-    const res = await GET(req(), ctx('el-1'))
-    const json = await res.json()
-    expect(json).toMatchObject({ isLive: false, valueA: 0, valueB: 0, startedAt: null })
-  })
-
-  it('returns the stored state when a row exists', async () => {
-    ;(db.liveFeed.findUnique as any).mockResolvedValue({
-      isLive: true, valueA: 3, valueB: 1, startedAt: new Date('2026-07-06T00:00:00Z'),
-      lastUpdatedAt: new Date('2026-07-06T00:01:00Z'),
-    })
-    const res = await GET(req(), ctx('el-1'))
-    const json = await res.json()
-    expect(json).toMatchObject({ isLive: true, valueA: 3, valueB: 1 })
-  })
+it('GET returns idle with empty values when no row exists', async () => {
+  ;(db.liveFeed.findUnique as any).mockResolvedValue(null)
+  const json = await (await GET(req(), ctx('el-1'))).json()
+  expect(json).toMatchObject({ isLive: false, values: [] })
+  expect(typeof json.serverTime).toBe('string')
 })
 
-describe('POST /api/live/[liveFeedId]', () => {
-  it('401 when unauthenticated', async () => {
-    ;(getUser as any).mockResolvedValue(null)
-    const res = await POST(req({ action: 'start' }), ctx('el-1'))
-    expect(res.status).toBe(401)
-  })
+it('GET serializes values and clock', async () => {
+  ;(db.liveFeed.findUnique as any).mockResolvedValue({ ...baseRow(), values: [{ id: 'a', label: 'Home', value: 7 }], clockMode: 'countup', clockRunning: true, clockElapsedMs: 1000, clockLastStartedAt: new Date('2026-07-25T00:00:00Z') })
+  const json = await (await GET(req(), ctx('el-1'))).json()
+  expect(json.values[0]).toEqual({ id: 'a', label: 'Home', value: 7 })
+  expect(json.clock).toMatchObject({ mode: 'countup', running: true, elapsedMs: 1000 })
+})
 
-  it('404 when the row does not exist yet', async () => {
-    ;(getUser as any).mockResolvedValue({ id: 'u1' })
-    ;(db.liveFeed.findUnique as any).mockResolvedValue(null)
-    const res = await POST(req({ action: 'start' }), ctx('el-1'))
-    expect(res.status).toBe(404)
-  })
+it('POST 401 logged out', async () => {
+  ;(getUser as any).mockResolvedValue(null)
+  ;(db.liveFeed.findUnique as any).mockResolvedValue(baseRow())
+  expect((await POST(req({ action: 'start' }), ctx('el-1'))).status).toBe(401)
+})
 
-  it('403 when the requester is not the owner', async () => {
-    ;(getUser as any).mockResolvedValue({ id: 'u1' })
-    ;(db.liveFeed.findUnique as any).mockResolvedValue({
-      id: 'el-1', isLive: false, valueA: 0, valueB: 0, startedAt: null, display: { userId: 'someone-else' },
-    })
-    const res = await POST(req({ action: 'bump', delta: 1 }), ctx('el-1'))
-    expect(res.status).toBe(403)
-  })
+it('POST 403 non-owner', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'stranger' })
+  ;(db.liveFeed.findUnique as any).mockResolvedValue(baseRow())
+  expect((await POST(req({ action: 'start' }), ctx('el-1'))).status).toBe(403)
+})
 
-  it('applies the action for the owner', async () => {
-    ;(getUser as any).mockResolvedValue({ id: 'u1' })
-    ;(db.liveFeed.findUnique as any).mockResolvedValue({
-      id: 'el-1', isLive: false, valueA: 0, valueB: 0, startedAt: null, display: { userId: 'u1' },
-    })
-    ;(db.liveFeed.update as any).mockResolvedValue({
-      isLive: false, valueA: 1, valueB: 0, startedAt: null, lastUpdatedAt: new Date('2026-07-06T00:00:00Z'),
-    })
-    const res = await POST(req({ action: 'bump', delta: 1 }), ctx('el-1'))
-    expect(res.status).toBe(200)
-    const json = await res.json()
-    expect(json.valueA).toBe(1)
-    expect(db.liveFeed.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'el-1' }, data: expect.objectContaining({ valueA: 1 }) })
-    )
-  })
+it('POST bump persists the new value list', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  ;(db.liveFeed.findUnique as any).mockResolvedValue(baseRow())
+  ;(db.liveFeed.update as any).mockResolvedValue({ lastUpdatedAt: new Date('2026-07-25T00:00:01Z') })
+  const json = await (await POST(req({ action: 'bump', id: 'a', delta: 3 }), ctx('el-1'))).json()
+  expect(json.values.find((v: any) => v.id === 'a').value).toBe(3)
+  expect((db.liveFeed.update as any).mock.calls[0][0].data.values[0].value).toBe(3)
+})
+
+it('POST addValue is server-assigned an id, not the client one', async () => {
+  ;(getUser as any).mockResolvedValue({ id: 'owner' })
+  ;(db.liveFeed.findUnique as any).mockResolvedValue({ ...baseRow(), values: [] })
+  ;(db.liveFeed.update as any).mockResolvedValue({ lastUpdatedAt: new Date() })
+  const json = await (await POST(req({ action: 'addValue', id: 'HACKED', label: 'Ravens' }), ctx('el-1'))).json()
+  expect(json.values).toHaveLength(1)
+  expect(json.values[0].id).not.toBe('HACKED')
+  expect(json.values[0].label).toBe('Ravens')
 })
