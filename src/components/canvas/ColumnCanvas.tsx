@@ -71,6 +71,7 @@ import {
   SlideshowElement,
   MoodBoardElement,
   ColorPaletteElement,
+  ChecklistElement,
   PlaylistElement,
   QuoteWallElement,
   TimelineElement,
@@ -151,6 +152,7 @@ import { PublicWeddingHashtagsElement } from '@/components/elements/PublicWeddin
 import { PublicSlideshowElement } from '@/components/elements/PublicSlideshowElement'
 import { PublicMoodBoardElement } from '@/components/elements/PublicMoodBoardElement'
 import { PublicColorPaletteElement } from '@/components/elements/PublicColorPaletteElement'
+import { PublicChecklistElement } from '@/components/elements/PublicChecklistElement'
 import { PublicPlaylistElement } from '@/components/elements/PublicPlaylistElement'
 import { PublicQuoteWallElement } from '@/components/elements/PublicQuoteWallElement'
 import { PublicCourseListElement } from '@/components/elements/PublicCourseListElement'
@@ -1228,6 +1230,20 @@ export function ColumnCanvas({
         }
         return (
           <ColorPaletteElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
+      case 'checklist':
+        if (isPreviewMode) {
+          return <PublicChecklistElement element={element} />
+        }
+        return (
+          <ChecklistElement
             element={element}
             onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
             onDelete={() => onDeleteElement(sectionId, columnId, element.id)}

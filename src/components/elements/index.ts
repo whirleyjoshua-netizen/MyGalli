@@ -49,6 +49,7 @@ export { WeddingHashtagsElement } from './WeddingHashtagsElement'
 // Creative Kit Elements
 export { MoodBoardElement } from './MoodBoardElement'
 export { ColorPaletteElement } from './ColorPaletteElement'
+export { ChecklistElement } from './ChecklistElement'
 export { PlaylistElement } from './PlaylistElement'
 export { QuoteWallElement } from './QuoteWallElement'
 // Creator Kit Elements

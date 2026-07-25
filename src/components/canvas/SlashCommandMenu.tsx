@@ -63,6 +63,7 @@ import {
   Rocket,
   LibraryBig,
   BadgeCheck,
+  ListChecks,
 } from 'lucide-react'
 import type { ElementType } from '@/lib/types/canvas'
 
@@ -90,6 +91,7 @@ const commands: Command[] = [
 
   // Data & Visuals
   { id: 'list', label: 'Bulleted List', icon: List, description: 'Simple bullet list', category: 'Data & Visuals' },
+  { id: 'checklist', label: 'Checklist', icon: ListChecks, description: 'Checkable to-do list with progress', category: 'Data & Visuals' },
   { id: 'table', label: 'Table', icon: Table, description: 'Rows and columns', category: 'Data & Visuals' },
   { id: 'kpi', label: 'KPI / Stat', icon: BarChart3, description: 'Metric with trend', category: 'Data & Visuals' },
   { id: 'chart', label: '3D Chart', icon: PieChart, description: 'Bar, line, or pie chart', category: 'Data & Visuals' },

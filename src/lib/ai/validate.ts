@@ -14,7 +14,7 @@ const VALID_ELEMENT_TYPES: ElementType[] = [
   'experience-entry', 'education-entry', 'skill-bar', 'certification-badge',
   'wedding-timeline', 'wedding-party', 'wedding-rsvp', 'wedding-stats',
   'wedding-registry', 'wedding-hashtags',
-  'mood-board', 'color-palette', 'playlist', 'quote-wall',
+  'mood-board', 'color-palette', 'playlist', 'quote-wall', 'checklist',
   'social-stats', 'collab-card', 'rate-card', 'media-kit-stats',
   'course-list', 'gpa-card', 'test-scores', 'awards-showcase',
   'business-menu', 'business-hours', 'business-review', 'business-promo',

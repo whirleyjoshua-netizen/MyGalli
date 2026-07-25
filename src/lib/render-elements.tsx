@@ -35,6 +35,7 @@ import { PublicWeddingHashtagsElement } from '@/components/elements/PublicWeddin
 import { PublicSlideshowElement } from '@/components/elements/PublicSlideshowElement'
 import { PublicMoodBoardElement } from '@/components/elements/PublicMoodBoardElement'
 import { PublicColorPaletteElement } from '@/components/elements/PublicColorPaletteElement'
+import { PublicChecklistElement } from '@/components/elements/PublicChecklistElement'
 import { PublicPlaylistElement } from '@/components/elements/PublicPlaylistElement'
 import { PublicQuoteWallElement } from '@/components/elements/PublicQuoteWallElement'
 import { PublicTimelineElement } from '@/components/elements/PublicTimelineElement'
@@ -539,6 +540,9 @@ function renderElementBody(element: CanvasElement, displayId?: string) {
 
     case 'color-palette':
       return <PublicColorPaletteElement element={element} />
+
+    case 'checklist':
+      return <PublicChecklistElement element={element} />
 
     case 'hub':
       return <PublicHubElement element={element} />
