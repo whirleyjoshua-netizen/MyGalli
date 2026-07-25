@@ -16,6 +16,8 @@ const PRESETS = [
   { id: 'single', label: 'Single counter' },
   { id: 'versus', label: 'Versus score' },
   { id: 'goal', label: 'Goal / progress' },
+  { id: 'leaderboard', label: 'Leaderboard' },
+  { id: 'poll', label: 'Live poll' },
 ] as const
 
 export function LiveFeedElement({ element, onChange, onDelete, isSelected, onSelect }: Props) {
@@ -51,7 +53,7 @@ export function LiveFeedElement({ element, onChange, onDelete, isSelected, onSel
       <label className="block text-xs font-medium text-slate-500 mb-1">Tracker</label>
       <select
         value={preset}
-        onChange={(e) => onChange({ liveFeedPreset: e.target.value as 'single' | 'versus' | 'goal' })}
+        onChange={(e) => onChange({ liveFeedPreset: e.target.value as 'single' | 'versus' | 'goal' | 'leaderboard' | 'poll' })}
         onClick={(e) => e.stopPropagation()}
         className="w-full mb-3 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"
       >
@@ -85,7 +87,43 @@ export function LiveFeedElement({ element, onChange, onDelete, isSelected, onSel
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2 mb-3">
+      {/* Clock */}
+      <label className="block text-sm font-medium text-slate-700 mt-4">Clock</label>
+      <select
+        value={element.liveFeedClock ?? 'off'}
+        onChange={(e) => onChange({ liveFeedClock: e.target.value as 'off' | 'countup' | 'countdown' })}
+        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      >
+        <option value="off">No clock</option>
+        <option value="countup">Count up (from go-live)</option>
+        <option value="countdown">Count down (to a set time)</option>
+      </select>
+      {element.liveFeedClock === 'countdown' && (
+        <input
+          type="number"
+          min={0}
+          value={Math.round((element.liveFeedClockDurationMs ?? 0) / 1000)}
+          onChange={(e) => onChange({ liveFeedClockDurationMs: Math.max(0, Number(e.target.value)) * 1000 })}
+          placeholder="Countdown seconds (e.g. 720 for 12:00)"
+          className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        />
+      )}
+
+      {element.liveFeedPreset === 'poll' && (
+        <>
+          <label className="block text-sm font-medium text-slate-700 mt-4">Poll results</label>
+          <select
+            value={element.liveFeedPollReveal ?? 'always'}
+            onChange={(e) => onChange({ liveFeedPollReveal: e.target.value as 'always' | 'after-vote' })}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="always">Always show tallies</option>
+            <option value="after-vote">Reveal after voting</option>
+          </select>
+        </>
+      )}
+
+      <div className="grid grid-cols-2 gap-2 mb-3 mt-4">
         <div>
           <label className="block text-xs font-medium text-slate-500 mb-1">Step</label>
           <input type="number" min={1} value={element.liveFeedStep ?? 1} onChange={(e) => onChange({ liveFeedStep: Math.max(1, Number(e.target.value)) })} onClick={(e) => e.stopPropagation()} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />

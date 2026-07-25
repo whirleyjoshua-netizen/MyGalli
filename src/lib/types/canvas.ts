@@ -342,13 +342,16 @@ export interface CanvasElement {
   trackerShowSummary?: boolean    // Show summary cards above chart
   trackerTimeRange?: '7d' | '30d' | '90d' | '1y' | 'all'
   // Live Feed specific (phone-controlled live counter/score). Row key = element id.
-  liveFeedPreset?: 'single' | 'versus' | 'goal'
+  liveFeedPreset?: 'single' | 'versus' | 'goal' | 'leaderboard' | 'poll'
   liveFeedTitle?: string
   liveFeedLabelA?: string          // single/goal: value label; versus: home side label
   liveFeedLabelB?: string          // versus: away side label
   liveFeedTarget?: number          // goal: target value
   liveFeedStep?: number            // control-page +/- increment
   liveFeedColor?: string           // accent color
+  liveFeedClock?: 'off' | 'countup' | 'countdown'
+  liveFeedClockDurationMs?: number   // countdown total, e.g. 720000 for 12:00
+  liveFeedPollReveal?: 'always' | 'after-vote'
   // Flowchart specific (branching tree of linked blocks; all in element JSON)
   flowTitle?: string
   flowNodes?: FlowNode[]
@@ -1029,6 +1032,8 @@ export function createElement(type: ElementType): CanvasElement {
         liveFeedTarget: 100,
         liveFeedStep: 1,
         liveFeedColor: '#39D98A',
+        liveFeedClock: 'off',
+        liveFeedPollReveal: 'always',
       }
     case 'flowchart':
       return {
