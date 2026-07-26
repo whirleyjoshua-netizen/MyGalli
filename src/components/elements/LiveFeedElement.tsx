@@ -24,7 +24,15 @@ export function LiveFeedElement({ element, onChange, onDelete, isSelected, onSel
   const preset = element.liveFeedPreset ?? 'single'
   const [copied, setCopied] = useState(false)
 
-  const controlPath = `/live/${element.id}?step=${element.liveFeedStep ?? 1}`
+  const controlParams = new URLSearchParams()
+  controlParams.set('step', String(element.liveFeedStep ?? 1))
+  controlParams.set('preset', element.liveFeedPreset ?? 'single')
+  const clock = element.liveFeedClock ?? 'off'
+  controlParams.set('clock', clock)
+  if (clock === 'countdown' && element.liveFeedClockDurationMs != null) {
+    controlParams.set('clockdur', String(element.liveFeedClockDurationMs))
+  }
+  const controlPath = `/live/${encodeURIComponent(element.id)}?${controlParams.toString()}`
   const controlUrl = typeof window !== 'undefined' ? `${window.location.origin}${controlPath}` : controlPath
 
   const copyLink = async () => {

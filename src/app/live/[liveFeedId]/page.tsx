@@ -20,12 +20,22 @@ const CLOCK_MODES: Array<{ value: LiveClock['mode']; label: string }> = [
   { value: 'countdown', label: 'Count down' },
 ]
 
+type Preset = 'single' | 'versus' | 'goal' | 'leaderboard' | 'poll'
+const PINNED_ROW_COUNTS: Partial<Record<Preset, number>> = { single: 1, goal: 1, versus: 2 }
+const isPreset = (v: string | null): v is Preset =>
+  v === 'single' || v === 'versus' || v === 'goal' || v === 'leaderboard' || v === 'poll'
+const isClockMode = (v: string | null): v is LiveClock['mode'] =>
+  v === 'off' || v === 'countup' || v === 'countdown'
+
 export default function LiveControlPage({ params }: { params: Promise<{ liveFeedId: string }> }) {
   const { liveFeedId } = use(params)
   const [state, setState] = useState<LiveState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [step, setStep] = useState(1)
+  const [preset, setPreset] = useState<Preset | null>(null)
+  const [urlClock, setUrlClock] = useState<LiveClock['mode']>('off')
+  const [urlClockDurationMs, setUrlClockDurationMs] = useState<number | undefined>(undefined)
   const anchorRef = useRef(performance.now())
   const seedingRef = useRef(false)
 
@@ -40,8 +50,18 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
   const [displayMs, setDisplayMs] = useState(0)
 
   useEffect(() => {
-    const s = Number(new URLSearchParams(window.location.search).get('step'))
+    const params = new URLSearchParams(window.location.search)
+    const s = Number(params.get('step'))
     if (Number.isFinite(s) && s >= 1) setStep(Math.floor(s))
+
+    const presetParam = params.get('preset')
+    if (isPreset(presetParam)) setPreset(presetParam)
+
+    const clockParam = params.get('clock')
+    if (isClockMode(clockParam)) setUrlClock(clockParam)
+
+    const clockdurParam = Number(params.get('clockdur'))
+    if (Number.isFinite(clockdurParam) && clockdurParam >= 0) setUrlClockDurationMs(clockdurParam)
   }, [])
 
   useEffect(() => {
@@ -83,21 +103,28 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
   }
 
   // Auto-seed: the first time this feed shows zero values (a brand-new feed,
-  // or right after Reset), create one real row immediately so the owner's
-  // very first tap already lands on a persisted entry instead of a phantom
-  // one. This page only ever receives `liveFeedId` (and an optional `step`
-  // query param) — it has no way to see which preset (single/versus/
-  // leaderboard/poll) the element on the canvas is using — so it seeds
-  // conservatively with a single row and leaves the Add control to build out
-  // anything wider.
+  // or right after Reset), create the real rows the element's preset expects
+  // immediately, so the owner's very first tap already lands on a persisted
+  // entry instead of a phantom one. Each row is a genuine `addValue`
+  // LiveAction — never a client-invented value — so the server remains the
+  // source of truth for every id/value the owner then taps. When the preset
+  // is unknown (an older control link with no `preset` param) we fall back
+  // to today's conservative single-row seed.
   useEffect(() => {
     if (!state || state.values.length > 0 || seedingRef.current) return
+    const rowCount = preset != null ? (PINNED_ROW_COUNTS[preset] ?? 0) : 1
+    if (rowCount === 0) return
     seedingRef.current = true
-    void send({ action: 'addValue', id: '', label: 'Value' }).finally(() => {
+    const seedNext = (remaining: number, index: number): Promise<void> => {
+      if (remaining <= 0) return Promise.resolve()
+      const label = rowCount > 1 ? `Value ${index}` : 'Value'
+      return send({ action: 'addValue', id: '', label }).then(() => seedNext(remaining - 1, index + 1))
+    }
+    void seedNext(rowCount, 1).finally(() => {
       seedingRef.current = false
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state])
+  }, [state, preset])
 
   useEffect(() => {
     if (!state) return
@@ -160,6 +187,20 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
     void send({ action: 'clockSet', elapsedMs: Math.round(seconds * 1000) })
   }
 
+  const enableClockFromElement = () => {
+    void send({
+      action: 'clockConfig',
+      mode: urlClock,
+      durationMs: urlClock === 'countdown' ? urlClockDurationMs : undefined,
+    })
+  }
+
+  // Older links (no `preset` param) fall back to today's behaviour: show
+  // Add/Remove for every tracker shape. `single`/`goal` pin to one row and
+  // `versus` pins to two; only `leaderboard`/`poll` are meant to grow.
+  const showAddRemove = preset == null || preset === 'leaderboard' || preset === 'poll'
+  const showEnableClock = urlClock !== 'off' && state.clock.mode === 'off'
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col p-5 gap-6 max-w-md mx-auto">
       <header className="flex items-center justify-between pt-2">
@@ -175,7 +216,9 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
 
       <div className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-col gap-4">
         {state.values.length === 0 ? (
-          <div className="text-center text-sm text-slate-400 py-4">Setting up your tracker…</div>
+          <div className="text-center text-sm text-slate-400 py-4">
+            {showAddRemove ? 'Add your first row below.' : 'Setting up your tracker…'}
+          </div>
         ) : (
           state.values.map((v) => (
             <div key={v.id} className="flex flex-col gap-2 border-b border-slate-100 last:border-b-0 pb-4 last:pb-0">
@@ -197,14 +240,16 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
                     {v.label || 'Untitled'} <Pencil className="w-3 h-3 text-slate-300" />
                   </button>
                 )}
-                <button
-                  onClick={() => void send({ action: 'removeValue', id: v.id })}
-                  disabled={busy}
-                  aria-label={`Remove ${v.label || 'value'}`}
-                  className="p-1.5 text-slate-300 hover:text-red-500 disabled:opacity-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {showAddRemove && (
+                  <button
+                    onClick={() => void send({ action: 'removeValue', id: v.id })}
+                    disabled={busy}
+                    aria-label={`Remove ${v.label || 'value'}`}
+                    className="p-1.5 text-slate-300 hover:text-red-500 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center justify-center gap-4">
@@ -244,24 +289,35 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
           ))
         )}
 
-        <div className="flex items-center gap-2 pt-1">
-          <input
-            value={newLabel}
-            onChange={(e) => setNewLabel(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') addRow() }}
-            placeholder="New row label"
-            className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2"
-          />
-          <button onClick={addRow} disabled={busy || !newLabel.trim()} className="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm font-semibold disabled:opacity-50 inline-flex items-center gap-1">
-            <Plus className="w-4 h-4" /> Add
-          </button>
-        </div>
+        {showAddRemove && (
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') addRow() }}
+              placeholder="New row label"
+              className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2"
+            />
+            <button onClick={addRow} disabled={busy || !newLabel.trim()} className="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm font-semibold disabled:opacity-50 inline-flex items-center gap-1">
+              <Plus className="w-4 h-4" /> Add
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-col gap-3">
         <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
           <Timer className="w-4 h-4" /> Clock
         </div>
+        {showEnableClock && (
+          <button
+            onClick={enableClockFromElement}
+            disabled={busy}
+            className="px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+          >
+            <Timer className="w-4 h-4" /> Enable clock ({urlClock === 'countdown' ? 'countdown' : 'count up'})
+          </button>
+        )}
         <div className="flex items-center gap-2">
           <select
             value={clockModeDraft}
