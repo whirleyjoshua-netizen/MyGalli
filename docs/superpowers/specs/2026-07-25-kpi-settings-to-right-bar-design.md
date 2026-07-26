@@ -14,7 +14,7 @@ Today a selected KPI element offers its configuration in **two** places:
 1. **On the card** — a ⚙ gear (top-right) opens a floating "KPI Settings" panel holding **prefix, suffix, trend direction, trend text, colour**. Label and value are typed directly on the card (inline WYSIWYG).
 2. **In the right column** — the "Elements" tab lists every element as an expandable row; KPI is one of only 4 with a registered inspector, so its row expands to show `KPIInspector`.
 
-**Bug:** the existing `KPIInspector` edits fields named `kpiLabel` and `kpiValue`, but the KPI element actually reads `label` and `value`. The inspector is therefore **orphaned** — it edits fields nothing renders. `starter-inspectors.test.tsx` asserts this broken behaviour (`onChange` called with `{ kpiLabel: … }`), so the bug is currently green in tests. This migration fixes it.
+**Field-naming note (no bug — corrected during planning):** the stored `CanvasElement` fields are `kpiLabel`, `kpiValue`, `kpiPrefix`, `kpiSuffix`, `kpiTrend`, `kpiTrendValue`, `kpiColor`. The `KPIElement` *component* takes plainer prop names (`label`, `value`, …); `ColumnCanvas` translates between the two in both directions (read `element.kpiLabel → label` prop; write `updates.label → kpiLabel`). The inspector receives the raw `element` and an `onChange` that writes `Partial<CanvasElement>` directly, so it correctly reads and writes the `kpi*` fields. The existing 2-field `KPIInspector` (label + value) is not broken — it is simply incomplete, missing the config that only the on-card gear currently exposes. `starter-inspectors.test.tsx` asserting `{ kpiLabel: … }` is likewise correct and stays.
 
 ## The classification principle (applies to the whole migration, not just KPI)
 
@@ -32,8 +32,8 @@ KPI is the first config-gear element migrated.
 
 | # | Decision | Rationale |
 |---|---|---|
-| D1 | The inspector holds the **full** KPI config: label, value, prefix, suffix, trend, trendValue, colour. | One complete settings surface. Including label/value (also inline on the card) is harmless — both bind to the same field and stay in sync — and it fixes the orphaned-field bug the registry/test expect the inspector to edit "label". |
-| D2 | The card keeps its **inline label/value/prefix typing** unchanged. | That is the live WYSIWYG editing the user explicitly wants to keep. prefix editable in both places binds to the same `element.prefix`, so no divergence. |
+| D1 | The inspector holds the **full** KPI config: `kpiLabel`, `kpiValue`, `kpiPrefix`, `kpiSuffix`, `kpiTrend`, `kpiTrendValue`, `kpiColor`. | One complete settings surface. Including label/value (also inline on the card) is harmless — both ultimately bind to the same stored field and stay in sync — and it makes the inspector the single home for everything the deleted gear held. |
+| D2 | The card keeps its **inline label/value/prefix typing** unchanged. | That is the live WYSIWYG editing the user explicitly wants to keep. prefix editable in both places binds to the same stored `kpiPrefix`, so no divergence. |
 | D3 | The on-card **gear, floating panel, and `showSettings` state are deleted**. | The whole point: one place for config. Trend/suffix/colour become reachable only via the inspector. |
 | D4 | The card keeps its **delete button** and the **trend badge display**. | Delete is a card affordance, not config. The trend badge is output, not a control. |
 
@@ -41,16 +41,16 @@ KPI is the first config-gear element migrated.
 
 ### 1. `src/components/editor/panel/inspectors/KPIInspector.tsx` (rewrite)
 
-Replace the two orphaned inputs with the real, complete config, all wired to the fields the element reads:
+Extend the current 2-field inspector to the complete config. **The inspector writes stored `CanvasElement` field names directly** (not the element component's translated prop names):
 
-- **Label** → `onChange({ label })`
-- **Value** → `onChange({ value })`
-- **Prefix** / **Suffix** → `onChange({ prefix })` / `onChange({ suffix })`
-- **Trend** — three buttons Up / None / Down → `onChange({ trend: 'up' | 'neutral' | 'down' })`
-- **Trend text** → `onChange({ trendValue })`
-- **Colour** — one swatch per `COLOR_THEMES` key → `onChange({ color })`
+- **Label** → `onChange({ kpiLabel })`, reads `element.kpiLabel`
+- **Value** → `onChange({ kpiValue })`, reads `element.kpiValue`
+- **Prefix** / **Suffix** → `onChange({ kpiPrefix })` / `onChange({ kpiSuffix })`
+- **Trend** — three buttons Up / None / Down → `onChange({ kpiTrend: 'up' | 'neutral' | 'down' })`, reads `element.kpiTrend`
+- **Trend text** → `onChange({ kpiTrendValue })`
+- **Colour** — one swatch per `COLOR_THEMES` key → `onChange({ kpiColor })`, reads `element.kpiColor`
 
-`COLOR_THEMES` currently lives inside `KPIElement.tsx` (keys: `blue`, `green`, `purple`, …). Export it from there (or lift the key list into a tiny shared constant) so the inspector renders the same swatches without duplicating the list. The inspector reads `element.color`, `element.trend`, etc. with the same defaults the element uses (`trend = 'neutral'`, `color = 'blue'`).
+`COLOR_THEMES` currently lives inside `KPIElement.tsx` (keys: `blue`, `green`, `red`, `purple`, `orange`, `slate` — matching the `kpiColor` union). Export it from there so the inspector renders the same swatches without duplicating the list. Defaults match the element: `kpiTrend ?? 'neutral'`, `kpiColor ?? 'blue'`.
 
 Uses the inspector's existing visual language (the `bg-muted`/`border-border`/`focus:ring-primary` styling already in `KPIInspector`), not the KPI card's slate palette — it lives in the neutral right panel.
 
@@ -64,9 +64,9 @@ Uses the inspector's existing visual language (the `bg-muted`/`border-border`/`f
 
 The card's controls row collapses from `[⚙][🗑]` to just `[🗑]`.
 
-### 3. `src/components/editor/panel/inspectors/starter-inspectors.test.tsx` (fix)
+### 3. `src/components/editor/panel/inspectors/starter-inspectors.test.tsx` (extend, not fix)
 
-The KPI case asserts `onChange` with `{ kpiLabel: 'Revenue' }`. Change it to the real field: render with `{ label: '' }` and assert `onChange` called with `{ label: 'Revenue' }`. (Image and Button cases are unrelated — leave them.)
+The existing KPI case asserts `onChange` with `{ kpiLabel: 'Revenue' }` — this is **correct** (`kpiLabel` is the real stored field) and stays. The dedicated `KPIInspector.test.tsx` (below) covers the newly added fields; no change is required here beyond leaving it green. Only touch it if the label input's accessible name changes.
 
 ## Non-goals / explicitly out of scope
 
@@ -78,9 +78,9 @@ The KPI case asserts `onChange` with `{ kpiLabel: 'Revenue' }`. Change it to the
 ## Testing
 
 **Unit**
-- `KPIInspector`: editing Label → `{ label }`; Value → `{ value }`; Prefix → `{ prefix }`; Suffix → `{ suffix }`; clicking Up/Down/None → `{ trend }`; Trend text → `{ trendValue }`; clicking a colour swatch → `{ color }`. Active trend and colour reflect the element's current values.
-- `KPIElement`: when selected, renders a delete control but **no** settings gear; editing the inline value input still calls `onChange({ value })`; no floating "KPI Settings" panel exists in the DOM.
-- `starter-inspectors.test.tsx`: KPI case now asserts the real `label` field and passes.
+- `KPIInspector`: editing Label → `{ kpiLabel }`; Value → `{ kpiValue }`; Prefix → `{ kpiPrefix }`; Suffix → `{ kpiSuffix }`; clicking Up/Down/None → `{ kpiTrend }`; Trend text → `{ kpiTrendValue }`; clicking a colour swatch → `{ kpiColor }`. Active trend and colour reflect `element.kpiTrend`/`element.kpiColor`.
+- `KPIElement`: when selected, renders a delete control but **no** settings gear; editing the inline value input still calls `onChange({ value })` (the component's prop name — `ColumnCanvas` translates it to `kpiValue`); no floating "KPI Settings" panel exists in the DOM.
+- `starter-inspectors.test.tsx`: unchanged, still green.
 
 **Browser smoke** (production build)
 - Insert a KPI; select it — the card shows only the delete control, no gear.
