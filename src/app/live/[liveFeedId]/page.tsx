@@ -36,6 +36,8 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
   const [preset, setPreset] = useState<Preset | null>(null)
   const [urlClock, setUrlClock] = useState<LiveClock['mode']>('off')
   const [urlClockDurationMs, setUrlClockDurationMs] = useState<number | undefined>(undefined)
+  const [urlLabelA, setUrlLabelA] = useState('')
+  const [urlLabelB, setUrlLabelB] = useState('')
   const anchorRef = useRef(performance.now())
   const seedingRef = useRef(false)
 
@@ -62,6 +64,11 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
 
     const clockdurParam = Number(params.get('clockdur'))
     if (Number.isFinite(clockdurParam) && clockdurParam >= 0) setUrlClockDurationMs(clockdurParam)
+
+    const labelAParam = params.get('labelA')
+    if (labelAParam != null) setUrlLabelA(labelAParam)
+    const labelBParam = params.get('labelB')
+    if (labelBParam != null) setUrlLabelB(labelBParam)
   }, [])
 
   useEffect(() => {
@@ -110,6 +117,13 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
   // source of truth for every id/value the owner then taps. When the preset
   // is unknown (an older control link with no `preset` param) we fall back
   // to today's conservative single-row seed.
+  //
+  // Labels are seeded from the `labelA`/`labelB` query params (the element's
+  // configured liveFeedLabelA/liveFeedLabelB, threaded through the control
+  // link) — or '' when absent. We deliberately never persist a generic
+  // placeholder like "Value 1"/"Value 2": an empty persisted label lets the
+  // public element's own `entry.label || element.liveFeedLabelA` fallback
+  // keep working instead of being permanently shadowed.
   useEffect(() => {
     if (!state || state.values.length > 0 || seedingRef.current) return
     const rowCount = preset != null ? (PINNED_ROW_COUNTS[preset] ?? 0) : 1
@@ -117,14 +131,14 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
     seedingRef.current = true
     const seedNext = (remaining: number, index: number): Promise<void> => {
       if (remaining <= 0) return Promise.resolve()
-      const label = rowCount > 1 ? `Value ${index}` : 'Value'
+      const label = rowCount > 1 ? (index === 1 ? urlLabelA : urlLabelB) : urlLabelA
       return send({ action: 'addValue', id: '', label }).then(() => seedNext(remaining - 1, index + 1))
     }
     void seedNext(rowCount, 1).finally(() => {
       seedingRef.current = false
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, preset])
+  }, [state, preset, urlLabelA, urlLabelB])
 
   useEffect(() => {
     if (!state) return
@@ -156,6 +170,13 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
     setEditingId(null)
     if (label) void send({ action: 'renameValue', id, label })
   }
+
+  // Display-only placeholder for a seeded row whose label was left empty
+  // (no labelA/labelB param on the control link). Never sent to the server —
+  // an empty persisted label is what lets the public element fall back to
+  // element.liveFeedLabelA/liveFeedLabelB.
+  const displayLabel = (v: ValueEntry, index: number) =>
+    v.label || (preset === 'versus' ? `Side ${index + 1}` : `Row ${index + 1}`)
 
   const setDraftFor = (v: ValueEntry) => setDrafts[v.id] ?? String(v.value)
   const commitSet = (v: ValueEntry) => {
@@ -220,7 +241,7 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
             {showAddRemove ? 'Add your first row below.' : 'Setting up your tracker…'}
           </div>
         ) : (
-          state.values.map((v) => (
+          state.values.map((v, index) => (
             <div key={v.id} className="flex flex-col gap-2 border-b border-slate-100 last:border-b-0 pb-4 last:pb-0">
               <div className="flex items-center justify-between gap-2">
                 {editingId === v.id ? (
@@ -237,7 +258,7 @@ export default function LiveControlPage({ params }: { params: Promise<{ liveFeed
                     onClick={() => startEdit(v)}
                     className="flex-1 text-left text-sm font-semibold text-slate-600 inline-flex items-center gap-1"
                   >
-                    {v.label || 'Untitled'} <Pencil className="w-3 h-3 text-slate-300" />
+                    {displayLabel(v, index)} <Pencil className="w-3 h-3 text-slate-300" />
                   </button>
                 )}
                 {showAddRemove && (

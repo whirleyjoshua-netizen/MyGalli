@@ -32,6 +32,12 @@ export function LiveFeedElement({ element, onChange, onDelete, isSelected, onSel
   if (clock === 'countdown' && element.liveFeedClockDurationMs != null) {
     controlParams.set('clockdur', String(element.liveFeedClockDurationMs))
   }
+  if (typeof element.liveFeedLabelA === 'string' && element.liveFeedLabelA !== '') {
+    controlParams.set('labelA', element.liveFeedLabelA)
+  }
+  if (typeof element.liveFeedLabelB === 'string' && element.liveFeedLabelB !== '') {
+    controlParams.set('labelB', element.liveFeedLabelB)
+  }
   const controlPath = `/live/${encodeURIComponent(element.id)}?${controlParams.toString()}`
   const controlUrl = typeof window !== 'undefined' ? `${window.location.origin}${controlPath}` : controlPath
 
