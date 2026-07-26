@@ -337,8 +337,6 @@ model LiveFeed {
   displayId     String
   display       Display   @relation(fields: [displayId], references: [id], onDelete: Cascade)
   isLive        Boolean   @default(false)
-  valueA        Int       @default(0)
-  valueB        Int       @default(0)
   startedAt     DateTime?
   lastUpdatedAt DateTime  @updatedAt
   createdAt     DateTime  @default(now())
