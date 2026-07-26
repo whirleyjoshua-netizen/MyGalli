@@ -2,13 +2,19 @@ import { it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: vi.fn().mockResolvedValue(null) }))
-vi.mock('@/lib/db', () => ({
-  db: {
+vi.mock('@/lib/db', () => {
+  // `db` is both the top-level client and the `tx` handed to $transaction's
+  // callback (the route does `db.$transaction(async (tx) => ...)`), so the
+  // mock transaction just invokes the callback with the same mocked object.
+  const db: any = {
     liveFeed: { findUnique: vi.fn(), update: vi.fn() },
     liveFeedVote: { create: vi.fn() },
     display: { findUnique: vi.fn() },
-  },
-}))
+  }
+  db.$transaction = vi.fn(async (fn: (tx: unknown) => unknown) => fn(db))
+  db.$executeRaw = vi.fn().mockResolvedValue(undefined)
+  return { db }
+})
 
 import { POST } from './route'
 import { db } from '@/lib/db'
@@ -51,4 +57,21 @@ it('409 on a duplicate vote (unique violation)', async () => {
   ;(db.liveFeedVote.create as any).mockRejectedValue({ code: 'P2002' })
   expect((await POST(req({ optionId: 'opt1', sessionId: 's1' }), ctx('el-1'))).status).toBe(409)
   expect(db.liveFeed.update).not.toHaveBeenCalled()
+})
+
+// True concurrent-safety (two distinct voters racing on the same feed) is a
+// Postgres property enforced by `FOR UPDATE` and can't be exercised against
+// a mocked db in a unit test. This only documents that the lock statement is
+// issued, inside the same transaction, before the tally is written.
+it('takes a row lock on the feed before writing the tally', async () => {
+  ;(db.liveFeed.findUnique as any).mockResolvedValue(pollRow())
+  ;(db.liveFeedVote.create as any).mockResolvedValue({ id: 'v1' })
+  ;(db.liveFeed.update as any).mockResolvedValue({ lastUpdatedAt: new Date() })
+  const res = await POST(req({ optionId: 'opt1', sessionId: 's1' }), ctx('el-1'))
+  expect(res.status).toBe(200)
+  expect(db.$transaction).toHaveBeenCalledTimes(1)
+  expect(db.$executeRaw).toHaveBeenCalledTimes(1)
+  const lockOrder = (db.$executeRaw as any).mock.invocationCallOrder[0]
+  const updateOrder = (db.liveFeed.update as any).mock.invocationCallOrder[0]
+  expect(lockOrder).toBeLessThan(updateOrder)
 })

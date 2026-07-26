@@ -59,21 +59,42 @@ export async function POST(request: NextRequest, { params }: Params) {
   if (!state.values.some((v) => v.id === optionId)) return NextResponse.json({ error: 'Unknown option' }, { status: 400 })
 
   try {
-    await db.liveFeedVote.create({ data: { liveFeedId, voterKey, optionId } })
+    const next = await db.$transaction(async (tx) => {
+      // Serialize concurrent voters on this feed: take a Postgres row lock
+      // before the tally read-modify-write so two distinct-voter requests
+      // arriving at the same instant can't both read `values=N` and both
+      // write `N+1`, losing an increment. True concurrent-safety here is a
+      // DB-level property of FOR UPDATE — a unit test with a mocked db can
+      // only assert that the lock statement is issued, not that it actually
+      // serializes concurrent transactions.
+      await tx.$executeRaw`SELECT id FROM "LiveFeed" WHERE id = ${liveFeedId} FOR UPDATE`
+
+      // Dedupe insert. A unique violation (same voter, same feed) throws out
+      // of the transaction, rolling it back, so the tally is never touched
+      // on the duplicate-vote path.
+      await tx.liveFeedVote.create({ data: { liveFeedId, voterKey, optionId } })
+
+      // Re-read the row's tally now that we hold the lock, so the bump is
+      // applied on top of the latest committed value rather than the
+      // pre-transaction snapshot.
+      const locked = await tx.liveFeed.findUnique({ where: { id: liveFeedId } })
+      const lockedState = locked ? rowToState(locked) : state
+
+      const bumped = applyLiveAction(lockedState, { action: 'bump', id: optionId, delta: 1 }, new Date().toISOString())
+      await tx.liveFeed.update({
+        where: { id: liveFeedId },
+        data: {
+          values: bumped.values as unknown as object,
+          isLive: bumped.isLive, startedAt: bumped.startedAt ? new Date(bumped.startedAt) : null,
+          clockMode: bumped.clock.mode, clockRunning: bumped.clock.running, clockElapsedMs: bumped.clock.elapsedMs,
+          clockLastStartedAt: bumped.clock.lastStartedAt ? new Date(bumped.clock.lastStartedAt) : null, clockDurationMs: bumped.clock.durationMs,
+        },
+      })
+      return bumped
+    })
+    return NextResponse.json({ isLive: next.isLive, values: next.values, startedAt: next.startedAt, clock: next.clock, serverTime: new Date().toISOString() })
   } catch (e: unknown) {
     if ((e as { code?: string })?.code === 'P2002') return NextResponse.json({ error: 'Already voted' }, { status: 409 })
     throw e
   }
-
-  const next = applyLiveAction(state, { action: 'bump', id: optionId, delta: 1 }, new Date().toISOString())
-  await db.liveFeed.update({
-    where: { id: liveFeedId },
-    data: {
-      values: next.values as unknown as object,
-      isLive: next.isLive, startedAt: next.startedAt ? new Date(next.startedAt) : null,
-      clockMode: next.clock.mode, clockRunning: next.clock.running, clockElapsedMs: next.clock.elapsedMs,
-      clockLastStartedAt: next.clock.lastStartedAt ? new Date(next.clock.lastStartedAt) : null, clockDurationMs: next.clock.durationMs,
-    },
-  })
-  return NextResponse.json({ isLive: next.isLive, values: next.values, startedAt: next.startedAt, clock: next.clock, serverTime: new Date().toISOString() })
 }
