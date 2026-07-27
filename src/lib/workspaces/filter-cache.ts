@@ -37,6 +37,11 @@ const store = new Map<string, Entry>()
 // A stable fingerprint of the columns the model was shown. If the owner adds,
 // removes, retypes, or re-options a column, the same question can map to a
 // different filter — so the schema must be part of the key.
+//
+// This captures key + type + choice options, which is everything the current
+// prompt/schema derivation depends on. If a future field type adds other
+// output-relevant config (e.g. a numeric format or a date range the model is
+// told about), fold it in here too, or the cache will serve a stale filter.
 function fieldsFingerprint(fields: FilterField[]): string {
   return fields
     .map((f) => {
