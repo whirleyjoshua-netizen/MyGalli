@@ -6,6 +6,7 @@ import { rateLimit } from '@/lib/rate-limit'
 import { authorizeWorkspace } from '@/lib/workspaces/authorize'
 import { validateFilter, describeFilter, FilterError, type FilterField } from '@/lib/workspaces/filter'
 import { buildFilterJsonSchema, describeSchemaForPrompt } from '@/lib/workspaces/filter-schema'
+import { filterCacheKey, getCachedFilter, setCachedFilter } from '@/lib/workspaces/filter-cache'
 
 const SYSTEM = `You translate a plain-English request into a filter over a table.
 
@@ -25,8 +26,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const user = await getUser(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  // Two ceilings on a paid endpoint: a burst limit and a sustained-hour limit.
+  // Both key on the user id. When a durable rate store (Upstash/KV) is absent
+  // these degrade to per-lambda in-memory counters — still useful, but the
+  // dedupe cache below is what actually stops repeated identical spend.
   const limited = await rateLimit(request, { limit: 10, windowMs: 60_000, prefix: 'ws-filter-ai', identifier: user.id })
   if (limited) return limited
+  const limitedHour = await rateLimit(request, { limit: 60, windowMs: 3_600_000, prefix: 'ws-filter-ai-hour', identifier: user.id })
+  if (limitedHour) return limitedHour
 
   const { id: workspaceId } = await params
 
@@ -62,6 +69,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Add a column before filtering' }, { status: 400 })
     }
 
+    // Identical request served without paying for the model again. The key
+    // folds in the column schema, so a schema edit invalidates it. Ownership
+    // was already checked above, so a non-owner can never reach this lookup.
+    const cacheKey = filterCacheKey(workspaceId, fields, question)
+    const cached = getCachedFilter(cacheKey)
+    if (cached) {
+      return NextResponse.json(cached)
+    }
+
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     // Schema only. Record values never enter this request.
@@ -95,7 +111,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // The model is untrusted input. This is the boundary.
     const filter = validateFilter(parsed, fields)
 
-    return NextResponse.json({ filter, summary: describeFilter(filter, fields) })
+    // Only successful, validated results are cached — never errors.
+    const result = { filter, summary: describeFilter(filter, fields) }
+    setCachedFilter(cacheKey, result)
+    return NextResponse.json(result)
   } catch (error: any) {
     if (error instanceof FilterError) {
       return NextResponse.json({ error: error.message }, { status: 422 })

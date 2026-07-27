@@ -35,6 +35,21 @@ function getRedisLimiter(prefix: string, limit: number, windowMs: number): Ratel
   return redisLimiters.get(key)!
 }
 
+/**
+ * Whether a durable, cross-instance rate store (Upstash/KV) is configured.
+ * When this is false, `rateLimit` falls back to a per-lambda in-memory Map,
+ * which throttles a single warm instance but is NOT a reliable spend guard
+ * across serverless instances. Callers gating a paid resource should treat a
+ * false here as "the limiter is best-effort only".
+ */
+export function rateLimitIsDurable(): boolean {
+  return Boolean(redisRestUrl() && redisRestToken())
+}
+
+// Warn exactly once per process when we degrade to the in-memory limiter, so
+// the condition is visible in logs without spamming a line per request.
+let warnedInMemory = false
+
 // --- In-memory fallback (dev / missing Redis config) ---
 interface RateLimitEntry {
   count: number
@@ -112,5 +127,12 @@ export async function rateLimit(
   }
 
   // Fallback to in-memory
+  if (!warnedInMemory) {
+    warnedInMemory = true
+    console.warn(
+      '[rate-limit] No durable rate store (Upstash/KV) configured — using per-lambda in-memory limits. ' +
+        'This throttles a single warm instance but is not a reliable cross-instance spend guard.'
+    )
+  }
   return memoryRateLimit(key, prefix, opts.limit, opts.windowMs)
 }

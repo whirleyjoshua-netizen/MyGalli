@@ -1,9 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
-import { rateLimit } from './rate-limit'
+import { rateLimit, rateLimitIsDurable } from './rate-limit'
 
 // Force the in-memory fallback path (no Redis configured).
 vi.mock('./storage-env', () => ({ redisRestUrl: () => undefined, redisRestToken: () => undefined }))
+
+describe('rateLimitIsDurable', () => {
+  it('is false when no Upstash/KV store is configured', () => {
+    // Matches this file's storage-env mock (both undefined).
+    expect(rateLimitIsDurable()).toBe(false)
+  })
+})
 
 function reqFrom(ip: string) {
   return new NextRequest('http://localhost/api/x', { headers: { 'x-forwarded-for': ip } })

@@ -4,6 +4,7 @@ import { getUser } from '@/lib/auth'
 import { authorizeWorkspace } from '@/lib/workspaces/authorize'
 import { rateLimit } from '@/lib/rate-limit'
 import { db } from '@/lib/db'
+import { clearFilterCache } from '@/lib/workspaces/filter-cache'
 
 vi.mock('@/lib/auth', () => ({ getUser: vi.fn() }))
 vi.mock('@/lib/workspaces/authorize', () => ({ authorizeWorkspace: vi.fn() }))
@@ -38,6 +39,10 @@ function modelReturns(obj: any) {
 describe('POST filter-suggest', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // The route now dedupes identical requests through a module-level cache.
+    // Clear it between tests so each starts from a cold cache and the tests
+    // that assert the model WAS called stay valid.
+    clearFilterCache()
     process.env.ANTHROPIC_API_KEY = 'test-key'
     ;(rateLimit as any).mockResolvedValue(null)
     ;(db.workspaceField.findMany as any).mockResolvedValue(FIELDS)
@@ -129,5 +134,64 @@ describe('POST filter-suggest', () => {
     modelReturns({ op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }] })
     await POST(req({ question: 'soccer' }), ctx)
     expect(rateLimit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ identifier: 'u-42' }))
+  })
+
+  it('enforces a sustained hourly ceiling in addition to the per-minute burst limit', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    modelReturns({ op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }] })
+    await POST(req({ question: 'soccer' }), ctx)
+    expect(rateLimit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ windowMs: 60_000, identifier: 'u1' })
+    )
+    expect(rateLimit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ windowMs: 3_600_000, identifier: 'u1' })
+    )
+  })
+
+  it('serves an identical repeat request from cache without paying the model again', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    modelReturns({ op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }] })
+
+    const first = await POST(req({ question: 'soccer players' }), ctx)
+    const second = await POST(req({ question: 'soccer players' }), ctx)
+
+    expect(first.status).toBe(200)
+    expect(second.status).toBe(200)
+    expect(await first.json()).toEqual(await second.json())
+    // The model was called exactly once across two identical requests.
+    expect(createMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('treats case and whitespace variants of the same question as a cache hit', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    modelReturns({ op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }] })
+    await POST(req({ question: 'Soccer Players' }), ctx)
+    await POST(req({ question: '  soccer   players ' }), ctx)
+    expect(createMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not serve a different question from cache', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    modelReturns({ op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }] })
+    await POST(req({ question: 'soccer players' }), ctx)
+    await POST(req({ question: 'tennis players' }), ctx)
+    expect(createMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('never caches an error — a failed call is retried, not memoised', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'u1' })
+    const busy: any = new Error('529 overloaded')
+    busy.status = 529
+    createMock.mockRejectedValueOnce(busy)
+    const failed = await POST(req({ question: 'soccer players' }), ctx)
+    expect(failed.status).toBe(502)
+
+    // A retry of the same question must reach the model again, not a cached error.
+    modelReturns({ op: 'and', conditions: [{ field: 'sport', cmp: 'eq', value: 'Soccer' }] })
+    const ok = await POST(req({ question: 'soccer players' }), ctx)
+    expect(ok.status).toBe(200)
+    expect(createMock).toHaveBeenCalledTimes(2)
   })
 })
