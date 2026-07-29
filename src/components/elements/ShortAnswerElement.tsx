@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Settings } from 'lucide-react'
+import { X } from 'lucide-react'
 
 interface ShortAnswerElementProps {
   question: string
@@ -29,7 +29,6 @@ export function ShortAnswerElement({
   isSelected,
   onSelect,
 }: ShortAnswerElementProps) {
-  const [showSettings, setShowSettings] = useState(false)
   const [inputValue, setInputValue] = useState('')
 
   return (
@@ -75,61 +74,9 @@ export function ShortAnswerElement({
         </div>
       </div>
 
-      {/* Settings Panel */}
-      {isSelected && showSettings && (
-        <div className="mt-2 p-3 bg-background border border-border rounded-lg space-y-3">
-          <div>
-            <label className="block text-sm font-medium mb-2">Placeholder text</label>
-            <input
-              type="text"
-              value={placeholder}
-              onChange={(e) => onChange({ placeholder: e.target.value })}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Max length: {maxLength}</label>
-            <input
-              type="range"
-              min="50"
-              max="2000"
-              step="50"
-              value={maxLength}
-              onChange={(e) => onChange({ maxLength: Number(e.target.value) })}
-              className="w-full"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <div className="flex justify-between text-xs text-muted-foreground mt-1">
-              <span>50</span>
-              <span>2000</span>
-            </div>
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={required}
-              onChange={(e) => onChange({ required: e.target.checked })}
-              className="rounded"
-            />
-            Required
-          </label>
-        </div>
-      )}
-
       {/* Action Buttons */}
       {isSelected && (
         <div className="absolute -top-2 -right-2 flex gap-1">
-          <button
-            className="p-1 bg-muted text-muted-foreground rounded-full hover:text-foreground transition-colors z-10"
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowSettings(!showSettings)
-            }}
-            type="button"
-          >
-            <Settings className="w-3 h-3" />
-          </button>
           <button
             className="p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors z-10"
             onClick={(e) => {
