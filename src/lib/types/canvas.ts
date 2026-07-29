@@ -177,6 +177,8 @@ export type ElementType =
   | 'lead-gen'               // Commerce: email-for-freebie lead magnet
   | 'waitlist'     // Pre-launch signup collector
   | 'index'                 // Scannable catalog of connected items (list + cards)
+  // Design
+  | 'banner'                // Decorative / announcement banner with shape presets
 
   // Batch 2: Map
   | 'map'                   // Interactive Leaflet map with photo-pins + directions
@@ -209,6 +211,13 @@ export type MapCategory = {
   color: string
   emoji?: string
 }
+
+export type BannerPreset =
+  | 'ribbon' | 'pennant' | 'crest'   // heraldic
+  | 'strip' | 'notice'               // announcement
+  | 'hero' | 'band'                  // hero
+
+export type BannerFillKind = 'token' | 'gradient' | 'image'
 
 // Base element interface
 export interface CanvasElement {
@@ -705,6 +714,14 @@ export interface CanvasElement {
   audioCoverUrl?: string
   audioAutoStart?: boolean
   audioLoop?: boolean
+  // Banner specific
+  bannerPreset?: BannerPreset
+  bannerHeading?: string
+  bannerSubtext?: string
+  bannerFillKind?: BannerFillKind
+  bannerFillValue?: string
+  bannerLinkLabel?: string
+  bannerLinkUrl?: string
   // Whiteboard specific
   whiteboardScene?: string        // fabric.js canvas JSON (editable source of truth)
   whiteboardWidth?: number
@@ -1397,6 +1414,17 @@ export function createElement(type: ElementType): CanvasElement {
       return { ...base, tipJarTitle: 'Support my work', tipJarMessage: 'If you enjoy what I do, consider leaving a tip 💚', tipJarPlatform: 'custom', tipJarUrl: '', tipJarButtonText: 'Leave a tip', tipJarAmounts: ['$3', '$5', '$10'] }
     case 'product-list':
       return { ...base, productListTitle: 'Products', products: [] }
+    case 'banner':
+      return {
+        ...base,
+        bannerPreset: 'ribbon',
+        bannerHeading: 'Your headline',
+        bannerSubtext: '',
+        bannerFillKind: 'token',
+        bannerFillValue: 'primary',
+        bannerLinkLabel: '',
+        bannerLinkUrl: '',
+      }
     case 'lead-gen':
       return {
         ...base,
