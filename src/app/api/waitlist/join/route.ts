@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { collectElements, isFull } from '@/lib/waitlist'
+import { ingestLead } from '@/lib/crm/ingest'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -46,9 +47,20 @@ export async function POST(request: NextRequest) {
   }
 
   const user = await getUser(request)
-  await db.waitlistSignup.create({
+  const signup = await db.waitlistSignup.create({
     data: { displayId, elementId, email, name, userId: user?.id ?? null },
   })
+
+  await ingestLead({
+    displayId,
+    email,
+    name,
+    source: 'waitlist',
+    sourceId: signup.id,
+    summary: 'Joined a waitlist',
+    payload: { elementId },
+  }).catch(() => {})
+
   const count = await db.waitlistSignup.count({ where: { displayId, elementId } })
   return NextResponse.json({ count }, { status: 201 })
 }

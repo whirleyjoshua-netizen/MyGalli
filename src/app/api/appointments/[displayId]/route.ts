@@ -4,6 +4,7 @@ import { rateLimit } from '@/lib/rate-limit'
 import { generateSlots, isSlotBookable } from '@/lib/appointments'
 import { loadApptContext, elementToConfig } from '@/lib/appointments-server'
 import { sendEmail, bookingConfirmedEmail, bookingReceivedEmail } from '@/lib/email'
+import { ingestLead } from '@/lib/crm/ingest'
 
 type Params = { params: Promise<{ displayId: string }> }
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -87,6 +88,16 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (e?.code === 'P2002') return NextResponse.json({ error: 'That time was just booked' }, { status: 409 })
     throw e
   }
+
+  await ingestLead({
+    displayId,
+    email,
+    name,
+    source: 'booking',
+    sourceId: booking.id,
+    summary: 'Booked an appointment',
+    payload: { elementId, start: booking.start, end: booking.end },
+  }).catch(() => {})
 
   const meetingTitle = ctx.el.apptTitle || 'Appointment'
   const when =

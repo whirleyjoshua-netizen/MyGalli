@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getUser } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { createNotification } from '@/lib/notifications'
+import { ingestLead } from '@/lib/crm/ingest'
 
 // GET /api/displays/[id]/comments — public, no auth needed
 export async function GET(
@@ -87,6 +88,16 @@ export async function POST(
         approved: !moderated,
       },
     })
+
+    await ingestLead({
+      displayId: id,
+      email: authorEmail,
+      name: comment.authorName,
+      source: 'comment',
+      sourceId: comment.id,
+      summary: 'Left a comment',
+      payload: { content: comment.content.slice(0, 280) },
+    }).catch(() => {})
 
     await createNotification({
       userId: display.userId,

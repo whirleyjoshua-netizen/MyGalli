@@ -3,6 +3,8 @@ import { db } from '@/lib/db'
 import { createHash } from 'crypto'
 import { getJwtSecret } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
+import { ingestLead } from '@/lib/crm/ingest'
+import { sniffFormContact } from '@/lib/crm/email'
 
 export async function POST(request: NextRequest) {
   // 30 form submissions per minute per IP
@@ -51,6 +53,17 @@ export async function POST(request: NextRequest) {
         ipHash,
       },
     })
+
+    const sniffed = sniffFormContact(responses)
+    await ingestLead({
+      displayId,
+      email: sniffed.email,
+      name: sniffed.name,
+      source: 'form',
+      sourceId: formResponse.id,
+      summary: 'Submitted a form',
+      payload: { responses },
+    }).catch(() => {})
 
     return NextResponse.json({
       success: true,

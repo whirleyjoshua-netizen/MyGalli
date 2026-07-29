@@ -5,6 +5,7 @@ import { getJwtSecret } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { isValidEmail, findLeadGenElement } from '@/lib/lead-gen'
 import { sendEmail, leadGenEmail } from '@/lib/email'
+import { ingestLead } from '@/lib/crm/ingest'
 
 interface Props { params: Promise<{ displayId: string }> }
 
@@ -51,6 +52,16 @@ export async function POST(request: NextRequest, { params }: Props) {
   const lead = await db.leadCapture.create({
     data: { displayId, elementId, email, name: name || null, ipHash },
   })
+
+  await ingestLead({
+    displayId,
+    email,
+    name,
+    source: 'lead-capture',
+    sourceId: lead.id,
+    summary: 'Requested a lead magnet',
+    payload: { elementId },
+  }).catch(() => {})
 
   // Delivery failure must not lose the lead: the row is already committed, so a
   // bounced send leaves delivered=false for the owner to see rather than 500ing
