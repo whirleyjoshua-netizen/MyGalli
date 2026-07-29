@@ -61,11 +61,21 @@ None of these has a real inspector yet (the registry only has `image`, `kpi`, `b
 
 - **Prisma client staleness:** `npx tsc` / `next build` may fail with unrelated errors in `src/app/api/live/[liveFeedId]/route.ts` (or similar) because the shared `node_modules` Prisma client gets regenerated against a different schema by parallel worktree activity. Fix: `npx prisma generate`, then re-run. Not a code error.
 - **PDF / browser smoke:** use `npx next build && npx next start`, never `next dev` — pdf.js and some client bundles fail through this worktree's symlinked `node_modules` under dev.
-- **Shipping:** push the branch and open a PR; do **not** merge to `main` directly (workflow constraint). `gh` is not installed in this environment.
+- **Shipping:** the "open a PR, never merge to `main` directly" note was a constraint of the *other* device only. On the Windows main checkout we merge to `main` and push (`main` auto-deploys to prod), after tsc + targeted vitest + eslint on the changed files.
 
 ## Follow-up worth doing alongside the fan-out
 
-**Auto-expand the inspector when a card is selected on canvas.** Today you select the element, then manually expand its row in the right panel. Wiring canvas-selection → right-panel-row-expansion is shared inspector-framework behaviour (in `ElementsTab` / `PageEditor` via `expandedElementId`) and would make the whole "edit in the column" flow feel immediate. It was deliberately left out of the KPI reference. Consider doing it once, in the framework, before migrating the remaining 11.
+~~**Auto-expand the inspector when a card is selected on canvas.**~~ **ALREADY DONE — do not re-implement.** Verified 2026-07-28 on `main`. This landed 2026-07-03 in `0424b78` (`fix(editor): reveal panel on canvas selection`), which is *newer* than this branch's base, which is why it looked outstanding from here.
+
+The framework already does all of it:
+
+- `PageEditor.tsx` `onSelectElement` — sets selection, `setPanelTab('elements')`, `setPanelCollapsed(false)`.
+- `PageEditor.tsx` — `expandedElementId={selectedElementId(selection)}` feeds `ElementsTab`, so canvas selection expands the row.
+- `PageEditor.tsx` `toggleRow` — single-open accordion; toggling a row sets/clears the canvas selection (both directions stay in sync).
+- `ElementRow.tsx` — `useEffect` scrolls the opened row into view (`block: 'nearest'`).
+- Covered by `PageEditor.integration.test.tsx` → *"clicking the element on the canvas reveals its inspector in the panel"*.
+
+**Implication for the fan-out:** there is no framework prerequisite. Go straight to migrating the 11 elements — each new inspector inherits reveal/expand/scroll for free just by being registered in `inspectors/registry.tsx`.
 
 ## Also open (unrelated to this roadmap)
 
