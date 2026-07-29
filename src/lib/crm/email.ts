@@ -30,7 +30,11 @@ export function sniffFormContact(responses: unknown): { email: string | null; na
   const byQuestion = all.find((e) => /e-?mail/i.test(str(e.question)))
   const byShape = all.find((e) => normalizeEmail(e.answer) !== null)
 
-  const email = normalizeEmail((byType ?? byQuestion ?? byShape)?.answer) ?? null
+  const email =
+    normalizeEmail(byType?.answer) ??
+    normalizeEmail(byQuestion?.answer) ??
+    normalizeEmail(byShape?.answer) ??
+    null
 
   const nameEntry = all.find(
     (e) => /\bname\b/i.test(str(e.question)) && !/e-?mail/i.test(str(e.question))

@@ -68,4 +68,20 @@ describe('sniffFormContact', () => {
     expect(sniffFormContact({ e1: null })).toEqual({ email: null, name: null })
     expect(sniffFormContact({ e1: { answer: ['a@b.com'] } })).toEqual({ email: null, name: null })
   })
+
+  it('falls through when top-ranked field has invalid answer', () => {
+    const r = {
+      e1: { type: 'email', question: 'crm', answer: '' },
+      e2: { type: 'short-answer', question: 'Your e-mail', answer: 'real@example.com' },
+    }
+    expect(sniffFormContact(r).email).toBe('real@example.com')
+  })
+
+  it('falls through question tier when top two tiers are invalid', () => {
+    const r = {
+      e1: { type: 'short-answer', question: 'Your e-mail address', answer: 'not-email' },
+      e2: { type: 'short-answer', question: 'Feedback', answer: 'valid@test.com' },
+    }
+    expect(sniffFormContact(r).email).toBe('valid@test.com')
+  })
 })
