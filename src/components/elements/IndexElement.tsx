@@ -74,46 +74,6 @@ export function IndexElement({ element, onChange, onDelete, isSelected, onSelect
         </button>
       </div>
 
-      {/* Display options */}
-      <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
-        <label className="flex items-center gap-1.5">
-          View
-          <select
-            value={element.indexView ?? 'list'}
-            onChange={(e) => onChange({ indexView: e.target.value as 'list' | 'cards' })}
-            className="rounded border border-slate-200 px-1.5 py-1"
-          >
-            <option value="list">List</option>
-            <option value="cards">Cards</option>
-          </select>
-        </label>
-        <label className="flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            checked={element.indexEnableSearch ?? true}
-            onChange={(e) => onChange({ indexEnableSearch: e.target.checked })}
-          />
-          Search box
-        </label>
-        <label className="flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            checked={element.indexEnableNumbers ?? true}
-            onChange={(e) => onChange({ indexEnableNumbers: e.target.checked })}
-          />
-          Auto-number
-        </label>
-        <label className="flex items-center gap-1.5">
-          Accent
-          <input
-            type="color"
-            value={element.indexAccent ?? '#39D98A'}
-            onChange={(e) => onChange({ indexAccent: e.target.value })}
-            className="h-6 w-8 rounded border border-slate-200"
-          />
-        </label>
-      </div>
-
       {/* Entries */}
       <div className="space-y-2">
         {entries.map((entry, i) => {
