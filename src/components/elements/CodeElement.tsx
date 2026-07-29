@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Trash2, Settings, FileCode } from 'lucide-react'
+import { Trash2, FileCode } from 'lucide-react'
 import { Highlight, themes } from 'prism-react-renderer'
 
-const LANGUAGES = [
+export const CODE_LANGUAGES = [
   { value: 'javascript', label: 'JavaScript' },
   { value: 'typescript', label: 'TypeScript' },
   { value: 'python', label: 'Python' },
@@ -55,7 +55,6 @@ export function CodeElement({
   onDelete,
   onChange,
 }: CodeElementProps) {
-  const [showSettings, setShowSettings] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -155,15 +154,6 @@ export function CodeElement({
           <button
             onClick={(e) => {
               e.stopPropagation()
-              setShowSettings(!showSettings)
-            }}
-            className="p-1.5 bg-background border border-border rounded-md shadow-sm hover:bg-muted transition"
-          >
-            <Settings className="w-3.5 h-3.5 text-muted-foreground" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
               onDelete()
             }}
             className="p-1.5 bg-background border border-border rounded-md shadow-sm hover:bg-destructive hover:text-destructive-foreground transition"
@@ -173,74 +163,6 @@ export function CodeElement({
         </div>
       )}
 
-      {/* Settings Panel */}
-      {showSettings && isSelected && (
-        <div
-          className="absolute top-full left-0 mt-2 w-72 bg-background border border-border rounded-lg shadow-xl p-4 z-50"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <h4 className="font-medium mb-3 text-sm">Code Block Settings</h4>
-
-          {/* Language */}
-          <div className="mb-3">
-            <label className="text-xs text-muted-foreground block mb-1">Language</label>
-            <select
-              value={language}
-              onChange={(e) => onChange({ language: e.target.value })}
-              className="w-full px-2 py-1.5 text-sm bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary"
-            >
-              {LANGUAGES.map((lang) => (
-                <option key={lang.value} value={lang.value}>{lang.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Theme */}
-          <div className="mb-3">
-            <label className="text-xs text-muted-foreground block mb-1">Theme</label>
-            <div className="flex gap-1">
-              {(['dark', 'light'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => onChange({ theme: t })}
-                  className={`flex-1 py-1.5 text-xs rounded-md border transition capitalize ${
-                    theme === t
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-muted border-border hover:border-muted-foreground'
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Line Numbers */}
-          <div className="mb-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showLineNumbers}
-                onChange={(e) => onChange({ showLineNumbers: e.target.checked })}
-                className="w-4 h-4 rounded"
-              />
-              <span className="text-xs text-muted-foreground">Show line numbers</span>
-            </label>
-          </div>
-
-          {/* Filename */}
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Filename</label>
-            <input
-              type="text"
-              value={filename}
-              onChange={(e) => onChange({ filename: e.target.value })}
-              placeholder="e.g., app.tsx"
-              className="w-full px-2 py-1.5 text-sm bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-        </div>
-      )}
     </div>
   )
 }

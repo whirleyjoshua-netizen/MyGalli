@@ -166,6 +166,7 @@ import { PublicBusinessHoursElement } from '@/components/elements/PublicBusiness
 import { PublicBusinessReviewElement } from '@/components/elements/PublicBusinessReviewElement'
 import { PublicBusinessPromoElement } from '@/components/elements/PublicBusinessPromoElement'
 import { PublicCollectionView } from '@/components/elements/PublicCollectionView'
+import { codeElementPatch } from '@/lib/editor/code-element-patch'
 
 interface ColumnCanvasProps {
   sections: Section[]
@@ -751,13 +752,7 @@ export function ColumnCanvas({
             showLineNumbers={element.codeShowLineNumbers ?? true}
             filename={element.codeFilename || ''}
             onChange={(updates) =>
-              onUpdateElement(sectionId, columnId, element.id, {
-                codeContent: updates.content,
-                codeLanguage: updates.language,
-                codeTheme: updates.theme,
-                codeShowLineNumbers: updates.showLineNumbers,
-                codeFilename: updates.filename,
-              })
+              onUpdateElement(sectionId, columnId, element.id, codeElementPatch(updates))
             }
           />
         )
