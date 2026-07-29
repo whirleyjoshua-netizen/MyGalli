@@ -26,7 +26,7 @@ The premise: **Galli already captures leads and has nowhere to put them.** Five 
 | Identity | Normalized email is the merge key; auto-merge on match |
 | Pipeline | Custom stages per user |
 | Outbound | None — tracking only |
-| Gating | Pro (`user.plan === 'pro'`), enforced in API routes and UI |
+| Gating | **Free** for v1. Volume cap on free tier once billing exists |
 
 Tracking-only avoids email deliverability entirely, which matters because `EMAIL_FROM` is unset and Resend only delivers to the account owner until the domain is verified.
 
@@ -105,7 +105,7 @@ Five call sites, roughly three lines each, placed **after** the source route's o
 
 `FormResponse` needs an email-sniffing helper over the `responses` JSON — first field whose type or question text indicates an email. This is the one piece of guesswork in the system and gets its own unit test.
 
-`ingestLead` **runs for free users too.** Their leads accumulate while the CRM UI stays gated, so upgrading reveals a populated pipeline rather than an empty one. This costs nothing and materially improves the upgrade moment.
+`ingestLead` runs for every user regardless of plan, and stays that way if a volume cap is added later: capping the **UI** is acceptable, silently dropping a lead at capture time is not.
 
 ## UI
 
@@ -149,9 +149,11 @@ The Library page renders tools and card providers as two sections of one storefr
 
 ## Gating
 
-- `/crm` redirects non-Pro users to an upgrade screen.
-- **Every** `/api/crm/**` route independently checks `isPro(user)` from `src/lib/plan.ts` and returns 403. UI-only gating is not gating.
-- `ingestLead` is the deliberate exception and runs regardless of plan.
+**The CRM is free in v1.** No `isPro` check anywhere — `AppToolConfig.plan` is `'free'` for this entry.
+
+Every CRM route still requires **authentication**, and every query is scoped to the caller's `ownerId`. Free does not mean unauthenticated.
+
+When billing lands, the intended gate is a **contact-count cap on the free tier**, enforced in the UI and in the contact-list API — not a hard lock on the whole tool. Ingestion stays uncapped either way. Nothing in this design needs to change to add that later; it is called out only so the eventual gate is a cap and not a retroactive paywall over data users already have.
 
 ## Error handling
 
@@ -177,11 +179,32 @@ Vitest. Run one suite at a time — concurrent suites produce phantom worker-spa
 - Seeding is idempotent
 
 **`route.test.ts`**
-- Free user receives 403 on every CRM endpoint
+- Unauthenticated requests receive 401 on every CRM endpoint
 - Cross-owner contact and stage ids return 404
+- A free-plan user has full access (guards against a stray gate)
 
 **`form-email.test.ts`**
 - Email sniffing over `FormResponse.responses` across field-type and question-text variants, including the no-email case
+
+### Browser smoke — required before merge
+
+Unit tests cannot cover drag-to-restage, the drawer, or the ingestion round trip. **The branch does not merge until a real-Chrome smoke passes** (`superpowers-chrome` drives real Chrome; this is not optional and is not "verified by reading the code").
+
+Run against a **fresh database** with `prisma migrate deploy` — the shared dev DB `pages` is drift-contaminated and will throw `P2021` on the new tables. Set `DATABASE_URL` inline using `127.0.0.1`, not `localhost`.
+
+The smoke path, end to end:
+
+1. Publish a page carrying an appointments element and a form with an email field.
+2. As a logged-out visitor, book an appointment, then submit the form using **the same email**.
+3. Open `/crm` as the owner: exactly **one** contact exists, in the first stage, with **two** timeline entries in the drawer. This is the merge working in production conditions — the single most important thing to see with your own eyes.
+4. Drag the contact to another stage; reload; the stage persisted.
+5. Restage via the card dropdown as well — drag and dropdown are separate code paths.
+6. Add a note; confirm it appears in the timeline.
+7. Rename a stage, then delete a **non-empty** stage; confirm the warning names the right count and the contacts land in the correct neighbouring stage.
+8. Confirm the CRM tile appears in the Library Apps storefront and routes to `/crm`.
+9. Confirm the whole flow works as a **free-plan** user, since that is now every user.
+
+Also required before merge, per this repo's history: `pnpm lint` on the changed files. `tsc` does not run ESLint, and a lint-only failure has broken a production deploy before. Do not run `pnpm build` while `pnpm dev` is running — they race on `.next`.
 
 ## Out of scope for v1
 
@@ -193,4 +216,5 @@ CSV export is the expected first follow-up but is not on the critical path to "m
 
 - Migrations here are non-interactive: hand-author `prisma/migrations/<ts>_<name>/migration.sql` and run `migrate deploy`. Never `migrate dev`, and never point `--shadow-database-url` at a real database.
 - `next dev` returns 500s for new models until restarted after `prisma generate`.
-- Pro gating is currently aspirational — no billing exists. The CRM is the strongest argument yet for building checkout, and that should be weighed before shipping this behind a gate nobody can pass.
+- Shipping free means the CRM is the funnel story users can actually reach today. It also strengthens the case for building checkout, since a contact cap is a much easier upgrade prompt to justify than a locked door.
+- The Apps storefront gains its first non-card entry here. Keep `listedApps()` and `listedTools()` genuinely separate; merging them later is easy, untangling them is not.
