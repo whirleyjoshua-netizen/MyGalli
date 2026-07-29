@@ -16,6 +16,7 @@ import { CommentInspector } from './CommentInspector'
 import { JerseyInspector } from './JerseyInspector'
 import { IndexInspector } from './IndexInspector'
 import { CollectionViewInspector } from './CollectionViewInspector'
+import { BannerInspector } from './BannerInspector'
 
 export type Inspector = React.ComponentType<InspectorProps>
 export type { InspectorProps }
@@ -36,6 +37,7 @@ export const ELEMENT_INSPECTORS: Partial<Record<ElementType, Inspector>> = {
   jersey: JerseyInspector,
   index: IndexInspector,
   'collection-view': CollectionViewInspector,
+  banner: BannerInspector,
 }
 
 export function getInspector(type: ElementType): Inspector {
