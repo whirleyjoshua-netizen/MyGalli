@@ -1387,7 +1387,6 @@ export function ColumnCanvas({
             {...commonProps}
             element={element}
             displayId={displayId || ''}
-            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
           />
         )
 
