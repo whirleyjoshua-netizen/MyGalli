@@ -13,6 +13,9 @@ import { PollInspector } from './PollInspector'
 import { CodeInspector } from './CodeInspector'
 import { CardInspector } from './CardInspector'
 import { CommentInspector } from './CommentInspector'
+import { JerseyInspector } from './JerseyInspector'
+import { IndexInspector } from './IndexInspector'
+import { CollectionViewInspector } from './CollectionViewInspector'
 
 export type Inspector = React.ComponentType<InspectorProps>
 export type { InspectorProps }
@@ -30,6 +33,9 @@ export const ELEMENT_INSPECTORS: Partial<Record<ElementType, Inspector>> = {
   code: CodeInspector,
   card: CardInspector,
   comment: CommentInspector,
+  jersey: JerseyInspector,
+  index: IndexInspector,
+  'collection-view': CollectionViewInspector,
 }
 
 export function getInspector(type: ElementType): Inspector {
