@@ -25,11 +25,16 @@ For each element with a settings gear, decide:
 - **Config gear → migrate.** The gear opens element *setup* (options, data, trend, colour). Move that into the element's inspector; delete the on-card gear. Keep any inline live-typed fields on the card.
 - **Styling gear → leave.** The gear opens `TextStylePanel` (font, size, colour, alignment). That is the visual card setting; it stays on the card.
 
-## Remaining work — 7 config-gear elements (of the original 11)
+## Remaining work — 4 config-gear elements (of the original 11)
 
-Registry now has `image`, `kpi`, `button`, `slideshow`, `shortanswer`, `rating`, `mcq`, `poll`; the rest still fall through to `DefaultInspector`. Each remaining one needs the KPI three-step treatment.
+Registry now has `image`, `kpi`, `button`, `slideshow`, `shortanswer`, `rating`, `mcq`, `poll`, `code`, `card`, `comment`; the rest still fall through to `DefaultInspector`. Each remaining one needs the KPI three-step treatment.
 
-**Done — the four form elements (2026-07-29):** ShortAnswer, Rating, MCQ, Poll. Each shipped as its own commit with a TDD inspector test.
+**Done — the four form elements (2026-07-29):** ShortAnswer, Rating, MCQ, Poll.
+**Done — Code, Card, Comment (2026-07-29).** Each shipped as its own commit with a TDD inspector test.
+
+**Second convention settled: a gear whose panel is a *visual chooser* stays on the card**, even when it is not `TextStylePanel`. Comment's Palette/theme picker is the case in point — you choose a theme by seeing it applied. Only non-visual config moves. Expect the same call on Jersey.
+
+**Watch for partial-update bugs while migrating.** `updateElement` merges with `{ ...el, ...updates }`, so any `ColumnCanvas` case that builds a fixed set of keys from a partial `updates` object writes `undefined` over stored values. Code had this and it was live. Check each remaining element's `case` for the same shape before trusting it.
 
 Convention settled while doing them: **list-type content (MCQ/Poll options) stays inline on the card** — it is live-typed and needs the canvas width. The inspector shows the option count and points the author at the card. Only true config (toggles, scale, style, limits) moves.
 
@@ -40,9 +45,9 @@ Convention settled while doing them: **list-type content (MCQ/Poll options) stay
 | ~~Rating~~ | ~~`RatingElement.tsx`~~ | ✅ done. |
 | ~~ShortAnswer~~ | ~~`ShortAnswerElement.tsx`~~ | ✅ done. |
 | Chart | `ChartElement.tsx` | Largest — type / data rows / 3D effects. **Do LAST.** Split it: config → inspector, data-row editor stays inline (same reasoning as MCQ/Poll options). |
-| Card | `CardElement.tsx` | App-card config. |
-| Code | `CodeElement.tsx` | Language / theme. |
-| Comment | `CommentElement.tsx` | Section config. |
+| ~~Card~~ | ~~`CardElement.tsx`~~ | ✅ done — whole gear moved (provider, style, dynamic fields); the card is now preview + delete, and its dead `onChange` prop was removed. |
+| ~~Code~~ | ~~`CodeElement.tsx`~~ | ✅ done — also fixed a data-loss bug: ColumnCanvas wrote all five code keys on every partial update, so typing reset language/theme/filename. Now `codeElementPatch()`, unit-tested. |
+| ~~Comment~~ | ~~`CommentElement.tsx`~~ | ✅ done — Settings gear moved; the **Palette/theme gear stays** (visual styling, needs live preview), as does the inline title. |
 | CollectionView | `CollectionViewElement.tsx` | View/layout config. |
 | Index | `IndexElement.tsx` | List vs cards, grouping. |
 | Jersey | `JerseyElement.tsx` | Colours / signatures — mostly visual; check whether it's really a config gear or styling. |
