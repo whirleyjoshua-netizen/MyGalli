@@ -61,6 +61,8 @@ model User {
   ownedWorkspaces          Workspace[]       @relation("OwnedWorkspaces")
   workspaceRecordsCreated  WorkspaceRecord[] @relation("WorkspaceRecordsCreated")
   workspaceRecordsUpdated  WorkspaceRecord[] @relation("WorkspaceRecordsUpdated")
+  crmStages   CrmStage[]   @relation("CrmStages")
+  crmContacts CrmContact[] @relation("CrmContacts")
 }
 
 model Workspace {
@@ -960,4 +962,52 @@ model HubPage {
 
   @@unique([hubId, displayId])
   @@index([hubId, status])
+}
+
+model CrmStage {
+  id       String       @id @default(cuid())
+  ownerId  String
+  owner    User         @relation("CrmStages", fields: [ownerId], references: [id], onDelete: Cascade)
+  name     String
+  order    Int
+  color    String       @default("#39D98A")
+  contacts CrmContact[]
+  createdAt DateTime    @default(now())
+
+  @@unique([ownerId, name])
+  @@index([ownerId, order])
+}
+
+model CrmContact {
+  id         String        @id @default(cuid())
+  ownerId    String
+  owner      User          @relation("CrmContacts", fields: [ownerId], references: [id], onDelete: Cascade)
+  stageId    String
+  stage      CrmStage      @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  mergeKey   String
+  email      String?
+  name       String?
+  followUpAt DateTime?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  activities CrmActivity[]
+
+  @@unique([ownerId, mergeKey])
+  @@index([ownerId, stageId])
+  @@index([ownerId, updatedAt])
+}
+
+model CrmActivity {
+  id         String     @id @default(cuid())
+  contactId  String
+  contact    CrmContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  source     String
+  sourceId   String?
+  displayId  String?
+  summary    String
+  payload    Json
+  occurredAt DateTime   @default(now())
+
+  @@unique([source, sourceId])
+  @@index([contactId, occurredAt])
 }
