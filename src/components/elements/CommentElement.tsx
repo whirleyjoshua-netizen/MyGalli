@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, MessageCircle, Settings, User, Palette } from 'lucide-react'
+import { X, MessageCircle, User, Palette } from 'lucide-react'
 import type { CanvasElement } from '@/lib/types/canvas'
 import { COMMENT_THEMES, type CommentThemeKey } from './comment-themes'
 
@@ -14,14 +14,11 @@ interface CommentElementProps {
 }
 
 export function CommentElement({ element, onChange, onDelete, isSelected, onSelect }: CommentElementProps) {
-  const [showSettings, setShowSettings] = useState(false)
   const [showThemes, setShowThemes] = useState(false)
 
   const title = element.commentTitle || 'Comments'
   const requireName = element.commentRequireName ?? true
   const requireEmail = element.commentRequireEmail ?? false
-  const moderated = element.commentModerated ?? false
-  const maxLength = element.commentMaxLength ?? 1000
   const themeKey = (element.commentTheme || 'minimal') as CommentThemeKey
   const theme = COMMENT_THEMES[themeKey] || COMMENT_THEMES.minimal
 
@@ -38,18 +35,11 @@ export function CommentElement({ element, onChange, onDelete, isSelected, onSele
         {isSelected && (
           <div className="absolute -top-3 right-2 flex items-center gap-1 z-20">
             <button
-              onClick={(e) => { e.stopPropagation(); setShowThemes(!showThemes); setShowSettings(false) }}
+              onClick={(e) => { e.stopPropagation(); setShowThemes(!showThemes) }}
               className="p-1.5 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition"
               title="Theme"
             >
               <Palette className="w-3.5 h-3.5 text-slate-500" />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowSettings(!showSettings); setShowThemes(false) }}
-              className="p-1.5 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition"
-              title="Settings"
-            >
-              <Settings className="w-3.5 h-3.5 text-slate-500" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete() }}
@@ -159,61 +149,6 @@ export function CommentElement({ element, onChange, onDelete, isSelected, onSele
           </div>
         )}
 
-        {/* Settings Panel */}
-        {showSettings && isSelected && (
-          <div
-            className="border-t border-slate-200 p-4 space-y-3 bg-slate-50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Comment Settings</div>
-
-            <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-sm text-slate-700">Require name</span>
-              <input
-                type="checkbox"
-                checked={requireName}
-                onChange={(e) => onChange({ commentRequireName: e.target.checked })}
-                className="w-4 h-4 accent-blue-600"
-              />
-            </label>
-
-            <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-sm text-slate-700">Require email</span>
-              <input
-                type="checkbox"
-                checked={requireEmail}
-                onChange={(e) => onChange({ commentRequireEmail: e.target.checked })}
-                className="w-4 h-4 accent-blue-600"
-              />
-            </label>
-
-            <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-sm text-slate-700">Moderate comments</span>
-              <input
-                type="checkbox"
-                checked={moderated}
-                onChange={(e) => onChange({ commentModerated: e.target.checked })}
-                className="w-4 h-4 accent-blue-600"
-              />
-            </label>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-slate-700">Max length</span>
-                <span className="text-xs text-slate-500">{maxLength} chars</span>
-              </div>
-              <input
-                type="range"
-                min="100"
-                max="5000"
-                step="100"
-                value={maxLength}
-                onChange={(e) => onChange({ commentMaxLength: parseInt(e.target.value) })}
-                className="w-full h-1.5 accent-blue-600"
-              />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
