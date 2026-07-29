@@ -8,6 +8,7 @@ import { ButtonInspector } from './ButtonInspector'
 import { SlideshowInspector } from './SlideshowInspector'
 import { ShortAnswerInspector } from './ShortAnswerInspector'
 import { RatingInspector } from './RatingInspector'
+import { MCQInspector } from './MCQInspector'
 
 export type Inspector = React.ComponentType<InspectorProps>
 export type { InspectorProps }
@@ -20,6 +21,7 @@ export const ELEMENT_INSPECTORS: Partial<Record<ElementType, Inspector>> = {
   slideshow: SlideshowInspector,
   shortanswer: ShortAnswerInspector,
   rating: RatingInspector,
+  mcq: MCQInspector,
 }
 
 export function getInspector(type: ElementType): Inspector {

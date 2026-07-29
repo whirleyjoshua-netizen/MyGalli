@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Plus, Trash2, Settings, CheckCircle, Circle } from 'lucide-react'
+import { X, Plus, Trash2, CheckCircle } from 'lucide-react'
 
 interface MCQElementProps {
   question: string
@@ -29,7 +29,6 @@ export function MCQElement({
   isSelected,
   onSelect,
 }: MCQElementProps) {
-  const [showSettings, setShowSettings] = useState(false)
   const [selectedOptions, setSelectedOptions] = useState<Set<number>>(new Set())
 
   const handleOptionChange = (index: number, value: string) => {
@@ -155,43 +154,9 @@ export function MCQElement({
         )}
       </div>
 
-      {/* Settings Panel */}
-      {isSelected && showSettings && (
-        <div className="mt-2 p-3 bg-background border border-border rounded-lg space-y-3">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={allowMultiple}
-              onChange={(e) => onChange({ allowMultiple: e.target.checked })}
-              className="rounded"
-            />
-            Allow multiple selections
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={required}
-              onChange={(e) => onChange({ required: e.target.checked })}
-              className="rounded"
-            />
-            Required
-          </label>
-        </div>
-      )}
-
       {/* Action Buttons */}
       {isSelected && (
         <div className="absolute -top-2 -right-2 flex gap-1">
-          <button
-            className="p-1 bg-muted text-muted-foreground rounded-full hover:text-foreground transition-colors z-10"
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowSettings(!showSettings)
-            }}
-            type="button"
-          >
-            <Settings className="w-3 h-3" />
-          </button>
           <button
             className="p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors z-10"
             onClick={(e) => {
