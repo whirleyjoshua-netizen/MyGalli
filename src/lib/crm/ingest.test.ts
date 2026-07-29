@@ -127,4 +127,64 @@ describe('ingestLead', () => {
 
     spy.mockRestore()
   })
+
+  describe('never throws — all rejection points are guarded', () => {
+    const rejectionCases = [
+      {
+        name: 'db.display.findUnique rejection',
+        setup: () => {
+          ;(db.display.findUnique as any).mockRejectedValue(new Error('display lookup failed'))
+        },
+      },
+      {
+        name: 'ensureStages rejection',
+        setup: () => {
+          ;(ensureStages as any).mockRejectedValue(new Error('stages lookup failed'))
+        },
+      },
+      {
+        name: 'db.crmContact.findUnique rejection',
+        setup: () => {
+          ;(db.crmContact.findUnique as any).mockRejectedValue(new Error('contact lookup failed'))
+        },
+      },
+      {
+        name: 'db.crmContact.create rejection',
+        setup: () => {
+          ;(db.crmContact.create as any).mockRejectedValue(new Error('contact create failed'))
+        },
+      },
+      {
+        name: 'db.crmContact.update rejection (backfill path)',
+        setup: () => {
+          ;(db.crmContact.findUnique as any).mockResolvedValue({ id: 'existing', name: null, email: 'ada@x.com' })
+          ;(db.crmContact.update as any).mockRejectedValue(new Error('contact update failed'))
+        },
+      },
+      {
+        name: 'db.crmActivity.findUnique rejection',
+        setup: () => {
+          ;(db.crmActivity.findUnique as any).mockRejectedValue(new Error('activity lookup failed'))
+        },
+      },
+      {
+        name: 'db.crmActivity.create rejection',
+        setup: () => {
+          ;(db.crmActivity.create as any).mockRejectedValue(new Error('activity create failed'))
+        },
+      },
+    ]
+
+    for (const { name, setup } of rejectionCases) {
+      it(`handles ${name}`, async () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        setup()
+
+        await expect(ingestLead(base)).resolves.toBeUndefined()
+        expect(spy).toHaveBeenCalled()
+
+        spy.mockRestore()
+      })
+    }
+  })
 })
