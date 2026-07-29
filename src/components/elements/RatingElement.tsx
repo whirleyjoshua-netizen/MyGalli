@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Settings, Star } from 'lucide-react'
+import { X, Star } from 'lucide-react'
 
 interface RatingElementProps {
   question: string
@@ -29,7 +29,6 @@ export function RatingElement({
   isSelected,
   onSelect,
 }: RatingElementProps) {
-  const [showSettings, setShowSettings] = useState(false)
   const [hoverValue, setHoverValue] = useState<number | null>(null)
   const [selectedValue, setSelectedValue] = useState<number | null>(null)
 
@@ -113,86 +112,9 @@ export function RatingElement({
         )}
       </div>
 
-      {/* Settings Panel */}
-      {isSelected && showSettings && (
-        <div className="mt-2 p-3 bg-background border border-border rounded-lg space-y-3">
-          <div>
-            <label className="block text-sm font-medium mb-2">Style</label>
-            <div className="flex gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onChange({ style: 'stars' })
-                }}
-                className={`flex-1 px-3 py-2 rounded-lg border text-sm ${
-                  style === 'stars'
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                Stars
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onChange({ style: 'numeric' })
-                }}
-                className={`flex-1 px-3 py-2 rounded-lg border text-sm ${
-                  style === 'numeric'
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                Numeric
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Max Value</label>
-            <div className="flex gap-2">
-              {[5, 10].map((val) => (
-                <button
-                  key={val}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onChange({ max: val })
-                  }}
-                  className={`flex-1 px-3 py-2 rounded-lg border text-sm ${
-                    max === val
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  {val}
-                </button>
-              ))}
-            </div>
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={required}
-              onChange={(e) => onChange({ required: e.target.checked })}
-              className="rounded"
-            />
-            Required
-          </label>
-        </div>
-      )}
-
       {/* Action Buttons */}
       {isSelected && (
         <div className="absolute -top-2 -right-2 flex gap-1">
-          <button
-            className="p-1 bg-muted text-muted-foreground rounded-full hover:text-foreground transition-colors z-10"
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowSettings(!showSettings)
-            }}
-            type="button"
-          >
-            <Settings className="w-3 h-3" />
-          </button>
           <button
             className="p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors z-10"
             onClick={(e) => {
