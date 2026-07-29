@@ -15,6 +15,7 @@ export interface BannerShapeProps {
   linkUrl?: string
   headingNode?: ReactNode
   subtextNode?: ReactNode
+  interactive?: boolean
 }
 
 export function BannerShape({
@@ -27,6 +28,7 @@ export function BannerShape({
   linkUrl,
   headingNode,
   subtextNode,
+  interactive = true,
 }: BannerShapeProps) {
   const spec = BANNER_PRESETS[preset] ?? BANNER_PRESETS.ribbon
   const fill = resolveFill(fillKind, fillValue)
@@ -77,7 +79,7 @@ export function BannerShape({
           <div className={spec.subtextClass}>{subtextNode ?? subtext}</div>
         )}
 
-        {showLink && (
+        {showLink && interactive && (
           <a
             href={href}
             target="_blank"
@@ -87,6 +89,15 @@ export function BannerShape({
           >
             {linkLabel}
           </a>
+        )}
+
+        {showLink && !interactive && (
+          <span
+            className="mt-2 inline-block rounded-full px-4 py-1.5 text-xs font-semibold"
+            style={{ background: textColor, color: fill.text === 'light' ? '#0F3D2E' : '#FFFFFF' }}
+          >
+            {linkLabel}
+          </span>
         )}
       </div>
     </div>

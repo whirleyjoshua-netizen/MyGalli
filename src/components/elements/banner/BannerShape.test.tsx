@@ -57,4 +57,20 @@ describe('BannerShape', () => {
     )
     expect(tok.querySelector('[data-banner-scrim]')).toBeNull()
   })
+
+  it('renders a navigable link by default', () => {
+    render(
+      <BannerShape preset="strip" heading="Hi" linkLabel="Go" linkUrl="https://x.test" />
+    )
+    expect(screen.getByRole('link', { name: 'Go' })).toHaveAttribute('href', 'https://x.test')
+  })
+
+  it('neutralizes link navigation when interactive={false}', () => {
+    const { container } = render(
+      <BannerShape preset="strip" heading="Hi" linkLabel="Go" linkUrl="https://x.test" interactive={false} />
+    )
+    expect(container.querySelector('a[href="https://x.test"]')).not.toBeInTheDocument()
+    expect(screen.getByText('Go')).toBeInTheDocument()
+    expect(screen.getByText('Go').tagName).toBe('SPAN')
+  })
 })
