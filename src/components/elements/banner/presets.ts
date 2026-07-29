@@ -8,6 +8,8 @@ export interface PresetSpec {
   clipPath?: string
   borderRadius?: string
   accentBar?: boolean
+  /** Semantic heading level for page-topping presets (hero/band=h2, crest/ribbon=h3); undefined = non-heading div. */
+  headingLevel?: 2 | 3
 }
 
 export const BANNER_PRESETS: Record<BannerPreset, PresetSpec> = {
@@ -18,6 +20,7 @@ export const BANNER_PRESETS: Record<BannerPreset, PresetSpec> = {
     headingClass: 'text-lg font-semibold tracking-tight',
     subtextClass: 'text-xs opacity-90',
     clipPath: 'polygon(0 0, 100% 0, calc(100% - 24px) 50%, 100% 100%, 0 100%, 24px 50%)',
+    headingLevel: 3,
   },
   pennant: {
     minHeight: 64,
@@ -32,6 +35,7 @@ export const BANNER_PRESETS: Record<BannerPreset, PresetSpec> = {
     headingClass: 'text-xl font-semibold tracking-tight',
     subtextClass: 'text-sm opacity-90',
     borderRadius: '9999px 9999px 12px 12px',
+    headingLevel: 3,
   },
   // Announcement
   strip: {
@@ -54,12 +58,14 @@ export const BANNER_PRESETS: Record<BannerPreset, PresetSpec> = {
     align: 'center',
     headingClass: 'text-3xl sm:text-4xl font-bold tracking-tight',
     subtextClass: 'text-base opacity-90',
+    headingLevel: 2,
   },
   band: {
     minHeight: 140,
     align: 'center',
     headingClass: 'text-2xl font-semibold tracking-tight',
     subtextClass: 'text-sm opacity-90',
+    headingLevel: 2,
   },
 }
 

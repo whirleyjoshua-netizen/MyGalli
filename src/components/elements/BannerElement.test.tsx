@@ -92,6 +92,26 @@ describe('BannerElement', () => {
     expect(heroInput.style.textAlign).toBe('center')
   })
 
+  it('renders a delete control when selected and calls onDelete without triggering onSelect', () => {
+    const onDelete = vi.fn()
+    const onSelect = vi.fn()
+    const { container } = render(
+      <BannerElement element={el()} onChange={vi.fn()} onDelete={onDelete} isSelected onSelect={onSelect} />
+    )
+    const deleteButton = container.querySelector('button')
+    expect(deleteButton).not.toBeNull()
+    fireEvent.click(deleteButton!)
+    expect(onDelete).toHaveBeenCalled()
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('does not render a delete control when unselected', () => {
+    const { container } = render(
+      <BannerElement element={el()} onChange={vi.fn()} onDelete={vi.fn()} isSelected={false} onSelect={vi.fn()} />
+    )
+    expect(container.querySelector('button')).toBeNull()
+  })
+
   it('editor does not render navigable link when linkLabel and linkUrl are set', () => {
     const { container } = render(
       <BannerElement

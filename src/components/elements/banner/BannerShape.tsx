@@ -73,7 +73,13 @@ export function BannerShape({
           textAlign: spec.align,
         }}
       >
-        <div className={spec.headingClass}>{headingNode ?? heading}</div>
+        {spec.headingLevel === 2 ? (
+          <h2 className={spec.headingClass}>{headingNode ?? heading}</h2>
+        ) : spec.headingLevel === 3 ? (
+          <h3 className={spec.headingClass}>{headingNode ?? heading}</h3>
+        ) : (
+          <div className={spec.headingClass}>{headingNode ?? heading}</div>
+        )}
 
         {(subtextNode || subtext) && (
           <div className={spec.subtextClass}>{subtextNode ?? subtext}</div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { Trash2 } from 'lucide-react'
 import type { CanvasElement } from '@/lib/types/canvas'
 import { BannerShape } from './banner/BannerShape'
 import { BANNER_PRESETS } from './banner/presets'
@@ -15,7 +16,7 @@ interface BannerElementProps {
 const INLINE =
   'w-full bg-transparent border-none outline-none placeholder:opacity-60 text-inherit font-inherit'
 
-export function BannerElement({ element, onChange, isSelected, onSelect }: BannerElementProps) {
+export function BannerElement({ element, onChange, onDelete, isSelected, onSelect }: BannerElementProps) {
   const preset = element.bannerPreset ?? 'ribbon'
   const spec = BANNER_PRESETS[preset] ?? BANNER_PRESETS.ribbon
   const isCentered = spec.align === 'center'
@@ -59,6 +60,15 @@ export function BannerElement({ element, onChange, isSelected, onSelect }: Banne
           ) : undefined
         }
       />
+
+      {isSelected && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete() }}
+          className="absolute -top-3 -right-3 p-1.5 bg-background border border-border rounded-md shadow-sm hover:bg-destructive hover:text-destructive-foreground transition"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   )
 }

@@ -108,6 +108,10 @@ export function BannerInspector({ element, onChange }: InspectorProps) {
             value={element.bannerFillValue ?? ''}
             onChange={(e) => onChange({ bannerFillValue: e.target.value })}
           />
+          <span className="mt-1 block text-[11px] text-muted-foreground/70">
+            Works best with uploaded images or Unsplash URLs. Other hosts may be blocked by the
+            browser and show an empty banner.
+          </span>
         </label>
       )}
 

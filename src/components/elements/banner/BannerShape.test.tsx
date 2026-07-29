@@ -65,6 +65,14 @@ describe('BannerShape', () => {
     expect(screen.getByRole('link', { name: 'Go' })).toHaveAttribute('href', 'https://x.test')
   })
 
+  it('renders hero as an h2 heading, and strip as a non-heading div', () => {
+    const { rerender } = render(<BannerShape preset="hero" heading="Big headline" />)
+    expect(screen.getByText('Big headline').tagName).toBe('H2')
+
+    rerender(<BannerShape preset="strip" heading="Small notice" />)
+    expect(screen.getByText('Small notice').tagName).toBe('DIV')
+  })
+
   it('neutralizes link navigation when interactive={false}', () => {
     const { container } = render(
       <BannerShape preset="strip" heading="Hi" linkLabel="Go" linkUrl="https://x.test" interactive={false} />
