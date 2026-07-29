@@ -764,9 +764,6 @@ export function ColumnCanvas({
             provider={element.cardProvider || 'vouch'}
             data={element.cardData || {}}
             style={element.cardStyle || 'default'}
-            onChange={(updates) =>
-              onUpdateElement(sectionId, columnId, element.id, updates)
-            }
           />
         )
 
