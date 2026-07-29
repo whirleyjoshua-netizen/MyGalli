@@ -25,17 +25,21 @@ For each element with a settings gear, decide:
 - **Config gear → migrate.** The gear opens element *setup* (options, data, trend, colour). Move that into the element's inspector; delete the on-card gear. Keep any inline live-typed fields on the card.
 - **Styling gear → leave.** The gear opens `TextStylePanel` (font, size, colour, alignment). That is the visual card setting; it stays on the card.
 
-## Remaining work — 11 config-gear elements
+## Remaining work — 7 config-gear elements (of the original 11)
 
-None of these has a real inspector yet (the registry only has `image`, `kpi`, `button`, `slideshow`; all others fall through to `DefaultInspector`). Each needs the KPI three-step treatment.
+Registry now has `image`, `kpi`, `button`, `slideshow`, `shortanswer`, `rating`, `mcq`, `poll`; the rest still fall through to `DefaultInspector`. Each remaining one needs the KPI three-step treatment.
+
+**Done — the four form elements (2026-07-29):** ShortAnswer, Rating, MCQ, Poll. Each shipped as its own commit with a TDD inspector test.
+
+Convention settled while doing them: **list-type content (MCQ/Poll options) stays inline on the card** — it is live-typed and needs the canvas width. The inspector shows the option count and points the author at the card. Only true config (toggles, scale, style, limits) moves.
 
 | Element | File | Notes |
 |---|---|---|
-| Chart | `ChartElement.tsx` | Largest — type / data rows / 3D effects. Consider whether the data-row editor is "setup that needs the big canvas" (may stay inline per the original guidance). |
-| MCQ | `MCQElement.tsx` | Question + options list. |
-| Poll | `PollElement.tsx` | Options + voting config. |
-| Rating | `RatingElement.tsx` | Scale / style. |
-| ShortAnswer | `ShortAnswerElement.tsx` | Prompt / placeholder. |
+| ~~MCQ~~ | ~~`MCQElement.tsx`~~ | ✅ done — options stayed on the card. |
+| ~~Poll~~ | ~~`PollElement.tsx`~~ | ✅ done — options stayed on the card. |
+| ~~Rating~~ | ~~`RatingElement.tsx`~~ | ✅ done. |
+| ~~ShortAnswer~~ | ~~`ShortAnswerElement.tsx`~~ | ✅ done. |
+| Chart | `ChartElement.tsx` | Largest — type / data rows / 3D effects. **Do LAST.** Split it: config → inspector, data-row editor stays inline (same reasoning as MCQ/Poll options). |
 | Card | `CardElement.tsx` | App-card config. |
 | Code | `CodeElement.tsx` | Language / theme. |
 | Comment | `CommentElement.tsx` | Section config. |
@@ -56,6 +60,13 @@ None of these has a real inspector yet (the registry only has `image`, `kpi`, `b
 **The inspector writes STORED `CanvasElement` field names; the element component often uses translated prop names.** KPI stores `kpiLabel`/`kpiValue`/… but the `KPIElement` component receives `label`/`value` props — `ColumnCanvas` translates both directions. The inspector receives the raw `element` and an `onChange` writing `Partial<CanvasElement>`, so it must use the **stored** names (`kpiLabel`, not `label`).
 
 **Before writing any element's inspector, check its `case '<type>':` in `ColumnCanvas.tsx`** to see which `element.*` fields feed its props and how `onChange` maps back. Do not assume the prop name equals the stored name. (This is the mistake that made the first KPI spec wrong.)
+
+**Confirmed 2026-07-29: there are two contracts, and both are live.**
+
+- *Translated* (KPI, MCQ, Rating, ShortAnswer): `ColumnCanvas` maps `element.mcqQuestion → question` and rebuilds a `patch` on the way back. The element component never sees stored names.
+- *Raw* (Poll, and the newer elements — acknowledgment, tracker, …): `ColumnCanvas` passes `element` and `onChange` straight through, so stored names **are** the prop names.
+
+Either way the inspector always writes stored names — but knowing which contract you are in tells you whether the element component's own prop list is a reliable guide. For translated elements it is not.
 
 ## Environment gotchas
 
