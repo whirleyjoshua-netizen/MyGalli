@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { X, Plus, Trash2, Settings, BarChart3 } from 'lucide-react'
+import { X, Plus, Trash2, BarChart3 } from 'lucide-react'
 import type { CanvasElement } from '@/lib/types/canvas'
 
 interface PollElementProps {
@@ -15,12 +14,9 @@ interface PollElementProps {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
 
 export function PollElement({ element, onChange, onDelete, isSelected, onSelect }: PollElementProps) {
-  const [showSettings, setShowSettings] = useState(false)
 
   const question = element.pollQuestion || 'What do you think?'
   const options = element.pollOptions || ['Option 1', 'Option 2', 'Option 3']
-  const allowMultiple = element.pollAllowMultiple ?? false
-  const showResultsBefore = element.pollShowResultsBeforeVote ?? false
 
   const updateOption = (index: number, value: string) => {
     const newOptions = [...options]
@@ -53,12 +49,6 @@ export function PollElement({ element, onChange, onDelete, isSelected, onSelect 
     >
       {isSelected && (
         <div className="absolute -top-3 right-2 flex items-center gap-1 z-10">
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowSettings(!showSettings) }}
-            className="p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:bg-slate-50 transition"
-          >
-            <Settings className="w-3.5 h-3.5 text-slate-500" />
-          </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete() }}
             className="p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:bg-red-50 transition"
@@ -130,35 +120,6 @@ export function PollElement({ element, onChange, onDelete, isSelected, onSelect 
         )}
       </div>
 
-      {/* Settings Panel */}
-      {showSettings && isSelected && (
-        <div
-          className="border-t border-slate-200 dark:border-slate-700 p-4 space-y-3 bg-slate-50 dark:bg-slate-800/50"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Poll Settings</div>
-
-          <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-sm text-slate-700 dark:text-slate-300">Allow multiple selections</span>
-            <input
-              type="checkbox"
-              checked={allowMultiple}
-              onChange={(e) => onChange({ pollAllowMultiple: e.target.checked })}
-              className="w-4 h-4 accent-purple-600"
-            />
-          </label>
-
-          <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-sm text-slate-700 dark:text-slate-300">Show results before voting</span>
-            <input
-              type="checkbox"
-              checked={showResultsBefore}
-              onChange={(e) => onChange({ pollShowResultsBeforeVote: e.target.checked })}
-              className="w-4 h-4 accent-purple-600"
-            />
-          </label>
-        </div>
-      )}
     </div>
   )
 }
