@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { Trash2, TrendingUp, TrendingDown, Minus, Settings, X } from 'lucide-react'
+import { Trash2, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 interface KPIElementProps {
   label: string
@@ -25,7 +24,7 @@ interface KPIElementProps {
   }) => void
 }
 
-const COLOR_THEMES = {
+export const COLOR_THEMES = {
   blue: {
     gradient: 'from-blue-500 to-blue-600',
     light: 'bg-blue-50 dark:bg-blue-950/30',
@@ -101,7 +100,6 @@ export function KPIElement({
   onDelete,
   onChange,
 }: KPIElementProps) {
-  const [showSettings, setShowSettings] = useState(false)
   const theme = COLOR_THEMES[color]
 
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus
@@ -176,114 +174,12 @@ export function KPIElement({
           <button
             onClick={(e) => {
               e.stopPropagation()
-              setShowSettings(!showSettings)
-            }}
-            className="p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition"
-          >
-            <Settings className="w-3.5 h-3.5 text-slate-500" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
               onDelete()
             }}
             className="p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:bg-red-50 hover:border-red-200 dark:hover:bg-red-950/30 transition"
           >
             <Trash2 className="w-3.5 h-3.5 text-slate-500 hover:text-red-500" />
           </button>
-        </div>
-      )}
-
-      {/* Settings Panel */}
-      {showSettings && isSelected && (
-        <div
-          className="absolute top-full left-0 mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-            <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300">KPI Settings</h4>
-            <button onClick={() => setShowSettings(false)} className="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded">
-              <X className="w-3.5 h-3.5 text-slate-400" />
-            </button>
-          </div>
-
-          <div className="p-4 space-y-4">
-            {/* Prefix/Suffix */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1.5">Prefix</label>
-                <input
-                  type="text"
-                  value={prefix}
-                  onChange={(e) => onChange({ prefix: e.target.value })}
-                  placeholder="$"
-                  className="w-full px-2.5 py-1.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1.5">Suffix</label>
-                <input
-                  type="text"
-                  value={suffix}
-                  onChange={(e) => onChange({ suffix: e.target.value })}
-                  placeholder="%"
-                  className="w-full px-2.5 py-1.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            {/* Trend */}
-            <div>
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1.5">Trend Direction</label>
-              <div className="flex gap-1">
-                {([
-                  { id: 'up' as const, label: 'Up', icon: '↑' },
-                  { id: 'neutral' as const, label: 'None', icon: '—' },
-                  { id: 'down' as const, label: 'Down', icon: '↓' },
-                ]).map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => onChange({ trend: t.id })}
-                    className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-all ${
-                      trend === t.id
-                        ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
-                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {t.icon} {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Trend Value */}
-            <div>
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1.5">Trend Text</label>
-              <input
-                type="text"
-                value={trendValue}
-                onChange={(e) => onChange({ trendValue: e.target.value })}
-                placeholder="+12% from last month"
-                className="w-full px-2.5 py-1.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Color */}
-            <div>
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1.5">Theme Color</label>
-              <div className="flex gap-2">
-                {(Object.keys(COLOR_THEMES) as Array<keyof typeof COLOR_THEMES>).map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => onChange({ color: c })}
-                    className={`w-8 h-8 rounded-full bg-gradient-to-br ${COLOR_THEMES[c].gradient} transition-all ${
-                      color === c ? 'ring-2 ring-offset-2 ring-slate-900 dark:ring-white scale-110' : 'hover:scale-105'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>
