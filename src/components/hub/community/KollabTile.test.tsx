@@ -62,3 +62,22 @@ describe('KollabTile', () => {
     expect(onSee).toHaveBeenCalledOnce()
   })
 })
+
+describe('Make a reel', () => {
+  it('is hidden when canStitch is false', () => {
+    render(<KollabTile count={10} pendingCount={0} canDrop canStitch={false} isPrivileged={false} uploading={false} onDrop={() => {}} onSee={() => {}} onMakeReel={() => {}} />)
+    expect(screen.queryByRole('button', { name: /make a reel/i })).toBeNull()
+  })
+
+  it('is shown and calls onMakeReel when canStitch is true', () => {
+    const onMakeReel = vi.fn()
+    render(<KollabTile count={10} pendingCount={0} canDrop canStitch isPrivileged={false} uploading={false} onDrop={() => {}} onSee={() => {}} onMakeReel={onMakeReel} />)
+    fireEvent.click(screen.getByRole('button', { name: /make a reel/i }))
+    expect(onMakeReel).toHaveBeenCalled()
+  })
+
+  it('is disabled with fewer than 3 drops', () => {
+    render(<KollabTile count={2} pendingCount={0} canDrop canStitch isPrivileged={false} uploading={false} onDrop={() => {}} onSee={() => {}} onMakeReel={() => {}} />)
+    expect(screen.getByRole('button', { name: /make a reel/i })).toBeDisabled()
+  })
+})

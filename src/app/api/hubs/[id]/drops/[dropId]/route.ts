@@ -6,6 +6,7 @@ import { blobReadWriteToken } from '@/lib/storage-env'
 import { isOwnDropAsset, canReviewDrop } from '@/lib/hub-drops'
 import { createNotification, notifyHubMembers } from '@/lib/notifications'
 import { rateLimit } from '@/lib/rate-limit'
+import { tagDropAsset } from '@/lib/kollab/tag-drop'
 
 type LoadedHub = { id: string; userId: string; community: boolean; title: string; slug: string; user: { username: string } }
 type LoadedDrop = { id: string; authorId: string; url: string; thumbnailUrl: string | null; status: string }
@@ -48,14 +49,16 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string; dropId: string }> }): Promise<NextResponse> {
   const { id, dropId } = await params
-  // The Pending queue pages at 24 items; a moderator clearing a full page in
-  // one sitting issues 24 PATCHes in well under a minute. 60/60s clears two
-  // full pages (and two moderators behind one NAT) while still bounding abuse
-  // on an endpoint that is moderator-only and does a Blob delete.
-  const limited = await rateLimit(request, { limit: 60, windowMs: 60_000, prefix: 'hub-drop-review' })
-  if (limited) return limited
   const me = await getUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Keyed on the user, not the IP: approving a drop triggers a real Opus
+  // vision call and auth is the only thing gating the spend. The Pending
+  // queue pages at 24 items; a moderator clearing a full page in one sitting
+  // issues 24 PATCHes in well under a minute. 60/60s clears two full pages
+  // while still bounding abuse on an endpoint that does a Blob delete.
+  const limited = await rateLimit(request, { limit: 60, windowMs: 60_000, prefix: 'hub-drop-review', identifier: me.id })
+  if (limited) return limited
   const r = await load(id, dropId)
   if (r.error) return r.error
   const isPrivileged = canModerate(me.id, r.hub, r.collabIds)
@@ -87,6 +90,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   })
   if (transitioned.count === 0) {
     return NextResponse.json({ error: 'This drop has already been reviewed' }, { status: 409 })
+  }
+
+  // Tagging is best-effort and must never fail an approval: the drop is already
+  // live at this point, and a tagless drop is still stitchable on its metadata.
+  if (action === 'approve') {
+    try {
+      const aiTags = await tagDropAsset(id, r.drop.thumbnailUrl || r.drop.url)
+      if (aiTags) await db.hubDrop.update({ where: { id: dropId }, data: { aiTags } })
+    } catch (error) {
+      console.warn(`hub-drop approve: tagging skipped for hub ${id} drop ${dropId}`, error)
+    }
   }
 
   if (action === 'reject') {

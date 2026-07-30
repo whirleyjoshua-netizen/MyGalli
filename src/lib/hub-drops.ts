@@ -10,10 +10,14 @@ export type NormalizedDrop = {
   mimeType: string | null
   width: number | null
   height: number | null
+  durationSec: number | null
 }
 
 const intOrNull = (v: unknown): number | null =>
   typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.floor(v) : null
+
+const durationOrNull = (v: unknown): number | null =>
+  typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.min(Math.round(v * 100) / 100, 3600) : null
 
 // Every drop asset lives under a server-chosen, per-hub namespace. This is what
 // proves a URL is *this hub's* asset rather than someone else's: one Blob store
@@ -47,7 +51,7 @@ export function validateDropInput(hubId: string, raw: unknown): { ok: true; valu
   if (thumbnailUrl && !isOwnDropAsset(hubId, thumbnailUrl)) return { ok: false, error: 'A file URL is required' }
   const caption = typeof r.caption === 'string' && r.caption.trim() ? r.caption.trim().slice(0, 500) : null
   const mimeType = typeof r.mimeType === 'string' && r.mimeType.trim() ? r.mimeType.trim().slice(0, 100) : null
-  return { ok: true, value: { type, url, thumbnailUrl, caption, mimeType, width: intOrNull(r.width), height: intOrNull(r.height) } }
+  return { ok: true, value: { type, url, thumbnailUrl, caption, mimeType, width: intOrNull(r.width), height: intOrNull(r.height), durationSec: durationOrNull(r.durationSec) } }
 }
 
 export type DropAuthor = { userId: string; username: string; name: string | null; avatar: string | null }

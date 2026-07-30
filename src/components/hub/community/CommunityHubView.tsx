@@ -176,6 +176,7 @@ function CommunityHubViewInner({
                 hubId={hub.id}
                 hubTitle={hub.title}
                 canDrop={config.kollab.whoCanDrop === 'owner-only' ? isPrivileged : (isPrivileged || joined)}
+                canStitch={config.kollab.whoCanStitch === 'owner-only' ? isPrivileged : (isPrivileged || joined)}
                 isPrivileged={isPrivileged}
                 currentUserId={currentUserId}
                 enabled={config.kollab.enabled}

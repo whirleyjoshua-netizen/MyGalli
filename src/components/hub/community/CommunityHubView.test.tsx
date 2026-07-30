@@ -98,6 +98,30 @@ describe('CommunityHubView tabs', () => {
   })
 })
 
+describe('CommunityHubView Kollab canStitch', () => {
+  it('mirrors canDrop: hides Make a reel from a non-member when whoCanStitch is members', () => {
+    render(<CommunityHubView {...base} joined={false} isPrivileged={false} />)
+    expect(screen.queryByRole('button', { name: /make a reel/i })).toBeNull()
+  })
+
+  it('shows Make a reel to a joined member when whoCanStitch is members', () => {
+    render(<CommunityHubView {...base} joined isPrivileged={false} />)
+    expect(screen.getByRole('button', { name: /make a reel/i })).toBeInTheDocument()
+  })
+
+  it('hides Make a reel from a joined non-privileged member when whoCanStitch is owner-only', () => {
+    const config = { ...DEFAULT_HUB_CONFIG, kollab: { ...DEFAULT_HUB_CONFIG.kollab, whoCanStitch: 'owner-only' as const } }
+    render(<CommunityHubView {...base} config={config} joined isPrivileged={false} />)
+    expect(screen.queryByRole('button', { name: /make a reel/i })).toBeNull()
+  })
+
+  it('shows Make a reel to a privileged owner when whoCanStitch is owner-only', () => {
+    const config = { ...DEFAULT_HUB_CONFIG, kollab: { ...DEFAULT_HUB_CONFIG.kollab, whoCanStitch: 'owner-only' as const } }
+    render(<CommunityHubView {...base} config={config} joined={false} isPrivileged />)
+    expect(screen.getByRole('button', { name: /make a reel/i })).toBeInTheDocument()
+  })
+})
+
 describe('CommunityHubView theming', () => {
   const styleOf = (container: HTMLElement) => (container.firstElementChild as HTMLElement).style
 

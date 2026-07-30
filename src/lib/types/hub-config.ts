@@ -6,6 +6,7 @@ export type HubUtilityKey = (typeof HUB_UTILITY_KEYS)[number]
 export type HubUtilityWidget = { key: HubUtilityKey; enabled: boolean }
 export type HubWhoCanPost = 'members' | 'owner-only'
 export type HubWhoCanDrop = 'members' | 'owner-only'
+export type HubWhoCanStitch = 'members' | 'owner-only'
 
 export const HUB_THEME_KEYS = ['galli', 'ocean', 'sunset', 'violet', 'slate', 'rose'] as const
 export type HubThemeKey = (typeof HUB_THEME_KEYS)[number]
@@ -15,7 +16,7 @@ export type HubConfig = {
   utility: HubUtilityWidget[]
   feed: { composerEnabled: boolean; loadMoreEnabled: boolean; emptyStateText?: string }
   access: { whoCanPost: HubWhoCanPost }
-  kollab: { enabled: boolean; whoCanDrop: HubWhoCanDrop }
+  kollab: { enabled: boolean; whoCanDrop: HubWhoCanDrop; whoCanStitch: HubWhoCanStitch }
   appearance: { theme: HubThemeKey }
 }
 
@@ -33,6 +34,6 @@ export const DEFAULT_HUB_CONFIG: HubConfig = {
   ],
   feed: { composerEnabled: true, loadMoreEnabled: true },
   access: { whoCanPost: 'members' },
-  kollab: { enabled: true, whoCanDrop: 'members' },
+  kollab: { enabled: true, whoCanDrop: 'members', whoCanStitch: 'members' },
   appearance: { theme: 'galli' },
 }

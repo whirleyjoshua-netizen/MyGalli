@@ -7,6 +7,7 @@ import { rateLimit } from '@/lib/rate-limit'
 import { notifyHubMembers } from '@/lib/notifications'
 import { validateDropInput, toDropDTO, nextStatusFor } from '@/lib/hub-drops'
 import { consentTextFor } from '@/lib/hub-consent'
+import { tagDropAsset } from '@/lib/kollab/tag-drop'
 
 const PAGE = 24
 
@@ -58,10 +59,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const limited = await rateLimit(request, { limit: 20, windowMs: 60_000, prefix: 'hub-drop-create' })
-  if (limited) return limited
   const me = await getUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Keyed on the user, not the IP: an approved drop triggers a real Opus
+  // vision call and auth is the only thing gating the spend.
+  const limited = await rateLimit(request, { limit: 20, windowMs: 60_000, prefix: 'hub-drop-create', identifier: me.id })
+  if (limited) return limited
   const hub = await db.hub.findUnique({
     where: { id },
     select: { id: true, userId: true, community: true, title: true, slug: true, config: true, user: { select: { username: true } } },
@@ -94,6 +98,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       mimeType: v.mimeType,
       width: v.width,
       height: v.height,
+      durationSec: v.durationSec,
       status,
       // Written only so a rollback to the previous deploy still filters correctly.
       hidden: status !== 'approved',
@@ -101,6 +106,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     },
   })
   if (status === 'approved') {
+    // Tagging is best-effort and must never fail an approval: the drop is
+    // already live at this point, and a tagless drop is still stitchable on
+    // its metadata. A privileged uploader's own drop never passes through the
+    // PATCH review route, so this is the only place it gets tagged.
+    try {
+      const aiTags = await tagDropAsset(id, v.thumbnailUrl || v.url)
+      if (aiTags) await db.hubDrop.update({ where: { id: drop.id }, data: { aiTags } })
+    } catch (error) {
+      console.warn(`hub-drop create: tagging skipped for hub ${id} drop ${drop.id}`, error)
+    }
     const memberIds = (await db.hubMember.findMany({ where: { hubId: id }, select: { userId: true } })).map((m) => m.userId)
     const targets = postNotifyTargets({ authorId: me.id, ownerId: hub.userId, collabIds, memberIds })
     await notifyHubMembers(targets, {

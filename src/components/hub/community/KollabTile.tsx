@@ -1,18 +1,20 @@
 'use client'
 
-import { ImagePlus, Loader2 } from 'lucide-react'
+import { ImagePlus, Loader2, Sparkles } from 'lucide-react'
 import { KollabWordmark } from './KollabWordmark'
 
 export function KollabTile({
-  count, pendingCount, canDrop, isPrivileged, uploading, onDrop, onSee,
+  count, pendingCount, canDrop, canStitch = false, isPrivileged, uploading, onDrop, onSee, onMakeReel,
 }: {
   count: number
   pendingCount: number
   canDrop: boolean
+  canStitch?: boolean
   isPrivileged: boolean
   uploading: boolean
   onDrop: () => void
   onSee: () => void
+  onMakeReel?: () => void
 }) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-5 text-center">
@@ -43,6 +45,17 @@ export function KollabTile({
         >
           See content
         </button>
+        {canStitch && (
+          <button
+            onClick={onMakeReel}
+            disabled={count < 3}
+            title={count < 3 ? 'Drop a few more clips first' : undefined}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#FF6B3D]/40 px-4 py-2 text-sm font-medium text-[#FF6B3D] hover:bg-[#FF6B3D]/10 disabled:opacity-50"
+          >
+            <Sparkles className="h-4 w-4" />
+            Make a reel
+          </button>
+        )}
       </div>
 
       {isPrivileged && pendingCount > 0 && (

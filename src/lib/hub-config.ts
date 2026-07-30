@@ -7,6 +7,7 @@ import {
   type HubUtilityKey,
   type HubWhoCanPost,
   type HubWhoCanDrop,
+  type HubWhoCanStitch,
 } from './types/hub-config'
 import { isHubThemeKey } from './hub-themes'
 
@@ -57,6 +58,7 @@ export function sanitizeHubConfig(raw: unknown): HubConfig {
 
   const kollabRaw = (r.kollab && typeof r.kollab === 'object' ? r.kollab : {}) as Record<string, any>
   const whoCanDrop: HubWhoCanDrop = kollabRaw.whoCanDrop === 'owner-only' ? 'owner-only' : 'members'
+  const whoCanStitch: HubWhoCanStitch = kollabRaw.whoCanStitch === 'owner-only' ? 'owner-only' : 'members'
 
   // An absent or unrecognised theme renders as Galli — the value every hub
   // created before themes existed will take.
@@ -77,6 +79,7 @@ export function sanitizeHubConfig(raw: unknown): HubConfig {
     kollab: {
       enabled: bool(kollabRaw.enabled, DEFAULT_HUB_CONFIG.kollab.enabled),
       whoCanDrop,
+      whoCanStitch,
     },
     appearance: { theme },
   }
@@ -97,6 +100,15 @@ export function canDropToPool(input: {
   isPrivileged: boolean
 }): boolean {
   if (input.whoCanDrop === 'owner-only') return input.isPrivileged
+  return input.canParticipate
+}
+
+export function canStitchReel(input: {
+  canParticipate: boolean
+  whoCanStitch: HubWhoCanStitch
+  isPrivileged: boolean
+}): boolean {
+  if (input.whoCanStitch === 'owner-only') return input.isPrivileged
   return input.canParticipate
 }
 

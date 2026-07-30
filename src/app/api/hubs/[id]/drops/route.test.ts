@@ -3,19 +3,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('@/lib/auth', () => ({ getUser: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: vi.fn().mockResolvedValue(null) }))
 vi.mock('@/lib/notifications', () => ({ notifyHubMembers: vi.fn(), createNotification: vi.fn() }))
+vi.mock('@/lib/kollab/tag-drop', () => ({ tagDropAsset: vi.fn().mockResolvedValue(null) }))
 vi.mock('@/lib/db', () => ({
   db: {
     hub: { findUnique: vi.fn() },
     hubCollaborator: { findMany: vi.fn() },
     hubMember: { findUnique: vi.fn(), findMany: vi.fn() },
     hubBan: { findUnique: vi.fn() },
-    hubDrop: { create: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
+    hubDrop: { create: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn(async () => ({})) },
   },
 }))
 
 import { getUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { notifyHubMembers } from '@/lib/notifications'
+import { tagDropAsset } from '@/lib/kollab/tag-drop'
 import { GET, POST } from './route'
 
 const ctx = { params: Promise.resolve({ id: 'h1' }) }
@@ -146,6 +148,44 @@ describe('POST /drops', () => {
     ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
     const res = await POST(post({ type: 'link', url: 'https://x' }), ctx)
     expect(res.status).toBe(400)
+  })
+
+  it('tags a privileged uploader drop that is created already-approved', async () => {
+    ;(tagDropAsset as any).mockResolvedValue({ tags: ['soccer'], desc: 'd', subjects: 2, quality: 0.7, model: 'claude-haiku-4-5', at: 'now' })
+    ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue({
+      id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club',
+      config: { kollab: { enabled: true, whoCanDrop: 'members' } }, user: { username: 'o' },
+    })
+    ;(db.hubMember.findUnique as any).mockResolvedValue(null)
+    ;(db.hubDrop.create as any).mockResolvedValue({ id: 'drop2' })
+    const res = await POST(post({ type: 'image', url: OWN_URL }), ctx)
+    expect(res.status).toBe(201)
+    expect(tagDropAsset).toHaveBeenCalled()
+    const tagWrite = (db.hubDrop.update as any).mock.calls.find((c: any) => c[0]?.data?.aiTags)
+    expect(tagWrite).toBeTruthy()
+    expect(tagWrite[0]).toEqual({ where: { id: 'drop2' }, data: { aiTags: expect.objectContaining({ tags: ['soccer'] }) } })
+  })
+
+  it('does not tag a member drop held for review', async () => {
+    ;(getUser as any).mockResolvedValue({ id: 'member', username: 'm', name: 'M', avatar: null })
+    ;(db.hubMember.findUnique as any).mockResolvedValue({ id: 'mem1' })
+    const res = await POST(post({ type: 'image', url: OWN_URL }), ctx)
+    expect(res.status).toBe(201)
+    expect(tagDropAsset).not.toHaveBeenCalled()
+  })
+
+  it('still creates and approves when tagging throws', async () => {
+    ;(tagDropAsset as any).mockRejectedValue(new Error('boom'))
+    ;(getUser as any).mockResolvedValue({ id: 'owner', username: 'o', name: 'O', avatar: null })
+    ;(db.hub.findUnique as any).mockResolvedValue({
+      id: 'h1', userId: 'owner', community: true, published: true, title: 'Club', slug: 'club',
+      config: { kollab: { enabled: true, whoCanDrop: 'members' } }, user: { username: 'o' },
+    })
+    ;(db.hubMember.findUnique as any).mockResolvedValue(null)
+    ;(db.hubDrop.create as any).mockResolvedValue({ id: 'drop2' })
+    const res = await POST(post({ type: 'image', url: OWN_URL }), ctx)
+    expect(res.status).toBe(201)
   })
 })
 
