@@ -94,6 +94,7 @@ describe('PATCH /api/crm/contacts/[id]', () => {
     ;(db.crmContact.findFirst as any).mockResolvedValue(null)
     const res = await PATCH(req('http://localhost/x', { stageId: 's2' }), ctx('theirs'))
     expect(res.status).toBe(404)
+    expect(db.crmContact.findFirst).toHaveBeenCalledWith({ where: { id: 'theirs', ownerId: 'u1' } })
     expect(db.crmContact.update).not.toHaveBeenCalled()
   })
 
@@ -101,6 +102,7 @@ describe('PATCH /api/crm/contacts/[id]', () => {
     ;(db.crmStage.findFirst as any).mockResolvedValue(null)
     const res = await PATCH(req('http://localhost/x', { stageId: 'their-stage' }), ctx('c1'))
     expect(res.status).toBe(404)
+    expect(db.crmStage.findFirst).toHaveBeenCalledWith({ where: { id: 'their-stage', ownerId: 'u1' } })
     expect(db.crmContact.update).not.toHaveBeenCalled()
   })
 
@@ -127,5 +129,13 @@ describe('POST /api/crm/contacts/[id]/notes', () => {
     const res = await POST_NOTE(req('http://localhost/x', { text: '  ' }), ctx('c1'))
     expect(res.status).toBe(400)
     expect(db.crmActivity.create).not.toHaveBeenCalled()
+  })
+
+  it('truncates a note longer than the stored-text cap', async () => {
+    const longText = 'a'.repeat(6000)
+    await POST_NOTE(req('http://localhost/x', { text: longText }), ctx('c1'))
+    const arg = (db.crmActivity.create as any).mock.calls[0][0]
+    expect(arg.data.payload.text.length).toBe(5000)
+    expect(arg.data.summary.length).toBe(280)
   })
 })

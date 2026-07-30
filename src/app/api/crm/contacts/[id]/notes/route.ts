@@ -13,8 +13,13 @@ export async function POST(request: NextRequest, { params }: Ctx) {
   if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await request.json().catch(() => ({}))
-  const text = typeof body.text === 'string' ? body.text.trim() : ''
-  if (!text) return NextResponse.json({ error: 'text is required' }, { status: 400 })
+  const rawText = typeof body.text === 'string' ? body.text.trim() : ''
+  if (!rawText) return NextResponse.json({ error: 'text is required' }, { status: 400 })
+
+  // Bound the stored text itself, not just the summary derived from it — an
+  // untruncated payload is an unbounded JSON-column write vector even though
+  // the summary looked capped.
+  const text = rawText.slice(0, 5000)
 
   // sourceId stays null for notes: they are authored, not imported, so the
   // (source, sourceId) idempotency unique must not apply to them.
