@@ -20,12 +20,14 @@ export function CrmBoard({
   const [dragOverStageId, setDragOverStageId] = useState<string | null>(null)
 
   const restage = async (contactId: string, stageId: string) => {
-    const previous = contacts
-    const current = contacts.find((c) => c.id === contactId)
-    if (!current || current.stageId === stageId) return
+    const prevStageId = contacts.find((c) => c.id === contactId)?.stageId
+    if (prevStageId === undefined || prevStageId === stageId) return
 
     setError(null)
     setContacts((prev) => prev.map((c) => (c.id === contactId ? { ...c, stageId } : c)))
+
+    const revert = () =>
+      setContacts((prev) => prev.map((c) => (c.id === contactId ? { ...c, stageId: prevStageId } : c)))
 
     try {
       const res = await fetch(`/api/crm/contacts/${contactId}`, {
@@ -34,18 +36,24 @@ export function CrmBoard({
         body: JSON.stringify({ stageId }),
       })
       if (!res.ok) {
-        setContacts(previous)
+        revert()
         setError('Could not move that contact. Please try again.')
       }
     } catch {
-      setContacts(previous)
+      revert()
       setError('Could not move that contact. Please try again.')
     }
   }
 
   const renameStage = async (stageId: string, name: string) => {
-    const previous = stages
+    const prevName = stages.find((s) => s.id === stageId)?.name
+    if (prevName === undefined) return
+
     setStages((prev) => prev.map((s) => (s.id === stageId ? { ...s, name } : s)))
+
+    const revert = () =>
+      setStages((prev) => prev.map((s) => (s.id === stageId ? { ...s, name: prevName } : s)))
+
     try {
       const res = await fetch(`/api/crm/stages/${stageId}`, {
         method: 'PATCH',
@@ -53,18 +61,24 @@ export function CrmBoard({
         body: JSON.stringify({ name }),
       })
       if (!res.ok) {
-        setStages(previous)
+        revert()
         setError('Could not rename that stage. Please try again.')
       }
     } catch {
-      setStages(previous)
+      revert()
       setError('Could not rename that stage. Please try again.')
     }
   }
 
   const recolorStage = async (stageId: string, color: string) => {
-    const previous = stages
+    const prevColor = stages.find((s) => s.id === stageId)?.color
+    if (prevColor === undefined) return
+
     setStages((prev) => prev.map((s) => (s.id === stageId ? { ...s, color } : s)))
+
+    const revert = () =>
+      setStages((prev) => prev.map((s) => (s.id === stageId ? { ...s, color: prevColor } : s)))
+
     try {
       const res = await fetch(`/api/crm/stages/${stageId}`, {
         method: 'PATCH',
@@ -72,11 +86,11 @@ export function CrmBoard({
         body: JSON.stringify({ color }),
       })
       if (!res.ok) {
-        setStages(previous)
+        revert()
         setError('Could not recolor that stage. Please try again.')
       }
     } catch {
-      setStages(previous)
+      revert()
       setError('Could not recolor that stage. Please try again.')
     }
   }
@@ -91,6 +105,9 @@ export function CrmBoard({
       if (!res.ok) {
         return { ok: false, error: 'Could not delete that stage. Please try again.' }
       }
+      // Deletion is confirmed by the server response, not optimistic — so the
+      // removal + reassignment can be applied directly via functional updaters
+      // without needing a whole-array snapshot to revert.
       setStages((prev) => prev.filter((s) => s.id !== stageId))
       setContacts((prev) => prev.map((c) => (c.stageId === stageId ? { ...c, stageId: data.movedTo } : c)))
       return { ok: true }

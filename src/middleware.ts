@@ -14,6 +14,7 @@ const PROTECTED_PATHS = [
   '/create',
   '/live',
   '/workspaces',
+  '/crm',
 ]
 
 export function middleware(request: NextRequest) {
@@ -47,5 +48,6 @@ export const config = {
     '/create/:path*',
     '/live/:path*',
     '/workspaces/:path*',
+    '/crm/:path*',
   ],
 }
