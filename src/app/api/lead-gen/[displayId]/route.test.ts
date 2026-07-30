@@ -9,9 +9,11 @@ vi.mock('@/lib/email', () => ({
   sendEmail: vi.fn().mockResolvedValue(undefined),
   leadGenEmail: vi.fn().mockReturnValue({ subject: 's', html: 'h' }),
 }))
+vi.mock('@/lib/crm/ingest', () => ({ ingestLead: vi.fn().mockResolvedValue(undefined) }))
 
 import { db } from '@/lib/db'
 import { sendEmail, leadGenEmail } from '@/lib/email'
+import { ingestLead } from '@/lib/crm/ingest'
 import { POST } from './route'
 
 const ctx = { params: Promise.resolve({ displayId: 'd1' }) }
@@ -68,6 +70,14 @@ describe('POST /api/lead-gen/[displayId]', () => {
     expect(lead).toMatchObject({ displayId: 'd1', elementId: 'lg1', email: 'a@b.com', name: 'Sarah' })
     expect(sendEmail).toHaveBeenCalledTimes(1)
     expect(mock(db.leadCapture.update).mock.calls[0][0].data).toMatchObject({ delivered: true })
+    expect(ingestLead).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: 'lead-capture',
+        sourceId: 'lc1',
+        email: 'a@b.com',
+        name: 'Sarah',
+      })
+    )
   })
 
   it('emails the STORED message, never one supplied by the caller', async () => {

@@ -8,9 +8,11 @@ vi.mock('@/lib/db', () => ({
     waitlistSignup: { count: vi.fn(), create: vi.fn(), findUnique: vi.fn() },
   },
 }))
+vi.mock('@/lib/crm/ingest', () => ({ ingestLead: vi.fn().mockResolvedValue(undefined) }))
 
 import { getUser } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { ingestLead } from '@/lib/crm/ingest'
 import { POST } from './route'
 
 const WAITLIST_EL = { id: 'w1', type: 'waitlist', waitlistCapacity: 2 }
@@ -33,10 +35,25 @@ beforeEach(() => {
 describe('POST /api/waitlist/join', () => {
   it('creates a signup and returns the new count', async () => {
     ;(db.waitlistSignup.count as any).mockResolvedValueOnce(0).mockResolvedValueOnce(1)
-    const res = await POST(req({ displayId: 'd1', elementId: 'w1', email: 'a@b.com' }))
+    const res = await POST(req({ displayId: 'd1', elementId: 'w1', email: 'a@b.com', name: 'Sarah' }))
     expect(res.status).toBe(201)
     expect((await res.json()).count).toBe(1)
     expect(db.waitlistSignup.create).toHaveBeenCalled()
+    expect(ingestLead).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: 'waitlist',
+        sourceId: 's1',
+        email: 'a@b.com',
+        name: 'Sarah',
+      })
+    )
+  })
+
+  it('does not ingest a lead for a duplicate signup', async () => {
+    ;(db.waitlistSignup.findUnique as any).mockResolvedValue({ id: 'existing' })
+    ;(db.waitlistSignup.count as any).mockResolvedValue(1)
+    await POST(req({ displayId: 'd1', elementId: 'w1', email: 'a@b.com' }))
+    expect(ingestLead).not.toHaveBeenCalled()
   })
 
   it('is idempotent for a duplicate email (no second row, 200)', async () => {
