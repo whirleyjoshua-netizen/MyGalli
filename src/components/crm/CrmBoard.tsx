@@ -2,8 +2,11 @@
 
 import { useState } from 'react'
 import type { CrmStage } from '@prisma/client'
+import { LayoutGrid, List as ListIcon } from 'lucide-react'
 import { CrmStageHeader } from './CrmStageHeader'
 import { CrmContactCard, type CrmContactWithActivity } from './CrmContactCard'
+import { CrmList } from './CrmList'
+import { CrmContactDrawer } from './CrmContactDrawer'
 
 export function CrmBoard({
   stages: initialStages,
@@ -18,6 +21,20 @@ export function CrmBoard({
   const [contacts, setContacts] = useState(initialContacts)
   const [error, setError] = useState<string | null>(null)
   const [dragOverStageId, setDragOverStageId] = useState<string | null>(null)
+  const [view, setView] = useState<'board' | 'list'>('board')
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
+
+  const selectContact = (contact: CrmContactWithActivity) => {
+    setSelectedContactId(contact.id)
+    onSelect?.(contact)
+  }
+
+  // Merge the drawer's saved fields into this contact only — never replace
+  // the whole contacts array, so an in-flight board drag or list refetch
+  // can't be clobbered by a stale drawer response.
+  const applyContactUpdate = (updated: Partial<CrmContactWithActivity> & { id: string }) => {
+    setContacts((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)))
+  }
 
   const restage = async (contactId: string, stageId: string) => {
     const prevStageId = contacts.find((c) => c.id === contactId)?.stageId
@@ -123,54 +140,91 @@ export function CrmBoard({
           {error}
         </div>
       )}
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {stages.map((stage, index) => {
-          const stageContacts = contacts.filter((c) => c.stageId === stage.id)
-          // Mirrors deleteStage's neighbour pick: left, or right for the first stage.
-          const neighbour = index === 0 ? stages[1] : stages[index - 1]
 
-          return (
-            <div
-              key={stage.id}
-              onDragOver={(e) => { e.preventDefault(); setDragOverStageId(stage.id) }}
-              onDragLeave={() => setDragOverStageId((prev) => (prev === stage.id ? null : prev))}
-              onDrop={(e) => {
-                e.preventDefault()
-                setDragOverStageId(null)
-                const contactId = e.dataTransfer.getData('text/plain')
-                if (contactId) restage(contactId, stage.id)
-              }}
-              className={`w-72 shrink-0 rounded-2xl border p-2 transition ${
-                dragOverStageId === stage.id ? 'border-galli/50 bg-galli/5' : 'border-border bg-muted/30'
-              }`}
-            >
-              <CrmStageHeader
-                stage={stage}
-                count={stageContacts.length}
-                neighbourName={neighbour?.name ?? 'another stage'}
-                onRename={renameStage}
-                onRecolor={recolorStage}
-                onDelete={deleteStage}
-              />
-              <div className="space-y-2">
-                {stageContacts.length === 0 ? (
-                  <p className="px-2 py-6 text-center text-xs text-muted-foreground">No contacts yet.</p>
-                ) : (
-                  stageContacts.map((contact) => (
-                    <CrmContactCard
-                      key={contact.id}
-                      contact={contact}
-                      stages={stages}
-                      onRestage={restage}
-                      onSelect={onSelect}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          )
-        })}
+      <div className="mb-4 flex justify-end">
+        <div className="inline-flex rounded-full border border-border bg-muted/30 p-1">
+          <button
+            onClick={() => setView('board')}
+            aria-pressed={view === 'board'}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${
+              view === 'board' ? 'bg-surface shadow-soft text-foreground' : 'text-muted-foreground'
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" /> Board
+          </button>
+          <button
+            onClick={() => setView('list')}
+            aria-pressed={view === 'list'}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${
+              view === 'list' ? 'bg-surface shadow-soft text-foreground' : 'text-muted-foreground'
+            }`}
+          >
+            <ListIcon className="h-3.5 w-3.5" /> List
+          </button>
+        </div>
       </div>
+
+      {view === 'list' ? (
+        <CrmList contacts={contacts} stages={stages} onSelect={selectContact} />
+      ) : (
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {stages.map((stage, index) => {
+            const stageContacts = contacts.filter((c) => c.stageId === stage.id)
+            // Mirrors deleteStage's neighbour pick: left, or right for the first stage.
+            const neighbour = index === 0 ? stages[1] : stages[index - 1]
+
+            return (
+              <div
+                key={stage.id}
+                onDragOver={(e) => { e.preventDefault(); setDragOverStageId(stage.id) }}
+                onDragLeave={() => setDragOverStageId((prev) => (prev === stage.id ? null : prev))}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  setDragOverStageId(null)
+                  const contactId = e.dataTransfer.getData('text/plain')
+                  if (contactId) restage(contactId, stage.id)
+                }}
+                className={`w-72 shrink-0 rounded-2xl border p-2 transition ${
+                  dragOverStageId === stage.id ? 'border-galli/50 bg-galli/5' : 'border-border bg-muted/30'
+                }`}
+              >
+                <CrmStageHeader
+                  stage={stage}
+                  count={stageContacts.length}
+                  neighbourName={neighbour?.name ?? 'another stage'}
+                  onRename={renameStage}
+                  onRecolor={recolorStage}
+                  onDelete={deleteStage}
+                />
+                <div className="space-y-2">
+                  {stageContacts.length === 0 ? (
+                    <p className="px-2 py-6 text-center text-xs text-muted-foreground">No contacts yet.</p>
+                  ) : (
+                    stageContacts.map((contact) => (
+                      <CrmContactCard
+                        key={contact.id}
+                        contact={contact}
+                        stages={stages}
+                        onRestage={restage}
+                        onSelect={selectContact}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {selectedContactId && (
+        <CrmContactDrawer
+          contactId={selectedContactId}
+          stages={stages}
+          onClose={() => setSelectedContactId(null)}
+          onUpdated={applyContactUpdate}
+        />
+      )}
     </div>
   )
 }
