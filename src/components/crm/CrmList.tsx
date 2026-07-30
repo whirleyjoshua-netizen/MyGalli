@@ -2,23 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CrmStage } from '@prisma/client'
-import { Calendar, FileText, ListPlus, Download, MessageSquare, StickyNote } from 'lucide-react'
 import { timeAgo } from '@/lib/time-ago'
 import type { CrmContactWithActivity } from './CrmContactCard'
-
-const SOURCE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  booking: Calendar,
-  form: FileText,
-  waitlist: ListPlus,
-  'lead-capture': Download,
-  comment: MessageSquare,
-  note: StickyNote,
-}
-
-function SourceIcon({ source, className }: { source: string; className?: string }) {
-  const Cmp = SOURCE_ICONS[source] || StickyNote
-  return <Cmp className={className} />
-}
+import { SourceIcon } from './source-icons'
 
 export function CrmList({
   contacts: initialContacts,
@@ -34,22 +20,43 @@ export function CrmList({
   const [stageId, setStageId] = useState('')
   const [loading, setLoading] = useState(false)
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Monotonically increasing request id: `clearTimeout` only cancels a timer
+  // that hasn't fired yet, so once a fetch is in flight a later keystroke's
+  // fetch can resolve *before* it. Each run captures its own id and only
+  // applies its result if it is still the most recently issued one — an
+  // older response landing second is silently dropped instead of clobbering
+  // a newer one.
+  const requestId = useRef(0)
 
   useEffect(() => {
+    const controller = new AbortController()
     const run = () => {
+      const myRequestId = ++requestId.current
       const params = new URLSearchParams()
       if (search.trim()) params.set('q', search.trim())
       if (stageId) params.set('stageId', stageId)
       setLoading(true)
-      fetch(`/api/crm/contacts?${params.toString()}`)
+      fetch(`/api/crm/contacts?${params.toString()}`, { signal: controller.signal })
         .then((res) => (res.ok ? res.json() : { contacts: [] }))
-        .then((data) => setContacts(Array.isArray(data.contacts) ? data.contacts : []))
-        .catch(() => setContacts([]))
-        .finally(() => setLoading(false))
+        .then((data) => {
+          if (myRequestId !== requestId.current) return
+          setContacts(Array.isArray(data.contacts) ? data.contacts : [])
+        })
+        .catch((err) => {
+          if (err?.name === 'AbortError') return
+          if (myRequestId !== requestId.current) return
+          setContacts([])
+        })
+        .finally(() => {
+          if (myRequestId === requestId.current) setLoading(false)
+        })
     }
     if (debounce.current) clearTimeout(debounce.current)
     debounce.current = setTimeout(run, search.trim() ? 300 : 0)
-    return () => { if (debounce.current) clearTimeout(debounce.current) }
+    return () => {
+      if (debounce.current) clearTimeout(debounce.current)
+      controller.abort()
+    }
   }, [search, stageId])
 
   const sorted = useMemo(() => {

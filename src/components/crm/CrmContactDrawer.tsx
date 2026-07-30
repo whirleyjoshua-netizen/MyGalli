@@ -3,25 +3,11 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CrmActivity, CrmStage } from '@prisma/client'
-import { Calendar, FileText, ListPlus, Download, MessageSquare, StickyNote } from 'lucide-react'
 import { timeAgo } from '@/lib/time-ago'
 import type { CrmContactWithActivity } from './CrmContactCard'
+import { SourceIcon } from './source-icons'
 
 type CrmContactDetail = CrmContactWithActivity & { activities: CrmActivity[] }
-
-const SOURCE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  booking: Calendar,
-  form: FileText,
-  waitlist: ListPlus,
-  'lead-capture': Download,
-  comment: MessageSquare,
-  note: StickyNote,
-}
-
-function SourceIcon({ source, className }: { source: string; className?: string }) {
-  const Cmp = SOURCE_ICONS[source] || StickyNote
-  return <Cmp className={className} />
-}
 
 /**
  * Contact detail drawer: identity fields up top (supporting cast), the
@@ -151,7 +137,14 @@ export function CrmContactDrawer({
       })
       if (res.ok) {
         const activity: CrmActivity = await res.json()
-        setContact((c) => (c ? { ...c, activities: [activity, ...c.activities] } : c))
+        if (contact) {
+          const activities = [activity, ...contact.activities]
+          setContact({ ...contact, activities })
+          // Propagate the new most-recent activity to the parent's copy too —
+          // the board/list "last activity" column sorts on activities[0] and
+          // would otherwise stay stale until an unrelated refetch.
+          onUpdated({ id: contact.id, activities })
+        }
         setNoteText('')
       }
     } finally {

@@ -1,23 +1,10 @@
 'use client'
 
 import type { CrmActivity, CrmContact, CrmStage } from '@prisma/client'
-import { FileText, Calendar, Clock3, MessageSquare, Mail, StickyNote } from 'lucide-react'
+import { Clock3 } from 'lucide-react'
+import { SourceIcon } from './source-icons'
 
 export type CrmContactWithActivity = CrmContact & { activities: CrmActivity[] }
-
-const SOURCE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  form: FileText,
-  booking: Calendar,
-  waitlist: Clock3,
-  'lead-capture': Mail,
-  comment: MessageSquare,
-  note: StickyNote,
-}
-
-function SourceIcon({ source, className }: { source: string; className?: string }) {
-  const Cmp = SOURCE_ICONS[source] || StickyNote
-  return <Cmp className={className} />
-}
 
 export function CrmContactCard({
   contact,
