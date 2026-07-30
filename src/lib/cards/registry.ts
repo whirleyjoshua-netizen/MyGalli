@@ -118,6 +118,35 @@ export function listedApps(): CardProviderConfig[] {
   return Object.values(CARD_PROVIDERS).filter((p) => p.listed)
 }
 
+// Full-page tools listed in the Apps storefront. Deliberately separate from
+// CARD_PROVIDERS: cards render inside a page canvas, tools are dashboard
+// routes. Merging the two later is easy; untangling them is not.
+export interface AppToolConfig {
+  id: string
+  name: string
+  description: string
+  icon: string // Lucide icon name
+  href: string
+  status: 'live' | 'coming-soon'
+  plan: 'free' | 'pro'
+}
+
+export const APP_TOOLS: Record<string, AppToolConfig> = {
+  crm: {
+    id: 'crm',
+    name: 'CRM',
+    description: 'Every lead from your pages — bookings, forms, waitlists — in one pipeline.',
+    icon: 'Users',
+    href: '/crm',
+    status: 'live',
+    plan: 'free',
+  },
+}
+
+export function listedTools(): AppToolConfig[] {
+  return Object.values(APP_TOOLS)
+}
+
 // Achievement type icons + colors (maps to Vouch's 12 types)
 export const ACHIEVEMENT_ICONS: Record<string, { icon: string; color: string }> = {
   delivery: { icon: 'Package', color: '#3b82f6' },

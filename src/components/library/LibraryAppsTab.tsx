@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus, Check, Trash2, ShieldCheck, Share2, Blocks, Puzzle, Link2, Users, Sprout, Code2 } from 'lucide-react'
-import { listedApps } from '@/lib/cards/registry'
+import { listedApps, listedTools } from '@/lib/cards/registry'
 import { useAuthStore } from '@/lib/store'
 import { isPro } from '@/lib/plan'
 import { ProBadge } from '@/components/pro/ProBadge'
@@ -26,6 +27,15 @@ function ProviderIcon({ name, className }: { name: string; className?: string })
   return <Cmp className={className} />
 }
 
+// Explicit map of the icons listed tools use.
+const TOOL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  Users,
+}
+function ToolIcon({ name, className }: { name: string; className?: string }) {
+  const Cmp = TOOL_ICONS[name] || Blocks
+  return <Cmp className={className} />
+}
+
 // Featured presentation config (chips + Pro flag + illustration are UI-only,
 // not in the registry). Order here is the display order.
 const FEATURED: { id: string; variant: AppIllustrationVariant; pro: boolean; chips: string[] }[] = [
@@ -45,6 +55,7 @@ export function LibraryAppsTab({ query = '' }: { query?: string }) {
   const { user } = useAuthStore()
   const pro = isPro(user)
   const apps = listedApps()
+  const tools = listedTools()
   const [items, setItems] = useState<LibItem[]>([])
   const [pending, setPending] = useState<string | null>(null)
   const [upgradeOpen, setUpgradeOpen] = useState(false)
@@ -112,7 +123,8 @@ export function LibraryAppsTab({ query = '' }: { query?: string }) {
     .map((f) => ({ ...f, app: apps.find((a) => a.id === f.id) }))
     .filter((f): f is typeof f & { app: NonNullable<typeof f.app> } => Boolean(f.app) && matches(f.app!))
   const rest = apps.filter((a) => !featuredIds.has(a.id) && matches(a))
-  const nothing = q !== '' && featured.length === 0 && rest.length === 0
+  const matchingTools = tools.filter((t) => matches(t))
+  const nothing = q !== '' && featured.length === 0 && rest.length === 0 && matchingTools.length === 0
 
   return (
     <div>
@@ -120,6 +132,50 @@ export function LibraryAppsTab({ query = '' }: { query?: string }) {
         <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
           {error}
         </div>
+      )}
+
+      {/* Tools — full-page dashboard routes, distinct from cards */}
+      {matchingTools.length > 0 && (
+        <section className="mb-8">
+          {!q && (
+            <div className="mb-4">
+              <h2 className="text-lg font-bold">Tools</h2>
+              <p className="text-sm text-muted-foreground">Full dashboards to run your business from My Galli.</p>
+            </div>
+          )}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {matchingTools.map((tool) => {
+              const isComingSoon = tool.status === 'coming-soon'
+              return (
+                <Link
+                  key={tool.id}
+                  href={isComingSoon ? '#' : tool.href}
+                  aria-disabled={isComingSoon}
+                  className={`flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-soft transition ${
+                    isComingSoon ? 'pointer-events-none opacity-70' : 'hover:border-galli/40'
+                  }`}
+                >
+                  <div className="mb-3 flex items-center gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-galli/15 text-galli-dark">
+                      <ToolIcon name={tool.icon} className="h-5 w-5" />
+                    </span>
+                    <h3 className="font-bold">{tool.name}</h3>
+                  </div>
+                  <p className="flex-1 text-sm leading-relaxed text-muted-foreground">{tool.description}</p>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    {isComingSoon ? (
+                      <span className="inline-flex rounded-full bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground">Coming soon</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background transition group-hover:opacity-90">
+                        Open
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
       )}
 
       {/* Featured */}
