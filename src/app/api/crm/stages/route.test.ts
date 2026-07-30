@@ -66,7 +66,17 @@ describe('PATCH /api/crm/stages/[id]', () => {
     ;(db.crmStage.findFirst as any).mockResolvedValue(null)
     const res = await PATCH(req({ name: 'Nope' }), ctx('theirs'))
     expect(res.status).toBe(404)
+    expect(db.crmStage.findFirst).toHaveBeenCalledWith({ where: { id: 'theirs', ownerId: 'u1' } })
     expect(db.crmStage.update).not.toHaveBeenCalled()
+  })
+
+  it('scopes the update to the owner', async () => {
+    const res = await PATCH(req({ name: 'Renamed' }), ctx('s1'))
+    expect(res.status).toBe(200)
+    expect(db.crmStage.update).toHaveBeenCalledWith({
+      where: { id: 's1', ownerId: 'u1' },
+      data: { name: 'Renamed' },
+    })
   })
 })
 

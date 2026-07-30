@@ -21,7 +21,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
   if (typeof body.name === 'string' && body.name.trim()) data.name = body.name.trim().slice(0, 40)
   if (typeof body.color === 'string') data.color = body.color.slice(0, 9)
 
-  return NextResponse.json(await db.crmStage.update({ where: { id }, data }))
+  return NextResponse.json(await db.crmStage.update({ where: { id, ownerId: user.id }, data }))
 }
 
 export async function DELETE(request: NextRequest, { params }: Ctx) {
