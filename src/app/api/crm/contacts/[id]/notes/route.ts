@@ -34,5 +34,7 @@ export async function POST(request: NextRequest, { params }: Ctx) {
     },
   })
 
+  await db.crmContact.update({ where: { id, ownerId: user.id }, data: { updatedAt: new Date() } })
+
   return NextResponse.json(activity, { status: 201 })
 }

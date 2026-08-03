@@ -52,11 +52,31 @@ describe('POST /api/crm/stages', () => {
   })
 
   it('appends the new stage at the end', async () => {
-    ;(db.crmStage.count as any).mockResolvedValue(4)
+    ;(db.crmStage.findFirst as any).mockResolvedValue({ order: 3 })
     const res = await POST(req({ name: 'Lost', color: '#ef4444' }))
     expect(res.status).toBe(201)
     expect(db.crmStage.create).toHaveBeenCalledWith({
       data: { ownerId: 'u1', name: 'Lost', color: '#ef4444', order: 4 },
+    })
+  })
+
+  it('derives order from the max, not the count, so a mid-board gap does not collide', async () => {
+    // Only 3 stages remain (e.g. one was deleted), but the highest surviving
+    // order is 7 — a count-based order of 3 would collide with an existing stage.
+    ;(db.crmStage.findFirst as any).mockResolvedValue({ order: 7 })
+    const res = await POST(req({ name: 'Lost', color: '#ef4444' }))
+    expect(res.status).toBe(201)
+    expect(db.crmStage.create).toHaveBeenCalledWith({
+      data: { ownerId: 'u1', name: 'Lost', color: '#ef4444', order: 8 },
+    })
+  })
+
+  it('starts the first stage at order 0 when none exist', async () => {
+    ;(db.crmStage.findFirst as any).mockResolvedValue(null)
+    const res = await POST(req({ name: 'New' }))
+    expect(res.status).toBe(201)
+    expect(db.crmStage.create).toHaveBeenCalledWith({
+      data: { ownerId: 'u1', name: 'New', color: '#39D98A', order: 0 },
     })
   })
 })
@@ -77,6 +97,18 @@ describe('PATCH /api/crm/stages/[id]', () => {
       where: { id: 's1', ownerId: 'u1' },
       data: { name: 'Renamed' },
     })
+  })
+
+  it('409s a rename that collides with an existing stage name', async () => {
+    ;(db.crmStage.update as any).mockRejectedValue({ code: 'P2002' })
+    const res = await PATCH(req({ name: 'Won' }), ctx('s1'))
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual({ error: 'You already have a stage with that name' })
+  })
+
+  it('rethrows a non-P2002 error from the update', async () => {
+    ;(db.crmStage.update as any).mockRejectedValue(new Error('db down'))
+    await expect(PATCH(req({ name: 'Renamed' }), ctx('s1'))).rejects.toThrow('db down')
   })
 })
 

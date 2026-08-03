@@ -21,7 +21,14 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
   if (typeof body.name === 'string' && body.name.trim()) data.name = body.name.trim().slice(0, 40)
   if (typeof body.color === 'string') data.color = body.color.slice(0, 9)
 
-  return NextResponse.json(await db.crmStage.update({ where: { id, ownerId: user.id }, data }))
+  try {
+    return NextResponse.json(await db.crmStage.update({ where: { id, ownerId: user.id }, data }))
+  } catch (e: any) {
+    if (e?.code === 'P2002') {
+      return NextResponse.json({ error: 'You already have a stage with that name' }, { status: 409 })
+    }
+    throw e
+  }
 }
 
 export async function DELETE(request: NextRequest, { params }: Ctx) {

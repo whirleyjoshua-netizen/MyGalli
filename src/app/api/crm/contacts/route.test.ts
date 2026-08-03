@@ -138,4 +138,12 @@ describe('POST /api/crm/contacts/[id]/notes', () => {
     expect(arg.data.payload.text.length).toBe(5000)
     expect(arg.data.summary.length).toBe(280)
   })
+
+  it('bumps the contact updatedAt so it resorts to the top of the list', async () => {
+    await POST_NOTE(req('http://localhost/x', { text: 'Called, left voicemail' }), ctx('c1'))
+    expect(db.crmContact.update).toHaveBeenCalledWith({
+      where: { id: 'c1', ownerId: 'u1' },
+      data: { updatedAt: expect.any(Date) },
+    })
+  })
 })

@@ -19,7 +19,12 @@ export async function POST(request: NextRequest) {
   if (!name) return NextResponse.json({ error: 'name is required' }, { status: 400 })
 
   const color = typeof body.color === 'string' ? body.color.slice(0, 9) : '#39D98A'
-  const order = await db.crmStage.count({ where: { ownerId: user.id } })
+  const last = await db.crmStage.findFirst({
+    where: { ownerId: user.id },
+    orderBy: { order: 'desc' },
+    select: { order: true },
+  })
+  const order = (last?.order ?? -1) + 1
 
   try {
     const stage = await db.crmStage.create({ data: { ownerId: user.id, name, color, order } })

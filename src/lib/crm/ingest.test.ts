@@ -82,16 +82,35 @@ describe('ingestLead', () => {
 
     expect(db.crmContact.update).toHaveBeenCalledWith({
       where: { id: 'existing' },
-      data: { name: 'Ada' },
+      data: { name: 'Ada', updatedAt: expect.any(Date) },
     })
   })
 
-  it('never overwrites a name the owner may have edited', async () => {
+  it('never overwrites a name the owner may have edited, but still bumps updatedAt', async () => {
     ;(db.crmContact.findUnique as any).mockResolvedValue({ id: 'existing', name: 'Ada Lovelace', email: 'ada@x.com' })
 
     await ingestLead({ ...base, name: 'ada' })
 
-    expect(db.crmContact.update).not.toHaveBeenCalled()
+    expect(db.crmContact.update).toHaveBeenCalledWith({
+      where: { id: 'existing' },
+      data: { updatedAt: expect.any(Date) },
+    })
+    const arg = (db.crmContact.update as any).mock.calls[0][0]
+    expect(arg.data.name).toBeUndefined()
+  })
+
+  it('bumps updatedAt on a repeat touch from an already-named existing contact (the common case)', async () => {
+    // This is the exact case the old code skipped: the contact already
+    // exists and already has a name, so no name backfill happens — but a
+    // new activity was still written and the sort key must track it.
+    ;(db.crmContact.findUnique as any).mockResolvedValue({ id: 'existing', name: 'Ada Lovelace', email: 'ada@x.com' })
+
+    await ingestLead(base)
+
+    expect(db.crmContact.update).toHaveBeenCalledWith({
+      where: { id: 'existing' },
+      data: { updatedAt: expect.any(Date) },
+    })
   })
 
   it('drops the lead entirely when there is no usable email', async () => {

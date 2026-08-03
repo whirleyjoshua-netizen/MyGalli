@@ -51,9 +51,13 @@ export async function ingestLead(input: IngestLeadInput): Promise<void> {
 
     if (contact) {
       // Backfill only. The owner may have corrected the name by hand, and a
-      // later form submit must not clobber that.
+      // later form submit must not clobber that. Bump updatedAt regardless,
+      // since sorting relies on it tracking the latest activity, not the
+      // latest row edit.
       if (!contact.name && name) {
-        await db.crmContact.update({ where: { id: contact.id }, data: { name } })
+        await db.crmContact.update({ where: { id: contact.id }, data: { name, updatedAt: new Date() } })
+      } else {
+        await db.crmContact.update({ where: { id: contact.id }, data: { updatedAt: new Date() } })
       }
     } else {
       const stages = await ensureStages(ownerId)
