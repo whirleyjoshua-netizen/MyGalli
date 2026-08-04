@@ -77,6 +77,12 @@ export function CrmBoard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
       })
+      if (res.status === 409) {
+        const data = await res.json().catch(() => ({}))
+        revert()
+        setError(data.error || 'You already have a stage with that name.')
+        return
+      }
       if (!res.ok) {
         revert()
         setError('Could not rename that stage. Please try again.')
