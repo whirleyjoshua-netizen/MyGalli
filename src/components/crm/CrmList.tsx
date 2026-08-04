@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CrmStage } from '@prisma/client'
-import { timeAgo } from '@/lib/time-ago'
+import { relativeTime } from './relative-time'
 import type { CrmContactWithActivity } from './CrmContactCard'
 import { SourceIcon } from './source-icons'
 
@@ -58,6 +58,21 @@ export function CrmList({
       controller.abort()
     }
   }, [search, stageId])
+
+  // The drawer is rendered by CrmBoard, so its saves land in CrmBoard's
+  // contacts and reach us as a new `initialContacts` prop — which useState
+  // ignores after mount. Without this, editing a contact from list view left
+  // the row showing stale Stage and Last-activity values until the user
+  // toggled views. Merge by id rather than replacing the array, so an active
+  // search or stage filter is not thrown away by an unrelated edit.
+  useEffect(() => {
+    setContacts((prev) =>
+      prev.map((c) => {
+        const fresh = initialContacts.find((x) => x.id === c.id)
+        return fresh ? { ...c, ...fresh } : c
+      })
+    )
+  }, [initialContacts])
 
   const sorted = useMemo(() => {
     const lastActivityAt = (c: CrmContactWithActivity) =>
@@ -131,7 +146,7 @@ export function CrmList({
                       )}
                     </td>
                     <td className="px-4 py-2 text-muted-foreground">
-                      {latest ? `${timeAgo(new Date(latest.occurredAt).toISOString())} ago` : '—'}
+                      {latest ? relativeTime(latest.occurredAt) : '—'}
                     </td>
                   </tr>
                 )

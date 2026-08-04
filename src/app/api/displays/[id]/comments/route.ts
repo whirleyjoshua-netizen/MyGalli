@@ -92,7 +92,11 @@ export async function POST(
     await ingestLead({
       displayId: id,
       email: authorEmail,
-      name: comment.authorName,
+      // The raw name, not the "Anonymous" display fallback. ingestLead only
+      // ever backfills a missing name, so storing "Anonymous" here would brand
+      // the contact permanently — a later booking carrying the person's real
+      // name could never replace it.
+      name: typeof authorName === 'string' ? authorName.trim() || null : null,
       source: 'comment',
       sourceId: comment.id,
       summary: 'Left a comment',

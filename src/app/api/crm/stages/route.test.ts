@@ -120,6 +120,12 @@ describe('DELETE /api/crm/stages/[id]', () => {
     expect(await res.json()).toEqual({ movedTo: 'a', moved: 3 })
   })
 
+  it('409s a concurrent-edit conflict rather than surfacing a 500', async () => {
+    ;(deleteStage as any).mockResolvedValue({ ok: false, reason: 'conflict' })
+    const res = await DELETE(req(), ctx('s1'))
+    expect(res.status).toBe(409)
+  })
+
   it('409s on the last remaining stage', async () => {
     ;(deleteStage as any).mockResolvedValue({ ok: false, reason: 'last-stage' })
     const res = await DELETE(req(), ctx('s1'))

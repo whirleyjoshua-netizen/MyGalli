@@ -39,9 +39,16 @@ export async function DELETE(request: NextRequest, { params }: Ctx) {
   const result = await deleteStage(user.id, id)
 
   if (!result.ok) {
-    return result.reason === 'last-stage'
-      ? NextResponse.json({ error: 'You need at least one stage' }, { status: 409 })
-      : NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (result.reason === 'last-stage') {
+      return NextResponse.json({ error: 'You need at least one stage' }, { status: 409 })
+    }
+    if (result.reason === 'conflict') {
+      return NextResponse.json(
+        { error: 'Your stages changed while we were deleting. Please try again.' },
+        { status: 409 }
+      )
+    }
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
   return NextResponse.json({ movedTo: result.movedTo, moved: result.moved })

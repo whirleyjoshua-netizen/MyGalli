@@ -6,6 +6,20 @@ import { rateLimit } from '@/lib/rate-limit'
 import { ingestLead } from '@/lib/crm/ingest'
 import { sniffFormContact } from '@/lib/crm/email'
 
+// Ceiling on the JSON we copy into CrmActivity.payload. Past this we keep a
+// pointer to the FormResponse row instead of the answers themselves.
+const MAX_PAYLOAD_BYTES = 20_000
+
+function boundedPayload(responses: unknown, formResponseId: string): Record<string, unknown> {
+  try {
+    const serialized = JSON.stringify(responses)
+    if (serialized && serialized.length <= MAX_PAYLOAD_BYTES) return { responses }
+  } catch {
+    // Circular or otherwise unserializable — fall through to the pointer.
+  }
+  return { truncated: true, formResponseId }
+}
+
 export async function POST(request: NextRequest) {
   // 30 form submissions per minute per IP
   const limited = await rateLimit(request, { limit: 30, windowMs: 60_000, prefix: 'form-submit' })
@@ -62,7 +76,12 @@ export async function POST(request: NextRequest) {
       source: 'form',
       sourceId: formResponse.id,
       summary: 'Submitted a form',
-      payload: { responses },
+      // Bounded copy only. This route is unauthenticated and `responses` is
+      // whatever the visitor posted, so storing it verbatim doubled the
+      // storage of every submission and handed an attacker an unbounded JSONB
+      // write. The full answers already live on the FormResponse row; the CRM
+      // timeline only needs enough to recognise the touch.
+      payload: boundedPayload(responses, formResponse.id),
     }).catch(() => {})
 
     return NextResponse.json({

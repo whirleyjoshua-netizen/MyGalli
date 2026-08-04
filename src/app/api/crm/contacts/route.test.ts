@@ -90,6 +90,41 @@ describe('POST /api/crm/contacts', () => {
 })
 
 describe('PATCH /api/crm/contacts/[id]', () => {
+  it('clears the name when sent null', async () => {
+    // The drawer sends `null` to clear a name. Accepting only strings dropped
+    // it, and the route still answered 200 — so the field showed empty while
+    // the database kept the old value.
+    const res = await PATCH(req('http://localhost/x', { name: null }), ctx('c1'))
+    expect(res.status).toBe(200)
+    expect(db.crmContact.update).toHaveBeenCalledWith({
+      where: { id: 'c1', ownerId: 'u1' },
+      data: expect.objectContaining({ name: null }),
+    })
+  })
+
+  it('replaces the merge key when the email is cleared', async () => {
+    // Leaving the old mergeKey behind meant future touches from that address
+    // kept merging onto a contact the owner had deliberately unlinked.
+    const res = await PATCH(req('http://localhost/x', { email: null }), ctx('c1'))
+    expect(res.status).toBe(200)
+    const data = (db.crmContact.update as any).mock.calls[0][0].data
+    expect(data.email).toBeNull()
+    expect(data.mergeKey).toMatch(/^manual:/)
+  })
+
+  it('keeps the merge key in step with a corrected email', async () => {
+    await PATCH(req('http://localhost/x', { email: ' ADA@X.com ' }), ctx('c1'))
+    const data = (db.crmContact.update as any).mock.calls[0][0].data
+    expect(data.email).toBe('ada@x.com')
+    expect(data.mergeKey).toBe('ada@x.com')
+  })
+
+  it('400s an unparseable follow-up date instead of 500ing', async () => {
+    const res = await PATCH(req('http://localhost/x', { followUpAt: 'garbage' }), ctx('c1'))
+    expect(res.status).toBe(400)
+    expect(db.crmContact.update).not.toHaveBeenCalled()
+  })
+
   it('404s a contact owned by someone else', async () => {
     ;(db.crmContact.findFirst as any).mockResolvedValue(null)
     const res = await PATCH(req('http://localhost/x', { stageId: 's2' }), ctx('theirs'))

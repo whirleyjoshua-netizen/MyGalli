@@ -36,10 +36,20 @@ beforeEach(() => {
       return {}
     })
 
-    const result = await fn({
-      crmContact: { updateMany: mockUpdateMany },
-      crmStage: { delete: mockDelete },
+    const mockQueryRaw = vi.fn(async () => {
+      callOrder.push('lockStages')
+      return []
     })
+
+    const result = await fn({
+      // The stage list is now read *inside* the transaction, behind a
+      // SELECT ... FOR UPDATE, so the mock tx has to serve it too.
+      $queryRaw: mockQueryRaw,
+      crmContact: { updateMany: mockUpdateMany },
+      crmStage: { delete: mockDelete, findMany: db.crmStage.findMany },
+    })
+
+    ;(db.$transaction as any).lastQueryRaw = mockQueryRaw
 
     // Store mocks on the db mock for assertions
     ;(db.$transaction as any).lastUpdateMany = mockUpdateMany
@@ -84,7 +94,7 @@ describe('deleteStage', () => {
 
     expect(result).toEqual({ ok: true, movedTo: 'a', moved: 3 })
     // Verify reassignment happens before delete
-    expect(callOrder).toEqual(['updateMany', 'delete'])
+    expect(callOrder).toEqual(['lockStages', 'updateMany', 'delete'])
     // Verify updateMany reassigns to the left neighbor (stage 'a')
     expect((db.$transaction as any).lastUpdateMany).toHaveBeenCalledWith({
       where: { ownerId: 'u1', stageId: 'b' },
@@ -103,7 +113,7 @@ describe('deleteStage', () => {
 
     expect(result).toEqual({ ok: true, movedTo: 'b', moved: 3 })
     // Verify reassignment happens before delete
-    expect(callOrder).toEqual(['updateMany', 'delete'])
+    expect(callOrder).toEqual(['lockStages', 'updateMany', 'delete'])
     // Verify updateMany reassigns to the right neighbor (stage 'b')
     expect((db.$transaction as any).lastUpdateMany).toHaveBeenCalledWith({
       where: { ownerId: 'u1', stageId: 'a' },
@@ -122,7 +132,7 @@ describe('deleteStage', () => {
 
     expect(result).toEqual({ ok: true, movedTo: 'b', moved: 3 })
     // Verify reassignment happens before delete
-    expect(callOrder).toEqual(['updateMany', 'delete'])
+    expect(callOrder).toEqual(['lockStages', 'updateMany', 'delete'])
     // Verify updateMany reassigns to the left neighbor (stage 'b')
     expect((db.$transaction as any).lastUpdateMany).toHaveBeenCalledWith({
       where: { ownerId: 'u1', stageId: 'c' },
@@ -136,13 +146,43 @@ describe('deleteStage', () => {
     ;(db.crmStage.findMany as any).mockResolvedValue([stage('a', 0)])
 
     expect(await deleteStage('u1', 'a')).toEqual({ ok: false, reason: 'last-stage' })
-    expect(db.$transaction).not.toHaveBeenCalled()
+    // The guard now runs inside the transaction (so it reads a locked stage
+    // list), so what matters is that neither write ran — not that the
+    // transaction was skipped.
+    expect(callOrder).toEqual(['lockStages'])
   })
 
   it('reports not-found for a stage the owner does not have', async () => {
     ;(db.crmStage.findMany as any).mockResolvedValue([stage('a', 0), stage('b', 1)])
 
     expect(await deleteStage('u1', 'someone-elses')).toEqual({ ok: false, reason: 'not-found' })
-    expect(db.$transaction).not.toHaveBeenCalled()
+    expect(callOrder).toEqual(['lockStages'])
+  })
+
+  it('locks the owner stage rows before reading them', async () => {
+    ;(db.crmStage.findMany as any).mockResolvedValue([stage('a', 0), stage('b', 1)])
+
+    await deleteStage('u1', 'b')
+
+    // Reading the list outside the transaction let two concurrent deletes
+    // both clear the last-stage guard on a stale snapshot and leave the owner
+    // with zero stages.
+    expect(callOrder[0]).toBe('lockStages')
+    expect((db.$transaction as any).lastQueryRaw).toHaveBeenCalled()
+  })
+
+  it('reports a conflict rather than throwing when a concurrent delete wins', async () => {
+    ;(db.crmStage.findMany as any).mockResolvedValue([stage('a', 0), stage('b', 1)])
+    const fkViolation = Object.assign(new Error('FK violation'), { code: 'P2003' })
+    ;(db.$transaction as any).mockRejectedValue(fkViolation)
+
+    expect(await deleteStage('u1', 'b')).toEqual({ ok: false, reason: 'conflict' })
+  })
+
+  it('still propagates unexpected database errors', async () => {
+    ;(db.crmStage.findMany as any).mockResolvedValue([stage('a', 0), stage('b', 1)])
+    ;(db.$transaction as any).mockRejectedValue(new Error('db down'))
+
+    await expect(deleteStage('u1', 'b')).rejects.toThrow('db down')
   })
 })

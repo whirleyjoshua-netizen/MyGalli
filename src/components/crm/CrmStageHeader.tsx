@@ -22,6 +22,7 @@ export function CrmStageHeader({
   onDelete: (stageId: string) => Promise<{ ok: true } | { ok: false; error: string }>
 }) {
   const [name, setName] = useState(stage.name)
+  const [color, setColor] = useState(stage.color)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,6 +31,7 @@ export function CrmStageHeader({
   useEffect(() => setMounted(true), [])
 
   useEffect(() => setName(stage.name), [stage.name])
+  useEffect(() => setColor(stage.color), [stage.color])
 
   const commitRename = () => {
     const trimmed = name.trim()
@@ -62,8 +64,12 @@ export function CrmStageHeader({
       />
       <input
         type="color"
-        value={stage.color}
-        onChange={(e) => onRecolor(stage.id, e.target.value)}
+        value={color}
+        // Some browsers fire `change` continuously while the picker is being
+        // dragged, which would send a PATCH per intermediate colour. Track the
+        // swatch locally and commit once the picker closes.
+        onChange={(e) => setColor(e.target.value)}
+        onBlur={() => color !== stage.color && onRecolor(stage.id, color)}
         aria-label="Stage color"
         className="h-5 w-5 shrink-0 cursor-pointer rounded border border-border bg-transparent p-0"
       />

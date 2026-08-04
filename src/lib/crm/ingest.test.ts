@@ -24,7 +24,7 @@ const base = {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  ;(db.display.findUnique as any).mockResolvedValue({ id: 'd1', userId: 'u1' })
+  ;(db.display.findUnique as any).mockResolvedValue({ id: 'd1', userId: 'u1', published: true })
   ;(ensureStages as any).mockResolvedValue([{ id: 'stage-new', order: 0 }, { id: 'stage-2', order: 1 }])
   ;(db.crmContact.findUnique as any).mockResolvedValue(null)
   ;(db.crmContact.create as any).mockResolvedValue({ id: 'c1' })
@@ -135,6 +135,54 @@ describe('ingestLead', () => {
 
     expect(db.crmContact.create).not.toHaveBeenCalled()
     expect(db.crmActivity.create).not.toHaveBeenCalled()
+  })
+
+  it('is a no-op for an unpublished display', async () => {
+    // The comments route does not check `published` itself, so without this
+    // guard knowing a draft display id was enough to plant a contact in a
+    // stranger's pipeline.
+    ;(db.display.findUnique as any).mockResolvedValue({ id: 'd1', userId: 'u1', published: false })
+
+    await ingestLead(base)
+
+    expect(db.crmContact.create).not.toHaveBeenCalled()
+    expect(db.crmActivity.create).not.toHaveBeenCalled()
+  })
+
+  it('retries once against a fresh stage list when the target stage is deleted mid-flight', async () => {
+    // The owner deleting their leftmost stage between ensureStages and create
+    // used to lose the lead silently: P2003 fell into the blanket catch after
+    // the visitor already got a 200.
+    const fkViolation = Object.assign(new Error('FK violation'), { code: 'P2003' })
+    ;(db.crmContact.create as any)
+      .mockRejectedValueOnce(fkViolation)
+      .mockResolvedValueOnce({ id: 'c-retry' })
+    ;(ensureStages as any)
+      .mockResolvedValueOnce([{ id: 'stage-gone', order: 0 }])
+      .mockResolvedValueOnce([{ id: 'stage-fresh', order: 0 }])
+
+    await ingestLead(base)
+
+    expect(ensureStages).toHaveBeenCalledTimes(2)
+    expect(db.crmContact.create).toHaveBeenLastCalledWith({
+      data: expect.objectContaining({ stageId: 'stage-fresh' }),
+    })
+    expect(db.crmActivity.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ contactId: 'c-retry' }),
+    })
+  })
+
+  it('gives up after one retry rather than looping forever', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fkViolation = Object.assign(new Error('FK violation'), { code: 'P2003' })
+    ;(db.crmContact.create as any).mockRejectedValue(fkViolation)
+
+    await expect(ingestLead(base)).resolves.toBeUndefined()
+
+    expect(db.crmContact.create).toHaveBeenCalledTimes(2)
+    expect(db.crmActivity.create).not.toHaveBeenCalled()
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
   })
 
   it('swallows and logs a database failure rather than throwing', async () => {

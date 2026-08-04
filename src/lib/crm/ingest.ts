@@ -15,6 +15,29 @@ export interface IngestLeadInput {
   occurredAt?: Date
 }
 
+// Places a brand-new contact in the owner's leftmost stage.
+//
+// The stage list is read and then written to in two statements, and the
+// leftmost stage is exactly the one an owner is most likely to be renaming or
+// deleting. If it disappears between the two, the create hits the Restrict FK
+// with P2003 — which the caller's blanket catch would turn into a silently
+// dropped lead, after the visitor already got a 200. So retry once against a
+// freshly resolved stage list; ensureStages reseeds the defaults if the owner
+// managed to end up with none.
+async function createContact(ownerId: string, email: string, name: string | null) {
+  for (let attempt = 0; ; attempt++) {
+    const stages = await ensureStages(ownerId)
+    try {
+      return await db.crmContact.create({
+        data: { ownerId, stageId: stages[0].id, mergeKey: email, email, name },
+      })
+    } catch (error) {
+      const code = (error as { code?: string })?.code
+      if (code !== 'P2003' || attempt >= 1) throw error
+    }
+  }
+}
+
 // Records a lead against the page owner's CRM.
 //
 // This runs for every user regardless of plan, and it must NEVER throw: it is
@@ -30,9 +53,15 @@ export async function ingestLead(input: IngestLeadInput): Promise<void> {
 
     const display = await db.display.findUnique({
       where: { id: input.displayId },
-      select: { userId: true },
+      select: { userId: true, published: true },
     })
     if (!display) return
+
+    // Only live pages feed the CRM. The forms, waitlist and lead-gen routes
+    // check this themselves, but the comments route does not — so knowing a
+    // draft display's id was enough to plant a contact in a stranger's
+    // pipeline. Checking here covers every seam at once.
+    if (!display.published) return
 
     const ownerId = display.userId
 
@@ -54,16 +83,12 @@ export async function ingestLead(input: IngestLeadInput): Promise<void> {
       // later form submit must not clobber that. Bump updatedAt regardless,
       // since sorting relies on it tracking the latest activity, not the
       // latest row edit.
-      if (!contact.name && name) {
-        await db.crmContact.update({ where: { id: contact.id }, data: { name, updatedAt: new Date() } })
-      } else {
-        await db.crmContact.update({ where: { id: contact.id }, data: { updatedAt: new Date() } })
-      }
-    } else {
-      const stages = await ensureStages(ownerId)
-      contact = await db.crmContact.create({
-        data: { ownerId, stageId: stages[0].id, mergeKey: email, email, name },
+      await db.crmContact.update({
+        where: { id: contact.id },
+        data: { updatedAt: new Date(), ...(!contact.name && name ? { name } : {}) },
       })
+    } else {
+      contact = await createContact(ownerId, email, name)
     }
 
     await db.crmActivity.create({

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CrmActivity, CrmStage } from '@prisma/client'
-import { timeAgo } from '@/lib/time-ago'
+import { relativeTime } from './relative-time'
 import type { CrmContactWithActivity } from './CrmContactCard'
 import { SourceIcon } from './source-icons'
 
@@ -249,7 +249,7 @@ export function CrmContactDrawer({
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-foreground">{activity.summary}</p>
-                        <p className="text-xs text-muted-foreground">{timeAgo(new Date(activity.occurredAt).toISOString())} ago</p>
+                        <p className="text-xs text-muted-foreground">{relativeTime(activity.occurredAt)}</p>
                       </div>
                     </li>
                   ))}

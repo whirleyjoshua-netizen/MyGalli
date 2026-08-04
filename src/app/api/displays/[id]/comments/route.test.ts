@@ -76,8 +76,25 @@ describe('POST /api/displays/[id]/comments', () => {
         source: 'comment',
         sourceId: 'c2',
         email: null,
-        name: 'Anonymous',
+        // Not the "Anonymous" display fallback: ingestLead only ever
+        // backfills a missing name, so storing it would brand the contact
+        // permanently and block a later real name from ever landing.
+        name: null,
       })
+    )
+  })
+
+  it('passes the real commenter name through, not the display fallback', async () => {
+    ;(db.comment.create as any).mockResolvedValue({
+      id: 'c3',
+      authorName: 'Ada Lovelace',
+      authorEmail: 'ada@x.com',
+      content: 'hi',
+    })
+    const res = await POST(req({ authorName: 'Ada Lovelace', authorEmail: 'ada@x.com', content: 'hi' }), ctx)
+    expect(res.status).toBe(201)
+    expect(ingestLead).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'comment', name: 'Ada Lovelace' })
     )
   })
 })

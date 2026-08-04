@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CrmStage } from '@prisma/client'
-import { LayoutGrid, List as ListIcon } from 'lucide-react'
+import { LayoutGrid, List as ListIcon, Plus, UserPlus } from 'lucide-react'
 import { CrmStageHeader } from './CrmStageHeader'
 import { CrmContactCard, type CrmContactWithActivity } from './CrmContactCard'
 import { CrmList } from './CrmList'
 import { CrmContactDrawer } from './CrmContactDrawer'
+import { CrmAddContactDialog } from './CrmAddContactDialog'
 
 export function CrmBoard({
   stages: initialStages,
@@ -23,6 +24,17 @@ export function CrmBoard({
   const [dragOverStageId, setDragOverStageId] = useState<string | null>(null)
   const [view, setView] = useState<'board' | 'list'>('board')
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
+  const [addingStage, setAddingStage] = useState(false)
+  const [newStageName, setNewStageName] = useState('')
+  const [addingContact, setAddingContact] = useState(false)
+
+  // restage()'s revert closure needs the stage list as it stands when the
+  // PATCH fails, not as it was when the drag started — a stage can be deleted
+  // while the request is in flight.
+  const stagesRef = useRef(stages)
+  useEffect(() => {
+    stagesRef.current = stages
+  }, [stages])
 
   const selectContact = (contact: CrmContactWithActivity) => {
     setSelectedContactId(contact.id)
@@ -44,7 +56,20 @@ export function CrmBoard({
     setContacts((prev) => prev.map((c) => (c.id === contactId ? { ...c, stageId } : c)))
 
     const revert = () =>
-      setContacts((prev) => prev.map((c) => (c.id === contactId ? { ...c, stageId: prevStageId } : c)))
+      setContacts((prev) =>
+        prev.map((c) => {
+          if (c.id !== contactId) return c
+          // If the stage we came from was deleted while this PATCH was in
+          // flight, reverting into it would strand the card: the board only
+          // renders columns for known stages, so the contact would vanish from
+          // the UI entirely while the server had it somewhere valid. Fall back
+          // to the first surviving stage instead.
+          const restored = stagesRef.current.some((s) => s.id === prevStageId)
+            ? prevStageId
+            : (stagesRef.current[0]?.id ?? c.stageId)
+          return { ...c, stageId: restored }
+        })
+      )
 
     try {
       const res = await fetch(`/api/crm/contacts/${contactId}`, {
@@ -59,6 +84,57 @@ export function CrmBoard({
     } catch {
       revert()
       setError('Could not move that contact. Please try again.')
+    }
+  }
+
+  // Without this, deleting stages is one-way: an owner who trims the pipeline
+  // down to a single column has no way to build it back up, and the
+  // manual-contact merge key is unreachable.
+  const addStage = async (name: string) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+
+    setError(null)
+    try {
+      const res = await fetch('/api/crm/stages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error || 'Could not add that stage. Please try again.')
+        return
+      }
+      setStages((prev) => [...prev, data])
+      setNewStageName('')
+      setAddingStage(false)
+    } catch {
+      setError('Could not add that stage. Please try again.')
+    }
+  }
+
+  const addContact = async (name: string, email: string) => {
+    setError(null)
+    try {
+      const res = await fetch('/api/crm/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error || 'Could not add that contact. Please try again.')
+        return false
+      }
+      // The POST returns a bare row; the board's contact shape expects an
+      // activities array, and a manual contact genuinely has none yet.
+      setContacts((prev) => [{ ...data, activities: [] }, ...prev])
+      setAddingContact(false)
+      return true
+    } catch {
+      setError('Could not add that contact. Please try again.')
+      return false
     }
   }
 
@@ -147,7 +223,13 @@ export function CrmBoard({
         </div>
       )}
 
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+        <button
+          onClick={() => setAddingContact(true)}
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-foreground shadow-soft transition hover:bg-muted/40"
+        >
+          <UserPlus className="h-3.5 w-3.5" /> Add contact
+        </button>
         <div className="inline-flex rounded-full border border-border bg-muted/30 p-1">
           <button
             onClick={() => setView('board')}
@@ -220,7 +302,68 @@ export function CrmBoard({
               </div>
             )
           })}
+
+          <div className="w-72 shrink-0">
+            {addingStage ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  addStage(newStageName)
+                }}
+                className="rounded-2xl border border-dashed border-border p-3"
+              >
+                <input
+                  autoFocus
+                  value={newStageName}
+                  onChange={(e) => setNewStageName(e.target.value)}
+                  onBlur={() => {
+                    if (!newStageName.trim()) setAddingStage(false)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setNewStageName('')
+                      setAddingStage(false)
+                    }
+                  }}
+                  placeholder="Stage name"
+                  aria-label="New stage name"
+                  maxLength={40}
+                  className="w-full rounded-lg border border-border bg-background px-2 py-1 text-sm"
+                />
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="submit"
+                    className="rounded-full bg-galli px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                    disabled={!newStageName.trim()}
+                  >
+                    Add stage
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewStageName('')
+                      setAddingStage(false)
+                    }}
+                    className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button
+                onClick={() => setAddingStage(true)}
+                className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-border px-3 py-6 text-xs font-semibold text-muted-foreground transition hover:border-galli/50 hover:text-foreground"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add stage
+              </button>
+            )}
+          </div>
         </div>
+      )}
+
+      {addingContact && (
+        <CrmAddContactDialog onCancel={() => setAddingContact(false)} onCreate={addContact} />
       )}
 
       {selectedContactId && (
