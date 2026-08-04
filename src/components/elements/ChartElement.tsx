@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, ChevronDown, ChevronRight, Plus, Trash2, BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, Settings } from 'lucide-react'
+import { X, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import { CanvasElement } from '@/lib/types/canvas'
 
 interface ChartElementProps {
@@ -26,9 +26,7 @@ export function ChartElement({ element, onChange, onDelete, isSelected, onSelect
   const [isAnimating, setIsAnimating] = useState(true)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [hoveredSeries, setHoveredSeries] = useState<number | null>(null)
-  const [showChartType, setShowChartType] = useState(false)
   const [showChartData, setShowChartData] = useState(false)
-  const [showEffects, setShowEffects] = useState(false)
 
   const chartType = element.chartType || 'bar'
   const chartTitle = element.chartTitle || 'Chart Title'
@@ -662,50 +660,8 @@ export function ChartElement({ element, onChange, onDelete, isSelected, onSelect
 
       {isSelected && (
         <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-2">
-          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1">
-            <Settings className="w-3 h-3" />
-            Properties
-          </div>
-
-          {/* Chart Type */}
-          <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowChartType(!showChartType) }}
-              className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                {showChartType ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Chart Type</span>
-              </div>
-              <span className="text-xs text-slate-500 dark:text-slate-400 capitalize flex items-center gap-1">
-                {chartType === 'bar' && <BarChart3 className="w-3 h-3" />}
-                {chartType === 'line' && <LineChartIcon className="w-3 h-3" />}
-                {chartType === 'pie' && <PieChartIcon className="w-3 h-3" />}
-                {chartType}
-              </span>
-            </button>
-            {showChartType && (
-              <div className="p-3 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
-                <div className="flex gap-2">
-                  {(['bar', 'line', 'pie'] as ChartType[]).map((type) => (
-                    <button
-                      key={type}
-                      onClick={(e) => { e.stopPropagation(); onChange({ chartType: type }) }}
-                      className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded text-sm transition-colors ${
-                        chartType === type
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
-                      }`}
-                    >
-                      {type === 'bar' && <BarChart3 className="w-4 h-4" />}
-                      {type === 'line' && <LineChartIcon className="w-4 h-4" />}
-                      {type === 'pie' && <PieChartIcon className="w-4 h-4" />}
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+            Data
           </div>
 
           {/* Chart Data */}
@@ -769,66 +725,6 @@ export function ChartElement({ element, onChange, onDelete, isSelected, onSelect
             </div>
           )}
 
-          {/* Visual Effects */}
-          <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowEffects(!showEffects) }}
-              className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                {showEffects ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Visual Effects</span>
-              </div>
-            </button>
-            {showEffects && (
-              <div className="p-3 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 space-y-3">
-                <label className="flex items-center justify-between cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                  <span className="text-sm text-slate-700 dark:text-slate-300">3D Effect</span>
-                  <input type="checkbox" checked={enable3D} onChange={(e) => onChange({ chartEnable3D: e.target.checked })} className="w-4 h-4 accent-blue-600" />
-                </label>
-                <label className="flex items-center justify-between cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                  <span className="text-sm text-slate-700 dark:text-slate-300">Glow Effect</span>
-                  <input type="checkbox" checked={enableGlow} onChange={(e) => onChange({ chartEnableGlow: e.target.checked })} className="w-4 h-4 accent-blue-600" />
-                </label>
-                <label className="flex items-center justify-between cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                  <span className="text-sm text-slate-700 dark:text-slate-300">Gradient Fill</span>
-                  <input type="checkbox" checked={enableGradient} onChange={(e) => onChange({ chartEnableGradient: e.target.checked })} className="w-4 h-4 accent-blue-600" />
-                </label>
-                <label className="flex items-center justify-between cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                  <span className="text-sm text-slate-700 dark:text-slate-300">Show Values</span>
-                  <input type="checkbox" checked={showValues} onChange={(e) => onChange({ chartShowValues: e.target.checked })} className="w-4 h-4 accent-blue-600" />
-                </label>
-                <label className="flex items-center justify-between cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                  <span className="text-sm text-slate-700 dark:text-slate-300">Show Legend</span>
-                  <input type="checkbox" checked={showLegend} onChange={(e) => onChange({ chartShowLegend: e.target.checked })} className="w-4 h-4 accent-blue-600" />
-                </label>
-                <label className="flex items-center justify-between cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                  <span className="text-sm text-slate-700 dark:text-slate-300">Show Grid</span>
-                  <input type="checkbox" checked={showGrid} onChange={(e) => onChange({ chartShowGrid: e.target.checked })} className="w-4 h-4 accent-blue-600" />
-                </label>
-                {chartType === 'line' && (
-                  <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-700 dark:text-slate-300">Node Size</span>
-                      <span className="text-xs text-slate-500 tabular-nums">{nodeSize}px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="20"
-                      value={nodeSize}
-                      onChange={(e) => onChange({ chartNodeSize: parseInt(e.target.value) })}
-                      className="w-full h-1.5 accent-blue-600"
-                    />
-                    <div className="flex justify-between text-[10px] text-slate-400">
-                      <span>Hidden</span>
-                      <span>Large</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </div>
       )}
     </div>

@@ -125,3 +125,7 @@ export { PublicWorkspaceKpiElement } from './PublicWorkspaceKpiElement'
 // Acknowledgment
 export { AcknowledgmentElement } from './AcknowledgmentElement'
 export { PublicAcknowledgmentElement } from './PublicAcknowledgmentElement'
+
+// Design
+export { BannerElement } from './BannerElement'
+export { PublicBanner } from './PublicBanner'

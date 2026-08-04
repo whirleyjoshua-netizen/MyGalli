@@ -13,11 +13,17 @@ import { PollInspector } from './PollInspector'
 import { CodeInspector } from './CodeInspector'
 import { CardInspector } from './CardInspector'
 import { CommentInspector } from './CommentInspector'
+import { JerseyInspector } from './JerseyInspector'
+import { IndexInspector } from './IndexInspector'
+import { CollectionViewInspector } from './CollectionViewInspector'
+import { BannerInspector } from './BannerInspector'
+import { ChartInspector } from './ChartInspector'
 
 export type Inspector = React.ComponentType<InspectorProps>
 export type { InspectorProps }
 
-// Elements register here as their inspectors are authored (Tasks 11–12).
+// Every element with a config surface registers here; the rest fall through
+// to DefaultInspector. New elements should register from day one.
 export const ELEMENT_INSPECTORS: Partial<Record<ElementType, Inspector>> = {
   image: ImageInspector,
   kpi: KPIInspector,
@@ -30,6 +36,11 @@ export const ELEMENT_INSPECTORS: Partial<Record<ElementType, Inspector>> = {
   code: CodeInspector,
   card: CardInspector,
   comment: CommentInspector,
+  jersey: JerseyInspector,
+  index: IndexInspector,
+  'collection-view': CollectionViewInspector,
+  banner: BannerInspector,
+  chart: ChartInspector,
 }
 
 export function getInspector(type: ElementType): Inspector {

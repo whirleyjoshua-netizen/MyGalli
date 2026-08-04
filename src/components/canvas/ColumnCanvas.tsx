@@ -107,6 +107,8 @@ import {
   HubElement,
   PublicHubElement,
   AcknowledgmentElement,
+  BannerElement,
+  PublicBanner,
 } from '@/components/elements'
 import { PublicCommentSection } from '@/components/elements/PublicCommentSection'
 import { PublicPollElement } from '@/components/elements/PublicPollElement'
@@ -1336,6 +1338,18 @@ export function ColumnCanvas({
           />
         )
 
+      case 'banner':
+        if (isPreviewMode) return <PublicBanner element={element} />
+        return (
+          <BannerElement
+            element={element}
+            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
+            onDelete={() => onDeleteElement(sectionId, columnId, element.id)}
+            isSelected={commonProps.isSelected}
+            onSelect={commonProps.onSelect}
+          />
+        )
+
       case 'countdown':
         if (isPreviewMode) {
           return <PublicCountdownElement element={element} />
@@ -1387,7 +1401,6 @@ export function ColumnCanvas({
             {...commonProps}
             element={element}
             displayId={displayId || ''}
-            onChange={(updates) => onUpdateElement(sectionId, columnId, element.id, updates)}
           />
         )
 

@@ -42,6 +42,7 @@ import { PublicLinkHubElement } from '@/components/elements/PublicLinkHubElement
 import { PublicGalleryElement } from '@/components/elements/PublicGalleryElement'
 import { PublicMapElement } from '@/components/elements/PublicMapElement'
 import { PublicCountdownElement } from '@/components/elements/PublicCountdownElement'
+import { PublicBanner } from '@/components/elements/PublicBanner'
 import { PublicBeforeAfterElement } from '@/components/elements/PublicBeforeAfterElement'
 import { PublicTipJarElement } from '@/components/elements/PublicTipJarElement'
 import { PublicCollectionView } from '@/components/elements/PublicCollectionView'
@@ -558,6 +559,8 @@ function renderElementBody(element: CanvasElement, displayId?: string) {
       return <PublicGalleryElement element={element} />
     case 'map':
       return <PublicMapElement element={element} />
+    case 'banner':
+      return <PublicBanner element={element} />
     case 'countdown':
       return <PublicCountdownElement element={element} />
     case 'before-after':

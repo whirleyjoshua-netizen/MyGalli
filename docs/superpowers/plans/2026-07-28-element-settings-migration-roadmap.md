@@ -25,12 +25,24 @@ For each element with a settings gear, decide:
 - **Config gear → migrate.** The gear opens element *setup* (options, data, trend, colour). Move that into the element's inspector; delete the on-card gear. Keep any inline live-typed fields on the card.
 - **Styling gear → leave.** The gear opens `TextStylePanel` (font, size, colour, alignment). That is the visual card setting; it stays on the card.
 
-## Remaining work — 4 config-gear elements (of the original 11)
+## ✅ COMPLETE — all 11 migrated (2026-07-30)
 
-Registry now has `image`, `kpi`, `button`, `slideshow`, `shortanswer`, `rating`, `mcq`, `poll`, `code`, `card`, `comment`; the rest still fall through to `DefaultInspector`. Each remaining one needs the KPI three-step treatment.
+Nothing remains. Kept below as the record of what moved, what deliberately stayed, and the traps — read it before adding an inspector to a new element.
+
+Registry now has `image`, `kpi`, `button`, `slideshow`, `shortanswer`, `rating`, `mcq`, `poll`, `code`, `card`, `comment`, `jersey`, `index`, `collection-view`, `chart`. Elements without a config surface still fall through to `DefaultInspector`, which is correct.
 
 **Done — the four form elements (2026-07-29):** ShortAnswer, Rating, MCQ, Poll.
-**Done — Code, Card, Comment (2026-07-29).** Each shipped as its own commit with a TDD inspector test.
+**Done — Code, Card, Comment (2026-07-29).**
+**Done — Jersey, Index, CollectionView (2026-07-29).**
+**Done — Chart (2026-07-30).** Each shipped as its own commit with a TDD inspector test.
+
+### For the next element you build
+
+Register an inspector in `panel/inspectors/registry.tsx` from day one. Do not build an on-card gear you will later have to migrate. The card should hold live-typed content, list/row editors, and visual choosers that need preview; everything else belongs in the column.
+
+**Third finding: "config gear" was too narrow a frame.** Index and CollectionView had no gear — they carried always-visible config strips on the card instead. Same problem, same fix. When sweeping the remaining work, look for *any* config surface on the card, not just a gear button.
+
+**☠️ Check the element's default semantics before writing the inspector's `checked=`.** Jersey stores `jerseySignaturesEnabled` and both `JerseyElement` and `PublicJerseyElement` read it as `!== false` — i.e. **unset means ON**. An inspector written with `?? false` would have shown the box unchecked while the page rendered signatures, and the first click would have written `true` (a no-op) instead of turning it off. Grep every reader of the field and match them exactly.
 
 **Second convention settled: a gear whose panel is a *visual chooser* stays on the card**, even when it is not `TextStylePanel`. Comment's Palette/theme picker is the case in point — you choose a theme by seeing it applied. Only non-visual config moves. Expect the same call on Jersey.
 
@@ -44,13 +56,13 @@ Convention settled while doing them: **list-type content (MCQ/Poll options) stay
 | ~~Poll~~ | ~~`PollElement.tsx`~~ | ✅ done — options stayed on the card. |
 | ~~Rating~~ | ~~`RatingElement.tsx`~~ | ✅ done. |
 | ~~ShortAnswer~~ | ~~`ShortAnswerElement.tsx`~~ | ✅ done. |
-| Chart | `ChartElement.tsx` | Largest — type / data rows / 3D effects. **Do LAST.** Split it: config → inspector, data-row editor stays inline (same reasoning as MCQ/Poll options). |
+| ~~Chart~~ | ~~`ChartElement.tsx`~~ | ✅ done — split as planned: title, type, 6 effect toggles + line node size moved; **Chart Data row editor stayed on the card**. Line-chart `chartMultiLineData` has no editor UI at all. |
 | ~~Card~~ | ~~`CardElement.tsx`~~ | ✅ done — whole gear moved (provider, style, dynamic fields); the card is now preview + delete, and its dead `onChange` prop was removed. |
 | ~~Code~~ | ~~`CodeElement.tsx`~~ | ✅ done — also fixed a data-loss bug: ColumnCanvas wrote all five code keys on every partial update, so typing reset language/theme/filename. Now `codeElementPatch()`, unit-tested. |
 | ~~Comment~~ | ~~`CommentElement.tsx`~~ | ✅ done — Settings gear moved; the **Palette/theme gear stays** (visual styling, needs live preview), as does the inline title. |
-| CollectionView | `CollectionViewElement.tsx` | View/layout config. |
-| Index | `IndexElement.tsx` | List vs cards, grouping. |
-| Jersey | `JerseyElement.tsx` | Colours / signatures — mostly visual; check whether it's really a config gear or styling. |
+| ~~CollectionView~~ | ~~`CollectionViewElement.tsx`~~ | ✅ done — had no gear at all; the inline 2/3/4 column picker moved to the inspector. **“Manage pages” modal stays** (setup that needs the big canvas). Dead `onChange` prop removed. |
+| ~~Index~~ | ~~`IndexElement.tsx`~~ | ✅ done — had no gear either; the inline “Display options” strip (view/search/auto-number/accent) moved. Title, icon and entries stay inline. |
+| ~~Jersey~~ | ~~`JerseyElement.tsx`~~ | ✅ done — **resolved as config, not styling.** Its panel is plain inputs, not a preview gallery like Comment's theme grid, and the card keeps its live `JerseySVG` preview while you edit in the column. |
 
 **Styling gears that STAY** (do not touch): `TextElement`, `HeadingElement`, `ListElement`, `QuoteElement`, `CalloutElement` (all open `TextStylePanel`).
 

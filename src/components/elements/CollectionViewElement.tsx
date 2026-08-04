@@ -12,10 +12,9 @@ interface Props {
   isSelected: boolean
   onSelect: () => void
   onDelete: () => void
-  onChange: (updates: Partial<CanvasElement>) => void
 }
 
-export function CollectionViewElement({ element, displayId, isSelected, onSelect, onDelete, onChange }: Props) {
+export function CollectionViewElement({ element, displayId, isSelected, onSelect, onDelete }: Props) {
   const [modalOpen, setModalOpen] = useState(false)
   const [members, setMembers] = useState<CollectionMemberCard[]>([])
 
@@ -34,8 +33,6 @@ export function CollectionViewElement({ element, displayId, isSelected, onSelect
 
   useEffect(() => { loadPreview() }, [loadPreview])
 
-  const cols = element.collectionColumns || 3
-
   return (
     <div
       onClick={onSelect}
@@ -48,10 +45,6 @@ export function CollectionViewElement({ element, displayId, isSelected, onSelect
           <Settings2 className="h-3 w-3" /> Manage pages
         </button>
         <div className="ml-auto flex items-center gap-1">
-          {[2, 3, 4].map((c) => (
-            <button key={c} onClick={(e) => { e.stopPropagation(); onChange({ collectionColumns: c as 2 | 3 | 4 }) }}
-              className={`h-6 w-6 rounded text-xs ${cols === c ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>{c}</button>
-          ))}
           <button aria-label="Delete" onClick={(e) => { e.stopPropagation(); onDelete() }} className="ml-1 text-muted-foreground hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
         </div>
       </div>
