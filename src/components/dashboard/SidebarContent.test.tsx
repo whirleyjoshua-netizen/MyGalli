@@ -25,6 +25,13 @@ describe('SidebarContent', () => {
     expect(link).toHaveAttribute('href', '/bulletin')
   })
 
+  it('links to the CRM from the shared nav', () => {
+    // The spec called for the CRM to be reachable from the sidebar as well as
+    // the Apps storefront; it shipped storefront-only.
+    render(<SidebarContent />)
+    expect(screen.getByRole('link', { name: /crm/i })).toHaveAttribute('href', '/crm')
+  })
+
   it('no longer renders a duplicate account bar (@handle lives in ProfileCard)', () => {
     render(<SidebarContent />)
     expect(screen.queryByText('@josh')).toBeNull()

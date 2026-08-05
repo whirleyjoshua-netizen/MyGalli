@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Plus, Home, FileText, Users, Compass, Library, BarChart3, Megaphone, ChevronRight, Database, Mail,
+  Plus, Home, FileText, Users, Compass, Library, BarChart3, Megaphone, ChevronRight, Database, Mail, Contact,
 } from 'lucide-react'
 import { ProfileCard } from '@/components/dashboard/ProfileCard'
 import { PagesTree } from '@/components/dashboard/PagesTree'
@@ -26,6 +26,9 @@ const NAV: NavItem[] = [
   { label: 'Explore', icon: Compass, href: '/explore', match: (p) => p.startsWith('/explore') },
   { label: 'Data', icon: BarChart3, href: '/data', match: (p) => p.startsWith('/data') },
   { label: 'Messages', icon: Mail, href: '/messages', match: (p) => p.startsWith('/messages') },
+  // `Contact`, not `Users` — My Pond already owns the Users glyph, and two
+  // people-shaped icons in one rail is a coin flip for the reader.
+  { label: 'CRM', icon: Contact, href: '/crm', match: (p) => p.startsWith('/crm') },
   { label: 'Library', icon: Library, href: '/library', match: (p) => p.startsWith('/library') },
 ]
 
