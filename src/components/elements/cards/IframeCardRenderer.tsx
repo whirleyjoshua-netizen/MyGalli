@@ -12,6 +12,7 @@ interface IframeCardRendererProps {
 const MIN_HEIGHT = 20
 const MAX_HEIGHT = 2000
 const LOAD_TIMEOUT = 10000
+const HANDSHAKE_RETRY = 300
 
 export function IframeCardRenderer({ url, data, style, theme = 'light' }: IframeCardRendererProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -53,6 +54,11 @@ export function IframeCardRenderer({ url, data, style, theme = 'light' }: Iframe
       }
 
       if (msg.type === 'gallio:height' && typeof msg.height === 'number') {
+        // A height reply is proof the card is alive, whether or not we caught
+        // its ready broadcast. Treat it as the handshake completing so the
+        // poll below stops and the failure state can't fire on a working card.
+        readyRef.current = true
+        setError(false)
         const clamped = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Math.ceil(msg.height)))
         setIframeHeight(clamped)
         setLoaded(true)
@@ -71,6 +77,31 @@ export function IframeCardRenderer({ url, data, style, theme = 'light' }: Iframe
       pendingDataRef.current = data
     }
   }, [data, style, theme, sendInit])
+
+  // The iframe is server-rendered, so the browser starts loading it during
+  // HTML parse — well before React hydrates and attaches the message listener
+  // above. The card's `gallio:ready` broadcast lands in that gap and is lost,
+  // the load timeout then fires, and every visitor sees "This card failed to
+  // load" on a card that is working perfectly. Clicking Retry only "fixed" it
+  // because by then the listener existed.
+  //
+  // An onLoad handler does not help: if the iframe finished loading before
+  // hydration, that event has already fired and attaching a handler after the
+  // fact never sees it. So drive the handshake from this side instead — poll
+  // init until the card answers. The SDK re-measures on init, so its height
+  // reply doubles as the acknowledgement.
+  useEffect(() => {
+    if (readyRef.current) return
+    sendInit()
+    const poll = setInterval(() => {
+      if (readyRef.current) {
+        clearInterval(poll)
+        return
+      }
+      sendInit()
+    }, HANDSHAKE_RETRY)
+    return () => clearInterval(poll)
+  }, [url, retryKey, sendInit])
 
   // Load timeout
   useEffect(() => {
