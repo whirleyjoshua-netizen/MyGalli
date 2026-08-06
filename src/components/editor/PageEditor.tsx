@@ -20,6 +20,7 @@ import { ElementsTab } from '@/components/editor/panel/ElementsTab'
 import { PageTab } from '@/components/editor/panel/PageTab'
 import { SectionSettingsModal } from '@/components/editor/panel/SectionSettingsModal'
 import { applySectionLayout } from '@/lib/editor/section-layout'
+import { canSave } from '@/lib/editor/can-save'
 import type { EditorSelection } from '@/lib/editor/selection'
 import { selectedElementId } from '@/lib/editor/selection'
 import type { ElementListRow } from '@/lib/editor/element-list'
@@ -90,6 +91,19 @@ export function PageEditor({ pageId, openShare }: PageEditorProps) {
   // Serialised payload of the last PATCH that succeeded. An autosave that would
   // resend exactly this is a no-op, so we skip the request entirely.
   const lastSavedPayloadRef = useRef<string | null>(null)
+  // Whether we actually know what the server holds for this page.
+  //
+  // `id` comes straight off the URL, so it is set at mount — long before
+  // loadPage() returns. The 5s autosave only checked `id`, so a load slower
+  // than one tick (cold function, big page, poor network) let the editor PATCH
+  // its *blank default state* over a real document: title reset to "Untitled
+  // Page", sections emptied. Observed against a board whose load took 12.4s —
+  // its seeded collection-view element was destroyed — but nothing about this
+  // is board-specific; any page could be blanked this way.
+  //
+  // lastSavedPayloadRef cannot serve as this guard: it stays null for a
+  // genuinely new page, which would then never autosave at all.
+  const hasLoadedRef = useRef(false)
   const [isOwner, setIsOwner] = useState(true)
   const [conflict, setConflict] = useState(false)
   const [showCollaborate, setShowCollaborate] = useState(false)
@@ -298,6 +312,8 @@ export function PageEditor({ pageId, openShare }: PageEditorProps) {
           spacing: { ...DEFAULT_SPACING_CONFIG, ...loadedSpacing },
           headerCard: loadedHeaderCard,
         }))
+        // Only now is it safe to write back.
+        hasLoadedRef.current = true
       } else if (res.status === 403 || res.status === 404) {
         // No access to this page (not owner/collaborator) — back to dashboard
         router.push('/dashboard')
@@ -335,6 +351,9 @@ export function PageEditor({ pageId, openShare }: PageEditorProps) {
 
         // Update URL without reload
         window.history.replaceState({}, '', `/editor?id=${data.id}`)
+
+        // We created this row ourselves, so local state *is* the server state.
+        hasLoadedRef.current = true
       }
     } catch (error) {
       console.error('Error creating page:', error)
@@ -379,7 +398,8 @@ export function PageEditor({ pageId, openShare }: PageEditorProps) {
   }
 
   const savePage = useCallback(async () => {
-    if (!id || saving || conflict) return
+    // hasLoaded is the guard that matters — see canSave() for why.
+    if (!canSave({ id, saving, conflict, hasLoaded: hasLoadedRef.current })) return
 
     setSaving(true)
     try {
