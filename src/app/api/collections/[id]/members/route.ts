@@ -10,9 +10,16 @@ type Ctx = { params: Promise<{ id: string }> }
 async function guard(request: NextRequest, id: string) {
   const me = await getUser(request)
   if (!me) return { res: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), me: null }
-  const board = await db.display.findUnique({ where: { id }, select: { userId: true, kind: true } })
-  if (!board || board.kind !== 'collection') return { res: NextResponse.json({ error: 'Not found' }, { status: 404 }), me: null }
-  if (board.userId !== me.id) return { res: NextResponse.json({ error: 'Not your board' }, { status: 403 }), me: null }
+  // Scope the lookup to the caller so someone else's board is indistinguishable
+  // from one that does not exist. Answering 403 "Not your board" for a real id
+  // and 404 for a fake one told an unauthenticated-to-this-board caller which
+  // board ids are real — including unpublished ones. Same rule the CRM routes
+  // follow.
+  const board = await db.display.findFirst({
+    where: { id, userId: me.id, kind: 'collection' },
+    select: { userId: true },
+  })
+  if (!board) return { res: NextResponse.json({ error: 'Not found' }, { status: 404 }), me: null }
   return { res: null, me }
 }
 
@@ -56,9 +63,22 @@ export async function POST(request: NextRequest, { params }: Ctx) {
     return NextResponse.json({ error: 'You can only add your own pages' }, { status: 400 })
   }
 
-  const count = await db.collectionMember.count({ where: { collectionId: id } })
+  // Append after the current last position, not at count().
+  //
+  // count() is only equal to "next free slot" while positions are a gapless
+  // 0..n-1 run, and a removal breaks that: drop the member at 0 and the
+  // survivor keeps position 1 while count falls to 1, so the next add collides
+  // with it. Two rows then share a position and `orderBy: position` puts them
+  // in an arbitrary order — an explicit reorder heals it, but until then the
+  // board can shuffle between renders.
+  const last = await db.collectionMember.findFirst({
+    where: { collectionId: id },
+    orderBy: { position: 'desc' },
+    select: { position: true },
+  })
+  const position = last ? last.position + 1 : 0
   try {
-    await db.collectionMember.create({ data: { collectionId: id, memberId, position: count } })
+    await db.collectionMember.create({ data: { collectionId: id, memberId, position } })
   } catch (err) {
     if (err && typeof err === 'object' && 'code' in err && (err as { code?: string }).code === 'P2002') {
       return NextResponse.json({ error: 'Already added' }, { status: 409 })
